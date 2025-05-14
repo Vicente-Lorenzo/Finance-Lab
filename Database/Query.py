@@ -1,8 +1,8 @@
 import hashlib
 from pathlib import Path
 
-from Agents.Database.Database import DatabaseAPI
-from Agents.Parameters.Parameters import ParametersAPI
+from Library.Robots.Database.Database import DatabaseAPI
+from Library.Robots.Parameters.Parameters import ParametersAPI
 
 def main():
     # --------------------------------------------------------------------------
@@ -167,7 +167,7 @@ WHERE NOT EXISTS (
                 create_script.append(grant_privileges_on_table(symbol, timeframe, timeframe_user, ["SELECT","INSERT","UPDATE"]))
 
     # Write the CREATE/UPDATE script
-    create_path = Path.cwd() / "QueryScriptCreateOrUpdate.sql"
+    create_path = Path.cwd() / "QueryCreateOrUpdate.sql"
     with create_path.open("w", encoding="utf-8") as f:
         f.write("".join(create_script))
 
@@ -216,7 +216,7 @@ WHERE NOT EXISTS (
         delete_script.append(f'DROP ROLE IF EXISTS \"{broker_owner}\";\n\n')
 
     # Write the DELETE script
-    delete_path = Path.cwd() / "QueryScriptDelete.sql"
+    delete_path = Path.cwd() / "QueryDelete.sql"
     with delete_path.open("w", encoding="utf-8") as f:
         f.write("".join(delete_script))
 
