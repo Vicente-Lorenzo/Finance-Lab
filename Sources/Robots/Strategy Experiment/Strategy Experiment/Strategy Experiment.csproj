@@ -8,14 +8,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Library\API.cs">
-      <Link>API.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Library\Logging.cs">
+    <Compile Include="..\..\..\Logging\Logging.cs">
       <Link>Logging.cs</Link>
     </Compile>
-    <Compile Include="..\..\Library\Strategy.cs">
-      <Link>Strategy.cs</Link>
+    <Compile Include="..\..\SystemAPI.cs">
+      <Link>SystemAPI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\RobotAPI.cs">
+      <Link>RobotAPI.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

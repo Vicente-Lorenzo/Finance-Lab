@@ -7,7 +7,7 @@ using cAlgo.API;
 
 namespace cAlgo.Robots;
 
-public abstract class Strategy
+public abstract class RobotAPI
 {
     public enum UpdateID
     {
@@ -57,7 +57,7 @@ public abstract class Strategy
         Continuation = 1
     }
     
-    private readonly API _api;
+    private readonly SystemAPI _systemApi;
     private readonly Robot _robot;
     private readonly Logging _logging;
     
@@ -74,7 +74,7 @@ public abstract class Strategy
     private double? _lastBidAboveTarget;
     private double? _lastBidBelowTarget;
 
-    protected Strategy(Robot robot, Logging.VerboseType console, Logging.VerboseType telegram)
+    protected RobotAPI(Robot robot, Logging.VerboseType console, Logging.VerboseType telegram)
     {
         _robot = robot;
         _logging = new Logging(robot, "Strategy", console);
@@ -91,22 +91,22 @@ public abstract class Strategy
         var symbol = ParseSymbolName();
         var timeframe = ParseTimeframeName();
 
-        _api = new API(robot, broker, symbol, timeframe, console);
-        _api.Initialize();
+        _systemApi = new SystemAPI(robot, broker, symbol, timeframe, console);
+        _systemApi.Initialize();
 
         var baseDirectory = new DirectoryInfo(Environment.CurrentDirectory).Parent?.Parent?.Parent?.FullName;
         var scriptName = GetType().Name;
         var scriptArgs = $"--console \"{console}\" --telegram \"{telegram}\" --system \"Realtime\" --strategy \"{scriptName}\" --broker \"{broker}\" --group \"{group}\" --symbol \"{symbol}\" --timeframe \"{timeframe}\" --iid \"{_robot.InstanceId}\"";
-        var command = $"cmd.exe /k \"cd {baseDirectory}\\Sources && conda activate Trading && python -m Agents.Main {scriptArgs}\"";
+        var command = $"cmd.exe /k \"cd {baseDirectory} && conda activate Trading && python -m Library.Robots.Main {scriptArgs}\"";
         var tabTitle = $"{scriptName} {broker} {symbol} {timeframe}";
         Process.Start("wt.exe", $"--window 0 new-tab --title \"{tabTitle}\" {command}");
 
-        _api.Connect();
+        _systemApi.Connect();
         
-        _api.SendUpdateAccount(_robot.Account);
-        _api.SendUpdateSymbol(_robot.Symbol);
-        for (var i = 0; i < _robot.Bars.Count - 1; i++) { _api.SendUpdateBarClosed(_robot.Bars[i]); }
-        _api.SendUpdateComplete();
+        _systemApi.SendUpdateAccount(_robot.Account);
+        _systemApi.SendUpdateSymbol(_robot.Symbol);
+        for (var i = 0; i < _robot.Bars.Count - 1; i++) { _systemApi.SendUpdateBarClosed(_robot.Bars[i]); }
+        _systemApi.SendUpdateComplete();
         ReceiveAndProcessActions();
     }
 
@@ -164,11 +164,11 @@ public abstract class Strategy
             LastTakeProfit = args.Position.TakeProfit
         };
         if (args.Position.TradeType == TradeType.Buy)
-            _api.SendUpdateOpenedBuy(_robot.Bars.LastBar, _robot.Account, args.Position);
+            _systemApi.SendUpdateOpenedBuy(_robot.Bars.LastBar, _robot.Account, args.Position);
         else
-            _api.SendUpdateOpenedSell(_robot.Bars.LastBar, _robot.Account, args.Position);
+            _systemApi.SendUpdateOpenedSell(_robot.Bars.LastBar, _robot.Account, args.Position);
         _positions.Add(args.Position.Id, positionData);
-        _api.SendUpdateComplete();
+        _systemApi.SendUpdateComplete();
         ReceiveAndProcessActions();
     }
 
@@ -181,11 +181,11 @@ public abstract class Strategy
         {
             var trade = FindTrade(args.Position.Id);
             if (args.Position.TradeType == TradeType.Buy)
-                _api.SendUpdateModifiedBuyVolume(_robot.Bars.LastBar, _robot.Account, args.Position, trade);
+                _systemApi.SendUpdateModifiedBuyVolume(_robot.Bars.LastBar, _robot.Account, args.Position, trade);
             else
-                _api.SendUpdateModifiedSellVolume(_robot.Bars.LastBar, _robot.Account, args.Position, trade);
+                _systemApi.SendUpdateModifiedSellVolume(_robot.Bars.LastBar, _robot.Account, args.Position, trade);
             positionData.LastVolume = args.Position.VolumeInUnits;
-            _api.SendUpdateComplete();
+            _systemApi.SendUpdateComplete();
             ReceiveAndProcessActions();
             return;
         }
@@ -194,11 +194,11 @@ public abstract class Strategy
             (positionData.LastStopLoss != null && args.Position.StopLoss != null && Math.Abs((double)args.Position.StopLoss - (double)positionData.LastStopLoss) > double.Epsilon))
         {
             if (args.Position.TradeType == TradeType.Buy)
-                _api.SendUpdateModifiedBuyStopLoss(_robot.Bars.LastBar, _robot.Account, args.Position);
+                _systemApi.SendUpdateModifiedBuyStopLoss(_robot.Bars.LastBar, _robot.Account, args.Position);
             else
-                _api.SendUpdateModifiedSellStopLoss(_robot.Bars.LastBar, _robot.Account, args.Position);
+                _systemApi.SendUpdateModifiedSellStopLoss(_robot.Bars.LastBar, _robot.Account, args.Position);
             positionData.LastStopLoss = args.Position.StopLoss;
-            _api.SendUpdateComplete();
+            _systemApi.SendUpdateComplete();
             ReceiveAndProcessActions();
             return;
         }
@@ -207,11 +207,11 @@ public abstract class Strategy
             (positionData.LastTakeProfit != null && args.Position.TakeProfit != null && Math.Abs((double)args.Position.TakeProfit - (double)positionData.LastTakeProfit) > double.Epsilon))
         {
             if (args.Position.TradeType == TradeType.Buy)
-                _api.SendUpdateModifiedBuyTakeProfit(_robot.Bars.LastBar, _robot.Account, args.Position);
+                _systemApi.SendUpdateModifiedBuyTakeProfit(_robot.Bars.LastBar, _robot.Account, args.Position);
             else
-                _api.SendUpdateModifiedSellTakeProfit(_robot.Bars.LastBar, _robot.Account, args.Position);
+                _systemApi.SendUpdateModifiedSellTakeProfit(_robot.Bars.LastBar, _robot.Account, args.Position);
             positionData.LastTakeProfit = args.Position.TakeProfit;
-            _api.SendUpdateComplete();
+            _systemApi.SendUpdateComplete();
             ReceiveAndProcessActions();
         }
     }
@@ -222,18 +222,18 @@ public abstract class Strategy
             return;
         var trade = FindTrade(args.Position.Id);
         if (args.Position.TradeType == TradeType.Buy)
-            _api.SendUpdateClosedBuy(_robot.Bars.LastBar, _robot.Account, trade);
+            _systemApi.SendUpdateClosedBuy(_robot.Bars.LastBar, _robot.Account, trade);
         else
-            _api.SendUpdateClosedSell(_robot.Bars.LastBar, _robot.Account, trade);
+            _systemApi.SendUpdateClosedSell(_robot.Bars.LastBar, _robot.Account, trade);
         _positions.Remove(args.Position.Id);
-        _api.SendUpdateComplete();
+        _systemApi.SendUpdateComplete();
         ReceiveAndProcessActions();
     }
 
     private void OnBarClosed(BarClosedEventArgs args)
     { 
-        _api.SendUpdateBarClosed(args.Bars.LastBar);
-        _api.SendUpdateComplete();
+        _systemApi.SendUpdateBarClosed(args.Bars.LastBar);
+        _systemApi.SendUpdateComplete();
         ReceiveAndProcessActions();
     }
 
@@ -241,30 +241,30 @@ public abstract class Strategy
     {
         if (_lastAskAboveTarget != null && args.Ask >= _lastAskAboveTarget)
         {
-            _api.SendUpdateAskAboveTarget(_robot.Server.Time, args.Ask, args.Bid);
+            _systemApi.SendUpdateAskAboveTarget(_robot.Server.Time, args.Ask, args.Bid);
             _lastAskAboveTarget = null;
-            _api.SendUpdateComplete();
+            _systemApi.SendUpdateComplete();
             ReceiveAndProcessActions();
         }
         if (_lastAskBelowTarget != null && args.Ask <= _lastAskBelowTarget)
         {
-            _api.SendUpdateAskBelowTarget(_robot.Server.Time, args.Ask, args.Bid);
+            _systemApi.SendUpdateAskBelowTarget(_robot.Server.Time, args.Ask, args.Bid);
             _lastAskBelowTarget = null;
-            _api.SendUpdateComplete();
+            _systemApi.SendUpdateComplete();
             ReceiveAndProcessActions();
         }
         if (_lastBidAboveTarget != null && args.Bid >= _lastBidAboveTarget)
         {
-            _api.SendUpdateBidAboveTarget(_robot.Server.Time, args.Ask, args.Bid);
+            _systemApi.SendUpdateBidAboveTarget(_robot.Server.Time, args.Ask, args.Bid);
             _lastBidAboveTarget = null;
-            _api.SendUpdateComplete();
+            _systemApi.SendUpdateComplete();
             ReceiveAndProcessActions();
         }
         if (_lastBidBelowTarget != null && args.Bid <= _lastBidBelowTarget)
         {
-            _api.SendUpdateBidBelowTarget(_robot.Server.Time, args.Ask, args.Bid);
+            _systemApi.SendUpdateBidBelowTarget(_robot.Server.Time, args.Ask, args.Bid);
             _lastBidBelowTarget = null;
-            _api.SendUpdateComplete();
+            _systemApi.SendUpdateComplete();
             ReceiveAndProcessActions();
         }
     }
@@ -285,9 +285,9 @@ public abstract class Strategy
     public void OnShutdown()
     {
         _logging.Warning("Shutdown strategy and safely terminate operations");
-        _api.SendUpdateShutdown();
+        _systemApi.SendUpdateShutdown();
         ReceiveAndProcessActions();
-        _api.Disconnect();
+        _systemApi.Disconnect();
     }
     
     private bool ProcessActionOpenPosition(TradeType tradeType, PositionType posType, double volume, double? slPips, double? tpPips)
@@ -340,7 +340,7 @@ public abstract class Strategy
         ActionID actionID;
         do
         {
-            actionID = _api.ReceiveActionID();
+            actionID = _systemApi.ReceiveActionID();
             int positionID;
             PositionType posType;
             double volume;
@@ -350,44 +350,44 @@ public abstract class Strategy
                 case ActionID.Complete:
                     break;
                 case ActionID.OpenBuy:
-                    (posType, volume, slPrice, tpPrice) = _api.ReceiveActionOpen();
+                    (posType, volume, slPrice, tpPrice) = _systemApi.ReceiveActionOpen();
                     if (!ProcessActionOpenPosition(TradeType.Buy, posType, volume, slPrice, tpPrice)) _robot.Stop();
                     break;
                 case ActionID.OpenSell:
-                    (posType, volume, slPrice, tpPrice) = _api.ReceiveActionOpen();
+                    (posType, volume, slPrice, tpPrice) = _systemApi.ReceiveActionOpen();
                     if (!ProcessActionOpenPosition(TradeType.Sell, posType, volume, slPrice, tpPrice)) _robot.Stop();
                     break;
                 case ActionID.ModifyBuyVolume:
                 case ActionID.ModifySellVolume:
-                    (positionID, volume) = _api.ReceiveActionModifyVolume();
+                    (positionID, volume) = _systemApi.ReceiveActionModifyVolume();
                     if (!ProcessActionModifyVolume(positionID, volume)) _robot.Stop();
                     break;
                 case ActionID.ModifyBuyStopLoss:
                 case ActionID.ModifySellStopLoss:
-                    (positionID, slPrice) = _api.ReceiveActionModifyStopLoss();
+                    (positionID, slPrice) = _systemApi.ReceiveActionModifyStopLoss();
                     if (!ProcessActionModifyStopLoss(positionID, slPrice)) _robot.Stop();
                     break;
                 case ActionID.ModifyBuyTakeProfit:
                 case ActionID.ModifySellTakeProfit:
-                    (positionID, tpPrice) = _api.ReceiveActionModifyTakeProfit();
+                    (positionID, tpPrice) = _systemApi.ReceiveActionModifyTakeProfit();
                     if (!ProcessActionModifyTakeProfit(positionID, tpPrice)) _robot.Stop();
                     break;
                 case ActionID.CloseBuy:
                 case ActionID.CloseSell:
-                    positionID = _api.ReceiveActionClose();
+                    positionID = _systemApi.ReceiveActionClose();
                     if (!ProcessActionClosePosition(positionID)) _robot.Stop();
                     break;
                 case ActionID.AskAboveTarget:
-                    _lastAskAboveTarget = _api.ReceiveActionAskAboveTarget();
+                    _lastAskAboveTarget = _systemApi.ReceiveActionAskAboveTarget();
                     break;
                 case ActionID.AskBelowTarget:
-                    _lastAskBelowTarget = _api.ReceiveActionAskBelowTarget();
+                    _lastAskBelowTarget = _systemApi.ReceiveActionAskBelowTarget();
                     break;
                 case ActionID.BidAboveTarget:
-                    _lastBidAboveTarget = _api.ReceiveActionBidAboveTarget();
+                    _lastBidAboveTarget = _systemApi.ReceiveActionBidAboveTarget();
                     break;
                 case ActionID.BidBelowTarget:
-                    _lastBidBelowTarget = _api.ReceiveActionBidBelowTarget();
+                    _lastBidBelowTarget = _systemApi.ReceiveActionBidBelowTarget();
                     break;
                 default:
                     _logging.Critical($"Received invalid action ID: {actionID}");

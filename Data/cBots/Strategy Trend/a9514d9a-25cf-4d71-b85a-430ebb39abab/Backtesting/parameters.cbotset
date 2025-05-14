@@ -1,0 +1,10 @@
+{
+  "Chart": {
+    "Symbol": "EURUSD",
+    "Period": "D1"
+  },
+  "Parameters": {
+    "Console": "6",
+    "Telegram": "0"
+  }
+}

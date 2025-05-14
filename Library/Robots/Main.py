@@ -2,22 +2,23 @@ import polars as pl
 from typing import Type
 from argparse import ArgumentParser
 
-from Library.Robots.Container.Enums import VerboseType, SystemType, StrategyType
-from Library.Robots.Logging.Logging import LoggingAPI
-from Library.Robots.Logging.Console import ConsoleAPI
-from Library.Robots.Logging.Telegram import TelegramAPI
+from Library.Logging.Logging import LoggingAPI
+from Library.Logging.Console import ConsoleAPI
+from Library.Logging.Telegram import TelegramAPI
+from Library.Classes.Enums import VerboseType, SystemType, StrategyType
+from Library.Parameters.Parameters import ParametersAPI, Parameters
+from Library.Utils.Performance import time
+
 from Library.Robots.Manager.Statistics import StatisticsAPI
 from Library.Robots.Strategy.Strategy import StrategyAPI
-from Agents.Strategy.Download import DownloadAPI
-from Agents.Strategy.Experiment import ExperimentAPI
-from Agents.Strategy.Trend import TrendAPI
-from Agents.Strategy.Learning import LearningAPI
-from Agents.System.System import SystemAPI
-from Agents.System.Realtime import RealtimeAPI
-from Agents.System.Backtesting import BacktestingAPI
-from Agents.System.Optimisation import OptimisationAPI
-from Agents.Parameters.Parameters import ParametersAPI, Parameters
-from Agents.Utils.Performance import time
+from Library.Robots.Strategy.Download import DownloadAPI
+from Library.Robots.Strategy.Experiment import ExperimentAPI
+from Library.Robots.Strategy.Trend import TrendAPI
+from Library.Robots.Strategy.Learning import LearningAPI
+from Library.Robots.System.System import SystemAPI
+from Library.Robots.System.Realtime import RealtimeAPI
+from Library.Robots.System.Backtesting import BacktestingAPI
+from Library.Robots.System.Optimisation import OptimisationAPI
 
 pl.Config.set_tbl_cols(-1)
 pl.Config.set_tbl_rows(-1)

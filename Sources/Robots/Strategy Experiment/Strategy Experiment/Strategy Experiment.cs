@@ -6,7 +6,7 @@ namespace cAlgo.Robots;
 [Robot(AccessRights = AccessRights.FullAccess)]
 public class StrategyExperiment : Robot
 {
-    private Strategy _strategy;
+    private RobotAPI _strategy;
 
     [Parameter("Console Verbose", DefaultValue = Logging.VerboseType.Alert)]
     public Logging.VerboseType Console { get; set; }
@@ -22,4 +22,4 @@ public class StrategyExperiment : Robot
     protected override void OnStop() { _strategy.OnShutdown(); }
 }
 
-public class Experiment : Strategy { public Experiment(Robot robot, Logging.VerboseType console, Logging.VerboseType telegram) : base(robot, console, telegram) { } }
+public class Experiment : RobotAPI { public Experiment(Robot robot, Logging.VerboseType console, Logging.VerboseType telegram) : base(robot, console, telegram) { } }

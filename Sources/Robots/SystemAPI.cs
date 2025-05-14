@@ -6,7 +6,7 @@ using cAlgo.API.Internals;
 
 namespace cAlgo.Robots;
 
-public class API
+public class SystemAPI
 {
     private enum AssetType
     {
@@ -30,7 +30,7 @@ public class API
     private readonly Logging _console;
     private NamedPipeServerStream _pipe;
 
-    public API(Robot robot, string broker, string symbol, string timeframe, Logging.VerboseType console)
+    public SystemAPI(Robot robot, string broker, string symbol, string timeframe, Logging.VerboseType console)
     {
         _iid = robot.InstanceId;
         _broker = broker;
@@ -64,7 +64,7 @@ public class API
         _console.Info("Disconnected");
     }
 
-    private static void BuildUpdateID(BinaryWriter writer, Strategy.UpdateID updateID)
+    private static void BuildUpdateID(BinaryWriter writer, RobotAPI.UpdateID updateID)
     {
         writer.Write((byte)updateID);
     }
@@ -97,7 +97,7 @@ public class API
     private static void BuildUpdatePosition(BinaryWriter writer, Position position)
     {
         writer.Write(position.Id);
-        writer.Write((byte)Enum.Parse<Strategy.PositionType>(position.Comment));
+        writer.Write((byte)Enum.Parse<RobotAPI.PositionType>(position.Comment));
         writer.Write((byte)position.TradeType);
         writer.Write(((DateTimeOffset)position.EntryTime).ToUnixTimeMilliseconds());
         writer.Write(position.EntryPrice);
@@ -110,7 +110,7 @@ public class API
     {
         writer.Write(trade.PositionId);
         writer.Write(trade.ClosingDealId);
-        writer.Write((byte)Enum.Parse<Strategy.PositionType>(trade.Comment));
+        writer.Write((byte)Enum.Parse<RobotAPI.PositionType>(trade.Comment));
         writer.Write((byte)trade.TradeType);
         writer.Write(((DateTimeOffset)trade.EntryTime).ToUnixTimeMilliseconds());
         writer.Write(((DateTimeOffset)trade.ClosingTime).ToUnixTimeMilliseconds());
@@ -151,7 +151,7 @@ public class API
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
-        BuildUpdateID(writer, Strategy.UpdateID.Complete);
+        BuildUpdateID(writer, RobotAPI.UpdateID.Complete);
         SendUpdate(memoryStream.ToArray());
     }
 
@@ -159,7 +159,7 @@ public class API
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
-        BuildUpdateID(writer, Strategy.UpdateID.Account);
+        BuildUpdateID(writer, RobotAPI.UpdateID.Account);
         BuildUpdateAccount(writer, account);
         SendUpdate(memoryStream.ToArray());
     }
@@ -168,12 +168,12 @@ public class API
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
-        BuildUpdateID(writer, Strategy.UpdateID.Symbol);
+        BuildUpdateID(writer, RobotAPI.UpdateID.Symbol);
         BuildUpdateSymbol(writer, symbol);
         SendUpdate(memoryStream.ToArray());
     }
 
-    private void SendUpdatePosition(Strategy.UpdateID updateID, Bar bar, IAccount account, Position position)
+    private void SendUpdatePosition(RobotAPI.UpdateID updateID, Bar bar, IAccount account, Position position)
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
@@ -184,7 +184,7 @@ public class API
         SendUpdate(memoryStream.ToArray());
     }
 
-    private void SendUpdateTrade(Strategy.UpdateID updateID, Bar bar, IAccount account, HistoricalTrade trade)
+    private void SendUpdateTrade(RobotAPI.UpdateID updateID, Bar bar, IAccount account, HistoricalTrade trade)
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
@@ -195,7 +195,7 @@ public class API
         SendUpdate(memoryStream.ToArray());
     }
 
-    private void SendUpdatePositionTrade(Strategy.UpdateID updateID, Bar bar, IAccount account, Position position, HistoricalTrade trade)
+    private void SendUpdatePositionTrade(RobotAPI.UpdateID updateID, Bar bar, IAccount account, Position position, HistoricalTrade trade)
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
@@ -207,27 +207,27 @@ public class API
         SendUpdate(memoryStream.ToArray());
     }
 
-    public void SendUpdateOpenedBuy(Bar bar, IAccount account, Position position) { SendUpdatePosition(Strategy.UpdateID.OpenedBuy, bar, account, position); }
-    public void SendUpdateOpenedSell(Bar bar, IAccount account, Position position) { SendUpdatePosition(Strategy.UpdateID.OpenedSell, bar, account, position); }
-    public void SendUpdateModifiedBuyVolume(Bar bar, IAccount account, Position position, HistoricalTrade trade) { SendUpdatePositionTrade(Strategy.UpdateID.ModifiedBuyVolume, bar, account, position, trade); }
-    public void SendUpdateModifiedBuyStopLoss(Bar bar, IAccount account, Position position) { SendUpdatePosition(Strategy.UpdateID.ModifiedBuyStopLoss, bar, account, position); }
-    public void SendUpdateModifiedBuyTakeProfit(Bar bar, IAccount account, Position position) { SendUpdatePosition(Strategy.UpdateID.ModifiedBuyTakeProfit, bar, account, position); }
-    public void SendUpdateModifiedSellVolume(Bar bar, IAccount account, Position position, HistoricalTrade trade) { SendUpdatePositionTrade(Strategy.UpdateID.ModifiedSellVolume, bar, account, position, trade); }
-    public void SendUpdateModifiedSellStopLoss(Bar bar, IAccount account, Position position) { SendUpdatePosition(Strategy.UpdateID.ModifiedSellStopLoss, bar, account, position); }
-    public void SendUpdateModifiedSellTakeProfit(Bar bar, IAccount account, Position position) { SendUpdatePosition(Strategy.UpdateID.ModifiedSellTakeProfit, bar, account, position); }
-    public void SendUpdateClosedBuy(Bar bar, IAccount account, HistoricalTrade trade) { SendUpdateTrade(Strategy.UpdateID.ClosedBuy, bar, account, trade); }
-    public void SendUpdateClosedSell(Bar bar, IAccount account, HistoricalTrade trade) { SendUpdateTrade(Strategy.UpdateID.ClosedSell, bar, account, trade); }
+    public void SendUpdateOpenedBuy(Bar bar, IAccount account, Position position) { SendUpdatePosition(RobotAPI.UpdateID.OpenedBuy, bar, account, position); }
+    public void SendUpdateOpenedSell(Bar bar, IAccount account, Position position) { SendUpdatePosition(RobotAPI.UpdateID.OpenedSell, bar, account, position); }
+    public void SendUpdateModifiedBuyVolume(Bar bar, IAccount account, Position position, HistoricalTrade trade) { SendUpdatePositionTrade(RobotAPI.UpdateID.ModifiedBuyVolume, bar, account, position, trade); }
+    public void SendUpdateModifiedBuyStopLoss(Bar bar, IAccount account, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedBuyStopLoss, bar, account, position); }
+    public void SendUpdateModifiedBuyTakeProfit(Bar bar, IAccount account, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedBuyTakeProfit, bar, account, position); }
+    public void SendUpdateModifiedSellVolume(Bar bar, IAccount account, Position position, HistoricalTrade trade) { SendUpdatePositionTrade(RobotAPI.UpdateID.ModifiedSellVolume, bar, account, position, trade); }
+    public void SendUpdateModifiedSellStopLoss(Bar bar, IAccount account, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedSellStopLoss, bar, account, position); }
+    public void SendUpdateModifiedSellTakeProfit(Bar bar, IAccount account, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedSellTakeProfit, bar, account, position); }
+    public void SendUpdateClosedBuy(Bar bar, IAccount account, HistoricalTrade trade) { SendUpdateTrade(RobotAPI.UpdateID.ClosedBuy, bar, account, trade); }
+    public void SendUpdateClosedSell(Bar bar, IAccount account, HistoricalTrade trade) { SendUpdateTrade(RobotAPI.UpdateID.ClosedSell, bar, account, trade); }
     
     public void SendUpdateBarClosed(Bar bar)
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
-        BuildUpdateID(writer, Strategy.UpdateID.BarClosed);
+        BuildUpdateID(writer, RobotAPI.UpdateID.BarClosed);
         BuildUpdateBar(writer, bar);
         SendUpdate(memoryStream.ToArray());
     }
 
-    private void SendUpdateTarget(DateTime tickTime, Strategy.UpdateID targetType, double ask, double bid)
+    private void SendUpdateTarget(DateTime tickTime, RobotAPI.UpdateID targetType, double ask, double bid)
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
@@ -236,16 +236,16 @@ public class API
         SendUpdate(memoryStream.ToArray());
     }
 
-    public void SendUpdateAskAboveTarget(DateTime tickTime, double ask, double bid) { SendUpdateTarget(tickTime, Strategy.UpdateID.AskAboveTarget, ask, bid); }
-    public void SendUpdateAskBelowTarget(DateTime tickTime, double ask, double bid) { SendUpdateTarget(tickTime, Strategy.UpdateID.AskBelowTarget, ask, bid); }
-    public void SendUpdateBidAboveTarget(DateTime tickTime, double ask, double bid) { SendUpdateTarget(tickTime, Strategy.UpdateID.BidAboveTarget, ask, bid); }
-    public void SendUpdateBidBelowTarget(DateTime tickTime, double ask, double bid) { SendUpdateTarget(tickTime, Strategy.UpdateID.BidBelowTarget, ask, bid); }
+    public void SendUpdateAskAboveTarget(DateTime tickTime, double ask, double bid) { SendUpdateTarget(tickTime, RobotAPI.UpdateID.AskAboveTarget, ask, bid); }
+    public void SendUpdateAskBelowTarget(DateTime tickTime, double ask, double bid) { SendUpdateTarget(tickTime, RobotAPI.UpdateID.AskBelowTarget, ask, bid); }
+    public void SendUpdateBidAboveTarget(DateTime tickTime, double ask, double bid) { SendUpdateTarget(tickTime, RobotAPI.UpdateID.BidAboveTarget, ask, bid); }
+    public void SendUpdateBidBelowTarget(DateTime tickTime, double ask, double bid) { SendUpdateTarget(tickTime, RobotAPI.UpdateID.BidBelowTarget, ask, bid); }
     
     public void SendUpdateShutdown()
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
-        BuildUpdateID(writer, Strategy.UpdateID.Shutdown);
+        BuildUpdateID(writer, RobotAPI.UpdateID.Shutdown);
         SendUpdate(memoryStream.ToArray());
     }
 
@@ -256,15 +256,15 @@ public class API
         return buffer;
     }
 
-    public Strategy.ActionID ReceiveActionID()
+    public RobotAPI.ActionID ReceiveActionID()
     {
-        return (Strategy.ActionID)ReceiveAction(sizeof(byte))[0];
+        return (RobotAPI.ActionID)ReceiveAction(sizeof(byte))[0];
     }
 
-    public (Strategy.PositionType, double, double?, double?) ReceiveActionOpen()
+    public (RobotAPI.PositionType, double, double?, double?) ReceiveActionOpen()
     {
         var content = ReceiveAction(sizeof(byte) + 3 * sizeof(double));
-        var posType = (Strategy.PositionType)content[0];
+        var posType = (RobotAPI.PositionType)content[0];
         var volume = BitConverter.ToDouble(content, sizeof(byte));
         var slAux = BitConverter.ToDouble(content, sizeof(byte) + 1 * sizeof(double));
         var tpAux = BitConverter.ToDouble(content, sizeof(byte) + 2 * sizeof(double));
