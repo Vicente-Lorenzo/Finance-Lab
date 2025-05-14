@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.1684
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Keltner Channels Pro Strategy", "Keltner Channels Pro Strategy\Keltner Channels Pro Strategy.csproj", "{8033C5E6-AE4D-47B8-ACDA-E4BFAEDDB5E5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Keltner Channels", "..\..\Indicators\Keltner Channels\Keltner Channels\Keltner Channels.csproj", "{F21E58DC-25E4-4C89-A956-51CA92CB97FE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8033C5E6-AE4D-47B8-ACDA-E4BFAEDDB5E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8033C5E6-AE4D-47B8-ACDA-E4BFAEDDB5E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8033C5E6-AE4D-47B8-ACDA-E4BFAEDDB5E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8033C5E6-AE4D-47B8-ACDA-E4BFAEDDB5E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F21E58DC-25E4-4C89-A956-51CA92CB97FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F21E58DC-25E4-4C89-A956-51CA92CB97FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F21E58DC-25E4-4C89-A956-51CA92CB97FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F21E58DC-25E4-4C89-A956-51CA92CB97FE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EE6281CD-9EF9-4EC7-B8BC-6282C7733474}
+	EndGlobalSection
+EndGlobal

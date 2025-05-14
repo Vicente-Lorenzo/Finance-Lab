@@ -1,0 +1,1 @@
+17/04/2025 00:00:57.853 | Info | Indicator instance [Money Flow Index, EURUSD, h1] unloaded.

@@ -1,0 +1,1 @@
+17/04/2025 00:46:45.598 | Info | Indicator instance [Triple Exponential Moving Average, EURUSD, h1] unloaded.

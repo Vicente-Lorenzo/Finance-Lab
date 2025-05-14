@@ -1,0 +1,1 @@
+01/01/2024 23:59:00.000 | Info | Indicator instance [Triangular Moving Average, EURUSD, D1] unloaded.

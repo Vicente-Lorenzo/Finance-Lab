@@ -1,0 +1,33 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.1433
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hull Forecast MACD Crossover Strategy", "Hull Forecast MACD Crossover Strategy\Hull Forecast MACD Crossover Strategy.csproj", "{49C9D947-9467-4A5D-8DAE-E7613DB6E2EA}"
+EndProject
+
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{49C9D947-9467-4A5D-8DAE-E7613DB6E2EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49C9D947-9467-4A5D-8DAE-E7613DB6E2EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49C9D947-9467-4A5D-8DAE-E7613DB6E2EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49C9D947-9467-4A5D-8DAE-E7613DB6E2EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{373DED72-A17B-4903-8EC9-FA9589B99D5D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{373DED72-A17B-4903-8EC9-FA9589B99D5D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{373DED72-A17B-4903-8EC9-FA9589B99D5D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{373DED72-A17B-4903-8EC9-FA9589B99D5D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {ACE36C4E-4163-464C-8AA2-E054BBBAD513}
+	EndGlobalSection
+EndGlobal
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hull Forecast MACD Crossover Indicator", "..\..\Indicators\Hull Forecast MACD Crossover Indicator\Hull Forecast MACD Crossover Indicator\Hull Forecast MACD Crossover Indicator.csproj", "{373DED72-A17B-4903-8EC9-FA9589B99D5D}"
+EndProject

@@ -1,0 +1,1 @@
+17/04/2025 00:21:51.624 | Info | Indicator instance [Ultimate Oscillator, EURUSD, h1] unloaded.

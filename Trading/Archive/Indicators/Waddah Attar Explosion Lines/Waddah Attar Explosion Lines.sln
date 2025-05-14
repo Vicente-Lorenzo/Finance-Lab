@@ -1,0 +1,32 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30804.86
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Waddah Attar Explosion Lines", "Waddah Attar Explosion Lines\Waddah Attar Explosion Lines.csproj", "{680A3ECC-366C-41F7-BED3-8C036181FF0C}"
+EndProject
+
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{680A3ECC-366C-41F7-BED3-8C036181FF0C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{680A3ECC-366C-41F7-BED3-8C036181FF0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{680A3ECC-366C-41F7-BED3-8C036181FF0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{680A3ECC-366C-41F7-BED3-8C036181FF0C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B136D8D-D64F-4351-8F97-C3F0024D5CE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B136D8D-D64F-4351-8F97-C3F0024D5CE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B136D8D-D64F-4351-8F97-C3F0024D5CE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B136D8D-D64F-4351-8F97-C3F0024D5CE9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2CFA52A7-1BE8-4DD4-9603-BC2DB65CD113}
+	EndGlobalSection
+EndGlobal
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zero Lag MACD Indicator", "..\Zero Lag MACD Indicator\Zero Lag MACD Indicator\Zero Lag MACD Indicator.csproj", "{1B136D8D-D64F-4351-8F97-C3F0024D5CE9}"
+EndProject

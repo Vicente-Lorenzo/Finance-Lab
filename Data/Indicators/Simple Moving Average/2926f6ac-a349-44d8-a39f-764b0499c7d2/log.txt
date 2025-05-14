@@ -1,0 +1,1 @@
+16/04/2025 23:58:15.644 | Info | Indicator instance [Simple Moving Average, EURUSD, h1] unloaded.

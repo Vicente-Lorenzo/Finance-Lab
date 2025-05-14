@@ -1,0 +1,14 @@
+name: Trading
+channels:
+    - defaults
+    - conda-forge
+dependencies:
+    - tqdm
+    - attrs
+    - numpy
+    - pandas
+    - polars
+    - psycopg2
+    - jupyter
+    - ta-lib
+    - tianshou

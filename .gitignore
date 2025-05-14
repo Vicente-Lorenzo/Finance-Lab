@@ -1,0 +1,11 @@
+.DS_Store
+.idea/
+.venv/
+.vscode/
+__pycache__/
+bin/
+obj/
+*.algo
+*.sql
+*.pstat
+Research.ipynb

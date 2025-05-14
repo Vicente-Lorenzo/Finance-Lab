@@ -1,0 +1,215 @@
+from Agents.Engine.Machine import MachineAPI
+from Agents.Container.Enums import PositionType, TradeType, TechnicalMode
+from Agents.Container.Updates import PositionUpdate, PositionTradeUpdate, TradeUpdate, BarUpdate, TickUpdate
+from Agents.Container.Actions import OpenBuyAction, OpenSellAction
+from Agents.Container.Actions import ModifyBuyVolumeAction, ModifySellVolumeAction, ModifyBuyStopLossAction, ModifySellStopLossAction
+from Agents.Container.Actions import CloseBuyAction, CloseSellAction
+from Agents.Container.Actions import AskBelowTargetAction, BidAboveTargetAction
+from Agents.Strategy.Strategy import StrategyAPI
+from Agents.Parameters.Parameters import Parameters
+
+class TrendAPI(StrategyAPI):
+
+    def __init__(self, money_management: Parameters, risk_management: Parameters, signal_management: Parameters):
+        super().__init__(money_management, risk_management, signal_management)
+
+        self._risk_percentage, = self.MoneyManagement.RiskPercentage
+
+        self._stop_loss_scale, = self.RiskManagement.StopLossScale
+        self._scaling_out_scale, = self.RiskManagement.ScalingOutScale
+        self._scaling_out_percentage, = self.RiskManagement.ScalingOutPercentage
+        self._trailing_stop_loss_scale, = self.RiskManagement.TrailingStopLossScale
+
+        modes = {
+            "Baseline": self.SignalManagement.BaselineMode,
+            "Filter1": self.SignalManagement.Filter1Mode,
+            "Filter2": self.SignalManagement.Filter2Mode,
+            "Volume": self.SignalManagement.VolumeMode
+        }
+
+        normal_entries_buy = []
+        normal_entries_sell = []
+        continuation_entries_buy = []
+        continuation_entries_sell = []
+        normal_exits_buy = []
+        normal_exits_sell = []
+
+        for technical_name, (normal_entry_mode, continuation_entry_mode, normal_exit_mode) in modes.items():
+            match normal_entry_mode:
+                case TechnicalMode.Filter.name:
+                    normal_entries_buy.append(lambda update, tname=technical_name: getattr(update.Analyst, tname).filter_buy(update.Analyst.Market))
+                    normal_entries_sell.append(lambda update, tname=technical_name: getattr(update.Analyst, tname).filter_sell(update.Analyst.Market))
+                case TechnicalMode.Signal.name:
+                    normal_entries_buy.append(lambda update, tname=technical_name: getattr(update.Analyst, tname).signal_buy(update.Analyst.Market))
+                    normal_entries_sell.append(lambda update, tname=technical_name: getattr(update.Analyst, tname).signal_sell(update.Analyst.Market))
+            match continuation_entry_mode:
+                case TechnicalMode.Filter.name:
+                    continuation_entries_buy.append(lambda update, tname=technical_name: getattr(update.Analyst, tname).filter_buy(update.Analyst.Market))
+                    continuation_entries_sell.append(lambda update, tname=technical_name: getattr(update.Analyst, tname).filter_sell(update.Analyst.Market))
+                case TechnicalMode.Signal.name:
+                    continuation_entries_buy.append(lambda update, tname=technical_name: getattr(update.Analyst, tname).signal_buy(update.Analyst.Market))
+                    continuation_entries_sell.append(lambda update, tname=technical_name: getattr(update.Analyst, tname).signal_sell(update.Analyst.Market))
+            match normal_exit_mode:
+                case TechnicalMode.Filter.name:
+                    normal_exits_buy.append(lambda update, tname=technical_name: getattr(update.Analyst, tname).filter_sell(update.Analyst.Market))
+                    normal_exits_sell.append(lambda update, tname=technical_name: getattr(update.Analyst, tname).filter_buy(update.Analyst.Market))
+                case TechnicalMode.Signal.name:
+                    normal_exits_buy.append(lambda update, tname=technical_name: getattr(update.Analyst, tname).signal_sell(update.Analyst.Market))
+                    normal_exits_sell.append(lambda update, tname=technical_name: getattr(update.Analyst, tname).signal_buy(update.Analyst.Market))
+
+        self._normal_entry_buy = lambda update: all(f(update) for f in normal_entries_buy) if normal_entries_buy else False
+        self._normal_entry_sell = lambda update: all(f(update) for f in normal_entries_sell) if normal_entries_sell else False
+        self._continuation_entry_buy = lambda update: all(f(update) for f in continuation_entries_buy) if continuation_entries_buy else False
+        self._continuation_entry_sell = lambda update: all(f(update) for f in continuation_entries_sell) if continuation_entries_sell else False
+        self._normal_exit_buy = lambda update: any(f(update) for f in normal_exits_buy) if normal_exits_buy else False
+        self._normal_exit_sell = lambda update: any(f(update) for f in normal_exits_sell) if normal_exits_sell else False
+
+        self._last_position_id: int | None = None
+        self._last_position_atr: float | None = None
+        self._last_position_trade_type: TradeType | None = None
+
+    def risk_management(self):
+
+        risk_engine = MachineAPI("Risk Management")
+
+        initialisation = risk_engine.create_state(name="Initialisation", end=False)
+        waiting_open = risk_engine.create_state(name="No Position", end=False)
+        waiting_so = risk_engine.create_state(name="Waiting SO", end=False)
+        waiting_tsl = risk_engine.create_state(name="Waiting TSL", end=False)
+        waiting_close = risk_engine.create_state(name="Waiting Close", end=False)
+        termination = risk_engine.create_state(name="Termination", end=True)
+
+        def define_so_buy_action(update: PositionUpdate):
+            self._last_position_id = update.Position.PositionID
+            return [BidAboveTargetAction(update.Position.EntryPrice + self._scaling_out_scale * self._last_position_atr)]
+
+        def define_so_sell_action(update: PositionUpdate):
+            self._last_position_id = update.Position.PositionID
+            return [AskBelowTargetAction(update.Position.EntryPrice - self._scaling_out_scale * self._last_position_atr)]
+
+        def close_buy_partially_action(update: TickUpdate):
+            position = update.Manager.Positions.Buys[self._last_position_id]
+            volume = position.Volume * (1.0 - self._scaling_out_percentage / 100)
+            volume = update.Manager.normalize_volume(volume) if volume else volume
+            return [ModifyBuyVolumeAction(self._last_position_id, volume)]
+
+        def close_sell_partially_action(update: TickUpdate):
+            position = update.Manager.Positions.Sells[self._last_position_id]
+            volume = position.Volume * (1.0 - self._scaling_out_percentage / 100)
+            volume = update.Manager.normalize_volume(volume) if volume else volume
+            return [ModifySellVolumeAction(self._last_position_id, volume)]
+
+        def breakeven_buy_action(update: PositionTradeUpdate):
+            return [ModifyBuyStopLossAction(self._last_position_id, update.Position.EntryPrice)]
+
+        def breakeven_sell_action(update: PositionTradeUpdate):
+            return [ModifySellStopLossAction(self._last_position_id, update.Position.EntryPrice)]
+
+        def define_tsl_buy_action(update: PositionUpdate):
+            return [BidAboveTargetAction(update.Position.StopLoss + self._trailing_stop_loss_scale * self._last_position_atr + update.Manager.Symbol.TickSize)]
+
+        def define_tsl_sell_action(update: PositionUpdate):
+            return [AskBelowTargetAction(update.Position.StopLoss - self._trailing_stop_loss_scale * self._last_position_atr - update.Manager.Symbol.TickSize)]
+
+        def detected_tsl_buy_action(update: TickUpdate):
+            return [ModifyBuyStopLossAction(self._last_position_id, update.Tick.Bid - self._trailing_stop_loss_scale * self._last_position_atr)]
+    
+        def detected_tsl_sell_action(update: TickUpdate):
+            return [ModifySellStopLossAction(self._last_position_id, update.Tick.Ask + self._trailing_stop_loss_scale * self._last_position_atr)]
+
+        def undefine_tsl_buy_action(_: TradeUpdate):
+            return [BidAboveTargetAction(None)]
+
+        def undefine_tsl_sell_action(_: TradeUpdate):
+            return [AskBelowTargetAction(None)]
+
+        initialisation.on_complete(to=waiting_open, action=None, reason="Initialized")
+        initialisation.on_shutdown(to=termination, action=None, reason="Abruptly Terminated")
+
+        waiting_open.on_opened_buy(to=waiting_so, action=define_so_buy_action, reason="Opened Buy Position")
+        waiting_open.on_opened_sell(to=waiting_so, action=define_so_sell_action, reason="Opened Sell Position")
+        waiting_open.on_shutdown(to=termination, action=None, reason="Safely Terminated")
+
+        waiting_so.on_closed_buy(to=waiting_open, action=undefine_tsl_buy_action, reason="Closed Buy Position")
+        waiting_so.on_closed_sell(to=waiting_open, action=undefine_tsl_sell_action, reason="Closed Sell Position")
+        waiting_so.on_bid_above_target(to=waiting_so, action=close_buy_partially_action, reason="Hit TP Activation for Buy Position")
+        waiting_so.on_ask_below_target(to=waiting_so, action=close_sell_partially_action, reason="Hit TP Activation for Sell Position")
+        waiting_so.on_modified_volume_buy(to=waiting_so, action=breakeven_buy_action, reason="Closed Partially Buy Position")
+        waiting_so.on_modified_volume_sell(to=waiting_so, action=breakeven_sell_action, reason="Closed Partially Sell Position")
+        waiting_so.on_modified_stop_loss_buy(to=waiting_tsl, action=define_tsl_buy_action, reason="Moved Buy Position to Break-Even")
+        waiting_so.on_modified_stop_loss_sell(to=waiting_tsl, action=define_tsl_sell_action, reason="Moved Sell Position to Break-Even")
+        waiting_so.on_shutdown(to=termination, action=None, reason="Safely Terminated")
+
+        waiting_tsl.on_closed_buy(to=waiting_open, action=undefine_tsl_buy_action, reason="Closed Buy Position")
+        waiting_tsl.on_closed_sell(to=waiting_open, action=undefine_tsl_sell_action, reason="Closed Sell Position")
+        waiting_tsl.on_bid_above_target(to=waiting_tsl, action=detected_tsl_buy_action, reason="Hit TSL Activation for Buy Position")
+        waiting_tsl.on_ask_below_target(to=waiting_tsl, action=detected_tsl_sell_action, reason="Hit TSL Activation for Sell Position")
+        waiting_tsl.on_modified_stop_loss_buy(to=waiting_close, action=define_tsl_buy_action, reason="Activated TSL for Buy Position")
+        waiting_tsl.on_modified_stop_loss_sell(to=waiting_close, action=define_tsl_sell_action, reason="Activated TSL for Sell Position")
+        waiting_tsl.on_shutdown(to=termination, action=None, reason="Safely Terminated")
+
+        waiting_close.on_closed_buy(to=waiting_open, action=undefine_tsl_buy_action, reason="Closed Buy Position")
+        waiting_close.on_closed_sell(to=waiting_open, action=undefine_tsl_sell_action, reason="Closed Sell Position")
+        waiting_close.on_bid_above_target(to=waiting_close, action=detected_tsl_buy_action, reason="Hit TSL Update for Buy Position")
+        waiting_close.on_ask_below_target(to=waiting_close, action=detected_tsl_sell_action, reason="Hit TSL Update for Sell Position")
+        waiting_close.on_modified_stop_loss_buy(to=waiting_close, action=define_tsl_buy_action, reason="Updated TSL for Buy Position")
+        waiting_close.on_modified_stop_loss_sell(to=waiting_close, action=define_tsl_sell_action, reason="Updated TSL for Sell Position")
+        waiting_close.on_shutdown(to=termination, action=None, reason="Safely Terminated")
+
+        return risk_engine
+
+    def signal_management(self):
+
+        def update_position(update: BarUpdate):
+            
+            def open_buy_position(position_type: PositionType):
+                self._last_position_trade_type = TradeType.Buy
+                self._last_position_atr = update.Analyst.Volatility.Result.last()
+                sl_pips = self._stop_loss_scale * self._last_position_atr / update.Manager.Symbol.PipSize
+                volume = update.Manager.volume_by_risk(self._risk_percentage, sl_pips)
+                return close_sell_position() + [OpenBuyAction(position_type, volume, sl_pips, None)]
+    
+            def open_sell_position(position_type: PositionType):
+                self._last_position_trade_type = TradeType.Sell
+                self._last_position_atr = update.Analyst.Volatility.Result.last()
+                sl_pips = self._stop_loss_scale * self._last_position_atr / update.Manager.Symbol.PipSize
+                volume = update.Manager.volume_by_risk(self._risk_percentage, sl_pips)
+                return close_buy_position() + [OpenSellAction(position_type, volume, sl_pips, None)]
+    
+            def close_buy_position():
+                return [CloseBuyAction(self._last_position_id)] if update.Manager.Positions.Buys else []
+    
+            def close_sell_position():
+                return [CloseSellAction(self._last_position_id)] if update.Manager.Positions.Sells else []
+            
+            if not update.Manager.Positions.Buys:
+                if self._normal_entry_buy(update):
+                    return open_buy_position(PositionType.Normal)
+                if self._last_position_trade_type and self._last_position_trade_type == TradeType.Buy and self._continuation_entry_buy(update):
+                    return open_buy_position(PositionType.Continuation)
+            else:
+                if self._normal_exit_buy(update):
+                    return close_buy_position()
+
+            if not update.Manager.Positions.Sells:
+                if self._normal_entry_sell(update):
+                    return open_sell_position(PositionType.Normal)
+                if self._last_position_trade_type and self._last_position_trade_type == TradeType.Sell and self._continuation_entry_sell(update):
+                    return open_sell_position(PositionType.Continuation)
+            else:
+                if self._normal_exit_sell(update):
+                    return close_sell_position()
+
+        signal_engine = MachineAPI("Signal Management")
+
+        initialisation = signal_engine.create_state(name="Initialisation", end=False)
+        waiting_signal = signal_engine.create_state(name="Waiting Signal", end=False)
+        termination = signal_engine.create_state(name="Termination", end=True)
+
+        initialisation.on_complete(to=waiting_signal, action=None, reason="Initialized")
+        initialisation.on_shutdown(to=termination, action=None, reason="Abruptly Terminated")
+
+        waiting_signal.on_bar_closed(to=waiting_signal, action=update_position, reason=None)
+        waiting_signal.on_shutdown(to=termination, action=None, reason="Safely Terminated")
+
+        return signal_engine

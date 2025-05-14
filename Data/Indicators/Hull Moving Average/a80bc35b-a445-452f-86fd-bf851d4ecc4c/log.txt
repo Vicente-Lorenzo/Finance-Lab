@@ -1,0 +1,1 @@
+15/04/2025 22:02:41.951 | Info | Indicator instance [Hull Moving Average, NZDUSD, D1] unloaded.

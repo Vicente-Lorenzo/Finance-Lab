@@ -1,0 +1,1 @@
+14/05/2025 15:31:57.129 | Info | Indicator instance [Kaufman's Adaptive Moving Average, EURUSD, h1] loaded.

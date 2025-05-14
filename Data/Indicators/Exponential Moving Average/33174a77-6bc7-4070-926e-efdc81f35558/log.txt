@@ -1,0 +1,1 @@
+14/04/2025 20:56:20.036 | Info | Indicator instance [Exponential Moving Average, EURUSD, h1] unloaded.
