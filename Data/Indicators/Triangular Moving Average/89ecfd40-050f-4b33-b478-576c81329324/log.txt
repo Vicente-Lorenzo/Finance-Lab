@@ -1,1 +1,0 @@
-26/02/2025 23:59:00.000 | Info | Indicator instance [Triangular Moving Average, EURUSD, D1] unloaded.

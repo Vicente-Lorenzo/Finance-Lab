@@ -1,1 +1,0 @@
-17/04/2025 00:00:52.634 | Info | Indicator instance [Chaikin Oscillator, EURUSD, h1] unloaded.

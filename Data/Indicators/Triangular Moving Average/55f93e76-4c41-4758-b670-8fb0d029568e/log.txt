@@ -1,1 +1,0 @@
-15/04/2025 21:10:26.601 | Info | Indicator instance [Triangular Moving Average, GBPUSD, D1] unloaded.

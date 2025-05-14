@@ -1,1 +1,0 @@
-17/04/2025 00:12:09.502 | Info | Indicator instance [MACD Histogram, EURUSD, h1] unloaded.

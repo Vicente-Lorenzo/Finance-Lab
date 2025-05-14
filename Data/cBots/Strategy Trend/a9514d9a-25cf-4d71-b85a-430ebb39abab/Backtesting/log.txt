@@ -1,6 +1,0 @@
-01/01/2020 00:00:00.000 | Info | CBot instance [Strategy Trend, EURUSD, D1] started.
-01/01/2020 22:01:00.000 | Info | INFO - API - Pipe initialized
-01/01/2020 22:01:00.000 | Info | INFO - API - Connected
-18/04/2025 19:54:00.000 | Info | WARNING - Strategy - Shutdown strategy and safely terminate operations
-18/04/2025 19:54:00.000 | Info | INFO - API - Disconnected
-18/04/2025 19:54:00.000 | Info | CBot instance [Strategy Trend, EURUSD, D1] stopped.

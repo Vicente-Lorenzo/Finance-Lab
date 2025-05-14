@@ -1,1 +1,0 @@
-17/04/2025 00:00:45.541 | Info | Indicator instance [On Balance Volume, EURUSD, h1] unloaded.

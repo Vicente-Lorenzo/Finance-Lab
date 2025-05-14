@@ -1,1 +1,0 @@
-15/04/2025 21:10:05.226 | Info | Indicator instance [Hull Moving Average, GBPUSD, D1] unloaded.

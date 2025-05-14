@@ -1,1 +1,0 @@
-15/04/2025 21:09:14.601 | Info | Indicator instance [Weighted Moving Average, NZDUSD, D1] unloaded.
