@@ -4,9 +4,9 @@ from typing import Type
 from abc import abstractmethod
 from threading import Thread
 
-from Agents.Logging.Console import ConsoleAPI
-from Agents.Logging.Telegram import TelegramAPI
-from Agents.Analyst.Analyst import AnalystAPI
+from Library.Robots.Logging.Console import ConsoleAPI
+from Library.Robots.Logging.Telegram import TelegramAPI
+from Library.Robots.Analyst.Analyst import AnalystAPI
 from Agents.Manager.Manager import ManagerAPI
 from Agents.Engine.Machine import MachineAPI
 from Agents.Engine.Engine import EngineAPI

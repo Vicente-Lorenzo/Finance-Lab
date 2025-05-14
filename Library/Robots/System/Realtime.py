@@ -4,8 +4,8 @@ import win32file
 from typing import Type
 from datetime import datetime
 
-from Agents.Database.Database import DatabaseAPI
-from Agents.Engine.Machine import MachineAPI
+from Library.Robots.Database.Database import DatabaseAPI
+from Library.Robots.Engine.Machine import MachineAPI
 from Agents.Analyst.Analyst import AnalystAPI
 from Agents.Manager.Manager import ManagerAPI
 from Agents.Container.Enums import PositionType, TradeType

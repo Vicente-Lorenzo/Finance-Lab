@@ -1,12 +1,12 @@
-from Agents.Engine.Machine import MachineAPI
-from Agents.Container.Enums import PositionType, TradeType, TechnicalMode
-from Agents.Container.Updates import PositionUpdate, PositionTradeUpdate, TradeUpdate, BarUpdate, TickUpdate
-from Agents.Container.Actions import OpenBuyAction, OpenSellAction
-from Agents.Container.Actions import ModifyBuyVolumeAction, ModifySellVolumeAction, ModifyBuyStopLossAction, ModifySellStopLossAction
-from Agents.Container.Actions import CloseBuyAction, CloseSellAction
-from Agents.Container.Actions import AskBelowTargetAction, BidAboveTargetAction
-from Agents.Strategy.Strategy import StrategyAPI
-from Agents.Parameters.Parameters import Parameters
+from Library.Robots.Engine.Machine import MachineAPI
+from Library.Robots.Container.Enums import PositionType, TradeType, TechnicalMode
+from Library.Robots.Container.Updates import PositionUpdate, PositionTradeUpdate, TradeUpdate, BarUpdate, TickUpdate
+from Library.Robots.Container.Actions import OpenBuyAction, OpenSellAction
+from Library.Robots.Container.Actions import ModifyBuyVolumeAction, ModifySellVolumeAction, ModifyBuyStopLossAction, ModifySellStopLossAction
+from Library.Robots.Container.Actions import CloseBuyAction, CloseSellAction
+from Library.Robots.Container.Actions import AskBelowTargetAction, BidAboveTargetAction
+from Library.Robots.Strategy.Strategy import StrategyAPI
+from Library.Robots.Parameters.Parameters import Parameters
 
 class TrendAPI(StrategyAPI):
 

@@ -1,9 +1,9 @@
 from typing import Self, Callable
 
-from Agents.Container.Actions import Action
-from Agents.Container.Updates import Update
-from Agents.Container.Updates import CompleteUpdate, AccountUpdate, SymbolUpdate, PositionUpdate
-from Agents.Container.Updates import TradeUpdate, PositionTradeUpdate, BarUpdate, TickUpdate
+from Library.Robots.Container.Actions import Action
+from Library.Robots.Container.Updates import Update
+from Library.Robots.Container.Updates import CompleteUpdate, AccountUpdate, SymbolUpdate, PositionUpdate
+from Library.Robots.Container.Updates import TradeUpdate, PositionTradeUpdate, BarUpdate, TickUpdate
 
 class StateAPI:
 

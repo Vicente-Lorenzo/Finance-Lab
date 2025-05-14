@@ -1,6 +1,6 @@
-from Agents.Engine.Machine import MachineAPI
-from Agents.Strategy.Strategy import StrategyAPI
-from Agents.Parameters.Parameters import Parameters
+from Library.Robots.Engine.Machine import MachineAPI
+from Library.Robots.Strategy.Strategy import StrategyAPI
+from Library.Robots.Parameters.Parameters import Parameters
 
 class ExperimentAPI(StrategyAPI):
 

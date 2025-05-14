@@ -1,4 +1,4 @@
-from Agents.Logging.Console import ConsoleAPI
+from Library.Robots.Logging.Console import ConsoleAPI
 from Agents.Container.Actions import Action
 from Agents.Container.Updates import CompleteUpdate, AccountUpdate, SymbolUpdate, PositionUpdate, TradeUpdate, PositionTradeUpdate, BarUpdate, TickUpdate
 from Agents.Engine.StateAPI import StateAPI, TransitionAPI

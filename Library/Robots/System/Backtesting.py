@@ -5,23 +5,23 @@ from itertools import count
 from queue import Queue
 from typing import Type, Iterator, Callable
 
-from Agents.Database.Database import DatabaseAPI
-from Agents.Analyst.Analyst import AnalystAPI
-from Agents.Manager.Manager import ManagerAPI
-from Agents.Engine.Machine import MachineAPI
-from Agents.Container.Enums import AssetType, PositionType, TradeType
-from Agents.Container.Classes import Account, Symbol, Position, Bar, Tick, Trade
-from Agents.Container.Actions import ActionID, CompleteAction
-from Agents.Container.Actions import OpenBuyAction, OpenSellAction
-from Agents.Container.Actions import ModifyBuyVolumeAction, ModifyBuyStopLossAction, ModifyBuyTakeProfitAction
-from Agents.Container.Actions import ModifySellVolumeAction, ModifySellStopLossAction, ModifySellTakeProfitAction
-from Agents.Container.Actions import CloseBuyAction, CloseSellAction
-from Agents.Container.Actions import AskAboveTargetAction, AskBelowTargetAction, BidAboveTargetAction, BidBelowTargetAction
-from Agents.Container.Updates import UpdateID, CompleteUpdate, BarUpdate
-from Agents.Strategy.Strategy import StrategyAPI
-from Agents.System.System import SystemAPI
-from Agents.Parameters.Parameters import ParametersAPI, Parameters
-from Agents.Utils.Performance import time
+from Library.Robots.Database.Database import DatabaseAPI
+from Library.Robots.Analyst.Analyst import AnalystAPI
+from Library.Robots.Manager.Manager import ManagerAPI
+from Library.Robots.Engine.Machine import MachineAPI
+from Library.Robots.Container.Enums import AssetType, PositionType, TradeType
+from Library.Robots.Container.Classes import Account, Symbol, Position, Bar, Tick, Trade
+from Library.Robots.Container.Actions import ActionID, CompleteAction
+from Library.Robots.Container.Actions import OpenBuyAction, OpenSellAction
+from Library.Robots.Container.Actions import ModifyBuyVolumeAction, ModifyBuyStopLossAction, ModifyBuyTakeProfitAction
+from Library.Robots.Container.Actions import ModifySellVolumeAction, ModifySellStopLossAction, ModifySellTakeProfitAction
+from Library.Robots.Container.Actions import CloseBuyAction, CloseSellAction
+from Library.Robots.Container.Actions import AskAboveTargetAction, AskBelowTargetAction, BidAboveTargetAction, BidBelowTargetAction
+from Library.Robots.Container.Updates import UpdateID, CompleteUpdate, BarUpdate
+from Library.Robots.Strategy.Strategy import StrategyAPI
+from Library.Robots.System.System import SystemAPI
+from Library.Robots.Parameters.Parameters import ParametersAPI, Parameters
+from Library.Robots.Utils.Performance import time
 
 class BacktestingAPI(SystemAPI):
 

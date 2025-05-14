@@ -2,12 +2,12 @@ import polars as pl
 from typing import Type
 from argparse import ArgumentParser
 
-from Agents.Container.Enums import VerboseType, SystemType, StrategyType
-from Agents.Logging.Logging import LoggingAPI
-from Agents.Logging.Console import ConsoleAPI
-from Agents.Logging.Telegram import TelegramAPI
-from Agents.Manager.Statistics import StatisticsAPI
-from Agents.Strategy.Strategy import StrategyAPI
+from Library.Robots.Container.Enums import VerboseType, SystemType, StrategyType
+from Library.Robots.Logging.Logging import LoggingAPI
+from Library.Robots.Logging.Console import ConsoleAPI
+from Library.Robots.Logging.Telegram import TelegramAPI
+from Library.Robots.Manager.Statistics import StatisticsAPI
+from Library.Robots.Strategy.Strategy import StrategyAPI
 from Agents.Strategy.Download import DownloadAPI
 from Agents.Strategy.Experiment import ExperimentAPI
 from Agents.Strategy.Trend import TrendAPI

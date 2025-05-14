@@ -1,9 +1,9 @@
 import polars as pl
 
-from Agents.Container.Classes import Technical
-from Agents.Analyst.Market import MarketAPI
-from Agents.Analyst.Series import SeriesAPI
-from Agents.Analyst.Technicals import Technicals
+from Library.Robots.Container.Classes import Technical
+from Library.Robots.Analyst.Market import MarketAPI
+from Library.Robots.Analyst.Series import SeriesAPI
+from Library.Robots.Analyst.Technicals import Technicals
 
 class TechnicalAPI:
 

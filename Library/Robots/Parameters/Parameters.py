@@ -4,7 +4,8 @@ import yaml
 from pathlib import Path
 
 class ParametersAPI:
-    def __init__(self, path=Path("Agents") / Path("Parameters")):
+    
+    def __init__(self, path=Path("Library") / Path("Parameters")):
         self.path = path
         self.path.mkdir(parents=True, exist_ok=True)
 

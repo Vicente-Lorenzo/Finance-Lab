@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 
-from Agents.Logging.Console import ConsoleAPI
-from Agents.Logging.Telegram import TelegramAPI
-from Agents.Engine.Machine import MachineAPI
-from Agents.Container.Updates import AccountUpdate, SymbolUpdate, PositionUpdate, TradeUpdate, PositionTradeUpdate, BarUpdate
-from Agents.Parameters.Parameters import Parameters
+from Library.Robots.Logging.Console import ConsoleAPI
+from Library.Robots.Logging.Telegram import TelegramAPI
+from Library.Robots.Engine.Machine import MachineAPI
+from Library.Robots.Container.Updates import AccountUpdate, SymbolUpdate, PositionUpdate, TradeUpdate, PositionTradeUpdate, BarUpdate
+from Library.Robots.Parameters.Parameters import Parameters
 
 class StrategyAPI(ABC):
     

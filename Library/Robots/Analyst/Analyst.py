@@ -1,11 +1,11 @@
 import math
 import polars as pl
 
-from Agents.Database.Database import DatabaseAPI
-from Agents.Container.Classes import Bar
-from Agents.Analyst.Market import MarketAPI
-from Agents.Analyst.Technical import TechnicalAPI
-from Agents.Parameters.Parameters import Parameters
+from Library.Robots.Database.Database import DatabaseAPI
+from Library.Robots.Container.Classes import Bar
+from Library.Robots.Analyst.Market import MarketAPI
+from Library.Robots.Analyst.Technical import TechnicalAPI
+from Library.Robots.Parameters.Parameters import Parameters
 
 class AnalystAPI:
 

@@ -1,10 +1,10 @@
 from math import floor
 
-from Agents.Manager.Account import AccountAPI
-from Agents.Manager.Symbol import SymbolAPI
-from Agents.Manager.Position import PositionAPI
-from Agents.Manager.Statistics import StatisticsAPI
-from Agents.Parameters.Parameters import Parameters
+from Library.Robots.Manager.Account import AccountAPI
+from Library.Robots.Manager.Symbol import SymbolAPI
+from Library.Robots.Manager.Position import PositionAPI
+from Library.Robots.Manager.Statistics import StatisticsAPI
+from Library.Robots.Parameters.Parameters import Parameters
 
 class ManagerAPI:
 

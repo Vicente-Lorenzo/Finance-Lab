@@ -13,7 +13,7 @@ from concurrent.futures import as_completed, ThreadPoolExecutor
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
-from Agents.Logging.Console import ConsoleAPI
+from Library.Robots.Logging.Console import ConsoleAPI
 from Agents.Container.Enums import VerboseType
 from Agents.Analyst.Analyst import AnalystAPI
 from Agents.Analyst.Technicals import Technicals
