@@ -8,4 +8,5 @@ obj/
 *.algo
 *.sql
 *.pstat
+Data/
 Research.ipynb
