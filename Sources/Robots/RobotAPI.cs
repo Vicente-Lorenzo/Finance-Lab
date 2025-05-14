@@ -97,9 +97,14 @@ public abstract class RobotAPI
         var baseDirectory = new DirectoryInfo(Environment.CurrentDirectory).Parent?.Parent?.Parent?.FullName;
         var scriptName = GetType().Name;
         var scriptArgs = $"--console \"{console}\" --telegram \"{telegram}\" --system \"Realtime\" --strategy \"{scriptName}\" --broker \"{broker}\" --group \"{group}\" --symbol \"{symbol}\" --timeframe \"{timeframe}\" --iid \"{_robot.InstanceId}\"";
-        var command = $"cmd.exe /k \"cd {baseDirectory} && conda activate Trading && python -m Library.Robots.Main {scriptArgs}\"";
-        var tabTitle = $"{scriptName} {broker} {symbol} {timeframe}";
-        Process.Start("wt.exe", $"--window 0 new-tab --title \"{tabTitle}\" {command}");
+        var psi = new ProcessStartInfo
+        {
+            FileName = "cmd.exe",
+            Arguments = $"/k \"cd {baseDirectory} && conda activate Trading && python -m Library.Robots.Main {scriptArgs}\"",
+            WindowStyle = ProcessWindowStyle.Minimized,
+            UseShellExecute = true
+        };
+        Process.Start(psi);
 
         _systemApi.Connect();
         
