@@ -13,21 +13,21 @@ from concurrent.futures import as_completed, ThreadPoolExecutor
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
-from Library.Robots.Logging.Console import ConsoleAPI
-from Agents.Container.Enums import VerboseType
-from Agents.Analyst.Analyst import AnalystAPI
-from Agents.Analyst.Technicals import Technicals
-from Agents.Logging.Telegram import TelegramAPI
-from Agents.Manager.Manager import ManagerAPI
-from Agents.Manager.Statistics import StatisticsAPI
-from Agents.Container.Enums import TechnicalType
-from Agents.Container.Classes import Technical
-from Agents.Strategy.Strategy import StrategyAPI
-from Agents.System.Backtesting import BacktestingAPI
-from Agents.Parameters.Parameters import Parameters
-from Agents.Utils.Performance import time
-from Agents.Utils.Image import image
-from Agents.Utils.Chart import gantt
+from Library.Logging.Console import ConsoleAPI
+from Library.Logging.Telegram import TelegramAPI
+from Library.Classes.Enums import VerboseType, TechnicalType
+from Library.Classes.Classes import Technical
+from Library.Parameters.Parameters import Parameters
+from Library.Utils.Performance import time
+from Library.Utils.Image import image
+from Library.Utils.Chart import gantt
+
+from Library.Robots.Analyst.Analyst import AnalystAPI
+from Library.Robots.Analyst.Technicals import Technicals
+from Library.Robots.Manager.Manager import ManagerAPI
+from Library.Robots.Manager.Statistics import StatisticsAPI
+from Library.Robots.Strategy.Strategy import StrategyAPI
+from Library.Robots.System.Backtesting import BacktestingAPI
 
 class OptimisationAPI(BacktestingAPI):
 

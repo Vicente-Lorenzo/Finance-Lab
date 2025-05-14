@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Callable
 from io import BytesIO
 
-from Library.Robots.Container.Enums import VerboseType
+from Library.Classes.Enums import VerboseType
 
 class LoggingAPI(ABC):
 

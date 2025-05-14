@@ -1,6 +1,7 @@
 import polars as pl
 
-from Library.Robots.Container.Classes import Technical
+from Library.Classes.Classes import Technical
+
 from Library.Robots.Analyst.Market import MarketAPI
 from Library.Robots.Analyst.Series import SeriesAPI
 from Library.Robots.Analyst.Technicals import Technicals

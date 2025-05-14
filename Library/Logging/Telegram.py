@@ -4,9 +4,9 @@ import requests
 from io import BytesIO
 from typing import Callable
 
-from Library.Robots.Logging.Logging import LoggingAPI
-from Library.Robots.Container.Enums import VerboseType
-from Library.Robots.Container.Classes import TelegramBot
+from Library.Logging.Logging import LoggingAPI
+from Library.Classes.Enums import VerboseType
+from Library.Classes.Classes import TelegramBot
 
 class TelegramAPI(LoggingAPI):
     

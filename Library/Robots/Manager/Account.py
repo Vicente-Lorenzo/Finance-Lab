@@ -1,4 +1,4 @@
-from Library.Robots.Container.Classes import Account
+from Library.Classes.Classes import Account
 
 class AccountAPI:
     

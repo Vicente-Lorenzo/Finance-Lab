@@ -3,9 +3,9 @@ import polars as pl
 
 from datetime import datetime, timedelta
 
-from Library.Robots.Database.Database import DatabaseAPI
-from Library.Robots.Container.Enums import TradeType
-from Library.Robots.Container.Classes import Account, Trade
+from Library.Database.Database import DatabaseAPI
+from Library.Classes.Enums import TradeType
+from Library.Classes.Classes import Account, Trade
 
 class StatisticsAPI:
     

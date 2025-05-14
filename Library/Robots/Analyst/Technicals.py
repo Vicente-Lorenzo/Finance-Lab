@@ -1,8 +1,8 @@
 import math
 import talib
 
-from Library.Robots.Container.Enums import TechnicalType
-from Library.Robots.Container.Classes import Technical
+from Library.Classes.Enums import TechnicalType
+from Library.Classes.Classes import Technical
 
 class Technicals:
 

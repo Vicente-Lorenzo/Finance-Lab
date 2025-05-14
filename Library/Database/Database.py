@@ -5,10 +5,10 @@ import psycopg2.extras as pge
 
 from typing import List
 
-from Library.Robots.Container.Enums import PositionType
-from Library.Robots.Logging.Console import ConsoleAPI
-from Library.Robots.Container.Classes import astuple, AssetType, TradeType, CommissionType, SwapType, DayOfWeek, Symbol, Bar, Trade
-from Library.Robots.Utils.Performance import time
+from Library.Classes.Enums import PositionType
+from Library.Classes.Classes import astuple, AssetType, TradeType, CommissionType, SwapType, DayOfWeek, Symbol, Bar, Trade
+from Library.Logging.Console import ConsoleAPI
+from Library.Utils.Performance import time
 
 class DatabaseAPI:
 

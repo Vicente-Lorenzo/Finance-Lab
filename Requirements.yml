@@ -4,11 +4,13 @@ channels:
     - conda-forge
 dependencies:
     - tqdm
+    - pytorch
     - attrs
     - numpy
     - pandas
     - polars
-    - psycopg2
-    - jupyter
     - ta-lib
-    - tianshou
+    - pillow
+    - jupyter
+    - psycopg2
+    - matplotlib

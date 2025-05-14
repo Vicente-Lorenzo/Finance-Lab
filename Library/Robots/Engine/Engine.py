@@ -1,7 +1,7 @@
 from typing import Callable
 
-from Library.Robots.Container.Actions import Action
-from Library.Robots.Container.Updates import Update, CompleteUpdate, AccountUpdate, SymbolUpdate, PositionUpdate, TradeUpdate, PositionTradeUpdate, BarUpdate, TickUpdate
+from Library.Robots.Protocol.Actions import Action
+from Library.Robots.Protocol.Updates import Update, CompleteUpdate, AccountUpdate, SymbolUpdate, PositionUpdate, TradeUpdate, PositionTradeUpdate, BarUpdate, TickUpdate
 from Library.Robots.Engine.Machine import MachineAPI
 
 class EngineAPI:

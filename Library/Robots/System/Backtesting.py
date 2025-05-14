@@ -5,23 +5,24 @@ from itertools import count
 from queue import Queue
 from typing import Type, Iterator, Callable
 
-from Library.Robots.Database.Database import DatabaseAPI
+from Library.Classes.Enums import AssetType, PositionType, TradeType
+from Library.Classes.Classes import Account, Symbol, Position, Bar, Tick, Trade
+from Library.Database.Database import DatabaseAPI
+from Library.Parameters.Parameters import ParametersAPI, Parameters
+from Library.Utils.Performance import time
+
+from Library.Robots.Protocol.Actions import ActionID, CompleteAction
+from Library.Robots.Protocol.Actions import OpenBuyAction, OpenSellAction
+from Library.Robots.Protocol.Actions import ModifyBuyVolumeAction, ModifyBuyStopLossAction, ModifyBuyTakeProfitAction
+from Library.Robots.Protocol.Actions import ModifySellVolumeAction, ModifySellStopLossAction, ModifySellTakeProfitAction
+from Library.Robots.Protocol.Actions import CloseBuyAction, CloseSellAction
+from Library.Robots.Protocol.Actions import AskAboveTargetAction, AskBelowTargetAction, BidAboveTargetAction, BidBelowTargetAction
+from Library.Robots.Protocol.Updates import UpdateID, CompleteUpdate, BarUpdate
 from Library.Robots.Analyst.Analyst import AnalystAPI
 from Library.Robots.Manager.Manager import ManagerAPI
 from Library.Robots.Engine.Machine import MachineAPI
-from Library.Robots.Container.Enums import AssetType, PositionType, TradeType
-from Library.Robots.Container.Classes import Account, Symbol, Position, Bar, Tick, Trade
-from Library.Robots.Container.Actions import ActionID, CompleteAction
-from Library.Robots.Container.Actions import OpenBuyAction, OpenSellAction
-from Library.Robots.Container.Actions import ModifyBuyVolumeAction, ModifyBuyStopLossAction, ModifyBuyTakeProfitAction
-from Library.Robots.Container.Actions import ModifySellVolumeAction, ModifySellStopLossAction, ModifySellTakeProfitAction
-from Library.Robots.Container.Actions import CloseBuyAction, CloseSellAction
-from Library.Robots.Container.Actions import AskAboveTargetAction, AskBelowTargetAction, BidAboveTargetAction, BidBelowTargetAction
-from Library.Robots.Container.Updates import UpdateID, CompleteUpdate, BarUpdate
 from Library.Robots.Strategy.Strategy import StrategyAPI
 from Library.Robots.System.System import SystemAPI
-from Library.Robots.Parameters.Parameters import ParametersAPI, Parameters
-from Library.Robots.Utils.Performance import time
 
 class BacktestingAPI(SystemAPI):
 

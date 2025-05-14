@@ -3,8 +3,8 @@ import time
 from io import BytesIO
 from typing import Callable
 
-from Library.Robots.Container.Enums import VerboseType
-from Library.Robots.Logging.Logging import LoggingAPI
+from Library.Logging.Logging import LoggingAPI
+from Library.Classes.Enums import VerboseType
 
 class ConsoleAPI(LoggingAPI):
 

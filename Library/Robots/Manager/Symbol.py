@@ -1,4 +1,4 @@
-from Library.Robots.Container.Classes import AssetType, CommissionType, SwapType, DayOfWeek, Symbol, Bar
+from Library.Classes.Classes import AssetType, CommissionType, SwapType, DayOfWeek, Symbol, Bar
 
 class SymbolAPI:
 

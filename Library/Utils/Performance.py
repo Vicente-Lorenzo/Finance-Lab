@@ -6,7 +6,7 @@ from functools import wraps
 from time import perf_counter
 from datetime import datetime
 
-from Library.Robots.Logging.Console import ConsoleAPI
+from Library.Logging.Console import ConsoleAPI
 
 def time(func):
     @wraps(func)

@@ -1,6 +1,7 @@
 import math
 
-from Library.Robots.Container.Classes import Account, Position, Trade, Bar
+from Library.Classes.Classes import Account, Position, Trade, Bar
+
 from Library.Robots.Manager.Statistics import StatisticsAPI
 
 class PositionAPI:

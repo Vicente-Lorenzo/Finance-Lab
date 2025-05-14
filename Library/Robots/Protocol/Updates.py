@@ -2,9 +2,10 @@ from enum import Enum
 from typing import Union
 from attrs import define, field
 
-from Library.Analyst.Analyst import AnalystAPI
-from Library.Manager.Manager import ManagerAPI
 from Library.Classes.Classes import Account, Symbol, Position, Trade, Bar, Tick
+
+from Library.Robots.Analyst.Analyst import AnalystAPI
+from Library.Robots.Manager.Manager import ManagerAPI
 
 class UpdateID(Enum):
     Complete = 0
