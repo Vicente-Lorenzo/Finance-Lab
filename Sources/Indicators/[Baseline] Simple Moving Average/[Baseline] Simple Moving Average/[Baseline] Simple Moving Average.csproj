@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="cTrader.Automate" Version="*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\IndicatorAPI.cs">
+      <Link>IndicatorAPI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\SystemAPI.cs">
+      <Link>SystemAPI.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>
