@@ -3,10 +3,16 @@
 .venv/
 .vscode/
 __pycache__/
+
 bin/
 obj/
+
+API/
+Data/
+LocalStorage/
+
 *.algo
 *.sql
 *.pstat
-Data/
+
 Research.ipynb
