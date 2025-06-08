@@ -42,11 +42,11 @@ public class SystemAPI
     public void Initialize()
     {
         _pipe = new NamedPipeServerStream(
-            $@"{_broker}\{_symbol}\{_timeframe}\{_iid}",
-            PipeDirection.InOut,
-            1,
-            PipeTransmissionMode.Byte,
-            PipeOptions.Asynchronous);
+            pipeName: $@"{_broker}\{_symbol}\{_timeframe}\{_iid}",
+            direction: PipeDirection.InOut,
+            maxNumberOfServerInstances: 1,
+            transmissionMode: PipeTransmissionMode.Byte,
+            options: PipeOptions.Asynchronous);
         _console.Info("Pipe initialized");
     }
 

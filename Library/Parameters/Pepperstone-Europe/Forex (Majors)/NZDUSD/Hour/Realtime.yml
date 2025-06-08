@@ -1,7 +1,9 @@
 Download:
-  Strategy: null
-  Analyst: null
-  Manager: null
+  MoneyManagement: null
+  RiskManagement: null
+  SignalManagement: null
+  AnalystManagement: null
+  ManagerManagement: null
 
 Trend:
   MoneyManagement:
