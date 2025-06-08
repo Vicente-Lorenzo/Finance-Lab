@@ -1,4 +1,5 @@
 using cAlgo.API;
+using cAlgo.API.Internals;
 
 namespace cAlgo.Robots;
 
@@ -15,7 +16,7 @@ public class Logging
         Alert = 6
     }
     
-    private readonly Robot _robot;
+    private readonly Algo _algo;
     private readonly VerboseType _verbose;
     private readonly string _cname;
     private const string DefaultCriticalLog = "CRITICAL";
@@ -25,9 +26,9 @@ public class Logging
     private const string DefaultDebugLog = "DEBUG";
     private const string DefaultAlertLog = "ALERT";
     
-    public Logging(Robot robot, string cname, VerboseType verbose)
+    public Logging(Algo algo, string cname, VerboseType verbose)
     {
-        _robot = robot;
+        _algo = algo;
         _cname = cname;
         _verbose = verbose;
     }
@@ -36,7 +37,7 @@ public class Logging
     { 
         if (_verbose < verbose) return;
         var logMessage = $"{defaultLog} - {_cname} - {message}";
-        _robot.Print(logMessage);
+        _algo.Print(logMessage);
     }
 
     public void Critical(string message) => LogMessage(VerboseType.Critical, DefaultCriticalLog, message);

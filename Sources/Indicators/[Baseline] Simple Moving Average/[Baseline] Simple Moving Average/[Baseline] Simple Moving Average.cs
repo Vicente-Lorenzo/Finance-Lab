@@ -14,16 +14,12 @@ namespace cAlgo
 
         protected override void Initialize()
         {
-            // To learn more about cTrader Automate visit our Help Center:
-            // https://help.ctrader.com/ctrader-automate
-
-            Print(Message);
+            
         }
 
         public override void Calculate(int index)
         {
-            // Calculate value at specified index
-            // Result[index] = 
+            
         }
     }
 }

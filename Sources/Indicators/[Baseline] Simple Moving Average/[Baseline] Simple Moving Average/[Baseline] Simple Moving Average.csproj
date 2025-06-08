@@ -8,6 +8,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\..\Logging\Logging.cs">
+      <Link>Logging.cs</Link>
+    </Compile>
     <Compile Include="..\..\IndicatorAPI.cs">
       <Link>IndicatorAPI.cs</Link>
     </Compile>
