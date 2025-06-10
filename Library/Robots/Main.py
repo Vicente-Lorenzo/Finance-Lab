@@ -33,21 +33,26 @@ def main():
     parser: ArgumentParser = ArgumentParser()
     parser.add_argument("--console", type=str, required=True, choices=[_.name for _ in VerboseType])
     parser.add_argument("--telegram", type=str, required=True, choices=[_.name for _ in VerboseType])
+
     parser.add_argument("--system", type=str, required=True, choices=[_.name for _ in SystemType])
     parser.add_argument("--strategy", type=str, required=True, choices=[_.name for _ in StrategyType])
     parser.add_argument("--broker", type=str, required=True, choices=parameters.Watchlist.Brokers)
     parser.add_argument("--group", type=str, required=True, choices=parameters.Watchlist.Symbols.keys())
     parser.add_argument("--symbol", type=str, required=True, choices=[symbol for group in parameters.Watchlist.Symbols.values() for symbol in group])
     parser.add_argument("--timeframe", type=str, required=True, choices=parameters.Watchlist.Timeframes)
+
     parser.add_argument("--iid", type=str, required=False)
+
     parser.add_argument("--start", type=str, required=False)
     parser.add_argument("--stop", type=str, required=False)
+    parser.add_argument("--balance", type=float, required=False)
+    parser.add_argument("--spread", type=float, required=False)
+
     parser.add_argument("--training", type=int, required=False)
     parser.add_argument("--validation", type=int, required=False)
     parser.add_argument("--testing", type=int, required=False)
-    parser.add_argument("--balance", type=float, required=False)
-    parser.add_argument("--spread", type=float, required=False)
     parser.add_argument("--fitness", type=str, required=False, choices=StatisticsAPI.Metrics)
+
     args = parser.parse_args()
     
     LoggingAPI.init(args.system, args.strategy, args.broker, args.group, args.symbol, args.timeframe)
