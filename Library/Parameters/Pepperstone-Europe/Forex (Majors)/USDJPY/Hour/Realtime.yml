@@ -5,7 +5,7 @@ Download:
   AnalystManagement: null
   ManagerManagement: null
 
-Trend:
+NNFX:
   MoneyManagement:
     RiskPercentage: [ 2.0 ]
   RiskManagement:

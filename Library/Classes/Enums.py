@@ -13,12 +13,12 @@ class SystemType(Enum):
     Realtime = 0
     Backtesting = 1
     Optimisation = 2
+    Learning = 3
 
 class StrategyType(Enum):
     Download = 0
-    Experiment = 1
-    Trend = 2
-    Learning = 3
+    NNFX = 1
+    DDPG = 2
 
 class AssetType(Enum):
     USD = 0

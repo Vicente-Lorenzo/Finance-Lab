@@ -11,10 +11,9 @@ from Library.Utils.Performance import time
 
 from Library.Robots.Manager.Statistics import StatisticsAPI
 from Library.Robots.Strategy.Strategy import StrategyAPI
-from Library.Robots.Strategy.Download import DownloadAPI
-from Library.Robots.Strategy.Experiment import ExperimentAPI
-from Library.Robots.Strategy.Trend import TrendAPI
-from Library.Robots.Strategy.Learning import LearningAPI
+from Library.Robots.Strategy.Human.Download import DownloadAPI
+from Library.Robots.Strategy.Human.NNFX import NNFXAPI
+from Library.Robots.Strategy.AI.DDPG import DDPGAPI
 from Library.Robots.System.System import SystemAPI
 from Library.Robots.System.Realtime import RealtimeAPI
 from Library.Robots.System.Backtesting import BacktestingAPI
@@ -65,12 +64,10 @@ def main():
     match args.strategy:
         case StrategyType.Download.name:
             strategy = DownloadAPI
-        case StrategyType.Experiment.name:
-            strategy = ExperimentAPI
-        case StrategyType.Trend.name:
-            strategy = TrendAPI
-        case StrategyType.Learning.name:
-            strategy = LearningAPI
+        case StrategyType.NNFX.name:
+            strategy = NNFXAPI
+        case StrategyType.DDPG.name:
+            strategy = DDPGAPI
 
     parameters: Parameters = parameters[args.broker][args.group][args.symbol][args.timeframe]
 
