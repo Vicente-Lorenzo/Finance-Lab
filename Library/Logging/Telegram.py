@@ -57,20 +57,20 @@ class TelegramAPI(LoggingAPI):
 
     def _format(self, level: VerboseType, level_icon: str):
         level_name = f" {level.name} "
-        top_hline = f"{level_icon} {level_name.center(26, "-")} {level_icon}"
-        middle_line = "-" * 32
-        bottom_hline = f"{level_icon} {"-" * 26} {level_icon}"
+        top_hline = f"{level_icon} {level_name.center(22, "-")} {level_icon}"
+        middle_line = "-" * 28
+        bottom_hline = f"{level_icon} {"-" * 22} {level_icon}"
         return (
             f"<code>{top_hline}</code>\n"
             "<pre>{content}</pre>\n"
             f"<code>{middle_line}\n</code>"
-            f"<code>{self._SYSTEM.center(31)}</code>\n"
-            f"<code>{self._STRATEGY.center(31)}</code>\n"
-            f"<code>{self._BROKER.center(31)}</code>\n"
-            f"<code>{self._GROUP.center(31)}</code>\n"
-            f"<code>{self._SYMBOL.center(31)}</code>\n"
-            f"<code>{self._TIMEFRAME.center(31)}</code>\n"
-            f"<code>{self._role.center(31)}</code>\n"
+            f"<code>{self._SYSTEM.center(27)}</code>\n"
+            f"<code>{self._STRATEGY.center(27)}</code>\n"
+            f"<code>{self._BROKER.center(27)}</code>\n"
+            f"<code>{self._GROUP.center(27)}</code>\n"
+            f"<code>{self._SYMBOL.center(27)}</code>\n"
+            f"<code>{self._TIMEFRAME.center(27)}</code>\n"
+            f"<code>{self._role.center(27)}</code>\n"
             f"<code>{middle_line}\n</code>"
             "<code>{timestamp}</code>\n"
             f"<code>{bottom_hline}</code>")
