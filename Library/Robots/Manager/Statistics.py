@@ -413,21 +413,21 @@ class StatisticsAPI:
         sell_metrics_dict = self.calculate_independent_metrics(initial_account, start_timestamp, stop_timestamp, sell_trades_df)
         total_metrics_dict = self.calculate_independent_metrics(initial_account, start_timestamp, stop_timestamp, total_trades_df)
         
-        current_wining_streak = current_losing_streak = 0
+        current_winning_streak = current_losing_streak = 0
         total_winning_streak = total_losing_streak = 0
         max_winning_streak_index = max_losing_streak_index = 0
 
         for idx, trade in enumerate(total_trades_df.iter_rows(named=True)):
             if trade[DatabaseAPI.TRADE_NETPNL] > 0:
-                current_wining_streak += 1
+                current_winning_streak += 1
                 current_losing_streak = 0
             else:
                 current_losing_streak += 1
-                current_wining_streak = 0
+                current_winning_streak = 0
         
-            if current_wining_streak > total_winning_streak:
+            if current_winning_streak > total_winning_streak:
                 max_winning_streak_index = idx
-                total_winning_streak = current_wining_streak
+                total_winning_streak = current_winning_streak
             if current_losing_streak > total_losing_streak:
                 max_losing_streak_index = idx
                 total_losing_streak = current_losing_streak
