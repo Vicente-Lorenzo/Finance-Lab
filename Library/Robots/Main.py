@@ -11,9 +11,9 @@ from Library.Utils.Performance import time
 
 from Library.Robots.Manager.Statistics import StatisticsAPI
 from Library.Robots.Strategy.Strategy import StrategyAPI
-from Library.Robots.Strategy.Human.Download import DownloadAPI
-from Library.Robots.Strategy.Human.NNFX import NNFXAPI
-from Library.Robots.Strategy.AI.DDPG import DDPGAPI
+from Library.Robots.Strategy.Rule.Download import DownloadAPI
+from Library.Robots.Strategy.Rule.NNFX import NNFXAPI
+from Library.Robots.Strategy.Model.DDPG import DDPGAPI
 from Library.Robots.System.System import SystemAPI
 from Library.Robots.System.Realtime import RealtimeAPI
 from Library.Robots.System.Backtesting import BacktestingAPI
