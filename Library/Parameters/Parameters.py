@@ -4,9 +4,11 @@ import yaml
 from pathlib import Path
 
 class ParametersAPI:
+
+    PATH = Path("Library") / Path("Parameters")
     
-    def __init__(self, path=Path("Library") / Path("Parameters")):
-        self.path = path
+    def __init__(self, path: Path | None = None):
+        self.path = ParametersAPI.PATH if not path else path
         self.path.mkdir(parents=True, exist_ok=True)
 
     def _resolve_path(self, *args):
