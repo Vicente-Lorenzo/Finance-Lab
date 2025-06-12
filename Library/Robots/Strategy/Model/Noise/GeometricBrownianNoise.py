@@ -19,13 +19,18 @@ class GeometricBrownianNoise(Noise):
     itself is log-normally distributed. Initial value is `s0` (default 1).
     """
 
-    def __init__(self, mu, sigma=0.15, dt=1e-2, s0=None, seed=None):
+    def __init__(self,
+                 mu: np.ndarray,
+                 sigma: float = 0.15,
+                 dt: float = 1e-2,
+                 s0: float | None = None,
+                 seed: int | None = None):
         super().__init__(seed)
-        self.mu = mu
-        self.sigma = sigma
-        self.dt = dt
-        self.s0 = s0
-        self.s_prev = None
+        self.mu: np.ndarray = mu
+        self.sigma: float = sigma
+        self.dt: float = dt
+        self.s0: float | None = s0
+        self.s_prev: float | None = None
         self.reset()
 
     def __call__(self):

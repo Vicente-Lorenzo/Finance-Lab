@@ -20,14 +20,20 @@ class OrnsteinUhlenbeckNoise(Noise):
     exploration noise.
     """
 
-    def __init__(self, mu, sigma=0.15, theta=0.2, dt=1e-2, x0=None, seed=None):
+    def __init__(self,
+                 mu: np.ndarray,
+                 sigma: float = 0.15,
+                 theta: float = 0.2,
+                 dt: float = 1e-2,
+                 x0: float | None = None,
+                 seed: float | None = None):
         super().__init__(seed)
-        self.mu = mu
-        self.sigma = sigma
-        self.theta = theta
-        self.dt = dt
-        self.x0 = x0
-        self.x_prev = None
+        self.mu: np.ndarray = mu
+        self.sigma: float = sigma
+        self.theta: float = theta
+        self.dt: float = dt
+        self.x0: float | None = x0
+        self.x_prev: float | None = None
         self.reset()
 
     def __call__(self):

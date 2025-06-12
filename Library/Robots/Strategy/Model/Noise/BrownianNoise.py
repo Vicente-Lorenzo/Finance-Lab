@@ -19,13 +19,18 @@ class BrownianNoise(Noise):
     and time step `dt`. The initial state is defined by `x0` (default 0).
     """
 
-    def __init__(self, mu, sigma=0.15, dt=1e-2, x0=None, seed=None):
+    def __init__(self,
+                 mu: np.ndarray,
+                 sigma: float = 0.15,
+                 dt: float = 1e-2,
+                 x0: float | None = None,
+                 seed: int | None = None):
         super().__init__(seed)
-        self.mu = mu
-        self.sigma = sigma
-        self.dt = dt
-        self.x0 = x0
-        self.x_prev = None
+        self.mu: np.ndarray = mu
+        self.sigma: float = sigma
+        self.dt: float = dt
+        self.x0: float | None = x0
+        self.x_prev: float | None = None
         self.reset()
 
     def __call__(self):

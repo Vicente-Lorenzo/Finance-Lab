@@ -18,10 +18,13 @@ class GaussianNoise(Noise):
     to simulate purely random (white) noise in continuous domains.
     """
 
-    def __init__(self, mu, sigma=0.15, seed=None):
+    def __init__(self,
+                 mu: np.ndarray,
+                 sigma: float = 0.15,
+                 seed: int | None = None):
         super().__init__(seed)
-        self.mu = mu
-        self.sigma = sigma
+        self.mu: np.ndarray = mu
+        self.sigma: float = sigma
 
     def __call__(self):
         if np.isscalar(self.mu):
