@@ -115,7 +115,11 @@ class DatabaseAPI:
         TRADE_EXITBALANCE: pl.Float32(),
     }
 
-    def __init__(self, broker: str, group: str, symbol: str, timeframe: str):
+    def __init__(self,
+                 broker: str,
+                 group: str,
+                 symbol: str,
+                 timeframe: str):
         self._broker: str = broker
         self._group: str = group
         self._symbol: str = symbol
