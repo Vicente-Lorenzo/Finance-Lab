@@ -6,7 +6,7 @@ class Noise(ABC):
 
     def __init__(self,
                  seed: int | None = None):
-        self.rng = np.random.default_rng(seed)
+        self._rng = np.random.default_rng(seed)
 
     @abstractmethod
     def __call__(self):

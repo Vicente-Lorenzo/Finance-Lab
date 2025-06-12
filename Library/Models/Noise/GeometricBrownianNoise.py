@@ -26,28 +26,28 @@ class GeometricBrownianNoise(Noise):
                  s0: float | None = None,
                  seed: int | None = None):
         super().__init__(seed)
-        self.mu: np.ndarray = mu
-        self.sigma: float = sigma
-        self.dt: float = dt
-        self.s0: float | None = s0
-        self.s_prev: float | None = None
+        self._mu: np.ndarray = mu
+        self._sigma: float = sigma
+        self._dt: float = dt
+        self._s0: float | None = s0
+        self._s_prev: float | None = None
         self.reset()
 
     def __call__(self):
-        if np.isscalar(self.mu):
-            noise = self.rng.normal()
-            drift = (self.mu - 0.5 * self.sigma ** 2) * self.dt
-            diffusion = self.sigma * np.sqrt(self.dt) * noise
+        if np.isscalar(self._mu):
+            noise = self._rng.normal()
+            drift = (self._mu - 0.5 * self._sigma ** 2) * self._dt
+            diffusion = self._sigma * np.sqrt(self._dt) * noise
         else:
-            noise = self.rng.normal(size=self.mu.shape)
-            drift = (self.mu - 0.5 * self.sigma ** 2) * self.dt
-            diffusion = self.sigma * np.sqrt(self.dt) * noise
+            noise = self._rng.normal(size=self._mu.shape)
+            drift = (self._mu - 0.5 * self._sigma ** 2) * self._dt
+            diffusion = self._sigma * np.sqrt(self._dt) * noise
 
-        self.s_prev *= np.exp(drift + diffusion)
-        return self.s_prev
+        self._s_prev *= np.exp(drift + diffusion)
+        return self._s_prev
 
     def reset(self):
-        if self.s0 is not None:
-            self.s_prev = np.copy(self.s0)
+        if self._s0 is not None:
+            self._s_prev = np.copy(self._s0)
         else:
-            self.s_prev = np.ones_like(self.mu)
+            self._s_prev = np.ones_like(self._mu)

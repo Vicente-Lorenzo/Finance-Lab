@@ -28,27 +28,27 @@ class OrnsteinUhlenbeckNoise(Noise):
                  x0: float | None = None,
                  seed: float | None = None):
         super().__init__(seed)
-        self.mu: np.ndarray = mu
-        self.sigma: float = sigma
-        self.theta: float = theta
-        self.dt: float = dt
-        self.x0: float | None = x0
-        self.x_prev: float | None = None
+        self._mu: np.ndarray = mu
+        self._sigma: float = sigma
+        self._theta: float = theta
+        self._dt: float = dt
+        self._x0: float | None = x0
+        self._x_prev: float | None = None
         self.reset()
 
     def __call__(self):
-        if np.isscalar(self.mu):
-            noise = self.theta * (self.mu - self.x_prev) * self.dt \
-                    + self.sigma * np.sqrt(self.dt) * self.rng.normal()
+        if np.isscalar(self._mu):
+            noise = self._theta * (self._mu - self._x_prev) * self._dt \
+                    + self._sigma * np.sqrt(self._dt) * self._rng.normal()
         else:
-            noise = self.theta * (self.mu - self.x_prev) * self.dt \
-                    + self.sigma * np.sqrt(self.dt) * self.rng.normal(size=self.mu.shape)
+            noise = self._theta * (self._mu - self._x_prev) * self._dt \
+                    + self._sigma * np.sqrt(self._dt) * self._rng.normal(size=self._mu.shape)
 
-        self.x_prev += noise
-        return self.x_prev
+        self._x_prev += noise
+        return self._x_prev
 
     def reset(self):
-        if self.x0 is not None:
-            self.x_prev = np.copy(self.x0)
+        if self._x0 is not None:
+            self._x_prev = np.copy(self._x0)
         else:
-            self.x_prev = np.zeros_like(self.mu)
+            self._x_prev = np.zeros_like(self._mu)

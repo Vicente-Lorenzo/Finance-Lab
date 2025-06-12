@@ -23,14 +23,14 @@ class GaussianNoise(Noise):
                  sigma: float = 0.15,
                  seed: int | None = None):
         super().__init__(seed)
-        self.mu: np.ndarray = mu
-        self.sigma: float = sigma
+        self._mu: np.ndarray = mu
+        self._sigma: float = sigma
 
     def __call__(self):
-        if np.isscalar(self.mu):
-            return self.mu + self.sigma * self.rng.normal()
+        if np.isscalar(self._mu):
+            return self._mu + self._sigma * self._rng.normal()
         else:
-            return self.mu + self.sigma * self.rng.normal(size=self.mu.shape)
+            return self._mu + self._sigma * self._rng.normal(size=self._mu.shape)
 
     def reset(self):
         pass
