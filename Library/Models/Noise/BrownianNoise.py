@@ -1,5 +1,5 @@
 import numpy as np
-from Library.Robots.Strategy.Model.Noise.Noise import Noise
+from Library.Models.Noise.Noise import Noise
 
 class BrownianNoise(Noise):
     """
