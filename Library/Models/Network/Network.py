@@ -11,20 +11,20 @@ class NetworkAPI(nn.Module, ABC):
 
     def __init__(self,
                  model: str,
-                 name: str,
+                 role: str,
                  broker: str,
                  group: str,
                  symbol: str,
                  timeframe: str):
         super().__init__()
         self._model = model
-        self._name = name
+        self._role = role
         self._broker = broker
         self._group = group
         self._symbol = symbol
         self._timeframe = timeframe
 
-        self._filename = ParametersAPI.PATH / broker / group / symbol / timeframe / f"{model}_{name}"
+        self._filename = ParametersAPI.PATH / broker / group / symbol / timeframe / f"{model}_{role}"
 
         self._console: ConsoleAPI = ConsoleAPI(class_name=self.__class__.__name__, role_name="Network Management")
         self._telegram: TelegramAPI = TelegramAPI(class_name=self.__class__.__name__, role_name="Network Management")
@@ -41,8 +41,8 @@ class NetworkAPI(nn.Module, ABC):
 
     def save(self):
         T.save(self.state_dict(), self.checkpoint_file)
-        self._console.debug(lambda: f"Saved network state for {self._model} {self._name}")
+        self._console.debug(lambda: f"Saved network state for {self._model} {self._role}")
 
     def load(self):
         self.load_state_dict(T.load(self.checkpoint_file))
-        self._console.debug(lambda: f"Loaded network state for {self._model} {self._name}")
+        self._console.debug(lambda: f"Loaded network state for {self._model} {self._role}")

@@ -10,7 +10,7 @@ class ActorAPI(NetworkAPI):
 
     def __init__(self,
                  model: str,
-                 name: str,
+                 role: str,
                  broker: str,
                  group: str,
                  symbol: str,
@@ -36,7 +36,7 @@ class ActorAPI(NetworkAPI):
 
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
 
-        super().__init__(model=model, name=name, broker=broker, group=group, symbol=symbol, timeframe=timeframe)
+        super().__init__(model=model, role=role, broker=broker, group=group, symbol=symbol, timeframe=timeframe)
 
     def init(self):
         f1 = 1. / np.sqrt(self.fc1.weight.data.size()[0])
