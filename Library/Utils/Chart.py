@@ -2,7 +2,7 @@ from io import BytesIO
 from matplotlib import pyplot as plt
 
 def gantt(ranges, opt_color="#1f77b4", val_color="#2ca02c", test_color="#ff7f0e"):
-    plt.style.use('dark_background')
+    plt.style.use("dark_background")
     fig, ax = plt.subplots(figsize=(12, 4))
 
     entries = []
@@ -22,21 +22,21 @@ def gantt(ranges, opt_color="#1f77b4", val_color="#2ca02c", test_color="#ff7f0e"
     y_pos = list(range(len(y_labels)))
 
     for i in range(len(y_labels)):
-        ax.barh(y_pos[i], durations[i], left=starts[i], height=0.5, color=colors[i], edgecolor='white')
+        ax.barh(y_pos[i], durations[i], left=starts[i], height=0.5, color=colors[i], edgecolor="white")
 
     ax.set_yticks(y_pos)
     ax.set_yticklabels(y_labels)
     ax.xaxis_date()
     ax.set_title("Walk-Forward Analysis Gantt Chart", fontsize=14, pad=15)
-    ax.tick_params(colors='white', labelsize=10)
-    ax.title.set_color('white')
+    ax.tick_params(colors="white", labelsize=10)
+    ax.title.set_color("white")
     ax.set_facecolor("#121212")
-    fig.patch.set_facecolor('#121212')
+    fig.patch.set_facecolor("#121212")
 
     plt.tight_layout()
 
     buf = BytesIO()
-    plt.savefig(buf, format='png', facecolor=fig.get_facecolor())
+    plt.savefig(buf, format="png", facecolor=fig.get_facecolor())
     buf.seek(0)
     plt.close(fig)
     return buf
