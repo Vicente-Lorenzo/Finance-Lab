@@ -2,7 +2,7 @@ import numpy as np
 
 from abc import ABC, abstractmethod
 
-class Noise(ABC):
+class NoiseAPI(ABC):
 
     def __init__(self,
                  seed: int | None = None):

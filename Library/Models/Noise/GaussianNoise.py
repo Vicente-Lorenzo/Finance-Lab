@@ -1,7 +1,7 @@
 import numpy as np
-from Library.Models.Noise.Noise import Noise
+from Library.Models.Noise.Noise import NoiseAPI
 
-class GaussianNoise(Noise):
+class GaussianNoiseAPI(NoiseAPI):
     """
     Gaussian White Noise
 

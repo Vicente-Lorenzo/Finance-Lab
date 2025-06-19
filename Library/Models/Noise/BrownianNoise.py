@@ -1,7 +1,7 @@
 import numpy as np
-from Library.Models.Noise.Noise import Noise
+from Library.Models.Noise.Noise import NoiseAPI
 
-class BrownianNoise(Noise):
+class BrownianNoiseAPI(NoiseAPI):
     """
     Brownian Motion (Wiener Process)
 
