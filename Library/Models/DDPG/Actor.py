@@ -9,6 +9,7 @@ from Library.Models.Network.Network import NetworkAPI
 class ActorAPI(NetworkAPI):
 
     def __init__(self,
+                 model: str,
                  name: str,
                  broker: str,
                  group: str,
@@ -35,7 +36,7 @@ class ActorAPI(NetworkAPI):
 
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
 
-        super().__init__(name=name, broker=broker, group=group, symbol=symbol, timeframe=timeframe)
+        super().__init__(model=model, name=name, broker=broker, group=group, symbol=symbol, timeframe=timeframe)
 
     def init(self):
         f1 = 1. / np.sqrt(self.fc1.weight.data.size()[0])
