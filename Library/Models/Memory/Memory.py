@@ -1,6 +1,6 @@
 import numpy as np
 
-class Memory:
+class MemoryAPI:
 
     def __init__(self,
                  size: int,
