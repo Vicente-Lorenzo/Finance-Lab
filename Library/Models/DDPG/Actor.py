@@ -6,7 +6,7 @@ import torch.optim as optim
 
 from Library.Models.Network.Network import NetworkAPI
 
-class ActorAPI(NetworkAPI):
+class ActorNetworkAPI(NetworkAPI):
 
     def __init__(self,
                  model: str,

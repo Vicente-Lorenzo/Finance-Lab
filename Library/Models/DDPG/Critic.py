@@ -6,7 +6,7 @@ import torch.optim as optim
 
 from Library.Models.Network.Network import NetworkAPI
 
-class CriticAPI(NetworkAPI):
+class CriticNetworkAPI(NetworkAPI):
 
     def __init__(self,
                  model: str,
