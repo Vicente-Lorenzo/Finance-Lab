@@ -31,6 +31,4 @@ class MemoryAPI:
         rewards = self._reward_memory[batch]
         next_states = self._next_state_memory[batch]
         dones = self._terminal_memory[batch]
-
         return states, actions, rewards, next_states, dones
-
