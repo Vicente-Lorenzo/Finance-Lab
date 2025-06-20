@@ -9,9 +9,9 @@ class NoiseAPI(ABC):
         self._rng = np.random.default_rng(seed)
 
     @abstractmethod
-    def __call__(self):
+    def __call__(self) -> np.ndarray:
         pass
 
     @abstractmethod
-    def reset(self):
+    def reset(self) -> None:
         pass

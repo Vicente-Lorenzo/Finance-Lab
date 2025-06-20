@@ -21,22 +21,22 @@ class OrnsteinUhlenbeckNoiseAPI(NoiseAPI):
     """
 
     def __init__(self,
-                 mu: np.ndarray,
+                 mu: np.ndarray | float,
                  sigma: float = 0.15,
                  theta: float = 0.2,
                  dt: float = 1e-2,
-                 x0: float | None = None,
+                 x0: np.ndarray | float | None = None,
                  seed: float | None = None):
         super().__init__(seed)
-        self._mu: np.ndarray = mu
+        self._mu: np.ndarray | float = mu
         self._sigma: float = sigma
         self._theta: float = theta
         self._dt: float = dt
-        self._x0: float | None = x0
-        self._x_prev: float | None = None
+        self._x0: np.ndarray | float | None = x0
+        self._x_prev: np.ndarray | float | None = None
         self.reset()
 
-    def __call__(self):
+    def __call__(self) -> np.ndarray | float:
         if np.isscalar(self._mu):
             noise = self._theta * (self._mu - self._x_prev) * self._dt \
                     + self._sigma * np.sqrt(self._dt) * self._rng.normal()
@@ -47,7 +47,7 @@ class OrnsteinUhlenbeckNoiseAPI(NoiseAPI):
         self._x_prev += noise
         return self._x_prev
 
-    def reset(self):
+    def reset(self) -> None:
         if self._x0 is not None:
             self._x_prev = np.copy(self._x0)
         else:

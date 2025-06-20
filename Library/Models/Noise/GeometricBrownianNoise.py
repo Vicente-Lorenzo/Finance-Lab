@@ -20,20 +20,20 @@ class GeometricBrownianNoiseAPI(NoiseAPI):
     """
 
     def __init__(self,
-                 mu: np.ndarray,
+                 mu: np.ndarray | float,
                  sigma: float = 0.15,
                  dt: float = 1e-2,
-                 s0: float | None = None,
+                 s0: np.ndarray | float | None = None,
                  seed: int | None = None):
         super().__init__(seed)
-        self._mu: np.ndarray = mu
+        self._mu: np.ndarray | float = mu
         self._sigma: float = sigma
         self._dt: float = dt
-        self._s0: float | None = s0
-        self._s_prev: float | None = None
+        self._s0: np.ndarray | float | None = s0
+        self._s_prev: np.ndarray | float | None = None
         self.reset()
 
-    def __call__(self):
+    def __call__(self) -> np.ndarray | float:
         if np.isscalar(self._mu):
             noise = self._rng.normal()
             drift = (self._mu - 0.5 * self._sigma ** 2) * self._dt
@@ -46,7 +46,7 @@ class GeometricBrownianNoiseAPI(NoiseAPI):
         self._s_prev *= np.exp(drift + diffusion)
         return self._s_prev
 
-    def reset(self):
+    def reset(self) -> None:
         if self._s0 is not None:
             self._s_prev = np.copy(self._s0)
         else:

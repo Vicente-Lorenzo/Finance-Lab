@@ -19,18 +19,18 @@ class GaussianNoiseAPI(NoiseAPI):
     """
 
     def __init__(self,
-                 mu: np.ndarray,
+                 mu: np.ndarray | float,
                  sigma: float = 0.15,
                  seed: int | None = None):
         super().__init__(seed)
-        self._mu: np.ndarray = mu
+        self._mu: np.ndarray | float = mu
         self._sigma: float = sigma
 
-    def __call__(self):
+    def __call__(self) -> np.ndarray | float:
         if np.isscalar(self._mu):
             return self._mu + self._sigma * self._rng.normal()
         else:
             return self._mu + self._sigma * self._rng.normal(size=self._mu.shape)
 
-    def reset(self):
+    def reset(self) -> None:
         pass
