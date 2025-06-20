@@ -17,14 +17,14 @@ class CriticAPI(NetworkAPI):
                  timeframe: str,
                  beta: float,
                  input_shape: tuple,
+                 action_shape: int,
                  fc1_shape: int,
-                 fc2_shape: int,
-                 actions_shape: int):
+                 fc2_shape: int):
 
         self.input_shape = input_shape
+        self.action_shape = action_shape
         self.fc1_shape = fc1_shape
         self.fc2_shape = fc2_shape
-        self.actions_shape = actions_shape
 
         self.fc1 = nn.Linear(*self.input_shape, self.fc1_shape)
         self.fc2 = nn.Linear(self.fc1_shape, self.fc2_shape)
@@ -32,7 +32,7 @@ class CriticAPI(NetworkAPI):
         self.bn1 = nn.LayerNorm(self.fc1_shape)
         self.bn2 = nn.LayerNorm(self.fc2_shape)
 
-        self.action_value = nn.Linear(self.actions_shape, self.fc2_shape)
+        self.action_value = nn.Linear(self.action_shape, self.fc2_shape)
         self.q = nn.Linear(self.fc2_shape, 1)
 
         self.optimizer = optim.Adam(self.parameters(), lr=beta, weight_decay=0.01)
