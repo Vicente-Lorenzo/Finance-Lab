@@ -38,7 +38,6 @@ class NetworkAPI(nn.Module, ABC):
     def init(self):
         raise NotImplementedError
 
-
     def save(self):
         T.save(self.state_dict(), self.checkpoint_file)
         self._console.debug(lambda: f"Saved network state for {self._model} {self._role}")
