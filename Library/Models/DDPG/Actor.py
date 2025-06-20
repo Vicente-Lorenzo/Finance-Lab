@@ -15,11 +15,11 @@ class ActorAPI(NetworkAPI):
                  group: str,
                  symbol: str,
                  timeframe: str,
-                 alpha,
-                 input_shape,
-                 fc1_shape,
-                 fc2_shape,
-                 actions_shape):
+                 alpha: float,
+                 input_shape: tuple,
+                 fc1_shape: int,
+                 fc2_shape: int,
+                 actions_shape: int):
 
         self.input_shape = input_shape
         self.fc1_shape = fc1_shape
