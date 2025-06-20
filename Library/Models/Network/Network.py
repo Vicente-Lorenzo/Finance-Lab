@@ -24,7 +24,7 @@ class NetworkAPI(nn.Module, ABC):
         self._symbol = symbol
         self._timeframe = timeframe
 
-        self._filename = ParametersAPI.PATH / broker / group / symbol / timeframe / f"{model}_{role}"
+        self._filename = ParametersAPI.PATH / broker / group / symbol / timeframe / model / f"{role}"
 
         self._console: ConsoleAPI = ConsoleAPI(class_name=self.__class__.__name__, role_name="Network Management")
         self._telegram: TelegramAPI = TelegramAPI(class_name=self.__class__.__name__, role_name="Network Management")
