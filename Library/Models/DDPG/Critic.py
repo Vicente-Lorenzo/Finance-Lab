@@ -15,11 +15,11 @@ class CriticAPI(NetworkAPI):
                  group: str,
                  symbol: str,
                  timeframe: str,
-                 beta: float,
                  input_shape: tuple,
                  action_shape: int,
                  fc1_shape: int,
-                 fc2_shape: int):
+                 fc2_shape: int,
+                 beta: float):
 
         self.input_shape = input_shape
         self.action_shape = action_shape
