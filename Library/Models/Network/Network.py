@@ -35,13 +35,13 @@ class NetworkAPI(nn.Module, ABC):
         self.to(self.device)
 
     @abstractmethod
-    def init(self):
+    def init(self) -> None:
         raise NotImplementedError
 
-    def save(self):
+    def save(self) -> None:
         T.save(self.state_dict(), self.checkpoint_file)
         self._console.debug(lambda: f"Saved network state for {self._model} {self._role}")
 
-    def load(self):
+    def load(self) -> None:
         self.load_state_dict(T.load(self.checkpoint_file))
         self._console.debug(lambda: f"Loaded network state for {self._model} {self._role}")

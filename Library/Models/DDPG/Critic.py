@@ -39,7 +39,7 @@ class CriticAPI(NetworkAPI):
 
         super().__init__(model=model, role=role, broker=broker, group=group, symbol=symbol, timeframe=timeframe)
 
-    def init(self):
+    def init(self) -> None:
         f1 = 1. / np.sqrt(self.fc1.weight.data.size()[0])
         self.fc1.weight.data.uniform_(-f1, f1)
         self.fc1.bias.data.uniform_(-f1, f1)
