@@ -6,29 +6,29 @@ class MemoryAPI:
                  size: int,
                  input_shape: tuple,
                  action_shape: int):
-        self._size = size
-        self._counter = 0
-        self._state_memory: np.ndarray = np.zeros((self._size, *input_shape))
-        self._action_memory: np.ndarray = np.zeros((self._size, action_shape))
-        self._reward_memory: np.ndarray = np.zeros(self._size)
-        self._next_state_memory: np.ndarray = np.zeros((self._size, *input_shape))
-        self._terminal_memory: np.ndarray = np.zeros(self._size, dtype=np.bool)
+        self.size = size
+        self.counter = 0
+        self.state_memory: np.ndarray = np.zeros((self.size, *input_shape))
+        self.action_memory: np.ndarray = np.zeros((self.size, action_shape))
+        self.reward_memory: np.ndarray = np.zeros(self.size)
+        self.next_state_memory: np.ndarray = np.zeros((self.size, *input_shape))
+        self.terminal_memory: np.ndarray = np.zeros(self.size, dtype=np.bool)
 
     def memorise(self, state, action, reward, next_state, done) -> None:
-        index = self._counter % self._size
-        self._state_memory[index] = state
-        self._action_memory[index] = action
-        self._reward_memory[index] = reward
-        self._next_state_memory[index] = next_state
-        self._terminal_memory[index] = done
-        self._counter += 1
+        index = self.counter % self.size
+        self.state_memory[index] = state
+        self.action_memory[index] = action
+        self.reward_memory[index] = reward
+        self.next_state_memory[index] = next_state
+        self.terminal_memory[index] = done
+        self.counter += 1
 
     def remember(self, batch_size) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray):
-        max_mem = min(self._counter, self._size)
+        max_mem = min(self.counter, self.size)
         batch = np.random.choice(max_mem, batch_size)
-        states = self._state_memory[batch]
-        actions = self._action_memory[batch]
-        rewards = self._reward_memory[batch]
-        next_states = self._next_state_memory[batch]
-        dones = self._terminal_memory[batch]
+        states = self.state_memory[batch]
+        actions = self.action_memory[batch]
+        rewards = self.reward_memory[batch]
+        next_states = self.next_state_memory[batch]
+        dones = self.terminal_memory[batch]
         return states, actions, rewards, next_states, dones
