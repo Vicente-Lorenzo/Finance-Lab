@@ -23,7 +23,7 @@ from Library.Robots.Manager.Manager import ManagerAPI
 from Library.Robots.Strategy.Strategy import StrategyAPI
 from Library.Robots.System.System import SystemAPI
 
-class RealtimeAPI(SystemAPI):
+class RealtimeSystemAPI(SystemAPI):
 
     SENTINEL = -1.0
     
@@ -47,9 +47,9 @@ class RealtimeAPI(SystemAPI):
         self._stop_timestamp: datetime | None = None
 
     def __enter__(self):
-        self.strategy = self._strategy(money_management=self._parameters.MoneyManagement, risk_management=self._parameters.RiskManagement, signal_management=self._parameters.SignalManagement)
-        self.analyst = AnalystAPI(analyst_management=self._parameters.AnalystManagement)
-        self.manager = ManagerAPI(manager_management=self._parameters.ManagerManagement)
+        self.strategy = self._strategy(money_management=self.parameters.MoneyManagement, risk_management=self.parameters.RiskManagement, signal_management=self.parameters.SignalManagement)
+        self.analyst = AnalystAPI(analyst_management=self.parameters.AnalystManagement)
+        self.manager = ManagerAPI(manager_management=self.parameters.ManagerManagement)
         
         self._bar_db: DatabaseAPI = DatabaseAPI(broker=self._broker, group=self._group, symbol=self._symbol, timeframe=self._timeframe)
         self._bar_db.__enter__()

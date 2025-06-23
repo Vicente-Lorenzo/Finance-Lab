@@ -27,9 +27,9 @@ from Library.Robots.Analyst.Technicals import Technicals
 from Library.Robots.Manager.Manager import ManagerAPI
 from Library.Robots.Manager.Statistics import StatisticsAPI
 from Library.Robots.Strategy.Strategy import StrategyAPI
-from Library.Robots.System.Backtesting import BacktestingAPI
+from Library.Robots.System.Backtesting import BacktestingSystemAPI
 
-class OptimisationAPI(BacktestingAPI):
+class OptimisationSystemAPI(BacktestingSystemAPI):
 
     WFSTAGEID = "Walk-Forward ID"
     WFOPTSTART = "Optimisation Start"
@@ -295,13 +295,13 @@ class OptimisationAPI(BacktestingAPI):
                                   **unpack_selected("AnalystManagement", ctf_stage["AnalystManagement"]),
                                   **unpack_selected("ManagerManagement", ctf_stage["ManagerManagement"])})
 
-    def run_backtest_stage(self, parameters: Parameters, start: date, stop: date) -> (int, BacktestingAPI):
+    def run_backtest_stage(self, parameters: Parameters, start: date, stop: date) -> (int, BacktestingSystemAPI):
         
         with self._btid_lock:
             self._btid += 1
             btid = self._btid
         
-        thread = BacktestingAPI(
+        thread = BacktestingSystemAPI(
             broker=self._broker,
             group=self._group,
             symbol=self._symbol,
@@ -345,7 +345,7 @@ class OptimisationAPI(BacktestingAPI):
 
         with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
 
-            futures = [executor.submit(self.run_backtest_stage, Parameters(data=params, path=self._parameters.path), start, stop) for params in parameters]
+            futures = [executor.submit(self.run_backtest_stage, Parameters(data=params, path=self.parameters.path), start, stop) for params in parameters]
 
             with tqdm(total=len(futures), desc="Progress", unit=" Backtest") as progress:
                 for future in as_completed(futures):
@@ -355,18 +355,18 @@ class OptimisationAPI(BacktestingAPI):
                     results.append({
                         self.BACKTESTSTAGEID: btid,
                         self._fitness: fitness,
-                        **backtest._parameters.MoneyManagement,
-                        **backtest._parameters.RiskManagement,
-                        **backtest._parameters.SignalManagement,
-                        **backtest._parameters.AnalystManagement,
-                        **backtest._parameters.ManagerManagement
+                        **backtest.parameters.MoneyManagement,
+                        **backtest.parameters.RiskManagement,
+                        **backtest.parameters.SignalManagement,
+                        **backtest.parameters.AnalystManagement,
+                        **backtest.parameters.ManagerManagement
                     })
     
                     if fitness is not None and fitness > best_fitness:
                         best_id = btid
                         best_fitness = fitness
-                        best_parameters = backtest._parameters
-                        progress.set_postfix({"Best Fitness": f"{best_fitness:.6f}", "Best Parameters": list(backtest._parameters.AnalystManagement.values())})
+                        best_parameters = backtest.parameters
+                        progress.set_postfix({"Best Fitness": f"{best_fitness:.6f}", "Best Parameters": list(backtest.parameters.AnalystManagement.values())})
 
                     progress.update(1)
 

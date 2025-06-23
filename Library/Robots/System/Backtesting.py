@@ -24,7 +24,7 @@ from Library.Robots.Engine.Machine import MachineAPI
 from Library.Robots.Strategy.Strategy import StrategyAPI
 from Library.Robots.System.System import SystemAPI
 
-class BacktestingAPI(SystemAPI):
+class BacktestingSystemAPI(SystemAPI):
 
     watchlist = ParametersAPI().Watchlist
     TICK = watchlist.Timeframes[0]
@@ -93,13 +93,13 @@ class BacktestingAPI(SystemAPI):
 
     def __enter__(self):
         if self.strategy is None:
-            self.strategy = self._strategy(money_management=self._parameters.MoneyManagement, risk_management=self._parameters.RiskManagement, signal_management=self._parameters.SignalManagement)
+            self.strategy = self._strategy(money_management=self.parameters.MoneyManagement, risk_management=self.parameters.RiskManagement, signal_management=self.parameters.SignalManagement)
 
         if self.analyst is None:
-            self.analyst = AnalystAPI(analyst_management=self._parameters.AnalystManagement)
+            self.analyst = AnalystAPI(analyst_management=self.parameters.AnalystManagement)
 
         if self.manager is None:
-            self.manager = ManagerAPI(manager_management=self._parameters.ManagerManagement)
+            self.manager = ManagerAPI(manager_management=self.parameters.ManagerManagement)
 
         if self.window is None:
             self.window = self.analyst.Window
