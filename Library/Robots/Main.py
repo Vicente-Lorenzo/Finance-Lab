@@ -11,13 +11,13 @@ from Library.Utils.Performance import time
 
 from Library.Robots.Manager.Statistics import StatisticsAPI
 from Library.Robots.Strategy.Strategy import StrategyAPI
-from Library.Robots.Strategy.Rule.Download import DownloadAPI
-from Library.Robots.Strategy.Rule.NNFX import NNFXAPI
-from Library.Robots.Strategy.Model.DDPG import DDPGAPI
+from Library.Robots.Strategy.Rule.Download import DownloadStrategyAPI
+from Library.Robots.Strategy.Rule.NNFX import NNFXStrategyAPI
+from Library.Robots.Strategy.Model.DDPG import DDPGStrategyAPI
 from Library.Robots.System.System import SystemAPI
-from Library.Robots.System.Realtime import RealtimeAPI
-from Library.Robots.System.Backtesting import BacktestingAPI
-from Library.Robots.System.Optimisation import OptimisationAPI
+from Library.Robots.System.Realtime import RealtimeSystemAPI
+from Library.Robots.System.Backtesting import BacktestingSystemAPI
+from Library.Robots.System.Optimisation import OptimisationSystemAPI
 
 pl.Config.set_tbl_cols(-1)
 pl.Config.set_tbl_rows(-1)
@@ -68,11 +68,11 @@ def main():
     strategy: Type[StrategyAPI] | None = None
     match args.strategy:
         case StrategyType.Download.name:
-            strategy = DownloadAPI
+            strategy = DownloadStrategyAPI
         case StrategyType.NNFX.name:
-            strategy = NNFXAPI
+            strategy = NNFXStrategyAPI
         case StrategyType.DDPG.name:
-            strategy = DDPGAPI
+            strategy = DDPGStrategyAPI
 
     parameters: Parameters = parameters[args.broker][args.group][args.symbol][args.timeframe]
 
@@ -82,13 +82,13 @@ def main():
             if args.iid is None:
                 parser.error("--iid is required for Realtime System")
             params: Parameters = parameters.Realtime[args.strategy]
-            system = RealtimeAPI(broker=args.broker,
-                                 group=args.group,
-                                 symbol=args.symbol,
-                                 timeframe=args.timeframe,
-                                 strategy=strategy,
-                                 parameters=params,
-                                 iid=args.iid)
+            system = RealtimeSystemAPI(broker=args.broker,
+                                       group=args.group,
+                                       symbol=args.symbol,
+                                       timeframe=args.timeframe,
+                                       strategy=strategy,
+                                       parameters=params,
+                                       iid=args.iid)
         case SystemType.Backtesting.name:
             if args.start is None:
                 parser.error("--start is required for Backtesting System")
@@ -99,16 +99,16 @@ def main():
             if args.spread is None:
                 parser.error("--spread is required for Backtesting System")
             params: Parameters = parameters.Backtesting[args.strategy]
-            system = BacktestingAPI(broker=args.broker,
-                                    group=args.group,
-                                    symbol=args.symbol,
-                                    timeframe=args.timeframe,
-                                    strategy=strategy,
-                                    parameters=params,
-                                    start=args.start,
-                                    stop=args.stop,
-                                    balance=args.balance,
-                                    spread=args.spread)
+            system = BacktestingSystemAPI(broker=args.broker,
+                                          group=args.group,
+                                          symbol=args.symbol,
+                                          timeframe=args.timeframe,
+                                          strategy=strategy,
+                                          parameters=params,
+                                          start=args.start,
+                                          stop=args.stop,
+                                          balance=args.balance,
+                                          spread=args.spread)
         case SystemType.Optimisation.name:
             if args.start is None:
                 parser.error("--start is required for Optimisation System")
@@ -128,23 +128,23 @@ def main():
                 parser.error("--fitness is required for Optimisation System")
             params: Parameters = parameters.Backtesting[args.strategy]
             config: Parameters = parameters.Optimisation[args.strategy]
-            system = OptimisationAPI(broker=args.broker,
-                                     group=args.group,
-                                     symbol=args.symbol,
-                                     timeframe=args.timeframe,
-                                     strategy=strategy,
-                                     parameters=params,
-                                     configuration=config,
-                                     start=args.start,
-                                     stop=args.stop,
-                                     training=args.training,
-                                     validation=args.validation,
-                                     testing=args.testing,
-                                     balance=args.balance,
-                                     spread=args.spread,
-                                     fitness=args.fitness,
-                                     console=console_verbose,
-                                     telegram=telegram_verbose)
+            system = OptimisationSystemAPI(broker=args.broker,
+                                           group=args.group,
+                                           symbol=args.symbol,
+                                           timeframe=args.timeframe,
+                                           strategy=strategy,
+                                           parameters=params,
+                                           configuration=config,
+                                           start=args.start,
+                                           stop=args.stop,
+                                           training=args.training,
+                                           validation=args.validation,
+                                           testing=args.testing,
+                                           balance=args.balance,
+                                           spread=args.spread,
+                                           fitness=args.fitness,
+                                           console=console_verbose,
+                                           telegram=telegram_verbose)
 
     console.info(lambda: "Executing")
     telegram.info(lambda: "Executing")

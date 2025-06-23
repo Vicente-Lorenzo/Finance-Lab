@@ -2,8 +2,9 @@ from Library.Parameters.Parameters import Parameters
 
 from Library.Robots.Engine.Machine import MachineAPI
 from Library.Robots.Strategy.Strategy import StrategyAPI
+from Library.Models.DDPG.Agent import DDPGAgentAPI
 
-class DDPGAPI(StrategyAPI):
+class DDPGStrategyAPI(StrategyAPI):
 
     def __init__(self, money_management: Parameters, risk_management: Parameters, signal_management: Parameters):
         super().__init__(money_management, risk_management, signal_management)
