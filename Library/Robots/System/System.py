@@ -1,7 +1,7 @@
 import polars as pl
 
 from typing import Type
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from threading import Thread
 
 from Library.Logging.Console import ConsoleAPI
@@ -22,7 +22,7 @@ from Library.Robots.Engine.Machine import MachineAPI
 from Library.Robots.Engine.Engine import EngineAPI
 from Library.Robots.Strategy.Strategy import StrategyAPI
 
-class SystemAPI(Thread):
+class SystemAPI(Thread, ABC):
 
     def __init__(self,
                  broker: str,
@@ -41,7 +41,7 @@ class SystemAPI(Thread):
         
         self._strategy: Type[StrategyAPI] = strategy
         
-        self._parameters: Parameters = parameters
+        self.parameters: Parameters = parameters
 
         self.strategy: StrategyAPI | None = None
         self.analyst: AnalystAPI | None = None
