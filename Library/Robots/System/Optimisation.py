@@ -18,9 +18,7 @@ from Library.Logging.Telegram import TelegramAPI
 from Library.Classes.Enums import VerboseType, TechnicalType
 from Library.Classes.Classes import Technical
 from Library.Parameters.Parameters import Parameters
-from Library.Utils.Performance import time
-from Library.Utils.Image import image
-from Library.Utils.Chart import gantt
+from Library.Utils import time, image, gantt
 
 from Library.Robots.Analyst.Analyst import AnalystAPI
 from Library.Robots.Analyst.Technicals import Technicals
