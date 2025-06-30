@@ -1,6 +1,6 @@
 from Library.Formulas.DateTime.Now import (
     datetime_now,
-    datetime_now_ms,
+    datetime_ms_now,
     date_now,
     time_now,
     year_now,
@@ -14,7 +14,7 @@ from Library.Formulas.DateTime.Now import (
 
 __all__ = [
     "datetime_now",
-    "datetime_now_ms",
+    "datetime_ms_now",
     "date_now",
     "time_now",
     "year_now",
