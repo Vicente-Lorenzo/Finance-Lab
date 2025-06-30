@@ -9,7 +9,7 @@ from Library.Classes.Enums import AssetType, PositionType, TradeType
 from Library.Classes.Classes import Account, Symbol, Position, Bar, Tick, Trade
 from Library.Database.Database import DatabaseAPI
 from Library.Parameters.Parameters import ParametersAPI, Parameters
-from Library.Utils.Performance import time
+from Library.Utils import time, datetime_to_string, string_to_datetime
 
 from Library.Robots.Protocol.Actions import ActionID, CompleteAction
 from Library.Robots.Protocol.Actions import OpenBuyAction, OpenSellAction
@@ -53,9 +53,9 @@ class BacktestingSystemAPI(SystemAPI):
 
         def parse_date(x: str | date) -> (str, date):
             if isinstance(x, str):
-                return x, datetime.strptime(x, "%d-%m-%Y").date()
+                return x, string_to_datetime(x, "%d-%m-%Y").date()
             else:
-                return x.strftime("%d-%m-%Y"), x
+                return datetime_to_string(x, "%d-%m-%Y"), x
 
         self._start_str, self._start_date = parse_date(start)
         self._stop_str, self._stop_date = parse_date(stop)

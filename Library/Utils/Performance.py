@@ -7,6 +7,7 @@ from time import perf_counter
 from datetime import datetime
 
 from Library.Logging.Console import ConsoleAPI
+from Library.Utils import datetime_to_string
 
 def time(func):
     @wraps(func)
@@ -22,7 +23,7 @@ def time(func):
 def profile(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        timestamp = datetime_to_string(datetime.now(), "%Y%m%d-%H%M%S")
         with cProfile.Profile() as pr:
             result = func(*args, **kwargs)
         ps = pstats.Stats(pr, stream=io.StringIO())

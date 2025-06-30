@@ -8,7 +8,7 @@ from Library.Classes.Enums import PositionType, TradeType
 from Library.Classes.Classes import Account, Symbol, Position, Trade, Bar, Tick
 from Library.Database.Database import DatabaseAPI
 from Library.Parameters.Parameters import Parameters
-from Library.Utils.Performance import time
+from Library.Utils import time, timestamp_to_datetime
 
 from Library.Robots.Protocol.Actions import ActionID, CompleteAction
 from Library.Robots.Protocol.Actions import OpenBuyAction, OpenSellAction
@@ -130,7 +130,7 @@ class RealtimeSystemAPI(SystemAPI):
         position_id = content[0]
         position_type = PositionType(content[1])
         trade_type = TradeType(content[2])
-        timestamp = datetime.fromtimestamp(content[3] / 1000.0)
+        timestamp = timestamp_to_datetime(content[3], milliseconds=True)
         entry_price = content[4]
         volume = content[5]
         sl = content[6]
@@ -145,8 +145,8 @@ class RealtimeSystemAPI(SystemAPI):
         trade_id = content[1]
         position_type = PositionType(content[2])
         trade_type = TradeType(content[3])
-        entry_timestamp = datetime.fromtimestamp(content[4] / 1000.0)
-        exit_timestamp = datetime.fromtimestamp(content[5] / 1000.0)
+        entry_timestamp = timestamp_to_datetime(content[4], milliseconds=True)
+        exit_timestamp = timestamp_to_datetime(content[5], milliseconds=True)
         entry_price = content[6]
         exit_price = content[7]
         volume = content[8]
@@ -159,7 +159,7 @@ class RealtimeSystemAPI(SystemAPI):
 
     def receive_update_bar(self) -> Bar:
         content = self._receive_update(size="<1q4d1q")
-        timestamp = datetime.fromtimestamp(content[0] / 1000.0)
+        timestamp = timestamp_to_datetime(content[0], milliseconds=True)
         open_price = content[1]
         high_price = content[2]
         low_price = content[3]
