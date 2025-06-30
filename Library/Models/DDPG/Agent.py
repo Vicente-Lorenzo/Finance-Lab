@@ -2,11 +2,10 @@ import numpy as np
 import torch as T
 import torch.nn.functional as F
 
-from Library.Models.Agent.Agent import AgentAPI
-from Library.Models.DDPG.Actor import ActorNetworkAPI
-from Library.Models.DDPG.Critic import CriticNetworkAPI
-from Library.Models.Memory.Memory import MemoryAPI
-from Library.Models.Noise.OrnsteinUhlenbeckNoise import OrnsteinUhlenbeckNoiseAPI
+from Library.Models.Agent import AgentAPI
+from Library.Models.DDPG import ActorNetworkAPI, CriticNetworkAPI
+from Library.Models.Memory import MemoryAPI
+from Library.Models.Noise import OrnsteinUhlenbeckNoiseAPI
 
 class DDPGAgentAPI(AgentAPI):
 

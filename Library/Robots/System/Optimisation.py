@@ -13,19 +13,15 @@ from concurrent.futures import as_completed, ThreadPoolExecutor
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
-from Library.Logging.Console import ConsoleAPI
-from Library.Logging.Telegram import TelegramAPI
-from Library.Classes.Enums import VerboseType, TechnicalType
-from Library.Classes.Classes import Technical
-from Library.Parameters.Parameters import Parameters
+from Library.Logging import ConsoleAPI, TelegramAPI
+from Library.Classes import VerboseType, TechnicalType, Technical
+from Library.Parameters import Parameters
 from Library.Utils import time, image, gantt
 
-from Library.Robots.Analyst.Analyst import AnalystAPI
-from Library.Robots.Analyst.Technicals import Technicals
-from Library.Robots.Manager.Manager import ManagerAPI
-from Library.Robots.Manager.Statistics import StatisticsAPI
-from Library.Robots.Strategy.Strategy import StrategyAPI
-from Library.Robots.System.Backtesting import BacktestingSystemAPI
+from Library.Robots.Analyst import AnalystAPI, TechnicalsAPI
+from Library.Robots.Manager import ManagerAPI, StatisticsAPI
+from Library.Robots.Strategy import StrategyAPI
+from Library.Robots.System import BacktestingSystemAPI
 
 class OptimisationSystemAPI(BacktestingSystemAPI):
 
@@ -167,10 +163,10 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
                         technical_list = parameter_value[0]
                         for technical_candidate in technical_list:
                             try:
-                                for _, technical in Technicals.find(TechnicalType(TechnicalType[technical_candidate])).items():
+                                for _, technical in TechnicalsAPI.find(TechnicalType(TechnicalType[technical_candidate])).items():
                                     max_window = max(max_window, unpack_technical_window(technical))
                             except KeyError:
-                                technical = getattr(Technicals, technical_candidate)
+                                technical = getattr(TechnicalsAPI, technical_candidate)
                                 max_window = max(max_window, unpack_technical_window(technical))
                     else:
                         for technical_candidate in parameter_value:
@@ -228,12 +224,12 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
                         all_combos = []
                         for technical_candidate in technical_list:
                             try:
-                                for technical_id, technical in Technicals.find(TechnicalType(TechnicalType[technical_candidate])).items():
+                                for technical_id, technical in TechnicalsAPI.find(TechnicalType(TechnicalType[technical_candidate])).items():
                                     extend, combos = unpack_combos(technical_id, technical.Parameters, technical.Constraints)
                                     all_combos.extend(combos)
                                     tune = True
                             except KeyError:
-                                technical = getattr(Technicals, technical_id := technical_candidate)
+                                technical = getattr(TechnicalsAPI, technical_id := technical_candidate)
                                 extend, combos = unpack_combos(technical_id, technical.Parameters, technical.Constraints)
                                 if extend:
                                     tune = True

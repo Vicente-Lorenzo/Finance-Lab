@@ -1,8 +1,8 @@
-from Library.Parameters.Parameters import Parameters
+from Library.Parameters import Parameters
 
-from Library.Robots.Engine.Machine import MachineAPI
-from Library.Robots.Strategy.Strategy import StrategyAPI
-from Library.Models.DDPG.Agent import DDPGAgentAPI
+from Library.Robots.Engine import MachineAPI
+from Library.Robots.Strategy import StrategyAPI
+from Library.Models.DDPG import DDPGAgentAPI
 
 class DDPGStrategyAPI(StrategyAPI):
 

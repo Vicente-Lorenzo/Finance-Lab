@@ -1,9 +1,6 @@
 from typing import Self, Callable
 
-from Library.Robots.Protocol.Actions import Action
-from Library.Robots.Protocol.Updates import Update
-from Library.Robots.Protocol.Updates import CompleteUpdate, AccountUpdate, SymbolUpdate, PositionUpdate
-from Library.Robots.Protocol.Updates import TradeUpdate, PositionTradeUpdate, BarUpdate, TickUpdate
+from Library.Robots.Protocol import *
 
 class StateAPI:
 

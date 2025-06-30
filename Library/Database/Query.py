@@ -1,8 +1,8 @@
 import hashlib
 from pathlib import Path
 
-from Library.Database.Database import DatabaseAPI
-from Library.Parameters.Parameters import ParametersAPI
+from Library.Database import DatabaseAPI
+from Library.Parameters import ParametersAPI
 
 def main():
     # --------------------------------------------------------------------------

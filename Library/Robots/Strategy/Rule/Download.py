@@ -1,7 +1,7 @@
-from Library.Parameters.Parameters import Parameters
+from Library.Parameters import Parameters
 
-from Library.Robots.Engine.Machine import MachineAPI
-from Library.Robots.Strategy.Strategy import StrategyAPI
+from Library.Robots.Engine import MachineAPI
+from Library.Robots.Strategy import StrategyAPI
 
 class DownloadStrategyAPI(StrategyAPI):
 

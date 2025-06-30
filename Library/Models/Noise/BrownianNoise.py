@@ -1,5 +1,5 @@
 import numpy as np
-from Library.Models.Noise.Noise import NoiseAPI
+from Library.Models.Noise import NoiseAPI
 
 class BrownianNoiseAPI(NoiseAPI):
     """

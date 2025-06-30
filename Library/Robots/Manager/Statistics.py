@@ -3,9 +3,9 @@ import polars as pl
 
 from datetime import datetime, timedelta
 
-from Library.Database.Database import DatabaseAPI
-from Library.Classes.Enums import TradeType
-from Library.Classes.Classes import Account, Trade
+from Library.Database import DatabaseAPI
+from Library.Classes import TradeType, Account, Trade
+from Library.Robots.Manager import EPSILON
 
 class StatisticsAPI:
     
@@ -142,8 +142,6 @@ class StatisticsAPI:
         CALMARRATIO,
         FITNESSRATIO
     ]
-    
-    EPSILON = 1e-2
     
     def __init__(self):
         self._data : pl.DataFrame = DatabaseAPI.format_trade_data(None)        
@@ -284,22 +282,22 @@ class StatisticsAPI:
 
     @staticmethod
     def calculate_sharpe_ratio(annualized_return_perc: float, annualized_volatility_perc: float, risk_free_rate: float = 0.0) -> float:
-        annualized_volatility_perc = annualized_volatility_perc if annualized_volatility_perc else StatisticsAPI.EPSILON
+        annualized_volatility_perc = annualized_volatility_perc if annualized_volatility_perc else EPSILON
         return (annualized_return_perc - risk_free_rate) / annualized_volatility_perc
 
     @staticmethod
     def calculate_sortino_ratio(annualized_return_perc: float, downside_volatility_perc: float, risk_free_rate: float = 0.0) -> float:
-        downside_volatility_perc = downside_volatility_perc if downside_volatility_perc else StatisticsAPI.EPSILON
+        downside_volatility_perc = downside_volatility_perc if downside_volatility_perc else EPSILON
         return (annualized_return_perc - risk_free_rate) / downside_volatility_perc if downside_volatility_perc else 0.0
 
     @staticmethod
     def calculate_calmar_ratio(annualized_return_perc: float, max_drawdown_perc: float, risk_free_rate: float = 0.0) -> float:
-        max_drawdown_perc = max_drawdown_perc if max_drawdown_perc else StatisticsAPI.EPSILON
+        max_drawdown_perc = max_drawdown_perc if max_drawdown_perc else EPSILON
         return (annualized_return_perc - risk_free_rate) / abs(max_drawdown_perc) if max_drawdown_perc else 0.0
 
     @staticmethod
     def calculate_fitness_ratio(annualized_return_perc: float, mean_drawdown_perc: float, risk_free_rate: float = 0.0) -> float:
-        mean_drawdown_perc = mean_drawdown_perc if mean_drawdown_perc else StatisticsAPI.EPSILON
+        mean_drawdown_perc = mean_drawdown_perc if mean_drawdown_perc else EPSILON
         return (annualized_return_perc - risk_free_rate) / abs(mean_drawdown_perc) if mean_drawdown_perc else 0.0
 
     def calculate_independent_metrics(self, initial_account: Account, start_timestamp: datetime, stop_timestamp: datetime, total_trades_df: pl.DataFrame) -> dict:

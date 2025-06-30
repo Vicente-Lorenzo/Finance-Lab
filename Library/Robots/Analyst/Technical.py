@@ -1,17 +1,15 @@
 import polars as pl
 
-from Library.Classes.Classes import Technical
+from Library.Classes import Technical
 
-from Library.Robots.Analyst.Market import MarketAPI
-from Library.Robots.Analyst.Series import SeriesAPI
-from Library.Robots.Analyst.Technicals import Technicals
+from Library.Robots.Analyst import SeriesAPI, MarketAPI, TechnicalsAPI
 
 class TechnicalAPI:
 
     def __init__(self, technical: str, parameters: list | None = None):
         self._offset: int = 1
 
-        self._technical: Technical = getattr(Technicals, technical)
+        self._technical: Technical = getattr(TechnicalsAPI, technical)
         self._parameters: dict = dict(zip(self._technical.Parameters.keys(), parameters))
         self._sids = [f"{technical}_{'_'.join(map(str, parameters)) + '_' if parameters else ''}{output}" for output in self._technical.Output]
 

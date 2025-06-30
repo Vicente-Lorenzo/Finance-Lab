@@ -1,13 +1,9 @@
-from Library.Classes.Enums import PositionType, TradeType, TechnicalMode
-from Library.Parameters.Parameters import Parameters
+from Library.Classes import PositionType, TradeType, TechnicalMode
+from Library.Parameters import Parameters
 
-from Library.Robots.Engine.Machine import MachineAPI
-from Library.Robots.Protocol.Updates import PositionUpdate, PositionTradeUpdate, TradeUpdate, BarUpdate, TickUpdate
-from Library.Robots.Protocol.Actions import OpenBuyAction, OpenSellAction
-from Library.Robots.Protocol.Actions import ModifyBuyVolumeAction, ModifySellVolumeAction, ModifyBuyStopLossAction, ModifySellStopLossAction
-from Library.Robots.Protocol.Actions import CloseBuyAction, CloseSellAction
-from Library.Robots.Protocol.Actions import AskBelowTargetAction, BidAboveTargetAction
-from Library.Robots.Strategy.Strategy import StrategyAPI
+from Library.Robots.Protocol import *
+from Library.Robots.Engine import MachineAPI
+from Library.Robots.Strategy import StrategyAPI
 
 class NNFXStrategyAPI(StrategyAPI):
 

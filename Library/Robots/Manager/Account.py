@@ -1,4 +1,4 @@
-from Library.Classes.Classes import Account
+from Library.Classes import Account
 
 class AccountAPI:
     

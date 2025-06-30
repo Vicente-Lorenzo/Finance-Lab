@@ -1,8 +1,7 @@
-from Library.Logging.Console import ConsoleAPI
+from Library.Logging import ConsoleAPI
 
-from Library.Robots.Protocol.Actions import Action
-from Library.Robots.Protocol.Updates import CompleteUpdate, AccountUpdate, SymbolUpdate, PositionUpdate, TradeUpdate, PositionTradeUpdate, BarUpdate, TickUpdate
-from Library.Robots.Engine.StateAPI import StateAPI, TransitionAPI
+from Library.Robots.Protocol import *
+from Library.Robots.Engine import StateAPI, TransitionAPI
 
 class MachineAPI:
 

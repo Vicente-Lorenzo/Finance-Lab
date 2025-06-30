@@ -4,24 +4,17 @@ import win32file
 from typing import Type
 from datetime import datetime
 
-from Library.Classes.Enums import PositionType, TradeType
-from Library.Classes.Classes import Account, Symbol, Position, Trade, Bar, Tick
-from Library.Database.Database import DatabaseAPI
-from Library.Parameters.Parameters import Parameters
+from Library.Classes import *
+from Library.Database import DatabaseAPI
+from Library.Parameters import Parameters
 from Library.Utils import time, timestamp_to_datetime
 
-from Library.Robots.Protocol.Actions import ActionID, CompleteAction
-from Library.Robots.Protocol.Actions import OpenBuyAction, OpenSellAction
-from Library.Robots.Protocol.Actions import ModifyBuyVolumeAction, ModifyBuyStopLossAction, ModifyBuyTakeProfitAction
-from Library.Robots.Protocol.Actions import ModifySellVolumeAction, ModifySellStopLossAction, ModifySellTakeProfitAction
-from Library.Robots.Protocol.Actions import CloseBuyAction, CloseSellAction
-from Library.Robots.Protocol.Actions import AskAboveTargetAction, AskBelowTargetAction, BidAboveTargetAction, BidBelowTargetAction
-from Library.Robots.Protocol.Updates import UpdateID, CompleteUpdate, BarUpdate
-from Library.Robots.Engine.Machine import MachineAPI
-from Library.Robots.Analyst.Analyst import AnalystAPI
-from Library.Robots.Manager.Manager import ManagerAPI
-from Library.Robots.Strategy.Strategy import StrategyAPI
-from Library.Robots.System.System import SystemAPI
+from Library.Robots.Protocol import *
+from Library.Robots.Engine import MachineAPI
+from Library.Robots.Analyst import AnalystAPI
+from Library.Robots.Manager import ManagerAPI
+from Library.Robots.Strategy import StrategyAPI
+from Library.Robots.System import SystemAPI
 
 class RealtimeSystemAPI(SystemAPI):
 

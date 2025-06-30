@@ -2,8 +2,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from Library.Logging.Console import ConsoleAPI
-from Library.Logging.Telegram import TelegramAPI
+from Library.Logging import ConsoleAPI, TelegramAPI
 
 class AgentAPI(ABC):
 

@@ -1,6 +1,6 @@
 import polars as pl
 
-from Library.Robots.Analyst.Series import SeriesAPI
+from Library.Robots.Analyst import SeriesAPI
 
 class MarketAPI:
 

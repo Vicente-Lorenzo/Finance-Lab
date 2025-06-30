@@ -4,23 +4,15 @@ from typing import Type
 from abc import ABC, abstractmethod
 from threading import Thread
 
-from Library.Logging.Console import ConsoleAPI
-from Library.Logging.Telegram import TelegramAPI
-from Library.Classes.Classes import Account, Symbol, Position, Trade, Bar, Tick
-from Library.Parameters.Parameters import Parameters
+from Library.Logging import ConsoleAPI,TelegramAPI
+from Library.Classes import Account, Symbol, Position, Trade, Bar, Tick
+from Library.Parameters import Parameters
 
-from Library.Robots.Protocol.Actions import ActionID, CompleteAction
-from Library.Robots.Protocol.Actions import OpenBuyAction, OpenSellAction
-from Library.Robots.Protocol.Actions import ModifyBuyVolumeAction, ModifyBuyStopLossAction, ModifyBuyTakeProfitAction
-from Library.Robots.Protocol.Actions import ModifySellVolumeAction, ModifySellStopLossAction, ModifySellTakeProfitAction
-from Library.Robots.Protocol.Actions import CloseBuyAction, CloseSellAction
-from Library.Robots.Protocol.Actions import AskAboveTargetAction, AskBelowTargetAction, BidAboveTargetAction, BidBelowTargetAction
-from Library.Robots.Protocol.Updates import UpdateID, CompleteUpdate, AccountUpdate, SymbolUpdate, PositionUpdate, TradeUpdate, PositionTradeUpdate, BarUpdate, TickUpdate
-from Library.Robots.Analyst.Analyst import AnalystAPI
-from Library.Robots.Manager.Manager import ManagerAPI
-from Library.Robots.Engine.Machine import MachineAPI
-from Library.Robots.Engine.Engine import EngineAPI
-from Library.Robots.Strategy.Strategy import StrategyAPI
+from Library.Robots.Protocol import *
+from Library.Robots.Analyst import AnalystAPI
+from Library.Robots.Manager import ManagerAPI
+from Library.Robots.Engine import MachineAPI, EngineAPI
+from Library.Robots.Strategy import StrategyAPI
 
 class SystemAPI(Thread, ABC):
 

@@ -1,8 +1,7 @@
 import math
 
-from Library.Classes.Classes import Account, Position, Trade, Bar
-
-from Library.Robots.Manager.Statistics import StatisticsAPI
+from Library.Classes import Account, Position, Trade, Bar
+from Library.Robots.Manager import EPSILON
 
 class PositionAPI:
 
@@ -42,7 +41,7 @@ class PositionAPI:
         new_trade.NetReturn = new_trade.NetPnL / new_trade.BaseBalance
         new_trade.NetLogReturn = math.log(new_trade.ExitBalance / new_trade.EntryBalance)
         new_trade.DrawdownReturn = new_trade.DrawdownPnL / new_trade.BaseBalance
-        new_trade.NetReturnDrawdown = new_trade.NetReturn / ((-1 * new_trade.DrawdownReturn) if new_trade.DrawdownReturn else StatisticsAPI.EPSILON)
+        new_trade.NetReturnDrawdown = new_trade.NetReturn / ((-1 * new_trade.DrawdownReturn) if new_trade.DrawdownReturn else EPSILON)
 
     @staticmethod
     def _close_position(positions: dict[int, Position], new_trade: Trade) -> None:

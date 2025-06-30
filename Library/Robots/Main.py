@@ -2,22 +2,14 @@ import polars as pl
 from typing import Type
 from argparse import ArgumentParser
 
-from Library.Logging.Logging import LoggingAPI
-from Library.Logging.Console import ConsoleAPI
-from Library.Logging.Telegram import TelegramAPI
-from Library.Classes.Enums import VerboseType, SystemType, StrategyType
-from Library.Parameters.Parameters import ParametersAPI, Parameters
+from Library.Logging import LoggingAPI, ConsoleAPI, TelegramAPI
+from Library.Classes import VerboseType, SystemType, StrategyType
+from Library.Parameters import ParametersAPI, Parameters
 from Library.Utils import time
 
-from Library.Robots.Manager.Statistics import StatisticsAPI
-from Library.Robots.Strategy.Strategy import StrategyAPI
-from Library.Robots.Strategy.Rule.Download import DownloadStrategyAPI
-from Library.Robots.Strategy.Rule.NNFX import NNFXStrategyAPI
-from Library.Robots.Strategy.Model.DDPG import DDPGStrategyAPI
-from Library.Robots.System.System import SystemAPI
-from Library.Robots.System.Realtime import RealtimeSystemAPI
-from Library.Robots.System.Backtesting import BacktestingSystemAPI
-from Library.Robots.System.Optimisation import OptimisationSystemAPI
+from Library.Robots.Manager import StatisticsAPI
+from Library.Robots.Strategy import StrategyAPI, DownloadStrategyAPI, NNFXStrategyAPI, DDPGStrategyAPI
+from Library.Robots.System import SystemAPI, RealtimeSystemAPI, BacktestingSystemAPI, OptimisationSystemAPI
 
 pl.Config.set_tbl_cols(-1)
 pl.Config.set_tbl_rows(-1)

@@ -5,24 +5,17 @@ from itertools import count
 from queue import Queue
 from typing import Type, Iterator, Callable
 
-from Library.Classes.Enums import AssetType, PositionType, TradeType
-from Library.Classes.Classes import Account, Symbol, Position, Bar, Tick, Trade
-from Library.Database.Database import DatabaseAPI
-from Library.Parameters.Parameters import ParametersAPI, Parameters
+from Library.Classes import *
+from Library.Database import DatabaseAPI
+from Library.Parameters import ParametersAPI, Parameters
 from Library.Utils import time, datetime_to_string, string_to_datetime
 
-from Library.Robots.Protocol.Actions import ActionID, CompleteAction
-from Library.Robots.Protocol.Actions import OpenBuyAction, OpenSellAction
-from Library.Robots.Protocol.Actions import ModifyBuyVolumeAction, ModifyBuyStopLossAction, ModifyBuyTakeProfitAction
-from Library.Robots.Protocol.Actions import ModifySellVolumeAction, ModifySellStopLossAction, ModifySellTakeProfitAction
-from Library.Robots.Protocol.Actions import CloseBuyAction, CloseSellAction
-from Library.Robots.Protocol.Actions import AskAboveTargetAction, AskBelowTargetAction, BidAboveTargetAction, BidBelowTargetAction
-from Library.Robots.Protocol.Updates import UpdateID, CompleteUpdate, BarUpdate
-from Library.Robots.Analyst.Analyst import AnalystAPI
-from Library.Robots.Manager.Manager import ManagerAPI
-from Library.Robots.Engine.Machine import MachineAPI
-from Library.Robots.Strategy.Strategy import StrategyAPI
-from Library.Robots.System.System import SystemAPI
+from Library.Robots.Protocol import *
+from Library.Robots.Analyst import AnalystAPI
+from Library.Robots.Manager import ManagerAPI
+from Library.Robots.Engine import MachineAPI
+from Library.Robots.Strategy import StrategyAPI
+from Library.Robots.System import SystemAPI
 
 class BacktestingSystemAPI(SystemAPI):
 

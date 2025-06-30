@@ -2,10 +2,9 @@ from enum import Enum
 from typing import Union
 from attrs import define, field
 
-from Library.Classes.Classes import Account, Symbol, Position, Trade, Bar, Tick
+from Library.Classes import Account, Symbol, Position, Trade, Bar, Tick
 
-from Library.Robots.Analyst.Analyst import AnalystAPI
-from Library.Robots.Manager.Manager import ManagerAPI
+
 
 class UpdateID(Enum):
     Complete = 0
@@ -30,23 +29,31 @@ class UpdateID(Enum):
 
 @define(slots=True)
 class CompleteUpdate:
+    from Library.Robots.Analyst import AnalystAPI
+    from Library.Robots.Manager import ManagerAPI
     Analyst: AnalystAPI = field()
     Manager: ManagerAPI = field()
 
 @define(slots=True)
 class AccountUpdate:
+    from Library.Robots.Analyst import AnalystAPI
+    from Library.Robots.Manager import ManagerAPI
     Analyst: AnalystAPI = field()
     Manager: ManagerAPI = field()
     Account: Account = field()
 
 @define(slots=True)
 class SymbolUpdate:
+    from Library.Robots.Analyst import AnalystAPI
+    from Library.Robots.Manager import ManagerAPI
     Analyst: AnalystAPI = field()
     Manager: ManagerAPI = field()
     Symbol: Symbol = field()
 
 @define(slots=True)
 class PositionUpdate:
+    from Library.Robots.Analyst import AnalystAPI
+    from Library.Robots.Manager import ManagerAPI
     Analyst: AnalystAPI = field()
     Manager: ManagerAPI = field()
     Bar: Bar = field()
@@ -55,6 +62,8 @@ class PositionUpdate:
 
 @define(slots=True)
 class TradeUpdate:
+    from Library.Robots.Analyst import AnalystAPI
+    from Library.Robots.Manager import ManagerAPI
     Analyst: AnalystAPI = field()
     Manager: ManagerAPI = field()
     Bar: Bar = field()
@@ -63,6 +72,8 @@ class TradeUpdate:
 
 @define(slots=True)
 class PositionTradeUpdate:
+    from Library.Robots.Analyst import AnalystAPI
+    from Library.Robots.Manager import ManagerAPI
     Analyst: AnalystAPI = field()
     Manager: ManagerAPI = field()
     Bar: Bar = field()
@@ -72,12 +83,16 @@ class PositionTradeUpdate:
 
 @define(slots=True)
 class BarUpdate:
+    from Library.Robots.Analyst import AnalystAPI
+    from Library.Robots.Manager import ManagerAPI
     Analyst: AnalystAPI = field()
     Manager: ManagerAPI = field()
     Bar: Bar = field()
 
 @define(slots=True)
 class TickUpdate:
+    from Library.Robots.Analyst import AnalystAPI
+    from Library.Robots.Manager import ManagerAPI
     Analyst: AnalystAPI = field()
     Manager: ManagerAPI = field()
     Tick: Tick = field()

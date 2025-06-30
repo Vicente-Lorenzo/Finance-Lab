@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Union
 from attrs import define, field
 
-from Library.Classes.Enums import PositionType
+from Library.Classes import PositionType
 
 class ActionID(Enum):
     Complete = 0
@@ -48,8 +48,20 @@ class ModifyBuyVolumeAction:
     Volume: float = field(converter=float)
 
 @define(slots=True)
+class ModifySellVolumeAction:
+    ActionID: ActionID = field(default=ActionID.ModifySellVolume, init=False)
+    PositionID: int = field(converter=int)
+    Volume: float = field(converter=float)
+
+@define(slots=True)
 class ModifyBuyStopLossAction:
     ActionID: ActionID = field(default=ActionID.ModifyBuyStopLoss, init=False)
+    PositionID: int = field(converter=int)
+    StopLoss: float = field(converter=float)
+
+@define(slots=True)
+class ModifySellStopLossAction:
+    ActionID: ActionID = field(default=ActionID.ModifySellStopLoss, init=False)
     PositionID: int = field(converter=int)
     StopLoss: float = field(converter=float)
 
@@ -58,18 +70,6 @@ class ModifyBuyTakeProfitAction:
     ActionID: ActionID = field(default=ActionID.ModifyBuyTakeProfit, init=False)
     PositionID: int = field(converter=int)
     TakeProfit: float = field(converter=float)
-
-@define(slots=True)
-class ModifySellVolumeAction:
-    ActionID: ActionID = field(default=ActionID.ModifySellVolume, init=False)
-    PositionID: int = field(converter=int)
-    Volume: float = field(converter=float)
-
-@define(slots=True)
-class ModifySellStopLossAction:
-    ActionID: ActionID = field(default=ActionID.ModifySellStopLoss, init=False)
-    PositionID: int = field(converter=int)
-    StopLoss: float = field(converter=float)
 
 @define(slots=True)
 class ModifySellTakeProfitAction:

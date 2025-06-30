@@ -1,10 +1,9 @@
 import math
 import talib
 
-from Library.Classes.Enums import TechnicalType
-from Library.Classes.Classes import Technical
+from Library.Classes import TechnicalType, Technical
 
-class Technicals:
+class TechnicalsAPI:
 
     @classmethod
     def find(cls, technical_type: TechnicalType) -> dict[str, Technical]:
@@ -61,7 +60,7 @@ class Technicals:
         Input=lambda market: [market.ClosePrice],
         Parameters={"window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda window: window >= 5,
-        Function=lambda series, window: Technicals.custom_HMA(series, window),
+        Function=lambda series, window: TechnicalsAPI.custom_HMA(series, window),
         Output=["Result"],
         FilterBuy=lambda market, technical, shift: market.ClosePrice.over(technical.Result, shift),
         FilterSell=lambda market, technical, shift: market.ClosePrice.under(technical.Result, shift),
@@ -167,7 +166,7 @@ class Technicals:
         Input=lambda market: [market.ClosePrice],
         Parameters={"fast_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]], "slow_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda fast_window, slow_window: fast_window >= 5 and slow_window >= 5 and fast_window < slow_window,
-        Function=lambda series, fast_window, slow_window: (Technicals.custom_HMA(series, fast_window), Technicals.custom_HMA(series, slow_window)),
+        Function=lambda series, fast_window, slow_window: (TechnicalsAPI.custom_HMA(series, fast_window), TechnicalsAPI.custom_HMA(series, slow_window)),
         Output=["Fast", "Slow"],
         FilterBuy=lambda _, technical, shift: technical.Fast.over(technical.Slow),
         FilterSell=lambda _, technical, shift: technical.Fast.under(technical.Slow),

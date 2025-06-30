@@ -5,9 +5,8 @@ import psycopg2.extras as pge
 
 from typing import List
 
-from Library.Classes.Enums import PositionType
-from Library.Classes.Classes import astuple, AssetType, TradeType, CommissionType, SwapType, DayOfWeek, Symbol, Bar, Trade
-from Library.Logging.Console import ConsoleAPI
+from Library.Classes import *
+from Library.Logging import ConsoleAPI
 from Library.Utils import time
 
 class DatabaseAPI:

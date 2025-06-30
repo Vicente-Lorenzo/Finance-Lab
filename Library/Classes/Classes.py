@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Callable
 from attrs import define, field, fields
 
-from Library.Classes.Enums import AssetType, PositionType, TradeType, CommissionType, SwapType, DayOfWeek, TechnicalType
+from Library.Classes import AssetType, PositionType, TradeType, CommissionType, SwapType, DayOfWeek, TechnicalType
 
 @define(slots=True)
 class Account:
@@ -99,7 +99,7 @@ class Technical:
     SignalSell: Callable = field()
 
 @define(slots=True, frozen=True)
-class TelegramBot:
+class Telegram:
     Token: str = field()
     ChatID: str = field()
 
