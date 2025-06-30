@@ -7,7 +7,7 @@ from Library.Logging.Console import ConsoleAPI
 from Library.Logging.Telegram import TelegramAPI
 from Library.Classes.Enums import VerboseType, SystemType, StrategyType
 from Library.Parameters.Parameters import ParametersAPI, Parameters
-from Library.Utils.Performance import time
+from Library.Utils import time
 
 from Library.Robots.Manager.Statistics import StatisticsAPI
 from Library.Robots.Strategy.Strategy import StrategyAPI
