@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from Library.Logging import ConsoleAPI, TelegramAPI
+from Library.Logging import HandlerAPI
 
 class AgentAPI(ABC):
 
@@ -19,16 +19,15 @@ class AgentAPI(ABC):
         self._symbol = symbol
         self._timeframe = timeframe
 
-        self._console: ConsoleAPI = ConsoleAPI(class_name=self.__class__.__name__, role_name="Agent Management")
-        self._telegram: TelegramAPI = TelegramAPI(class_name=self.__class__.__name__, role_name="Agent Management")
+        self._log: HandlerAPI = HandlerAPI(class_name=self.__class__.__name__, subclass_name="Agent Management")
 
     @abstractmethod
     def save(self) -> None:
-        self._console.debug(lambda: f"Saved agent state for {self._model}")
+        self._log.debug(lambda: f"Saved agent state for {self._model}")
 
     @abstractmethod
     def load(self) -> None:
-        self._console.debug(lambda: f"Loaded agent state for {self._model}")
+        self._log.debug(lambda: f"Loaded agent state for {self._model}")
 
     @abstractmethod
     def memorise(self, state, action, reward, next_state, done) -> None:

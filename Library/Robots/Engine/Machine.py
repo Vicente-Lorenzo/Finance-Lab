@@ -1,4 +1,4 @@
-from Library.Logging import ConsoleAPI
+from Library.Logging import HandlerAPI
 
 from Library.Robots.Protocol import *
 from Library.Robots.Engine import StateAPI, TransitionAPI
@@ -8,7 +8,7 @@ class MachineAPI:
     def __init__(self, name: str | None):
         self.at = None
         self._states: list[StateAPI] = []
-        self._console: ConsoleAPI = ConsoleAPI(class_name=self.__class__.__name__, role_name=name)
+        self._log: HandlerAPI = HandlerAPI(class_name=self.__class__.__name__, subclass_name=name)
 
     def create_state(self, name: str | None, end: bool) -> StateAPI:
         state = StateAPI(name, end)
@@ -20,7 +20,7 @@ class MachineAPI:
         if transition is not None:
             ret = transition.perform_action(args)
             if transition.reason is not None:
-                self._console.debug(lambda: f"[{self.at.name}] > {transition.reason} > [{transition.to.name}]")
+                self._log.debug(lambda: f"[{self.at.name}] > {transition.reason} > [{transition.to.name}]")
             self.at = transition.to
             return ret if ret is not None else []
         return []

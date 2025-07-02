@@ -217,20 +217,20 @@ class BacktestingSystemAPI(SystemAPI):
 
     def send_action_open(self, action: OpenBuyAction | OpenSellAction) -> None:
         if action.Volume > self.symbol_data.VolumeInUnitsMax:
-            return self._console.error(lambda: f"Action Open: Invalid Volume above the maximum units ({action.Volume})")
+            return self._log.error(lambda: f"Action Open: Invalid Volume above the maximum units ({action.Volume})")
         if action.Volume < self.symbol_data.VolumeInUnitsMin:
-            return self._console.error(lambda: f"Action Open: Invalid Volume below the minimum units ({action.Volume})")
+            return self._log.error(lambda: f"Action Open: Invalid Volume below the minimum units ({action.Volume})")
         if action.Volume % self.symbol_data.VolumeInUnitsStep != 0.0:
-            return self._console.error(lambda: f"Action Open: Invalid Volume not normalised to minimum step ({action.Volume})")
+            return self._log.error(lambda: f"Action Open: Invalid Volume not normalised to minimum step ({action.Volume})")
         if action.StopLoss:
             action.StopLoss = action.StopLoss * self.symbol_data.PipSize
             if action.StopLoss < self.symbol_data.TickSize:
-                self._console.error(lambda: f"Action Open: Invalid Stop Loss below the minimum tick ({action.StopLoss})")
+                self._log.error(lambda: f"Action Open: Invalid Stop Loss below the minimum tick ({action.StopLoss})")
                 action.StopLoss = None
         if action.TakeProfit:
             action.TakeProfit = action.TakeProfit * self.symbol_data.PipSize
             if action.TakeProfit < self.symbol_data.TickSize:
-                self._console.error(lambda: f"Action Open: Invalid Take Profit below the minimum tick ({action.TakeProfit})")
+                self._log.error(lambda: f"Action Open: Invalid Take Profit below the minimum tick ({action.TakeProfit})")
                 action.TakeProfit = None
 
         update_id: UpdateID | None = None
@@ -253,22 +253,22 @@ class BacktestingSystemAPI(SystemAPI):
     def send_action_modify_volume(self, action: ModifyBuyVolumeAction | ModifySellVolumeAction) -> None:
         position: Position = self._find_position(action.PositionID)
         if not position:
-            return self._console.error(lambda: "Action Modify Volume: Position not found")
+            return self._log.error(lambda: "Action Modify Volume: Position not found")
         if action.Volume == position.Volume:
-            return self._console.error(lambda: f"Action Modify Volume: Invalid new Volume equal to old Volume ({action.Volume})")
+            return self._log.error(lambda: f"Action Modify Volume: Invalid new Volume equal to old Volume ({action.Volume})")
         if action.Volume > self.symbol_data.VolumeInUnitsMax:
-            return self._console.error(lambda: f"Action Modify Volume: Invalid Volume above the maximum units ({action.Volume})")
+            return self._log.error(lambda: f"Action Modify Volume: Invalid Volume above the maximum units ({action.Volume})")
         if action.Volume < self.symbol_data.VolumeInUnitsMin:
-            return self._console.error(lambda: f"Action Modify Volume: Invalid Volume below the minimum units ({action.Volume})")
+            return self._log.error(lambda: f"Action Modify Volume: Invalid Volume below the minimum units ({action.Volume})")
         if action.Volume % self.symbol_data.VolumeInUnitsStep != 0.0:
-            return self._console.error(lambda: f"Action Modify Volume: Invalid Volume not normalised to minimum step ({action.Volume})")
+            return self._log.error(lambda: f"Action Modify Volume: Invalid Volume not normalised to minimum step ({action.Volume})")
 
         update_id: UpdateID | None = None
         trade: Trade | None = None
         match action.ActionID:
             case ActionID.ModifyBuyVolume:
                 if action.Volume == 0.0:
-                    self._console.warning(lambda: f"Action Modify Volume: Closing Buy position as Volume is zero")
+                    self._log.warning(lambda: f"Action Modify Volume: Closing Buy position as Volume is zero")
                     return self.send_action_close(CloseBuyAction(action.PositionID))
                 update_id = UpdateID.ModifiedBuyVolume
                 position.Volume = position.Volume - action.Volume
@@ -276,7 +276,7 @@ class BacktestingSystemAPI(SystemAPI):
                 position.Volume = action.Volume
             case ActionID.ModifySellVolume:
                 if action.Volume == 0.0:
-                    self._console.warning(lambda: f"Action Modify Volume: Closing Sell position as Volume is zero")
+                    self._log.warning(lambda: f"Action Modify Volume: Closing Sell position as Volume is zero")
                     return self.send_action_close(CloseSellAction(action.PositionID))
                 update_id = UpdateID.ModifiedSellVolume
                 position.Volume = position.Volume - action.Volume
@@ -296,9 +296,9 @@ class BacktestingSystemAPI(SystemAPI):
     def send_action_modify_stop_loss(self, action: ModifyBuyStopLossAction | ModifySellStopLossAction) -> None:
         position: Position = self._find_position(action.PositionID)
         if not position:
-            return self._console.error(lambda: "Action Modify Stop Loss: Position not found")
+            return self._log.error(lambda: "Action Modify Stop Loss: Position not found")
         if action.StopLoss == position.StopLoss:
-            return self._console.error(lambda: f"Action Modify Stop Loss: Invalid new Stop Loss equal to old Stop Loss ({action.StopLoss})")
+            return self._log.error(lambda: f"Action Modify Stop Loss: Invalid new Stop Loss equal to old Stop Loss ({action.StopLoss})")
         if action.StopLoss:
             action.StopLoss = action.StopLoss
 
@@ -306,11 +306,11 @@ class BacktestingSystemAPI(SystemAPI):
         match action.ActionID:
             case ActionID.ModifyBuyStopLoss:
                 if action.StopLoss > self._tick_open_next.Bid:
-                    return self._console.error(lambda: f"Action Modify Stop Loss: Invalid Buy Stop Loss above to the Bid Price ({action.StopLoss})")
+                    return self._log.error(lambda: f"Action Modify Stop Loss: Invalid Buy Stop Loss above to the Bid Price ({action.StopLoss})")
                 update_id = UpdateID.ModifiedBuyStopLoss
             case ActionID.ModifySellStopLoss:
                 if action.StopLoss < self._tick_open_next.Ask:
-                    return self._console.error(lambda: f"Action Modify Stop Loss: Invalid Sell Stop Loss below the Ask Price ({action.StopLoss})")
+                    return self._log.error(lambda: f"Action Modify Stop Loss: Invalid Sell Stop Loss below the Ask Price ({action.StopLoss})")
                 update_id = UpdateID.ModifiedSellStopLoss
 
         position.StopLoss = action.StopLoss
@@ -324,9 +324,9 @@ class BacktestingSystemAPI(SystemAPI):
     def send_action_modify_take_profit(self, action: ModifyBuyTakeProfitAction | ModifySellTakeProfitAction) -> None:
         position: Position = self._find_position(action.PositionID)
         if not position:
-            return self._console.error(lambda: "Action Modify Take Profit: Position not found")
+            return self._log.error(lambda: "Action Modify Take Profit: Position not found")
         if action.TakeProfit == position.TakeProfit:
-            return self._console.error(lambda: f"Action Modify Take Profit: Invalid new Take Profit equal to old Take Profit ({action.TakeProfit})")
+            return self._log.error(lambda: f"Action Modify Take Profit: Invalid new Take Profit equal to old Take Profit ({action.TakeProfit})")
         if action.TakeProfit:
             action.TakeProfit = action.TakeProfit
 
@@ -334,11 +334,11 @@ class BacktestingSystemAPI(SystemAPI):
         match action.ActionID:
             case ActionID.ModifyBuyTakeProfit:
                 if action.TakeProfit < self._tick_open_next.Bid:
-                    return self._console.error(lambda: f"Action Modify Take Profit: Invalid Buy Take Profit below the Bid Price ({action.TakeProfit})")
+                    return self._log.error(lambda: f"Action Modify Take Profit: Invalid Buy Take Profit below the Bid Price ({action.TakeProfit})")
                 update_id = UpdateID.ModifiedBuyTakeProfit
             case ActionID.ModifySellTakeProfit:
                 if action.TakeProfit > self._tick_open_next.Ask:
-                    return self._console.error(lambda: f"Action Modify Take Profit: Invalid Sell Take Profit above the Entry Price ({action.TakeProfit})")
+                    return self._log.error(lambda: f"Action Modify Take Profit: Invalid Sell Take Profit above the Entry Price ({action.TakeProfit})")
                 update_id = UpdateID.ModifiedSellTakeProfit
 
         position.TakeProfit = action.TakeProfit
@@ -352,7 +352,7 @@ class BacktestingSystemAPI(SystemAPI):
     def send_action_close(self, action: CloseBuyAction | CloseSellAction, tick: Tick = None) -> None:
         position: Position = self._find_position(action.PositionID)
         if not position:
-            return self._console.error(lambda: "Action Close: Position not found")
+            return self._log.error(lambda: "Action Close: Position not found")
 
         update_id: UpdateID | None = None
         trade: Trade | None = None
@@ -519,9 +519,9 @@ class BacktestingSystemAPI(SystemAPI):
 
         def update_results(update: CompleteUpdate):
             self.individual_trades, self.aggregated_trades, self.statistics = update.Manager.Statistics.data(self._initial_account, self._start_date, self._stop_date)
-            self._console.debug(lambda: str(self.individual_trades))
-            self._console.debug(lambda: str(self.aggregated_trades))
-            self._console.debug(lambda: str(self.statistics))
+            self._log.debug(lambda: str(self.individual_trades))
+            self._log.debug(lambda: str(self.aggregated_trades))
+            self._log.debug(lambda: str(self.statistics))
 
         initialisation.on_complete(to=execution, action=init_market, reason="Market Initialized")
         initialisation.on_shutdown(to=termination, action=None, reason="Abruptly Terminated")

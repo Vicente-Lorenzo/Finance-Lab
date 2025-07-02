@@ -6,7 +6,7 @@ import psycopg2.extras as pge
 from typing import List
 
 from Library.Classes import *
-from Library.Logging import ConsoleAPI
+from Library.Logging import HandlerAPI
 from Library.Utils import time
 
 class DatabaseAPI:
@@ -128,7 +128,14 @@ class DatabaseAPI:
         self._password: str = self._generate_password(self._user)
         self._connection = None
 
-        self._console: ConsoleAPI = ConsoleAPI(class_name=self.__class__.__name__, role_name="Database Management", broker=broker, group=group, symbol=symbol, timeframe=timeframe)
+        self._log: HandlerAPI = HandlerAPI(
+            class_name=self.__class__.__name__,
+            subclass_name="Database Management",
+            broker=broker,
+            group=group,
+            symbol=symbol,
+            timeframe=timeframe
+        )
 
     @staticmethod
     def _generate_user(broker: str, symbol: str, timeframe: str) -> str:
@@ -147,20 +154,20 @@ class DatabaseAPI:
                 user=self._user,
                 password=self._password
             )
-            self._console.info(lambda: "Connected")
+            self._log.info(lambda: "Connected")
         except Exception as e:
-            self._console.error(lambda: str(e))
+            self._log.error(lambda: str(e))
             raise e
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self._connection:
             self._connection.close()
-        self._console.info(lambda: "Disconnected")
+        self._log.info(lambda: "Disconnected")
         if exc_type or exc_value or exc_traceback:
-            self._console.critical(lambda: f"Exception type: {exc_type}")
-            self._console.critical(lambda: f"Exception value: {exc_value}")
-            self._console.critical(lambda: f"Traceback: {exc_traceback}")
+            self._log.critical(lambda: f"Exception type: {exc_type}")
+            self._log.critical(lambda: f"Exception value: {exc_value}")
+            self._log.critical(lambda: f"Traceback: {exc_traceback}")
     
     @classmethod
     def format_market_data(cls, market_data: pl.DataFrame | List[Bar] | Bar | None) -> pl.DataFrame:
@@ -201,7 +208,7 @@ class DatabaseAPI:
     @time
     def push_market_data(self, data: pl.DataFrame) -> None:
         if not self._connection:
-            self._console.error(lambda: "Connection is not established")
+            self._log.error(lambda: "Connection is not established")
             raise
 
         try:
@@ -221,16 +228,16 @@ class DatabaseAPI:
 
                 pge.execute_values(cursor, query, records)
                 self._connection.commit()
-                self._console.info(lambda: f"Saved {len(data)} market data points")
+                self._log.info(lambda: f"Saved {len(data)} market data points")
         except Exception as e:
             self._connection.rollback()
-            self._console.error(lambda: str(e))
+            self._log.error(lambda: str(e))
             raise e
 
     @time
     def push_symbol_data(self, symbol: Symbol) -> None:
         if not self._connection:
-            self._console.error(lambda: "Connection is not established")
+            self._log.error(lambda: "Connection is not established")
             raise
 
         try:
@@ -257,16 +264,16 @@ class DatabaseAPI:
 
                 cursor.execute(query, astuple(symbol))
                 self._connection.commit()
-                self._console.info(lambda: f"Saved symbol data points")
+                self._log.info(lambda: f"Saved symbol data points")
         except Exception as e:
             self._connection.rollback()
-            self._console.error(lambda: str(e))
+            self._log.error(lambda: str(e))
             raise e
 
     @time
     def pull_market_data(self, start: str | None = None, stop: str | None = None, window: int | None = None) -> pl.DataFrame | None:
         if not self._connection:
-            self._console.error(lambda: "Connection is not established")
+            self._log.error(lambda: "Connection is not established")
             raise
 
         table_name = f'"{self._symbol}"."{self._timeframe}"'
@@ -293,7 +300,7 @@ class DatabaseAPI:
                             first_window_timestamp = preceding_rows[-1][0]
                             start = first_window_timestamp
                 except Exception as e:
-                    self._console.error(lambda: str(e))
+                    self._log.error(lambda: str(e))
                     raise e
 
             params.append(start)
@@ -315,16 +322,16 @@ class DatabaseAPI:
                 results = cursor.fetchall()
                 results = [Bar(*result) for result in results]
                 data = self.format_market_data(results)
-                self._console.info(lambda: f"Loaded {len(data)} data points")
+                self._log.info(lambda: f"Loaded {len(data)} data points")
                 return data
         except Exception as e:
-            self._console.error(lambda: str(e))
+            self._log.error(lambda: str(e))
             raise e
 
     @time
     def pull_symbol_data(self) -> Symbol | None:
         if not self._connection:
-            self._console.error(lambda: "Connection is not established")
+            self._log.error(lambda: "Connection is not established")
             raise
 
         query = f'SELECT * FROM "{self._symbol}"."Symbol"'
@@ -333,7 +340,7 @@ class DatabaseAPI:
             with self._connection.cursor() as cursor:
                 cursor.execute(query)
                 result = cursor.fetchone()
-                self._console.info(lambda: f"Loaded symbol data points")
+                self._log.info(lambda: f"Loaded symbol data points")
                 
                 return Symbol(BaseAsset=AssetType(AssetType[result[0]]),
                               QuoteAsset=AssetType(AssetType[result[1]]),
@@ -351,7 +358,7 @@ class DatabaseAPI:
                               SwapType=SwapType(SwapType[result[13]]),
                               SwapExtraDay=DayOfWeek(DayOfWeek[result[14]]))
         except Exception as e:
-            self._console.error(lambda: str(e))
+            self._log.error(lambda: str(e))
             raise e
 
     def generate_market_data(self):

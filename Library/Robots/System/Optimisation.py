@@ -13,7 +13,7 @@ from concurrent.futures import as_completed, ThreadPoolExecutor
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
-from Library.Logging import ConsoleAPI, TelegramAPI
+from Library.Logging import ConsoleAPI, TelegramAPI, FileAPI
 from Library.Classes import VerboseType, TechnicalType, Technical
 from Library.Parameters import Parameters
 from Library.Utils import time, image, gantt
@@ -43,7 +43,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
                  symbol: str,
                  timeframe: str,
                  strategy: Type[StrategyAPI],
-                 parameters: Parameters, 
+                 parameters: Parameters,
                  configuration: Parameters,
                  start: str,
                  stop: str,
@@ -62,9 +62,9 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
         self._validation: int = validation
         self._testing: int = testing
         self._fitness: str = fitness
-        self._console_verbose: VerboseType = console
-        self._telegram_verbose: VerboseType = telegram
-        
+        self._console: VerboseType = console
+        self._telegram: VerboseType = telegram
+
         self._wf_stages = self.unpack_walk_forward_stages(self._start_date, self._stop_date, self._training, self._validation, self._testing)
         
         self._dof_stages = self.unpack_degrees_of_freedom_stages(self._configuration.MoneyManagement,
@@ -336,6 +336,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
 
         ConsoleAPI.level(VerboseType.Critical)
         TelegramAPI.level(VerboseType.Critical)
+        FileAPI.level(VerboseType.Critical)
 
         with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
 
@@ -364,9 +365,10 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
 
                     progress.update(1)
 
-        ConsoleAPI.level(self._console_verbose)
-        TelegramAPI.level(self._telegram_verbose)
-        
+        ConsoleAPI.level(self._console)
+        TelegramAPI.level(self._telegram)
+        ConsoleAPI.level(self._console)
+
         df = pl.DataFrame(results, strict=False)
         df = df.sort(by=self._fitness, descending=True, nulls_last=True)
 
@@ -401,9 +403,9 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
             
             ctf_stage = self.pack_coarse_to_fine_parameters(ctf_stage, last_parameters)
 
-            self._console.info(lambda: f"Completed Coarse-to-Fine ID={ctf_id} with {last_df}")
-            self._telegram.info(lambda: f"Completed Coarse-to-Fine ID={ctf_id}")
-            self._telegram.info(lambda: image(last_df.head(50)))
+            self._log.info(lambda: f"Completed Coarse-to-Fine ID={ctf_id} with {last_df}")
+            self._log.info(lambda: f"Completed Coarse-to-Fine ID={ctf_id}")
+            self._log.info(lambda: image(last_df.head(50)))
 
         ctf_df = pl.DataFrame(results, strict=False)
         ctf_df = ctf_df.sort(by=self.CTFSTAGEID, descending=True)
@@ -436,9 +438,9 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
             })
             parameters.append(last_parameters)
 
-            self._console.info(lambda: f"Completed Degrees-of-Freedom ID={dof_id} with {last_df}")
-            self._telegram.info(lambda: f"Completed Degrees-of-Freedom ID={dof_id}")
-            self._telegram.info(lambda: image(last_df))
+            self._log.info(lambda: f"Completed Degrees-of-Freedom ID={dof_id} with {last_df}")
+            self._log.info(lambda: f"Completed Degrees-of-Freedom ID={dof_id}")
+            self._log.info(lambda: image(last_df))
 
         dof_df = pl.DataFrame(results, strict=False)
         dof_df = dof_df.sort(by=self.DOFSTAGEID, descending=True)
@@ -448,8 +450,8 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
     @time
     def run(self) -> None:
 
-        self._telegram.info(lambda: gantt(self._wf_stages))
-        self._console.debug(lambda: f"Window: {self.window}")
+        self._log.info(lambda: gantt(self._wf_stages))
+        self._log.debug(lambda: f"Window: {self.window}")
         
         results: list[dict] = []
         
@@ -473,13 +475,13 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
                 **opt_bt_parameters.ManagerManagement
             })
             
-            self._console.info(lambda: f"Completed Walk-Forward ID={wf_id} with {opt_df}")
-            self._telegram.info(lambda: f"Completed Walk-Forward ID={wf_id}")
-            self._telegram.info(lambda: image(opt_df))
+            self._log.info(lambda: f"Completed Walk-Forward ID={wf_id} with {opt_df}")
+            self._log.info(lambda: f"Completed Walk-Forward ID={wf_id}")
+            self._log.info(lambda: image(opt_df))
 
         wf_df = pl.DataFrame(results, strict=False)
         wf_df = wf_df.sort(by=self.WFSTAGEID, descending=True)
         
-        self._console.info(lambda: f"Completed Optimisation: {wf_df}")
-        self._console.info(lambda: f"Completed Optimisation")
-        self._telegram.info(lambda: image(wf_df))
+        self._log.info(lambda: f"Completed Optimisation: {wf_df}")
+        self._log.info(lambda: f"Completed Optimisation")
+        self._log.info(lambda: image(wf_df))

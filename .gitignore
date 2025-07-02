@@ -14,5 +14,6 @@ LocalStorage/
 *.algo
 *.sql
 *.pstat
+*.log
 
 Research.ipynb

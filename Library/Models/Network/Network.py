@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from abc import ABC, abstractmethod
 
-from Library.Logging import ConsoleAPI, TelegramAPI
+from Library.Logging import HandlerAPI
 from Library.Parameters import ParametersAPI
 
 class NetworkAPI(nn.Module, ABC):
@@ -23,10 +23,9 @@ class NetworkAPI(nn.Module, ABC):
         self._symbol = symbol
         self._timeframe = timeframe
 
-        self._filename = ParametersAPI.PATH / broker / group / symbol / timeframe / model / f"{role}"
+        self._filename = ParametersAPI.PATH / broker / group / symbol / timeframe / model / role
 
-        self._console: ConsoleAPI = ConsoleAPI(class_name=self.__class__.__name__, role_name="Network Management")
-        self._telegram: TelegramAPI = TelegramAPI(class_name=self.__class__.__name__, role_name="Network Management")
+        self._log: HandlerAPI = HandlerAPI(class_name=self.__class__.__name__, subclass_name="Network Management")
 
         self.init()
 
@@ -38,9 +37,9 @@ class NetworkAPI(nn.Module, ABC):
         raise NotImplementedError
 
     def save(self) -> None:
-        T.save(self.state_dict(), self.checkpoint_file)
-        self._console.debug(lambda: f"Saved network state for {self._model} {self._role}")
+        T.save(self.state_dict(), str(self._filename))
+        self._log.debug(lambda: f"Saved network state for {self._model} {self._role}")
 
     def load(self) -> None:
-        self.load_state_dict(T.load(self.checkpoint_file))
-        self._console.debug(lambda: f"Loaded network state for {self._model} {self._role}")
+        self.load_state_dict(T.load(str(self._filename)))
+        self._log.debug(lambda: f"Loaded network state for {self._model} {self._role}")

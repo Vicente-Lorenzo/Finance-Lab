@@ -4,7 +4,7 @@ from typing import Type
 from abc import ABC, abstractmethod
 from threading import Thread
 
-from Library.Logging import ConsoleAPI,TelegramAPI
+from Library.Logging import HandlerAPI
 from Library.Classes import Account, Symbol, Position, Trade, Bar, Tick
 from Library.Parameters import Parameters
 
@@ -43,19 +43,18 @@ class SystemAPI(Thread, ABC):
         self.aggregated_trades: pl.DataFrame | None = None
         self.statistics: pl.DataFrame | None = None
 
-        self._console: ConsoleAPI = ConsoleAPI(class_name=self.__class__.__name__, role_name="System Management")
-        self._telegram: TelegramAPI = TelegramAPI(class_name=self.__class__.__name__, role_name="System Management")
-    
+        self._log: HandlerAPI = HandlerAPI(class_name=self.__class__.__name__, subclass_name="System Management")
+
     def __enter__(self):
-        self._console.info(lambda: "Initiated")
+        self._log.info(lambda: "Initiated")
         return self
     
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        self._console.info(lambda: "Terminated")
+        self._log.info(lambda: "Terminated")
         if exc_type or exc_value or exc_traceback:
-            self._console.critical(lambda: f"Exception type: {exc_type}")
-            self._console.critical(lambda: f"Exception value: {exc_value}")
-            self._console.critical(lambda: f"Traceback: {exc_traceback}")
+            self._log.critical(lambda: f"Exception type: {exc_type}")
+            self._log.critical(lambda: f"Exception value: {exc_value}")
+            self._log.critical(lambda: f"Traceback: {exc_traceback}")
     
     @abstractmethod
     def send_action_complete(self, action: CompleteAction) -> None:
@@ -177,11 +176,11 @@ class SystemAPI(Thread, ABC):
                     case UpdateID.BidBelowTarget:
                         actions += system.perform_update_bid_below_target(TickUpdate(analyst, manager, self.receive_update_target()))
                     case UpdateID.Shutdown:
-                        self._console.warning(lambda: "Shutdown strategy and safely terminate operations")
+                        self._log.warning(lambda: "Shutdown strategy and safely terminate operations")
                         actions += system.perform_update_shutdown(CompleteUpdate(analyst, manager))
                         break
                     case _:
-                        self._console.error(lambda: f"Received invalid update ID: {update_id}")
+                        self._log.error(lambda: f"Received invalid update ID: {update_id}")
                         raise
             for action in actions:
                 match action.ActionID:
@@ -206,7 +205,7 @@ class SystemAPI(Thread, ABC):
                     case ActionID.BidBelowTarget:
                         self.send_action_bid_below_target(action)
                     case _:
-                        self._console.error(lambda: f"Sent invalid action ID: {action.ActionID}")
+                        self._log.error(lambda: f"Sent invalid action ID: {action.ActionID}")
                         raise
             self.send_action_complete(CompleteAction())
                     

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from Library.Logging import ConsoleAPI, TelegramAPI
+from Library.Logging import HandlerAPI
 from Library.Parameters import Parameters
 
 from Library.Robots.Protocol import *
@@ -8,76 +8,54 @@ from Library.Robots.Engine import MachineAPI
 
 class StrategyAPI(ABC):
     
-    CONSOLE_OPENED_BUY = "Opened Buy ({0} Position)"
-    CONSOLE_OPENED_SELL = "Opened Sell ({0} Position)"
-    CONSOLE_MODIFIED_VOLUME_BUY = "Modified Buy Volume ({0} Position)"
-    CONSOLE_MODIFIED_VOLUME_SELL = "Modified Sell Volume ({0} Position)"
-    CONSOLE_MODIFIED_STOPLOSS_BUY = "Modified Buy Stop-Loss ({0} Position)"
-    CONSOLE_MODIFIED_STOPLOSS_SELL = "Modified Sell Stop-Loss ({0} Position)"
-    CONSOLE_MODIFIED_TAKEPROFIT_BUY = "Modified Buy Take-Profit ({0} Position)"
-    CONSOLE_MODIFIED_TAKEPROFIT_SELL = "Modified Sell Take-Profit ({0} Position)"
-    CONSOLE_CLOSED_BUY = "Closed Buy ({0} Position)"
-    CONSOLE_CLOSED_SELL = "Closed Sell ({0} Position)"
+    OPENED_BUY = "Opened Buy ({0} Position)"
+    OPENED_SELL = "Opened Sell ({0} Position)"
+    MODIFIED_VOLUME_BUY = "Modified Buy Volume ({0} Position)"
+    MODIFIED_VOLUME_SELL = "Modified Sell Volume ({0} Position)"
+    MODIFIED_STOPLOSS_BUY = "Modified Buy Stop-Loss ({0} Position)"
+    MODIFIED_STOPLOSS_SELL = "Modified Sell Stop-Loss ({0} Position)"
+    MODIFIED_TAKEPROFIT_BUY = "Modified Buy Take-Profit ({0} Position)"
+    MODIFIED_TAKEPROFIT_SELL = "Modified Sell Take-Profit ({0} Position)"
+    CLOSED_BUY = "Closed Buy ({0} Position)"
+    CLOSED_SELL = "Closed Sell ({0} Position)"
 
-    TELEGRAM_OPENED_BUY = "Opened Buy ({0} Position)"
-    TELEGRAM_OPENED_SELL = "Opened Sell ({0} Position)"
-    TELEGRAM_MODIFIED_VOLUME_BUY = "Modified Buy Volume ({0} Position)"
-    TELEGRAM_MODIFIED_VOLUME_SELL = "Modified Sell Volume ({0} Position)"
-    TELEGRAM_MODIFIED_STOPLOSS_BUY = "Modified Buy Stop-Loss ({0} Position)"
-    TELEGRAM_MODIFIED_STOPLOSS_SELL = "Modified Sell Stop-Loss ({0} Position)"
-    TELEGRAM_MODIFIED_TAKEPROFIT_BUY = "Modified Buy Take-Profit ({0} Position)"
-    TELEGRAM_MODIFIED_TAKEPROFIT_SELL = "Modified Sell Take-Profit ({0} Position)"
-    TELEGRAM_CLOSED_BUY = "Closed Buy ({0} Position)"
-    TELEGRAM_CLOSED_SELL = "Closed Sell ({0} Position)"
-    
     def __init__(self, money_management: Parameters, risk_management: Parameters, signal_management: Parameters):
         self.MoneyManagement: Parameters = money_management
         self.RiskManagement: Parameters = risk_management
         self.SignalManagement: Parameters = signal_management
 
-        self._console: ConsoleAPI = ConsoleAPI(class_name=self.__class__.__name__, role_name="Strategy Management")
-        self._telegram: TelegramAPI = TelegramAPI(class_name=self.__class__.__name__, role_name="Strategy Management")
+        self._log: HandlerAPI = HandlerAPI(class_name=self.__class__.__name__, subclass_name="Strategy Management")
 
     def _log_opened_buy(self, update: PositionUpdate):
-        self._console.alert(lambda: StrategyAPI.CONSOLE_OPENED_BUY.format(update.Position.PositionType.name))
-        self._telegram.alert(lambda: StrategyAPI.TELEGRAM_OPENED_BUY.format(update.Position.PositionType.name))
+        self._log.alert(lambda: StrategyAPI.OPENED_BUY.format(update.Position.PositionType.name))
 
     def _log_opened_sell(self, update: PositionUpdate):
-        self._console.alert(lambda: StrategyAPI.CONSOLE_OPENED_SELL.format(update.Position.PositionType.name))
-        self._telegram.alert(lambda: StrategyAPI.TELEGRAM_OPENED_SELL.format(update.Position.PositionType.name))
+        self._log.alert(lambda: StrategyAPI.OPENED_SELL.format(update.Position.PositionType.name))
 
     def _log_modified_volume_buy(self, update: PositionTradeUpdate):
-        self._console.alert(lambda: StrategyAPI.CONSOLE_MODIFIED_VOLUME_BUY.format(update.Position.PositionType.name))
-        self._telegram.alert(lambda: StrategyAPI.TELEGRAM_MODIFIED_VOLUME_BUY.format(update.Position.PositionType.name))
+        self._log.alert(lambda: StrategyAPI.MODIFIED_VOLUME_BUY.format(update.Position.PositionType.name))
 
     def _log_modified_volume_sell(self, update: PositionTradeUpdate):
-        self._console.alert(lambda: StrategyAPI.CONSOLE_MODIFIED_VOLUME_SELL.format(update.Position.PositionType.name))
-        self._telegram.alert(lambda: StrategyAPI.TELEGRAM_MODIFIED_VOLUME_SELL.format(update.Position.PositionType.name))
+        self._log.alert(lambda: StrategyAPI.MODIFIED_VOLUME_SELL.format(update.Position.PositionType.name))
 
     def _log_modified_stop_loss_buy(self, update: PositionUpdate):
-        self._console.alert(lambda: StrategyAPI.CONSOLE_MODIFIED_STOPLOSS_BUY.format(update.Position.PositionType.name))
-        self._telegram.alert(lambda: StrategyAPI.TELEGRAM_MODIFIED_STOPLOSS_BUY.format(update.Position.PositionType.name))
+        self._log.alert(lambda: StrategyAPI.MODIFIED_STOPLOSS_BUY.format(update.Position.PositionType.name))
 
     def _log_modified_stop_loss_sell(self, update: PositionUpdate):
-        self._console.alert(lambda: StrategyAPI.CONSOLE_MODIFIED_STOPLOSS_SELL.format(update.Position.PositionType.name))
-        self._telegram.alert(lambda: StrategyAPI.TELEGRAM_MODIFIED_STOPLOSS_SELL.format(update.Position.PositionType.name))
+        self._log.alert(lambda: StrategyAPI.MODIFIED_STOPLOSS_SELL.format(update.Position.PositionType.name))
 
     def _log_modified_take_profit_buy(self, update: PositionUpdate):
-        self._console.alert(lambda: StrategyAPI.CONSOLE_MODIFIED_TAKEPROFIT_BUY.format(update.Position.PositionType.name))
-        self._telegram.alert(lambda: StrategyAPI.TELEGRAM_MODIFIED_TAKEPROFIT_BUY.format(update.Position.PositionType.name))
+        self._log.alert(lambda: StrategyAPI.MODIFIED_TAKEPROFIT_BUY.format(update.Position.PositionType.name))
 
     def _log_modified_take_profit_sell(self, update: PositionUpdate):
-        self._console.alert(lambda: StrategyAPI.CONSOLE_MODIFIED_TAKEPROFIT_SELL.format(update.Position.PositionType.name))
-        self._telegram.alert(lambda: StrategyAPI.TELEGRAM_MODIFIED_TAKEPROFIT_SELL.format(update.Position.PositionType.name))
+        self._log.alert(lambda: StrategyAPI.MODIFIED_TAKEPROFIT_SELL.format(update.Position.PositionType.name))
 
     def _log_closed_buy(self, update: TradeUpdate):
-        self._console.alert(lambda: StrategyAPI.CONSOLE_CLOSED_BUY.format(update.Trade.PositionType.name))
-        self._telegram.alert(lambda: StrategyAPI.TELEGRAM_CLOSED_BUY.format(update.Trade.PositionType.name))
+        self._log.alert(lambda: StrategyAPI.CLOSED_BUY.format(update.Trade.PositionType.name))
 
     def _log_closed_sell(self, update: TradeUpdate):
-        self._console.alert(lambda: StrategyAPI.CONSOLE_CLOSED_SELL.format(update.Trade.PositionType.name))
-        self._telegram.alert(lambda: StrategyAPI.TELEGRAM_CLOSED_SELL.format(update.Trade.PositionType.name))
-    
+        self._log.alert(lambda: StrategyAPI.CLOSED_SELL.format(update.Trade.PositionType.name))
+
     @abstractmethod
     def risk_management(self) -> MachineAPI | None:
         raise NotImplementedError

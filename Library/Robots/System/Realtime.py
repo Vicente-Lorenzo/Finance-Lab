@@ -51,7 +51,7 @@ class RealtimeSystemAPI(SystemAPI):
                                               win32file.GENERIC_READ | win32file.GENERIC_WRITE, 0, None,
                                               win32file.OPEN_EXISTING, 0, None)
         except Exception as e:
-            self._console.error(lambda: str(e))
+            self._log.error(lambda: str(e))
             raise e
         return super().__enter__()
 
@@ -187,9 +187,9 @@ class RealtimeSystemAPI(SystemAPI):
             self._bar_db.push_symbol_data(update.Manager.Symbol.data())
             self._bar_db.push_market_data(update.Analyst.Market.data())
             self.individual_trades, self.aggregated_trades, self.statistics = update.Manager.Statistics.data(self._initial_account, self._start_timestamp, self._stop_timestamp)
-            self._console.debug(lambda: str(self.individual_trades))
-            self._console.debug(lambda: str(self.aggregated_trades))
-            self._console.debug(lambda: str(self.statistics))
+            self._log.debug(lambda: str(self.individual_trades))
+            self._log.debug(lambda: str(self.aggregated_trades))
+            self._log.debug(lambda: str(self.statistics))
 
         initialisation.on_bar_closed(to=initialisation, action=sync_market, reason=None)
         initialisation.on_complete(to=execution, action=init_market, reason="Market Initialized")

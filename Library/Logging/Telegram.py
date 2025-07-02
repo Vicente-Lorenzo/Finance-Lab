@@ -1,4 +1,3 @@
-import time
 import requests
 
 from io import BytesIO
@@ -9,19 +8,19 @@ from Library.Classes import VerboseType, Telegram
 
 class TelegramAPI(LoggingAPI):
     
-    ALERT_ICON = "🔔"
-    DEBUG_ICON = "⚙️"
-    INFO_ICON = "ℹ️"
-    WARNING_ICON = "⚠️"
-    ERROR_ICON = "❌"
-    CRITICAL_ICON = "🛑"
+    _ALERT_ICON: str = "🔔"
+    _DEBUG_ICON: str = "⚙️"
+    _INFO_ICON: str = "ℹ️"
+    _WARNING_ICON: str = "⚠️"
+    _ERROR_ICON: str = "❌"
+    _CRITICAL_ICON: str = "🛑"
     
-    TIMESTAMP = "Log at {timestamp}"
+    _TIMESTAMP: str = "at {timestamp}"
 
-    LOG = Telegram(Token="8183617727:AAGBFcbS104QXYczyB06UKA9StjCkK2RmRE", ChatID="-1002607268309")
-    LAB = Telegram(Token="8032541880:AAFZEDPQPlVd6SVIcA7GohoiaK_-tNyW050", ChatID="-1002565200595")
+    _LOG: Telegram = Telegram(Token="8183617727:AAGBFcbS104QXYczyB06UKA9StjCkK2RmRE", ChatID="-1002607268309")
+    _LAB: Telegram = Telegram(Token="8032541880:AAFZEDPQPlVd6SVIcA7GohoiaK_-tNyW050", ChatID="-1002565200595")
     
-    GROUP= {
+    _GROUP: dict = {
         "Forex (Majors)": Telegram(Token="7180406910:AAG_JtWcwrFOdU0vrFo3u3YE60xJouCbDj8", ChatID="-1002557774416"),
         "Forex (Minors)": Telegram(Token="7858647408:AAH7M97_euohIMGX8X4gu3qtXbxKPBvHdHg", ChatID="-1002402990655"),
         "Forex (Exotics)": Telegram(Token="8020370305:AAF_XqDHIrp-QYkMT94DDjDd047SJZnQkvI", ChatID="-1002678006774"),
@@ -29,85 +28,97 @@ class TelegramAPI(LoggingAPI):
         "Stocks (EU)": Telegram(Token="7779184958:AAHnTVhELss3Oxy9wz8xgjoWl5--sU5BXp4", ChatID="-1002677954902"),
         "Metals": Telegram(Token="7955067039:AAFk26Be2Rip_IW26b-j0hpix1vJ3NWcAVM", ChatID="-1002683975427")}
     
-    MESSAGE_URL = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}"
-    DOCUMENT_URL = "https://api.telegram.org/bot{0}/sendDocument?chat_id={1}"
+    _MESSAGE_URL: str = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}"
+    _DOCUMENT_URL: str = "https://api.telegram.org/bot{0}/sendDocument?chat_id={1}"
 
-    def __init__(self,
-                 class_name: str,
-                 role_name: str,
-                 system: str | None = None,
-                 strategy: str | None = None,
-                 broker: str | None = None,
-                 group: str | None = None,
-                 symbol: str | None = None,
-                 timeframe: str | None = None):
-        
-        super().__init__(class_name, role_name, system, strategy, broker, group, symbol, timeframe)
-        
-        self._log_message_url = TelegramAPI.MESSAGE_URL.format(TelegramAPI.LOG.Token, TelegramAPI.LOG.ChatID)
-        self._log_document_url = TelegramAPI.DOCUMENT_URL.format(TelegramAPI.LOG.Token, TelegramAPI.LOG.ChatID)
-        
-        self._lab_message_url = TelegramAPI.MESSAGE_URL.format(TelegramAPI.LAB.Token, TelegramAPI.LAB.ChatID)
-        self._lab_document_url = TelegramAPI.DOCUMENT_URL.format(TelegramAPI.LAB.Token, TelegramAPI.LAB.ChatID)
-        
-        group = TelegramAPI.GROUP[self._GROUP]
-        self._group_message_url = TelegramAPI.MESSAGE_URL.format(group.Token, group.ChatID)
-        self._group_document_url = TelegramAPI.DOCUMENT_URL.format(group.Token, group.ChatID)
+    _LOG_MESSAGE_URL: str = _MESSAGE_URL.format(_LOG.Token, _LOG.ChatID)
+    _LOG_DOCUMENT_URL: str = _DOCUMENT_URL.format(_LOG.Token, _LOG.ChatID)
 
-    def _format(self, level: VerboseType, level_icon: str):
+    _LAB_MESSAGE_URL: str = _MESSAGE_URL.format(_LAB.Token, _LAB.ChatID)
+    _LAB_DOCUMENT_URL: str = _DOCUMENT_URL.format(_LAB.Token, _LAB.ChatID)
+
+    _GROUP_MESSAGE_URL: str | None = None
+    _GROUP_DOCUMENT_URL: str | None = None
+
+    @classmethod
+    def init(cls, group_name: str):
+        super().init()
+        group = TelegramAPI._GROUP[group_name]
+        cls._GROUP_MESSAGE_URL = TelegramAPI._MESSAGE_URL.format(group.Token, group.ChatID)
+        cls._GROUP_DOCUMENT_URL = TelegramAPI._DOCUMENT_URL.format(group.Token, group.ChatID)
+
+    def __enter__(self):
+        return super().__enter__()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return super().__exit__(exc_type, exc_val, exc_tb)
+
+    def _format(self, level: VerboseType, level_icon: str) -> str:
         level_name = f" {level.name} "
         top_hline = f"{level_icon} {level_name.center(22, "-")} {level_icon}"
         middle_line = "-" * 28
         bottom_hline = f"{level_icon} {"-" * 22} {level_icon}"
-        return (
+        static = (
             f"<code>{top_hline}</code>\n"
             "<pre>{content}</pre>\n"
             f"<code>{middle_line}\n</code>"
-            f"<code>{self._SYSTEM.center(27)}</code>\n"
-            f"<code>{self._STRATEGY.center(27)}</code>\n"
-            f"<code>{self._BROKER.center(27)}</code>\n"
-            f"<code>{self._GROUP.center(27)}</code>\n"
-            f"<code>{self._SYMBOL.center(27)}</code>\n"
-            f"<code>{self._TIMEFRAME.center(27)}</code>\n"
-            f"<code>{self._role.center(27)}</code>\n"
+        )
+        def add_metadata(s: str, md: str) -> str:
+            s += f"<code>{md.center(27)}</code>\n"
+            return s
+        for metadata in LoggingAPI._META.values():
+            static = add_metadata(static, metadata)
+        if self._class:
+            static = add_metadata(static, self._class)
+        if self._subclass:
+            static = add_metadata(static, self._subclass)
+        static += (
             f"<code>{middle_line}\n</code>"
             "<code>{timestamp}</code>\n"
-            f"<code>{bottom_hline}</code>")
+            f"<code>{bottom_hline}</code>"
+        )
+        return static
 
-    def _static(self) -> None:
-        self.__STATIC_LOG_ALERT: str = self._format(VerboseType.Alert, TelegramAPI.ALERT_ICON)
-        self.__STATIC_LOG_DEBUG: str = self._format(VerboseType.Debug, TelegramAPI.DEBUG_ICON)
-        self.__STATIC_LOG_INFO: str = self._format(VerboseType.Info, TelegramAPI.INFO_ICON)
-        self.__STATIC_LOG_WARNING: str = self._format(VerboseType.Warning, TelegramAPI.WARNING_ICON)
-        self.__STATIC_LOG_ERROR: str = self._format(VerboseType.Error, TelegramAPI.ERROR_ICON)
-        self.__STATIC_LOG_CRITICAL: str = self._format(VerboseType.Critical, TelegramAPI.CRITICAL_ICON)
+    def _format_logs(self) -> None:
+        self._STATIC_LOG_ALERT: str = self._format(VerboseType.Alert, TelegramAPI._ALERT_ICON)
+        self._STATIC_LOG_DEBUG: str = self._format(VerboseType.Debug, TelegramAPI._DEBUG_ICON)
+        self._STATIC_LOG_INFO: str = self._format(VerboseType.Info, TelegramAPI._INFO_ICON)
+        self._STATIC_LOG_WARNING: str = self._format(VerboseType.Warning, TelegramAPI._WARNING_ICON)
+        self._STATIC_LOG_ERROR: str = self._format(VerboseType.Error, TelegramAPI._ERROR_ICON)
+        self._STATIC_LOG_CRITICAL: str = self._format(VerboseType.Critical, TelegramAPI._CRITICAL_ICON)
 
     @staticmethod
-    def _log(message_url: str, document_url: str, static_log: str, content_func: Callable[[], str | BytesIO]):
+    def _build_log(message_url: str, document_url: str, static_log: str, content_func: Callable[[], str | BytesIO]):
         content = content_func()
-        timestamp = TelegramAPI.TIMESTAMP.format(timestamp=time.strftime("%F %X"))
+        timestamp = TelegramAPI._TIMESTAMP.format(timestamp=LoggingAPI.timestamp())
         data = {"parse_mode": "html"}
         if isinstance(content, BytesIO):
             data["caption"] = timestamp
             files = {"document": ("image.png", content, "image/png")}
-            return requests.post(document_url, data=data, files=files)
-        data["text"] = static_log.format(content=content, timestamp=timestamp)
-        return requests.post(message_url, data=data)
+            return document_url, data, files
+        else:
+            data["text"] = static_log.format(content=content, timestamp=timestamp)
+            return message_url, data, None
+
+    @staticmethod
+    def _output_log(message_url: str, document_url: str, static_log: str, content_func: Callable[[], str | BytesIO]):
+        url, data, files = TelegramAPI._build_log(message_url, document_url, static_log, content_func)
+        return requests.post(url, data=data, files=files)
 
     def _alert(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._group_message_url, self._group_document_url, self.__STATIC_LOG_ALERT, content_func)
+        self._log(self._GROUP_MESSAGE_URL, self._GROUP_DOCUMENT_URL, self._STATIC_LOG_ALERT, content_func)
 
     def _debug(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._lab_message_url, self._lab_document_url, self.__STATIC_LOG_DEBUG, content_func)
+        self._log(self._LAB_MESSAGE_URL, self._LAB_DOCUMENT_URL, self._STATIC_LOG_DEBUG, content_func)
 
     def _info(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._lab_message_url, self._lab_document_url, self.__STATIC_LOG_INFO, content_func)
+        self._log(self._LAB_MESSAGE_URL, self._LAB_DOCUMENT_URL, self._STATIC_LOG_INFO, content_func)
 
     def _warning(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._log_message_url, self._log_document_url, self.__STATIC_LOG_WARNING, content_func)
+        self._log(self._LOG_MESSAGE_URL, self._LOG_DOCUMENT_URL, self._STATIC_LOG_WARNING, content_func)
 
     def _error(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._log_message_url, self._log_document_url, self.__STATIC_LOG_ERROR, content_func)
+        self._log(self._LOG_MESSAGE_URL, self._LOG_DOCUMENT_URL, self._STATIC_LOG_ERROR, content_func)
 
     def _critical(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._log_message_url, self._log_document_url, self.__STATIC_LOG_CRITICAL, content_func)
+        self._log(self._LOG_MESSAGE_URL, self._LOG_DOCUMENT_URL, self._STATIC_LOG_CRITICAL, content_func)
