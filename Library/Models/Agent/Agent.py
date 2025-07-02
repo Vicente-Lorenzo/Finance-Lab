@@ -1,24 +1,15 @@
-from abc import ABC, abstractmethod
-
 import numpy as np
+from abc import ABC, abstractmethod
+from pathlib import Path
 
 from Library.Logging import HandlerAPI
 
 class AgentAPI(ABC):
 
-    def __init__(self,
-                 model: str,
-                 broker: str,
-                 group: str,
-                 symbol: str,
-                 timeframe: str):
+    def __init__(self, model: str, path: Path):
         super().__init__()
         self._model = model
-        self._broker = broker
-        self._group = group
-        self._symbol = symbol
-        self._timeframe = timeframe
-
+        self._path = path
         self._log: HandlerAPI = HandlerAPI(class_name=self.__class__.__name__, subclass_name="Agent Management")
 
     @abstractmethod

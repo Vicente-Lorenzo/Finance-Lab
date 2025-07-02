@@ -3,6 +3,7 @@ import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from pathlib import Path
 
 from Library.Models.Network import NetworkAPI
 
@@ -11,10 +12,7 @@ class CriticNetworkAPI(NetworkAPI):
     def __init__(self,
                  model: str,
                  role: str,
-                 broker: str,
-                 group: str,
-                 symbol: str,
-                 timeframe: str,
+                 path: Path,
                  input_shape: tuple,
                  action_shape: int,
                  fc1_shape: int,
@@ -37,7 +35,7 @@ class CriticNetworkAPI(NetworkAPI):
 
         self.optimizer = optim.Adam(self.parameters(), lr=beta, weight_decay=0.01)
 
-        super().__init__(model=model, role=role, broker=broker, group=group, symbol=symbol, timeframe=timeframe)
+        super().__init__(model=model, role=role, path=path)
 
     def init(self) -> None:
         f1 = 1. / np.sqrt(self.fc1.weight.data.size()[0])

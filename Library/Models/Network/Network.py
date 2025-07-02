@@ -1,34 +1,22 @@
 import torch as T
 import torch.nn as nn
-
+from pathlib import Path
 from abc import ABC, abstractmethod
 
 from Library.Logging import HandlerAPI
-from Library.Parameters import ParametersAPI
 
 class NetworkAPI(nn.Module, ABC):
 
-    def __init__(self,
-                 model: str,
-                 role: str,
-                 broker: str,
-                 group: str,
-                 symbol: str,
-                 timeframe: str):
+    def __init__(self, model: str, role: str, path: Path):
         super().__init__()
         self._model = model
         self._role = role
-        self._broker = broker
-        self._group = group
-        self._symbol = symbol
-        self._timeframe = timeframe
 
-        self._filename = ParametersAPI.PATH / broker / group / symbol / timeframe / model / role
-
+        self._path = path
+        self._file = path / model / role
         self._log: HandlerAPI = HandlerAPI(class_name=self.__class__.__name__, subclass_name="Network Management")
 
         self.init()
-
         self.device = T.device("cuda:0" if T.cuda.is_available() else "cuda:1")
         self.to(self.device)
 
@@ -37,9 +25,9 @@ class NetworkAPI(nn.Module, ABC):
         raise NotImplementedError
 
     def save(self) -> None:
-        T.save(self.state_dict(), str(self._filename))
+        T.save(self.state_dict(), str(self._file))
         self._log.debug(lambda: f"Saved network state for {self._model} {self._role}")
 
     def load(self) -> None:
-        self.load_state_dict(T.load(str(self._filename)))
+        self.load_state_dict(T.load(str(self._file)))
         self._log.debug(lambda: f"Loaded network state for {self._model} {self._role}")

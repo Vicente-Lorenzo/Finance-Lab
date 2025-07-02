@@ -1,6 +1,7 @@
 import numpy as np
 import torch as T
 import torch.nn.functional as F
+from pathlib import Path
 
 from Library.Models.Agent import AgentAPI
 from Library.Models.DDPG import ActorNetworkAPI, CriticNetworkAPI
@@ -11,10 +12,7 @@ class DDPGAgentAPI(AgentAPI):
 
     def __init__(self,
                  model: str,
-                 broker: str,
-                 group: str,
-                 symbol: str,
-                 timeframe: str,
+                 path: Path,
                  alpha: float,
                  beta: float,
                  input_shape: tuple,
@@ -25,7 +23,7 @@ class DDPGAgentAPI(AgentAPI):
                  batch_size=64,
                  gamma=0.99,
                  tau=0.01):
-        super().__init__(model=model, broker=broker, group=group, symbol=symbol, timeframe=timeframe)
+        super().__init__(model=model, path=path)
 
         self.batch_size = batch_size
         self.gamma = gamma
@@ -35,53 +33,49 @@ class DDPGAgentAPI(AgentAPI):
 
         self.noise = OrnsteinUhlenbeckNoiseAPI(mu=np.zeros(action_shape))
 
-        self.actor = ActorNetworkAPI(model=model,
-                                     role="actor",
-                                     broker=broker,
-                                     group=group,
-                                     symbol=symbol,
-                                     timeframe=timeframe,
-                                     input_shape=input_shape,
-                                     action_shape=action_shape,
-                                     fc1_shape=fc1_shape,
-                                     fc2_shape=fc2_shape,
-                                     alpha=alpha)
+        self.actor = ActorNetworkAPI(
+            model=model,
+            role="actor",
+            path=path,
+            input_shape=input_shape,
+            action_shape=action_shape,
+            fc1_shape=fc1_shape,
+            fc2_shape=fc2_shape,
+            alpha=alpha
+        )
 
-        self.target_actor = ActorNetworkAPI(model=model,
-                                            role="target_actor",
-                                            broker=broker,
-                                            group=group,
-                                            symbol=symbol,
-                                            timeframe=timeframe,
-                                            input_shape=input_shape,
-                                            action_shape=action_shape,
-                                            fc1_shape=fc1_shape,
-                                            fc2_shape=fc2_shape,
-                                            alpha=alpha)
+        self.target_actor = ActorNetworkAPI(
+            model=model,
+            role="target_actor",
+            path=path,
+            input_shape=input_shape,
+            action_shape=action_shape,
+            fc1_shape=fc1_shape,
+            fc2_shape=fc2_shape,
+            alpha=alpha
+        )
 
-        self.critic = CriticNetworkAPI(model=model,
-                                       role="critic",
-                                       broker=broker,
-                                       group=group,
-                                       symbol=symbol,
-                                       timeframe=timeframe,
-                                       input_shape=input_shape,
-                                       action_shape=action_shape,
-                                       fc1_shape=fc1_shape,
-                                       fc2_shape=fc2_shape,
-                                       beta=beta)
+        self.critic = CriticNetworkAPI(
+            model=model,
+            role="critic",
+            path=path,
+            input_shape=input_shape,
+            action_shape=action_shape,
+            fc1_shape=fc1_shape,
+            fc2_shape=fc2_shape,
+            beta=beta
+        )
 
-        self.target_critic = CriticNetworkAPI(model=model,
-                                              role="target_critic",
-                                              broker=broker,
-                                              group=group,
-                                              symbol=symbol,
-                                              timeframe=timeframe,
-                                              input_shape=input_shape,
-                                              action_shape=action_shape,
-                                              fc1_shape=fc1_shape,
-                                              fc2_shape=fc2_shape,
-                                              beta=beta)
+        self.target_critic = CriticNetworkAPI(
+            model=model,
+            role="target_critic",
+            path=path,
+            input_shape=input_shape,
+            action_shape=action_shape,
+            fc1_shape=fc1_shape,
+            fc2_shape=fc2_shape,
+            beta=beta
+        )
 
         self.update(force_tau=1)
 
