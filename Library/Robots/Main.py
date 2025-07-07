@@ -1,5 +1,6 @@
 import polars as pl
 from typing import Type
+from pathlib import Path
 from argparse import ArgumentParser
 
 from Library.Logging import *
@@ -19,6 +20,8 @@ pl.Config.set_fmt_table_cell_list_len(-1)
 
 @time
 def main():
+
+    execution = Path(__file__).parent.name
     
     parameters: ParametersAPI = ParametersAPI()
 
@@ -47,24 +50,24 @@ def main():
 
     args = parser.parse_args()
 
-    LoggingAPI.meta(
-        system=args.system,
-        strategy=args.strategy,
-        broker=args.broker,
-        group=args.group,
-        symbol=args.symbol,
-        timeframe=args.timeframe
+    LoggingAPI.init(
+        System=args.system,
+        Strategy=args.strategy,
+        Broker=args.broker,
+        Group=args.group,
+        Symbol=args.symbol,
+        Timeframe=args.timeframe
     )
 
-    ConsoleAPI.init()
-    TelegramAPI.init(args.group)
-    FileAPI.init("Robots")
+    ConsoleAPI.setup()
+    TelegramAPI.setup(args.group)
+    FileAPI.setup(execution)
 
     ConsoleAPI.level(console_verbose := VerboseType(VerboseType[args.console]))
     TelegramAPI.level(telegram_verbose := VerboseType(VerboseType[args.telegram]))
     FileAPI.level(console_verbose)
 
-    log = HandlerAPI(class_name="Robots", subclass_name="Execution Management")
+    log = HandlerAPI(Class=execution, Subclass="Execution Management")
 
     with log:
 

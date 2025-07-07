@@ -24,7 +24,7 @@ class StrategyAPI(ABC):
         self.RiskManagement: Parameters = risk_management
         self.SignalManagement: Parameters = signal_management
 
-        self._log: HandlerAPI = HandlerAPI(class_name=self.__class__.__name__, subclass_name="Strategy Management")
+        self._log: HandlerAPI = HandlerAPI(Class=self.__class__.__name__, Subclass="Strategy Management")
 
     def _log_opened_buy(self, update: PositionUpdate):
         self._log.alert(lambda: StrategyAPI.OPENED_BUY.format(update.Position.PositionType.name))

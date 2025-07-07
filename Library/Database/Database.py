@@ -129,12 +129,12 @@ class DatabaseAPI:
         self._connection = None
 
         self._log: HandlerAPI = HandlerAPI(
-            class_name=self.__class__.__name__,
-            subclass_name="Database Management",
-            broker=broker,
-            group=group,
-            symbol=symbol,
-            timeframe=timeframe
+            Broker=broker,
+            Group=group,
+            Symbol=symbol,
+            Timeframe=timeframe,
+            Class=self.__class__.__name__,
+            Subclass="Database Management"
         )
 
     @staticmethod

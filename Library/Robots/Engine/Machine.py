@@ -8,7 +8,7 @@ class MachineAPI:
     def __init__(self, name: str | None):
         self.at = None
         self._states: list[StateAPI] = []
-        self._log: HandlerAPI = HandlerAPI(class_name=self.__class__.__name__, subclass_name=name)
+        self._log: HandlerAPI = HandlerAPI(Class=self.__class__.__name__, Subclass=name)
 
     def create_state(self, name: str | None, end: bool) -> StateAPI:
         state = StateAPI(name, end)

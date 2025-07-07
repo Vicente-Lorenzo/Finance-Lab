@@ -29,12 +29,11 @@ class FileAPI(LoggingAPI):
         FileAPI._BUFFER_SIZE = 0
 
     @classmethod
-    def init(cls, unique_name: str):
-        super().init()
+    def setup(cls, unique_name: str):
+        super().setup()
         now = datetime.now()
         unique_date = datetime_to_string(dt=now, fmt="%Y-%m-%d")
         unique_time = datetime_to_string(dt=now, fmt="%H-%M-%S")
-
         cls._FILE_PATH = cls._DIR_PATH / f"{unique_name}_{unique_date}_{unique_time}.log"
 
     def __enter__(self):
@@ -48,26 +47,26 @@ class FileAPI(LoggingAPI):
         FileAPI._FILE.close()
         return super().__exit__(exc_type, exc_val, exc_tb)
 
-    def _format(self, level: VerboseType) -> str:
-        static = f"{level.name}"
-        def add_metadata(s: str, md: str) -> str:
-            s += f" - {md}"
-            return s
-        for metadata in LoggingAPI._META.values():
-            static = add_metadata(static, metadata)
-        if self._class:
-            static = add_metadata(static, self._class)
-        if self._subclass:
-            static = add_metadata(static, self._subclass)
+    @staticmethod
+    def _format_tag(static: str, tag: str) -> str:
+        static += f" - {tag}"
         return static
 
-    def _format_logs(self) -> None:
-        self._STATIC_LOG_ALERT: str = self._format(VerboseType.Alert)
-        self._STATIC_LOG_DEBUG: str = self._format(VerboseType.Debug)
-        self._STATIC_LOG_INFO: str = self._format(VerboseType.Info)
-        self._STATIC_LOG_WARNING: str = self._format(VerboseType.Warning)
-        self._STATIC_LOG_ERROR: str = self._format(VerboseType.Error)
-        self._STATIC_LOG_CRITICAL: str = self._format(VerboseType.Critical)
+    def _format_level(self, level: VerboseType) -> str:
+        static = f"{level.name}"
+        for shared_tag in LoggingAPI._SHARED_TAGS.values():
+            static = FileAPI._format_tag(static, shared_tag)
+        for custom_tag in self._CUSTOM_TAGS.values():
+            static = FileAPI._format_tag(static, custom_tag)
+        return static
+
+    def _format(self) -> None:
+        self._STATIC_LOG_ALERT: str = self._format_level(VerboseType.Alert)
+        self._STATIC_LOG_DEBUG: str = self._format_level(VerboseType.Debug)
+        self._STATIC_LOG_INFO: str = self._format_level(VerboseType.Info)
+        self._STATIC_LOG_WARNING: str = self._format_level(VerboseType.Warning)
+        self._STATIC_LOG_ERROR: str = self._format_level(VerboseType.Error)
+        self._STATIC_LOG_CRITICAL: str = self._format_level(VerboseType.Critical)
 
     @staticmethod
     def _build_log(static_log: str, content_func: Callable[[], str | BytesIO]):

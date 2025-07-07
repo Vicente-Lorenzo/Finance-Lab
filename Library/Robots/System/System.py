@@ -43,7 +43,7 @@ class SystemAPI(Thread, ABC):
         self.aggregated_trades: pl.DataFrame | None = None
         self.statistics: pl.DataFrame | None = None
 
-        self._log: HandlerAPI = HandlerAPI(class_name=self.__class__.__name__, subclass_name="System Management")
+        self._log: HandlerAPI = HandlerAPI(Class=self.__class__.__name__, Subclass="System Management")
 
     def __enter__(self):
         self._log.info(lambda: "Initiated")

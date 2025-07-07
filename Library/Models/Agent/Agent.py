@@ -10,7 +10,7 @@ class AgentAPI(ABC):
         super().__init__()
         self._model = model
         self._path = path
-        self._log: HandlerAPI = HandlerAPI(class_name=self.__class__.__name__, subclass_name="Agent Management")
+        self._log: HandlerAPI = HandlerAPI(Class=self.__class__.__name__, Subclass="Agent Management")
 
     @abstractmethod
     def save(self) -> None:

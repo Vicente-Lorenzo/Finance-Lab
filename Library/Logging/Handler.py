@@ -5,15 +5,10 @@ from Library.Logging import *
 
 class HandlerAPI:
 
-    logging: LoggingAPI
-    console: ConsoleAPI | None = None
-    telegram: TelegramAPI | None = None
-    file: FileAPI | None = None
-
-    def __init__(self, class_name: str | None = None, subclass_name: str | None = None, **kwargs):
-        self.console = ConsoleAPI(class_name=class_name, subclass_name=subclass_name, **kwargs)
-        self.telegram = TelegramAPI(class_name=class_name, subclass_name=subclass_name, **kwargs)
-        self.file = FileAPI(class_name=class_name, subclass_name=subclass_name, **kwargs)
+    def __init__(self, **kwargs):
+        self.console = ConsoleAPI(**kwargs)
+        self.telegram = TelegramAPI(**kwargs)
+        self.file = FileAPI(**kwargs)
 
     def alert(self, content_func: Callable[[], str | BytesIO]):
         self.console.alert(content_func)

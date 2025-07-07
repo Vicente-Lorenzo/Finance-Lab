@@ -16,36 +16,26 @@ class ConsoleAPI(LoggingAPI):
     _LIGHT_GRAY: str = "\033[38;5;240m"
     _WHITE: str = "\033[0m"
 
-    @classmethod
-    def init(cls):
-        super().init()
-
-    def __enter__(self):
-        return super().__enter__()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        return super().__exit__(exc_type, exc_val, exc_tb)
-
-    def _format(self, level: VerboseType, level_color: str) -> str:
-        static = f"{level_color}{level.name}{ConsoleAPI._LIGHT_GRAY}"
-        def add_metadata(s: str, md: str) -> str:
-            s += f" - {ConsoleAPI._WHITE}{md}{ConsoleAPI._LIGHT_GRAY}"
-            return s
-        for metadata in LoggingAPI._META.values():
-            static = add_metadata(static, metadata)
-        if self._class:
-            static = add_metadata(static, self._class)
-        if self._subclass:
-            static = add_metadata(static, self._subclass)
+    @staticmethod
+    def _format_tag(static: str, tag: str) -> str:
+        static += f" - {ConsoleAPI._WHITE}{tag}{ConsoleAPI._LIGHT_GRAY}"
         return static
 
-    def _format_logs(self) -> None:
-        self._STATIC_LOG_ALERT: str = self._format(VerboseType.Alert, ConsoleAPI._LIGHT_ORANGE)
-        self._STATIC_LOG_DEBUG: str = self._format(VerboseType.Debug, ConsoleAPI._ORANGE)
-        self._STATIC_LOG_INFO: str = self._format(VerboseType.Info, ConsoleAPI._BLUE)
-        self._STATIC_LOG_WARNING: str = self._format(VerboseType.Warning, ConsoleAPI._YELLOW)
-        self._STATIC_LOG_ERROR: str = self._format(VerboseType.Error, ConsoleAPI._RED)
-        self._STATIC_LOG_CRITICAL: str = self._format(VerboseType.Critical, ConsoleAPI._DARK_RED)
+    def _format_level(self, level: VerboseType, level_color: str) -> str:
+        static = f"{level_color}{level.name}{ConsoleAPI._LIGHT_GRAY}"
+        for shared_tag in LoggingAPI._SHARED_TAGS.values():
+            static = ConsoleAPI._format_tag(static, shared_tag)
+        for custom_tag in self._CUSTOM_TAGS.values():
+            static = ConsoleAPI._format_tag(static, custom_tag)
+        return static
+
+    def _format(self) -> None:
+        self._STATIC_LOG_ALERT: str = self._format_level(VerboseType.Alert, ConsoleAPI._LIGHT_ORANGE)
+        self._STATIC_LOG_DEBUG: str = self._format_level(VerboseType.Debug, ConsoleAPI._ORANGE)
+        self._STATIC_LOG_INFO: str = self._format_level(VerboseType.Info, ConsoleAPI._BLUE)
+        self._STATIC_LOG_WARNING: str = self._format_level(VerboseType.Warning, ConsoleAPI._YELLOW)
+        self._STATIC_LOG_ERROR: str = self._format_level(VerboseType.Error, ConsoleAPI._RED)
+        self._STATIC_LOG_CRITICAL: str = self._format_level(VerboseType.Critical, ConsoleAPI._DARK_RED)
 
     @staticmethod
     def _build_log(static_log: str, content_func: Callable[[], str | BytesIO]):

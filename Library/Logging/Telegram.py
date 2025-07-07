@@ -7,7 +7,7 @@ from Library.Logging import LoggingAPI
 from Library.Classes import VerboseType, Telegram
 
 class TelegramAPI(LoggingAPI):
-    
+
     _ALERT_ICON: str = "🔔"
     _DEBUG_ICON: str = "⚙️"
     _INFO_ICON: str = "ℹ️"
@@ -41,19 +41,18 @@ class TelegramAPI(LoggingAPI):
     _GROUP_DOCUMENT_URL: str | None = None
 
     @classmethod
-    def init(cls, group_name: str):
-        super().init()
+    def setup(cls, group_name: str):
+        super().setup()
         group = TelegramAPI._GROUP[group_name]
         cls._GROUP_MESSAGE_URL = TelegramAPI._MESSAGE_URL.format(group.Token, group.ChatID)
         cls._GROUP_DOCUMENT_URL = TelegramAPI._DOCUMENT_URL.format(group.Token, group.ChatID)
 
-    def __enter__(self):
-        return super().__enter__()
+    @staticmethod
+    def _format_tag(static: str, tag: str) -> str:
+        static += f"<code>{tag.center(27)}</code>\n"
+        return static
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        return super().__exit__(exc_type, exc_val, exc_tb)
-
-    def _format(self, level: VerboseType, level_icon: str) -> str:
+    def _format_level(self, level: VerboseType, level_icon: str) -> str:
         level_name = f" {level.name} "
         top_hline = f"{level_icon} {level_name.center(22, "-")} {level_icon}"
         middle_line = "-" * 28
@@ -63,15 +62,10 @@ class TelegramAPI(LoggingAPI):
             "<pre>{content}</pre>\n"
             f"<code>{middle_line}\n</code>"
         )
-        def add_metadata(s: str, md: str) -> str:
-            s += f"<code>{md.center(27)}</code>\n"
-            return s
-        for metadata in LoggingAPI._META.values():
-            static = add_metadata(static, metadata)
-        if self._class:
-            static = add_metadata(static, self._class)
-        if self._subclass:
-            static = add_metadata(static, self._subclass)
+        for shared_tag in LoggingAPI._SHARED_TAGS.values():
+            static = TelegramAPI._format_tag(static, shared_tag)
+        for custom_tag in self._CUSTOM_TAGS.values():
+            static = TelegramAPI._format_tag(static, custom_tag)
         static += (
             f"<code>{middle_line}\n</code>"
             "<code>{timestamp}</code>\n"
@@ -79,13 +73,13 @@ class TelegramAPI(LoggingAPI):
         )
         return static
 
-    def _format_logs(self) -> None:
-        self._STATIC_LOG_ALERT: str = self._format(VerboseType.Alert, TelegramAPI._ALERT_ICON)
-        self._STATIC_LOG_DEBUG: str = self._format(VerboseType.Debug, TelegramAPI._DEBUG_ICON)
-        self._STATIC_LOG_INFO: str = self._format(VerboseType.Info, TelegramAPI._INFO_ICON)
-        self._STATIC_LOG_WARNING: str = self._format(VerboseType.Warning, TelegramAPI._WARNING_ICON)
-        self._STATIC_LOG_ERROR: str = self._format(VerboseType.Error, TelegramAPI._ERROR_ICON)
-        self._STATIC_LOG_CRITICAL: str = self._format(VerboseType.Critical, TelegramAPI._CRITICAL_ICON)
+    def _format(self) -> None:
+        self._STATIC_LOG_ALERT: str = self._format_level(VerboseType.Alert, TelegramAPI._ALERT_ICON)
+        self._STATIC_LOG_DEBUG: str = self._format_level(VerboseType.Debug, TelegramAPI._DEBUG_ICON)
+        self._STATIC_LOG_INFO: str = self._format_level(VerboseType.Info, TelegramAPI._INFO_ICON)
+        self._STATIC_LOG_WARNING: str = self._format_level(VerboseType.Warning, TelegramAPI._WARNING_ICON)
+        self._STATIC_LOG_ERROR: str = self._format_level(VerboseType.Error, TelegramAPI._ERROR_ICON)
+        self._STATIC_LOG_CRITICAL: str = self._format_level(VerboseType.Critical, TelegramAPI._CRITICAL_ICON)
 
     @staticmethod
     def _build_log(message_url: str, document_url: str, static_log: str, content_func: Callable[[], str | BytesIO]):

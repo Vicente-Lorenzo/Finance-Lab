@@ -9,55 +9,64 @@ from Library.Utils.DateTime import datetime_to_string
 
 class LoggingAPI(ABC):
 
-    _META: dict = {}
-    _DUMMY: Callable[[Callable[[], str]], None] = lambda *_: None
+    _SHARED_TAGS: dict = {}
+    _CUSTOM_TAGS: dict = {}
 
-    _STATIC_LOG_ALERT: str | None = None
-    _STATIC_LOG_DEBUG: str | None = None
-    _STATIC_LOG_INFO: str | None = None
-    _STATIC_LOG_WARNING: str | None = None
-    _STATIC_LOG_ERROR: str | None = None
-    _STATIC_LOG_CRITICAL: str | None = None
+    _DUMMY_LOG_FUNCTION: Callable[[Callable[[], str]], None] = lambda *_: None
+
+    _SHARED_LOG_ALERT: str | None = None
+    _SHARED_LOG_DEBUG: str | None = None
+    _SHARED_LOG_INFO: str | None = None
+    _SHARED_LOG_WARNING: str | None = None
+    _SHARED_LOG_ERROR: str | None = None
+    _SHARED_LOG_CRITICAL: str | None = None
+
+    _CUSTOM_LOG_ALERT: str | None = None
+    _CUSTOM_LOG_DEBUG: str | None = None
+    _CUSTOM_LOG_INFO: str | None = None
+    _CUSTOM_LOG_WARNING: str | None = None
+    _CUSTOM_LOG_ERROR: str | None = None
+    _CUSTOM_LOG_CRITICAL: str | None = None
 
     _LOCK: Lock = None
 
-    alert: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY
-    debug: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY
-    info: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY
-    warning: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY
-    error: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY
-    critical: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY
-
-    def __init__(self, class_name: str | None = None, subclass_name: str | None = None, **kwargs):
-        self._class: str | None = class_name
-        self._subclass: str | None = subclass_name
-        self._META.update(kwargs)
-        self._format_logs()
+    alert: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY_LOG_FUNCTION
+    debug: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY_LOG_FUNCTION
+    info: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY_LOG_FUNCTION
+    warning: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY_LOG_FUNCTION
+    error: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY_LOG_FUNCTION
+    critical: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY_LOG_FUNCTION
 
     @staticmethod
-    def meta(**kwargs) -> None:
-        LoggingAPI._META.clear()
-        LoggingAPI._META.update(kwargs)
+    def init(**kwargs) -> None:
+        LoggingAPI._SHARED_TAGS.clear()
+        LoggingAPI._SHARED_TAGS.update(kwargs)
 
     @classmethod
-    @abstractmethod
-    def init(cls, *args, **kwargs):
+    def setup(cls, *args, **kwargs):
         cls._LOCK = Lock()
 
     @classmethod
     def level(cls, verbose: VerboseType) -> None:
-        cls.alert = cls._alert if verbose.value >= VerboseType.Alert.value else LoggingAPI._DUMMY
-        cls.debug = cls._debug if verbose.value >= VerboseType.Debug.value else LoggingAPI._DUMMY
-        cls.info = cls._info if verbose.value >= VerboseType.Info.value else LoggingAPI._DUMMY
-        cls.warning = cls._warning if verbose.value >= VerboseType.Warning.value else LoggingAPI._DUMMY
-        cls.error = cls._error if verbose.value >= VerboseType.Error.value else LoggingAPI._DUMMY
-        cls.critical = cls._critical if verbose.value >= VerboseType.Critical.value else LoggingAPI._DUMMY
+        cls.alert = cls._alert if verbose.value >= VerboseType.Alert.value else LoggingAPI._DUMMY_LOG_FUNCTION
+        cls.debug = cls._debug if verbose.value >= VerboseType.Debug.value else LoggingAPI._DUMMY_LOG_FUNCTION
+        cls.info = cls._info if verbose.value >= VerboseType.Info.value else LoggingAPI._DUMMY_LOG_FUNCTION
+        cls.warning = cls._warning if verbose.value >= VerboseType.Warning.value else LoggingAPI._DUMMY_LOG_FUNCTION
+        cls.error = cls._error if verbose.value >= VerboseType.Error.value else LoggingAPI._DUMMY_LOG_FUNCTION
+        cls.critical = cls._critical if verbose.value >= VerboseType.Critical.value else LoggingAPI._DUMMY_LOG_FUNCTION
 
-    @abstractmethod
+    def __init__(self, **kwargs):
+        self._CUSTOM_TAGS.clear()
+        for k, v in kwargs.items():
+            if k in LoggingAPI._SHARED_TAGS:
+                self._SHARED_TAGS.update({k: v})
+            else:
+                self._CUSTOM_TAGS.update({k: v})
+        self._format()
+
     def __enter__(self):
         return self
 
-    @abstractmethod
     def __exit__(self, exc_type, exc_val, exc_tb):
         return self
 
@@ -65,12 +74,17 @@ class LoggingAPI(ABC):
     def timestamp() -> str:
         return datetime_to_string(dt=datetime.datetime.now(), fmt="%Y-%m-%d %H:%M:%S.%f")[:-3]
 
+    @staticmethod
     @abstractmethod
-    def _format(self, *args, **kwargs) -> str:
+    def _format_tag(static: str, tag: str) -> str:
         raise NotImplementedError
 
     @abstractmethod
-    def _format_logs(self) -> None:
+    def _format_level(self, *args, **kwargs) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _format(self) -> None:
         raise NotImplementedError
 
     @staticmethod
