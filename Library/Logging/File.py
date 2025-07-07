@@ -49,14 +49,17 @@ class FileAPI(LoggingAPI):
 
     @staticmethod
     def _format_tag(static: str, tag: str) -> str:
-        static += f" - {tag}"
+        static += f"{tag}"
         return static
 
     def _format_level(self, level: VerboseType) -> str:
-        static = f"{level.name}"
+        static = ""
         for shared_tag in LoggingAPI._SHARED_TAGS.values():
             static = FileAPI._format_tag(static, shared_tag)
+            static += " - "
+        static += f"{level.name}"
         for custom_tag in self._CUSTOM_TAGS.values():
+            static += " - "
             static = FileAPI._format_tag(static, custom_tag)
         return static
 

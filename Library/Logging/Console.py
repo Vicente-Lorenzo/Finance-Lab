@@ -18,14 +18,17 @@ class ConsoleAPI(LoggingAPI):
 
     @staticmethod
     def _format_tag(static: str, tag: str) -> str:
-        static += f" - {ConsoleAPI._WHITE}{tag}{ConsoleAPI._LIGHT_GRAY}"
+        static += f"{ConsoleAPI._WHITE}{tag}{ConsoleAPI._LIGHT_GRAY}"
         return static
 
     def _format_level(self, level: VerboseType, level_color: str) -> str:
-        static = f"{level_color}{level.name}{ConsoleAPI._LIGHT_GRAY}"
+        static = ""
         for shared_tag in LoggingAPI._SHARED_TAGS.values():
             static = ConsoleAPI._format_tag(static, shared_tag)
+            static += " - "
+        static += f"{level_color}{level.name}{ConsoleAPI._LIGHT_GRAY}"
         for custom_tag in self._CUSTOM_TAGS.values():
+            static += " - "
             static = ConsoleAPI._format_tag(static, custom_tag)
         return static
 
