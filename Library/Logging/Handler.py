@@ -10,11 +10,6 @@ class HandlerAPI:
         self.telegram = TelegramAPI(**kwargs)
         self.file = FileAPI(**kwargs)
 
-    def alert(self, content_func: Callable[[], str | BytesIO]):
-        self.console.alert(content_func)
-        self.telegram.alert(content_func)
-        self.file.alert(content_func)
-
     def debug(self, content_func: Callable[[], str | BytesIO]):
         self.console.debug(content_func)
         self.telegram.debug(content_func)
@@ -24,6 +19,11 @@ class HandlerAPI:
         self.console.info(content_func)
         self.telegram.info(content_func)
         self.file.info(content_func)
+
+    def alert(self, content_func: Callable[[], str | BytesIO]):
+        self.console.alert(content_func)
+        self.telegram.alert(content_func)
+        self.file.alert(content_func)
 
     def warning(self, content_func: Callable[[], str | BytesIO]):
         self.console.warning(content_func)

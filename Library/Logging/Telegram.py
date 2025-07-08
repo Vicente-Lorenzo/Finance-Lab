@@ -8,9 +8,9 @@ from Library.Classes import VerboseType, Telegram
 
 class TelegramAPI(LoggingAPI):
 
-    _ALERT_ICON: str = "🔔"
     _DEBUG_ICON: str = "⚙️"
     _INFO_ICON: str = "ℹ️"
+    _ALERT_ICON: str = "🔔"
     _WARNING_ICON: str = "⚠️"
     _ERROR_ICON: str = "❌"
     _CRITICAL_ICON: str = "🛑"
@@ -74,9 +74,9 @@ class TelegramAPI(LoggingAPI):
         return static
 
     def _format(self) -> None:
-        self._STATIC_LOG_ALERT: str = self._format_level(VerboseType.Alert, TelegramAPI._ALERT_ICON)
         self._STATIC_LOG_DEBUG: str = self._format_level(VerboseType.Debug, TelegramAPI._DEBUG_ICON)
         self._STATIC_LOG_INFO: str = self._format_level(VerboseType.Info, TelegramAPI._INFO_ICON)
+        self._STATIC_LOG_ALERT: str = self._format_level(VerboseType.Alert, TelegramAPI._ALERT_ICON)
         self._STATIC_LOG_WARNING: str = self._format_level(VerboseType.Warning, TelegramAPI._WARNING_ICON)
         self._STATIC_LOG_ERROR: str = self._format_level(VerboseType.Error, TelegramAPI._ERROR_ICON)
         self._STATIC_LOG_CRITICAL: str = self._format_level(VerboseType.Critical, TelegramAPI._CRITICAL_ICON)
@@ -99,14 +99,14 @@ class TelegramAPI(LoggingAPI):
         url, data, files = TelegramAPI._build_log(message_url, document_url, static_log, content_func)
         return requests.post(url, data=data, files=files)
 
-    def _alert(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._GROUP_MESSAGE_URL, self._GROUP_DOCUMENT_URL, self._STATIC_LOG_ALERT, content_func)
-
     def _debug(self, content_func: Callable[[], str | BytesIO]):
         self._log(self._LAB_MESSAGE_URL, self._LAB_DOCUMENT_URL, self._STATIC_LOG_DEBUG, content_func)
 
     def _info(self, content_func: Callable[[], str | BytesIO]):
         self._log(self._LAB_MESSAGE_URL, self._LAB_DOCUMENT_URL, self._STATIC_LOG_INFO, content_func)
+
+    def _alert(self, content_func: Callable[[], str | BytesIO]):
+        self._log(self._GROUP_MESSAGE_URL, self._GROUP_DOCUMENT_URL, self._STATIC_LOG_ALERT, content_func)
 
     def _warning(self, content_func: Callable[[], str | BytesIO]):
         self._log(self._LOG_MESSAGE_URL, self._LOG_DOCUMENT_URL, self._STATIC_LOG_WARNING, content_func)

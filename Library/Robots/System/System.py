@@ -176,7 +176,7 @@ class SystemAPI(Thread, ABC):
                     case UpdateID.BidBelowTarget:
                         actions += system.perform_update_bid_below_target(TickUpdate(analyst, manager, self.receive_update_target()))
                     case UpdateID.Shutdown:
-                        self._log.warning(lambda: "Shutdown strategy and safely terminate operations")
+                        self._log.info(lambda: "Shutdown")
                         actions += system.perform_update_shutdown(CompleteUpdate(analyst, manager))
                         break
                     case _:

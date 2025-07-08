@@ -519,9 +519,9 @@ class BacktestingSystemAPI(SystemAPI):
 
         def update_results(update: CompleteUpdate):
             self.individual_trades, self.aggregated_trades, self.statistics = update.Manager.Statistics.data(self._initial_account, self._start_date, self._stop_date)
-            self._log.debug(lambda: str(self.individual_trades))
-            self._log.debug(lambda: str(self.aggregated_trades))
-            self._log.debug(lambda: str(self.statistics))
+            self._log.info(lambda: str(self.individual_trades))
+            self._log.info(lambda: str(self.aggregated_trades))
+            self._log.info(lambda: str(self.statistics))
 
         initialisation.on_complete(to=execution, action=init_market, reason="Market Initialized")
         initialisation.on_shutdown(to=termination, action=None, reason="Abruptly Terminated")

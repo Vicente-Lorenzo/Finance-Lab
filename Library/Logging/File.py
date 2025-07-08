@@ -64,9 +64,9 @@ class FileAPI(LoggingAPI):
         return static
 
     def _format(self) -> None:
-        self._STATIC_LOG_ALERT: str = self._format_level(VerboseType.Alert)
         self._STATIC_LOG_DEBUG: str = self._format_level(VerboseType.Debug)
         self._STATIC_LOG_INFO: str = self._format_level(VerboseType.Info)
+        self._STATIC_LOG_ALERT: str = self._format_level(VerboseType.Alert)
         self._STATIC_LOG_WARNING: str = self._format_level(VerboseType.Warning)
         self._STATIC_LOG_ERROR: str = self._format_level(VerboseType.Error)
         self._STATIC_LOG_CRITICAL: str = self._format_level(VerboseType.Critical)
@@ -84,14 +84,14 @@ class FileAPI(LoggingAPI):
             FileAPI._flush()
             FileAPI._clear()
 
-    def _alert(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._STATIC_LOG_ALERT, content_func)
-
     def _debug(self, content_func: Callable[[], str | BytesIO]):
         self._log(self._STATIC_LOG_DEBUG, content_func)
 
     def _info(self, content_func: Callable[[], str | BytesIO]):
         self._log(self._STATIC_LOG_INFO, content_func)
+
+    def _alert(self, content_func: Callable[[], str | BytesIO]):
+        self._log(self._STATIC_LOG_ALERT, content_func)
 
     def _warning(self, content_func: Callable[[], str | BytesIO]):
         self._log(self._STATIC_LOG_WARNING, content_func)
