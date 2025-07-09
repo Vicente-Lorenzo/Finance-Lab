@@ -50,12 +50,13 @@ class SystemAPI(Thread, ABC):
         return self
     
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        self._log.debug(lambda: "Terminated")
         if exc_type or exc_value or exc_traceback:
-            self._log.error(lambda: f"Exception type: {exc_type}")
-            self._log.error(lambda: f"Exception value: {exc_value}")
-            self._log.error(lambda: f"Traceback: {exc_traceback}")
-    
+            self._log.critical(lambda: f"Exception type: {exc_type}")
+            self._log.critical(lambda: f"Exception value: {exc_value}")
+            self._log.critical(lambda: f"Traceback: {exc_traceback}")
+        self._log.debug(lambda: "Terminated")
+        return self
+
     @abstractmethod
     def send_action_complete(self, action: CompleteAction) -> None:
         raise NotImplementedError

@@ -40,12 +40,12 @@ class FileAPI(LoggingAPI):
         FileAPI._FILE = FileAPI._FILE_PATH.open("a", encoding="utf-8")
         return super().__enter__()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_value, exc_traceback):
         if FileAPI._BUFFER_SIZE:
             FileAPI._flush()
         FileAPI._clear()
         FileAPI._FILE.close()
-        return super().__exit__(exc_type, exc_val, exc_tb)
+        return super().__exit__(exc_type, exc_value, exc_traceback)
 
     @staticmethod
     def _format_tag(static: str, tag: str) -> str:

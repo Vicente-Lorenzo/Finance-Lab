@@ -46,7 +46,8 @@ class HandlerAPI:
         self.file.__enter__()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.console.__exit__(exc_type, exc_val, exc_tb)
-        self.telegram.__exit__(exc_type, exc_val, exc_tb)
-        self.file.__exit__(exc_type, exc_val, exc_tb)
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.console.__exit__(exc_type, exc_value, exc_traceback)
+        self.telegram.__exit__(exc_type, exc_value, exc_traceback)
+        self.file.__exit__(exc_type, exc_value, exc_traceback)
+        return self
