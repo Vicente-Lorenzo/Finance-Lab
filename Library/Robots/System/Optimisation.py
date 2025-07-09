@@ -57,6 +57,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
                  telegram: VerboseType) -> None:
         
         super().__init__(broker=broker, group=group, symbol=symbol, timeframe=timeframe, strategy=strategy, parameters=parameters, start=start, stop=stop, balance=balance, spread=spread)
+
         self._configuration: Parameters = configuration
         self._training: int = training
         self._validation: int = validation
