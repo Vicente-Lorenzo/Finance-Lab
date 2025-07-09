@@ -74,7 +74,7 @@ public abstract class RobotAPI
     private double? _lastBidAboveTarget;
     private double? _lastBidBelowTarget;
 
-    protected RobotAPI(Robot robot, Logging.VerboseType console, Logging.VerboseType telegram)
+    protected RobotAPI(Robot robot, Logging.VerboseType console, Logging.VerboseType telegram, Logging.VerboseType file)
     {
         _robot = robot;
         _logging = new Logging(robot, "Strategy", console);
@@ -96,7 +96,7 @@ public abstract class RobotAPI
 
         var baseDirectory = new DirectoryInfo(Environment.CurrentDirectory).Parent?.Parent?.Parent?.FullName;
         var scriptName = GetType().Name;
-        var scriptArgs = $"--console \"{console}\" --telegram \"{telegram}\" --system \"Realtime\" --strategy \"{scriptName}\" --broker \"{broker}\" --group \"{group}\" --symbol \"{symbol}\" --timeframe \"{timeframe}\" --iid \"{_robot.InstanceId}\"";
+        var scriptArgs = $"--console \"{console}\" --telegram \"{telegram}\" --file \"{file}\" --system \"Realtime\" --strategy \"{scriptName}\" --broker \"{broker}\" --group \"{group}\" --symbol \"{symbol}\" --timeframe \"{timeframe}\" --iid \"{_robot.InstanceId}\"";
         var psi = new ProcessStartInfo
         {
             FileName = "cmd.exe",

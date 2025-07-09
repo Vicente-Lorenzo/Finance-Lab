@@ -11,7 +11,8 @@ from Library.Utils import time
 
 from Library.Robots.Manager import StatisticsAPI
 from Library.Robots.Strategy import StrategyAPI, DownloadStrategyAPI, NNFXStrategyAPI, DDPGStrategyAPI
-from Library.Robots.System import SystemAPI, RealtimeSystemAPI, BacktestingSystemAPI, OptimisationSystemAPI
+from Library.Robots.System import SystemAPI, RealtimeSystemAPI, BacktestingSystemAPI, OptimisationSystemAPI, \
+    LearningSystemAPI
 
 pl.Config.set_tbl_cols(-1)
 pl.Config.set_tbl_rows(-1)
@@ -29,6 +30,7 @@ def main():
     parser: ArgumentParser = ArgumentParser()
     parser.add_argument("--console", type=str, required=True, choices=[_.name for _ in VerboseType])
     parser.add_argument("--telegram", type=str, required=True, choices=[_.name for _ in VerboseType])
+    parser.add_argument("--file", type=str, required=True, choices=[_.name for _ in VerboseType])
 
     parser.add_argument("--system", type=str, required=True, choices=[_.name for _ in SystemType])
     parser.add_argument("--strategy", type=str, required=True, choices=[_.name for _ in StrategyType])
@@ -47,6 +49,7 @@ def main():
     parser.add_argument("--training", type=int, required=False)
     parser.add_argument("--validation", type=int, required=False)
     parser.add_argument("--testing", type=int, required=False)
+    parser.add_argument("--episodes", type=int, required=False)
     parser.add_argument("--fitness", type=str, required=False, choices=StatisticsAPI.Metrics)
 
     args = parser.parse_args()
@@ -66,7 +69,7 @@ def main():
 
     ConsoleAPI.level(console_verbose := VerboseType(VerboseType[args.console]))
     TelegramAPI.level(telegram_verbose := VerboseType(VerboseType[args.telegram]))
-    FileAPI.level(console_verbose)
+    FileAPI.level(file_verbose := VerboseType(VerboseType[args.file]))
 
     log = HandlerAPI(Class=execution, Subclass="Execution Management")
 
@@ -128,16 +131,16 @@ def main():
                         parser.error("--start is required for Optimisation System")
                     if args.stop is None:
                         parser.error("--stop is required for Optimisation System")
+                    if args.balance is None:
+                        parser.error("--balance is required for Optimisation System")
+                    if args.spread is None:
+                        parser.error("--spread is required for Optimisation System")
                     if args.training is None:
                         parser.error("--training is required for Optimisation System")
                     if args.validation is None:
                         parser.error("--validation is required for Optimisation System")
                     if args.testing is None:
                         parser.error("--testing is required for Optimisation System")
-                    if args.balance is None:
-                        parser.error("--balance is required for Optimisation System")
-                    if args.spread is None:
-                        parser.error("--spread is required for Optimisation System")
                     if args.fitness is None:
                         parser.error("--fitness is required for Optimisation System")
                     params: Parameters = parameters.Backtesting[args.strategy]
@@ -159,7 +162,39 @@ def main():
                         spread=args.spread,
                         fitness=args.fitness,
                         console=console_verbose,
-                        telegram=telegram_verbose
+                        telegram=telegram_verbose,
+                        file=file_verbose
+                    )
+                case SystemType.Learning.name:
+                    if args.start is None:
+                        parser.error("--start is required for Learning System")
+                    if args.stop is None:
+                        parser.error("--stop is required for Learning System")
+                    if args.balance is None:
+                        parser.error("--balance is required for Learning System")
+                    if args.spread is None:
+                        parser.error("--spread is required for Learning System")
+                    if args.episodes is None:
+                        parser.error("--episodes is required for Learning System")
+                    if args.fitness is None:
+                        parser.error("--fitness is required for Learning System")
+                    params: Parameters = parameters.Learning[args.strategy]
+                    system = LearningSystemAPI(
+                        broker=args.broker,
+                        group=args.group,
+                        symbol=args.symbol,
+                        timeframe=args.timeframe,
+                        strategy=strategy,
+                        parameters=params,
+                        start=args.start,
+                        stop=args.stop,
+                        balance=args.balance,
+                        spread=args.spread,
+                        episodes=args.episodes,
+                        fitness=args.fitness,
+                        console=console_verbose,
+                        telegram=telegram_verbose,
+                        file=file_verbose
                     )
 
             log.debug(lambda: "Executing")
