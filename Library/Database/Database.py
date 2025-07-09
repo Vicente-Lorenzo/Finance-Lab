@@ -154,7 +154,7 @@ class DatabaseAPI:
                 user=self._user,
                 password=self._password
             )
-            self._log.info(lambda: "Connected")
+            self._log.debug(lambda: "Connected")
         except Exception as e:
             self._log.error(lambda: str(e))
             raise e
@@ -163,11 +163,11 @@ class DatabaseAPI:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self._connection:
             self._connection.close()
-        self._log.info(lambda: "Disconnected")
+        self._log.debug(lambda: "Disconnected")
         if exc_type or exc_value or exc_traceback:
-            self._log.critical(lambda: f"Exception type: {exc_type}")
-            self._log.critical(lambda: f"Exception value: {exc_value}")
-            self._log.critical(lambda: f"Traceback: {exc_traceback}")
+            self._log.error(lambda: f"Exception type: {exc_type}")
+            self._log.error(lambda: f"Exception value: {exc_value}")
+            self._log.error(lambda: f"Traceback: {exc_traceback}")
     
     @classmethod
     def format_market_data(cls, market_data: pl.DataFrame | List[Bar] | Bar | None) -> pl.DataFrame:
@@ -228,7 +228,7 @@ class DatabaseAPI:
 
                 pge.execute_values(cursor, query, records)
                 self._connection.commit()
-                self._log.info(lambda: f"Saved {len(data)} market data points")
+                self._log.debug(lambda: f"Saved {len(data)} market data points")
         except Exception as e:
             self._connection.rollback()
             self._log.error(lambda: str(e))
@@ -264,7 +264,7 @@ class DatabaseAPI:
 
                 cursor.execute(query, astuple(symbol))
                 self._connection.commit()
-                self._log.info(lambda: f"Saved symbol data points")
+                self._log.debug(lambda: f"Saved symbol data points")
         except Exception as e:
             self._connection.rollback()
             self._log.error(lambda: str(e))
@@ -322,7 +322,7 @@ class DatabaseAPI:
                 results = cursor.fetchall()
                 results = [Bar(*result) for result in results]
                 data = self.format_market_data(results)
-                self._log.info(lambda: f"Loaded {len(data)} data points")
+                self._log.debug(lambda: f"Loaded {len(data)} data points")
                 return data
         except Exception as e:
             self._log.error(lambda: str(e))
@@ -340,7 +340,7 @@ class DatabaseAPI:
             with self._connection.cursor() as cursor:
                 cursor.execute(query)
                 result = cursor.fetchone()
-                self._log.info(lambda: f"Loaded symbol data points")
+                self._log.debug(lambda: f"Loaded symbol data points")
                 
                 return Symbol(BaseAsset=AssetType(AssetType[result[0]]),
                               QuoteAsset=AssetType(AssetType[result[1]]),

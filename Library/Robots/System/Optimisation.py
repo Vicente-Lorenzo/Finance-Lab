@@ -77,12 +77,6 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
         
         self._btid_lock = threading.Lock()
         self._btid: int = -1
-        
-    def __enter__(self):
-        return super().__enter__()
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        return super().__exit__(exc_type, exc_value, exc_traceback)
 
     @staticmethod
     def unpack_walk_forward_stages(start: date, stop: date, training: int, validation: int, testing: int) -> list[tuple[tuple[date, date] | None, tuple[date, date] | None]]:

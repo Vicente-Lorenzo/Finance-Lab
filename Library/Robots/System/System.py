@@ -46,15 +46,15 @@ class SystemAPI(Thread, ABC):
         self._log: HandlerAPI = HandlerAPI(Class=self.__class__.__name__, Subclass="System Management")
 
     def __enter__(self):
-        self._log.info(lambda: "Initiated")
+        self._log.debug(lambda: "Initiated")
         return self
     
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        self._log.info(lambda: "Terminated")
+        self._log.debug(lambda: "Terminated")
         if exc_type or exc_value or exc_traceback:
-            self._log.critical(lambda: f"Exception type: {exc_type}")
-            self._log.critical(lambda: f"Exception value: {exc_value}")
-            self._log.critical(lambda: f"Traceback: {exc_traceback}")
+            self._log.error(lambda: f"Exception type: {exc_type}")
+            self._log.error(lambda: f"Exception value: {exc_value}")
+            self._log.error(lambda: f"Traceback: {exc_traceback}")
     
     @abstractmethod
     def send_action_complete(self, action: CompleteAction) -> None:
@@ -176,7 +176,7 @@ class SystemAPI(Thread, ABC):
                     case UpdateID.BidBelowTarget:
                         actions += system.perform_update_bid_below_target(TickUpdate(analyst, manager, self.receive_update_target()))
                     case UpdateID.Shutdown:
-                        self._log.info(lambda: "Shutdown")
+                        self._log.debug(lambda: "Shutdown")
                         actions += system.perform_update_shutdown(CompleteUpdate(analyst, manager))
                         break
                     case _:

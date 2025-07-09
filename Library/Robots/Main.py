@@ -1,3 +1,4 @@
+import traceback
 import polars as pl
 from typing import Type
 from pathlib import Path
@@ -71,102 +72,107 @@ def main():
 
     with log:
 
-        log.info(lambda: "Initiated")
+        try:
+            log.debug(lambda: "Initiated")
 
-        strategy: Type[StrategyAPI] | None = None
-        match args.strategy:
-            case StrategyType.Download.name:
-                strategy = DownloadStrategyAPI
-            case StrategyType.NNFX.name:
-                strategy = NNFXStrategyAPI
-            case StrategyType.DDPG.name:
-                strategy = DDPGStrategyAPI
+            strategy: Type[StrategyAPI] | None = None
+            match args.strategy:
+                case StrategyType.Download.name:
+                    strategy = DownloadStrategyAPI
+                case StrategyType.NNFX.name:
+                    strategy = NNFXStrategyAPI
+                case StrategyType.DDPG.name:
+                    strategy = DDPGStrategyAPI
 
-        parameters: Parameters = parameters[args.broker][args.group][args.symbol][args.timeframe]
+            parameters: Parameters = parameters[args.broker][args.group][args.symbol][args.timeframe]
 
-        system: SystemAPI | None = None
-        match args.system:
-            case SystemType.Realtime.name:
-                if args.iid is None:
-                    parser.error("--iid is required for Realtime System")
-                params: Parameters = parameters.Realtime[args.strategy]
-                system = RealtimeSystemAPI(
-                    broker=args.broker,
-                    group=args.group,
-                    symbol=args.symbol,
-                    timeframe=args.timeframe,
-                    strategy=strategy,
-                    parameters=params,
-                    iid=args.iid
-                )
-            case SystemType.Backtesting.name:
-                if args.start is None:
-                    parser.error("--start is required for Backtesting System")
-                if args.stop is None:
-                    parser.error("--stop is required for Backtesting System")
-                if args.balance is None:
-                    parser.error("--balance is required for Backtesting System")
-                if args.spread is None:
-                    parser.error("--spread is required for Backtesting System")
-                params: Parameters = parameters.Backtesting[args.strategy]
-                system = BacktestingSystemAPI(
-                    broker=args.broker,
-                    group=args.group,
-                    symbol=args.symbol,
-                    timeframe=args.timeframe,
-                    strategy=strategy,
-                    parameters=params,
-                    start=args.start,
-                    stop=args.stop,
-                    balance=args.balance,
-                    spread=args.spread
-                )
-            case SystemType.Optimisation.name:
-                if args.start is None:
-                    parser.error("--start is required for Optimisation System")
-                if args.stop is None:
-                    parser.error("--stop is required for Optimisation System")
-                if args.training is None:
-                    parser.error("--training is required for Optimisation System")
-                if args.validation is None:
-                    parser.error("--validation is required for Optimisation System")
-                if args.testing is None:
-                    parser.error("--testing is required for Optimisation System")
-                if args.balance is None:
-                    parser.error("--balance is required for Optimisation System")
-                if args.spread is None:
-                    parser.error("--spread is required for Optimisation System")
-                if args.fitness is None:
-                    parser.error("--fitness is required for Optimisation System")
-                params: Parameters = parameters.Backtesting[args.strategy]
-                config: Parameters = parameters.Optimisation[args.strategy]
-                system = OptimisationSystemAPI(
-                    broker=args.broker,
-                    group=args.group,
-                    symbol=args.symbol,
-                    timeframe=args.timeframe,
-                    strategy=strategy,
-                    parameters=params,
-                    configuration=config,
-                    start=args.start,
-                    stop=args.stop,
-                    training=args.training,
-                    validation=args.validation,
-                    testing=args.testing,
-                    balance=args.balance,
-                    spread=args.spread,
-                    fitness=args.fitness,
-                    console=console_verbose,
-                    telegram=telegram_verbose
-                )
+            system: SystemAPI | None = None
+            match args.system:
+                case SystemType.Realtime.name:
+                    if args.iid is None:
+                        parser.error("--iid is required for Realtime System")
+                    params: Parameters = parameters.Realtime[args.strategy]
+                    system = RealtimeSystemAPI(
+                        broker=args.broker,
+                        group=args.group,
+                        symbol=args.symbol,
+                        timeframe=args.timeframe,
+                        strategy=strategy,
+                        parameters=params,
+                        iid=args.iid
+                    )
+                case SystemType.Backtesting.name:
+                    if args.start is None:
+                        parser.error("--start is required for Backtesting System")
+                    if args.stop is None:
+                        parser.error("--stop is required for Backtesting System")
+                    if args.balance is None:
+                        parser.error("--balance is required for Backtesting System")
+                    if args.spread is None:
+                        parser.error("--spread is required for Backtesting System")
+                    params: Parameters = parameters.Backtesting[args.strategy]
+                    system = BacktestingSystemAPI(
+                        broker=args.broker,
+                        group=args.group,
+                        symbol=args.symbol,
+                        timeframe=args.timeframe,
+                        strategy=strategy,
+                        parameters=params,
+                        start=args.start,
+                        stop=args.stop,
+                        balance=args.balance,
+                        spread=args.spread
+                    )
+                case SystemType.Optimisation.name:
+                    if args.start is None:
+                        parser.error("--start is required for Optimisation System")
+                    if args.stop is None:
+                        parser.error("--stop is required for Optimisation System")
+                    if args.training is None:
+                        parser.error("--training is required for Optimisation System")
+                    if args.validation is None:
+                        parser.error("--validation is required for Optimisation System")
+                    if args.testing is None:
+                        parser.error("--testing is required for Optimisation System")
+                    if args.balance is None:
+                        parser.error("--balance is required for Optimisation System")
+                    if args.spread is None:
+                        parser.error("--spread is required for Optimisation System")
+                    if args.fitness is None:
+                        parser.error("--fitness is required for Optimisation System")
+                    params: Parameters = parameters.Backtesting[args.strategy]
+                    config: Parameters = parameters.Optimisation[args.strategy]
+                    system = OptimisationSystemAPI(
+                        broker=args.broker,
+                        group=args.group,
+                        symbol=args.symbol,
+                        timeframe=args.timeframe,
+                        strategy=strategy,
+                        parameters=params,
+                        configuration=config,
+                        start=args.start,
+                        stop=args.stop,
+                        training=args.training,
+                        validation=args.validation,
+                        testing=args.testing,
+                        balance=args.balance,
+                        spread=args.spread,
+                        fitness=args.fitness,
+                        console=console_verbose,
+                        telegram=telegram_verbose
+                    )
 
-        log.info(lambda: "Executing")
+            log.debug(lambda: "Executing")
 
-        with system:
-            system.start()
-            system.join()
+            with system:
+                system.start()
+                system.join()
 
-        log.info(lambda: "Terminated")
+        except Exception as e:
+            log.error(lambda: f"Failed\n{(''.join(traceback.format_exception(e)))[:-1]}")
+
+        finally:
+            log.debug(lambda: "Terminated")
 
 if __name__ == "__main__":
     main()
