@@ -19,7 +19,11 @@ class StrategyAPI(ABC):
     CLOSED_BUY = "Closed Buy ({0} Position)"
     CLOSED_SELL = "Closed Sell ({0} Position)"
 
-    def __init__(self, money_management: Parameters, risk_management: Parameters, signal_management: Parameters):
+    def __init__(self,
+                 money_management: Parameters,
+                 risk_management: Parameters,
+                 signal_management: Parameters):
+
         self.MoneyManagement: Parameters = money_management
         self.RiskManagement: Parameters = risk_management
         self.SignalManagement: Parameters = signal_management

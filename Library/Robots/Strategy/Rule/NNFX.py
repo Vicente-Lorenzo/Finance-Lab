@@ -7,7 +7,11 @@ from Library.Robots.Strategy import StrategyAPI
 
 class NNFXStrategyAPI(StrategyAPI):
 
-    def __init__(self, money_management: Parameters, risk_management: Parameters, signal_management: Parameters):
+    def __init__(self,
+                 money_management: Parameters,
+                 risk_management: Parameters,
+                 signal_management: Parameters):
+
         super().__init__(money_management, risk_management, signal_management)
 
         self._risk_percentage, = self.MoneyManagement.RiskPercentage
