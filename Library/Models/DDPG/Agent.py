@@ -13,16 +13,17 @@ class DDPGAgentAPI(AgentAPI):
     def __init__(self,
                  model: str,
                  path: Path,
-                 alpha: float,
-                 beta: float,
                  input_shape: tuple,
                  action_shape: int,
-                 fc1_shape=400,
-                 fc2_shape=300,
-                 memory_size=1000000,
-                 batch_size=64,
-                 gamma=0.99,
-                 tau=0.01):
+                 alpha: float = 0.0001,
+                 beta: float = 0.001,
+                 tau: float = 0.001,
+                 fc1_shape: int = 400,
+                 fc2_shape: int = 300,
+                 memory_size: int = 1000000,
+                 batch_size: int = 64,
+                 gamma: float = 0.99):
+
         super().__init__(model=model, path=path)
 
         self.batch_size = batch_size
