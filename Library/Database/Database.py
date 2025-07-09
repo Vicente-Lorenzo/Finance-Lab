@@ -163,12 +163,13 @@ class DatabaseAPI:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self._connection:
             self._connection.close()
-        self._log.debug(lambda: "Disconnected")
         if exc_type or exc_value or exc_traceback:
-            self._log.error(lambda: f"Exception type: {exc_type}")
-            self._log.error(lambda: f"Exception value: {exc_value}")
-            self._log.error(lambda: f"Traceback: {exc_traceback}")
-    
+            self._log.critical(lambda: f"Exception type: {exc_type}")
+            self._log.critical(lambda: f"Exception value: {exc_value}")
+            self._log.critical(lambda: f"Traceback: {exc_traceback}")
+        self._log.debug(lambda: "Disconnected")
+        return self
+
     @classmethod
     def format_market_data(cls, market_data: pl.DataFrame | List[Bar] | Bar | None) -> pl.DataFrame:
         if isinstance(market_data, pl.DataFrame) and market_data.schema == cls.SCHEMA_MARKET:
