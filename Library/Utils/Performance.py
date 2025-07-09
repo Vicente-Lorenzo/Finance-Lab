@@ -16,7 +16,7 @@ def time(func):
         result = func(*args, **kwargs)
         stop_time = perf_counter()
         log = HandlerAPI(Class="Performance", Subclass=f"Time @ {func.__name__}")
-        log.warning(lambda: f"{stop_time - start_time:.6f} seconds")
+        log.debug(lambda: f"{stop_time - start_time:.6f} seconds")
         return result
     return wrapper
 
@@ -30,6 +30,6 @@ def profile(func):
         ps = pstats.Stats(pr, stream=io.StringIO())
         ps.dump_stats(f"profile-{timestamp}.pstat")
         log = HandlerAPI(Class="Performance", Subclass=f"Profile @ {func.__name__}")
-        log.warning(lambda: f"Snapshot saved")
+        log.debug(lambda: f"Snapshot saved")
         return result
     return wrapper
