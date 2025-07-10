@@ -29,9 +29,10 @@ class FileAPI(LoggingAPI):
         FileAPI._BUFFER_SIZE = 0
 
     @classmethod
-    def setup(cls, unique_name: str):
-        super().setup()
+    def setup(cls, verbose: VerboseType, *args):
+        super().setup(verbose)
         now = datetime.now()
+        unique_name = args[0]
         unique_date = datetime_to_string(dt=now, fmt="%Y-%m-%d")
         unique_time = datetime_to_string(dt=now, fmt="%H-%M-%S")
         cls._FILE_PATH = cls._DIR_PATH / f"{unique_name}_{unique_date}_{unique_time}.log"

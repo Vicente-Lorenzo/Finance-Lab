@@ -1,6 +1,7 @@
 from io import BytesIO
 from typing import Callable
 
+from Library.Classes import VerboseType
 from Library.Logging import *
 
 class HandlerAPI:
@@ -9,6 +10,16 @@ class HandlerAPI:
         self.console = ConsoleAPI(**kwargs)
         self.telegram = TelegramAPI(**kwargs)
         self.file = FileAPI(**kwargs)
+
+    def level(self, verbose: VerboseType) -> None:
+        self.console.level(verbose)
+        self.telegram.level(verbose)
+        self.file.level(verbose)
+
+    def reset(self) -> None:
+        self.console.reset()
+        self.telegram.reset()
+        self.file.reset()
 
     def debug(self, content_func: Callable[[], str | BytesIO]):
         self.console.debug(content_func)

@@ -51,10 +51,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
                  testing: int,
                  balance: float,
                  spread: float,
-                 fitness: str,
-                 console: VerboseType,
-                 telegram: VerboseType,
-                 file: VerboseType) -> None:
+                 fitness: str) -> None:
         
         super().__init__(broker=broker, group=group, symbol=symbol, timeframe=timeframe, strategy=strategy, parameters=parameters, start=start, stop=stop, balance=balance, spread=spread)
 
@@ -63,9 +60,6 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
         self._validation: int = validation
         self._testing: int = testing
         self._fitness: str = fitness
-        self._console: VerboseType = console
-        self._telegram: VerboseType = telegram
-        self._file: VerboseType = file
 
         self._wf_stages = self.unpack_walk_forward_stages(self._start_date, self._stop_date, self._training, self._validation, self._testing)
         
@@ -286,11 +280,11 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
                                   **unpack_selected("ManagerManagement", ctf_stage["ManagerManagement"])})
 
     def run_backtest_stage(self, parameters: Parameters, start: date, stop: date) -> (int, BacktestingSystemAPI):
-        
+
         with self._btid_lock:
             self._btid += 1
             btid = self._btid
-        
+
         thread = BacktestingSystemAPI(
             broker=self._broker,
             group=self._group,
@@ -303,36 +297,34 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
             balance=self._account.Balance,
             spread=self._spread_pips)
 
+        thread.strategy = self._strategy(money_management=parameters.MoneyManagement, risk_management=parameters.RiskManagement, signal_management=parameters.SignalManagement)
+        thread.analyst = AnalystAPI(analyst_management=parameters.AnalystManagement)
+        thread.manager = ManagerAPI(manager_management=parameters.ManagerManagement)
+
+        thread.window = self.window
         thread.tick_data = self.tick_data
         thread.bar_data = self.bar_data
         thread.symbol_data = self.symbol_data
         thread.conversion_data = self.conversion_data
         thread.conversion_rate = self.conversion_rate
-        thread.window = self.window
-
-        thread.strategy = self._strategy(money_management=parameters.MoneyManagement, risk_management=parameters.RiskManagement, signal_management=parameters.SignalManagement)
-        thread.analyst = AnalystAPI(analyst_management=parameters.AnalystManagement)
-        thread.manager = ManagerAPI(manager_management=parameters.ManagerManagement)
 
         with thread:
             thread.start()
             thread.join()
 
         return btid, thread
-    
+
     def run_coarse_to_fine_stage(self, stage: dict, start: date, stop: date) -> (int, float, Parameters, pl.DataFrame):
-        
+
         parameters = self.unpack_coarse_to_fine_backtests(stage)
 
         results: list[dict] = []
-        
+
         best_id: int | None = None
         best_fitness: float = float("-inf")
         best_parameters: Parameters | None = None
 
-        self._log.console.level(VerboseType.Critical)
-        self._log.telegram.level(VerboseType.Critical)
-        self._log.file.level(VerboseType.Critical)
+        self._log.level(VerboseType.Critical)
 
         with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
 
@@ -342,7 +334,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
                 for future in as_completed(futures):
                     btid, backtest = future.result()
                     fitness = backtest.statistics.filter(pl.col(StatisticsAPI.STATISTICS_METRICS_LABEL) == self._fitness)[StatisticsAPI.TOTAL_METRICS_AGGREGATED].item()
-                    
+
                     results.append({
                         self.BACKTESTSTAGEID: btid,
                         self._fitness: fitness,
@@ -361,9 +353,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
 
                     progress.update(1)
 
-        self._log.console.level(self._console)
-        self._log.telegram.level(self._telegram)
-        self._log.file.level(self._file)
+        self._log.reset()
 
         df = pl.DataFrame(results, strict=False)
         df = df.sort(by=self._fitness, descending=True, nulls_last=True)
@@ -371,20 +361,20 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
         return best_id, best_fitness, best_parameters, df
 
     def run_degrees_of_freedom_stage(self, ctf_stage: dict, start: date, stop: date) -> (int, float, Parameters, pl.DataFrame):
-        
+
         results: list[dict] = []
         parameters: list[Parameters] = []
-        
+
         last_btid: int | None = None
         last_fitness: float | None = None
         last_parameters: Parameters | None = None
         last_df: pl.DataFrame | None = None
-        
+
         ctf_id = 0
         while ctf_stage := self.unpack_coarse_to_fine_parameters(ctf_stage, parameters):
             ctf_id += 1
             last_btid, last_fitness, last_parameters, last_df = self.run_coarse_to_fine_stage(ctf_stage, start, stop)
-            
+
             results.append({
                 self.CTFSTAGEID: ctf_id,
                 self.BACKTESTSTAGEID: last_btid,
@@ -396,7 +386,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
                 **last_parameters.ManagerManagement
             })
             parameters.append(last_parameters)
-            
+
             ctf_stage = self.pack_coarse_to_fine_parameters(ctf_stage, last_parameters)
 
             self._log.console.info(lambda: f"Completed Coarse-to-Fine ID={ctf_id} with {last_df}")
@@ -418,7 +408,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
         last_fitness: float | None = None
         last_parameters: Parameters | None = None
         last_df: pl.DataFrame | None = None
-        
+
         for dof_id, dof_stage in enumerate(self._dof_stages, start=1):
             dof_stage = self.pack_degrees_of_freedom_parameters(dof_stage, parameters)
             last_btid, last_fitness, last_parameters, last_df = self.run_degrees_of_freedom_stage(dof_stage, start, stop)
@@ -442,7 +432,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
 
         dof_df = pl.DataFrame(results, strict=False)
         dof_df = dof_df.sort(by=self.DOFSTAGEID, descending=True)
-        
+
         return last_btid, last_fitness, last_parameters, dof_df
 
     @time
@@ -452,26 +442,29 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
 
         results: list[dict] = []
 
+        opt_parameters = self.parameters
         for wf_id, ((opt_start, opt_stop), (val_start, val_stop)) in enumerate(self._wf_stages, start=1):
-            opt_bt_id, opt_bt_fitness, opt_bt_parameters, opt_df = self.run_optimisation_stage(opt_start, opt_stop)
-            val_bt_id, val_bt = self.run_backtest_stage(opt_bt_parameters, val_start, val_stop)
+            opt_id, opt_fitness, opt_parameters, opt_df = self.run_optimisation_stage(opt_start, opt_stop)
+            self._log.level(VerboseType.Critical)
+            val_id, val_bt = self.run_backtest_stage(opt_parameters, val_start, val_stop)
+            self._log.reset()
             val_bt_fitness = val_bt.statistics.filter(pl.col(StatisticsAPI.STATISTICS_METRICS_LABEL) == self._fitness)[StatisticsAPI.TOTAL_METRICS_AGGREGATED].item()
-            
+
             results.append({
                 self.WFSTAGEID: wf_id,
                 self.WFOPTSTART: opt_start,
                 self.WFOPTSTOP: opt_stop,
                 self.WFVALSTART: val_start,
                 self.WFVALSTOP: val_stop,
-                self.WFOPTFITNESS.format(self._fitness): opt_bt_fitness,
+                self.WFOPTFITNESS.format(self._fitness): opt_fitness,
                 self.WFVALFITNESS.format(self._fitness): val_bt_fitness,
-                **opt_bt_parameters.MoneyManagement,
-                **opt_bt_parameters.RiskManagement,
-                **opt_bt_parameters.SignalManagement,
-                **opt_bt_parameters.AnalystManagement,
-                **opt_bt_parameters.ManagerManagement
+                **opt_parameters.MoneyManagement,
+                **opt_parameters.RiskManagement,
+                **opt_parameters.SignalManagement,
+                **opt_parameters.AnalystManagement,
+                **opt_parameters.ManagerManagement
             })
-            
+
             self._log.console.info(lambda: f"Completed Walk-Forward ID={wf_id} with {opt_df}")
             self._log.telegram.info(lambda: f"Completed Walk-Forward ID={wf_id}")
             self._log.telegram.info(lambda: image(opt_df))
@@ -479,8 +472,18 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
 
         wf_df = pl.DataFrame(results, strict=False)
         wf_df = wf_df.sort(by=self.WFSTAGEID, descending=True)
-        
-        self._log.console.info(lambda: f"Completed Optimisation: {wf_df}")
+
+        self._log.console.info(lambda: f"Completed Optimisation {wf_df}")
         self._log.telegram.info(lambda: f"Completed Optimisation")
         self._log.telegram.info(lambda: image(wf_df))
-        self._log.file.info(lambda: f"Completed Optimisation: {wf_df}")
+        self._log.file.info(lambda: f"Completed Optimisation {wf_df}")
+
+        self.strategy = self._strategy(money_management=opt_parameters.MoneyManagement,
+                                       risk_management=opt_parameters.RiskManagement,
+                                       signal_management=opt_parameters.SignalManagement)
+        self.analyst = AnalystAPI(analyst_management=opt_parameters.AnalystManagement)
+        self.manager = ManagerAPI(manager_management=opt_parameters.ManagerManagement)
+
+        self._log.telegram.level(VerboseType.Critical)
+        super().run()
+        self._log.telegram.reset()

@@ -9,6 +9,8 @@ from Library.Utils.DateTime import datetime_to_string
 
 class LoggingAPI(ABC):
 
+    _DEFAULT_VERBOSE: VerboseType = VerboseType.Debug
+
     _SHARED_TAGS: dict = {}
     _CUSTOM_TAGS: dict = {}
 
@@ -36,8 +38,10 @@ class LoggingAPI(ABC):
         LoggingAPI._SHARED_TAGS.update(kwargs)
 
     @classmethod
-    def setup(cls, *args, **kwargs):
+    def setup(cls, verbose: VerboseType, *args):
         cls._LOCK = Lock()
+        cls._DEFAULT_VERBOSE = verbose
+        cls.reset()
 
     @classmethod
     def level(cls, verbose: VerboseType) -> None:
@@ -47,6 +51,10 @@ class LoggingAPI(ABC):
         cls.warning = cls._warning if verbose.value >= VerboseType.Warning.value else LoggingAPI._DUMMY_LOG_FUNCTION
         cls.error = cls._error if verbose.value >= VerboseType.Error.value else LoggingAPI._DUMMY_LOG_FUNCTION
         cls.critical = cls._critical if verbose.value >= VerboseType.Critical.value else LoggingAPI._DUMMY_LOG_FUNCTION
+
+    @classmethod
+    def reset(cls) -> None:
+        cls.level(cls._DEFAULT_VERBOSE)
 
     def __init__(self, **kwargs):
         self._CUSTOM_TAGS.clear()

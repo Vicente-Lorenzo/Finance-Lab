@@ -63,13 +63,9 @@ def main():
         Timeframe=args.timeframe
     )
 
-    ConsoleAPI.setup()
-    TelegramAPI.setup(args.group)
-    FileAPI.setup(execution)
-
-    ConsoleAPI.level(console_verbose := VerboseType(VerboseType[args.console]))
-    TelegramAPI.level(telegram_verbose := VerboseType(VerboseType[args.telegram]))
-    FileAPI.level(file_verbose := VerboseType(VerboseType[args.file]))
+    ConsoleAPI.setup(VerboseType(VerboseType[args.console]))
+    TelegramAPI.setup(VerboseType(VerboseType[args.telegram]), args.group)
+    FileAPI.setup(VerboseType(VerboseType[args.file]), execution)
 
     log = HandlerAPI(Class=execution, Subclass="Execution Management")
 
@@ -160,10 +156,7 @@ def main():
                         testing=args.testing,
                         balance=args.balance,
                         spread=args.spread,
-                        fitness=args.fitness,
-                        console=console_verbose,
-                        telegram=telegram_verbose,
-                        file=file_verbose
+                        fitness=args.fitness
                     )
                 case SystemType.Learning.name:
                     if args.start is None:
@@ -191,10 +184,7 @@ def main():
                         balance=args.balance,
                         spread=args.spread,
                         episodes=args.episodes,
-                        fitness=args.fitness,
-                        console=console_verbose,
-                        telegram=telegram_verbose,
-                        file=file_verbose
+                        fitness=args.fitness
                     )
 
             log.debug(lambda: "Executing")

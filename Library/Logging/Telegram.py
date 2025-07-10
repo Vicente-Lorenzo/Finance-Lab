@@ -41,8 +41,9 @@ class TelegramAPI(LoggingAPI):
     _GROUP_DOCUMENT_URL: str | None = None
 
     @classmethod
-    def setup(cls, group_name: str):
-        super().setup()
+    def setup(cls, verbose: VerboseType, *args):
+        super().setup(verbose)
+        group_name = args[0]
         group = TelegramAPI._GROUP[group_name]
         cls._GROUP_MESSAGE_URL = TelegramAPI._MESSAGE_URL.format(group.Token, group.ChatID)
         cls._GROUP_DOCUMENT_URL = TelegramAPI._DOCUMENT_URL.format(group.Token, group.ChatID)
