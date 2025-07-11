@@ -1,4 +1,5 @@
 import datetime
+import traceback
 from io import BytesIO
 from typing import Callable
 from abc import ABC, abstractmethod
@@ -32,6 +33,9 @@ class LoggingAPI(ABC):
     warning: Callable[[Callable[[], str | BytesIO]], None] = _dummy
     error: Callable[[Callable[[], str | BytesIO]], None] = _dummy
     critical: Callable[[Callable[[], str | BytesIO]], None] = _dummy
+
+    _enter_flag: bool = False
+    _exit_flag: bool = False
 
     @staticmethod
     def init(**kwargs) -> None:
@@ -118,10 +122,28 @@ class LoggingAPI(ABC):
     def reset(cls) -> None:
         cls.level(cls._default_verbose)
 
+    def _enter_(self):
+        pass
+
     def __enter__(self):
+        with self.__class__._lock:
+            if not self.__class__._enter_flag:
+                self._enter_()
+                self.__class__._enter_flag = True
+                self._exit_flag = True
+            else:
+                self._exit_flag = False
         return self
 
+    def _exit_(self):
+        pass
+
     def __exit__(self, exc_type, exc_value, exc_traceback):
+        with self.__class__._lock:
+            if self._exit_flag:
+                self._exit_()
+                self.__class__._enter_flag = False
+                self._exit_flag = False
         return self
 
     @staticmethod
@@ -179,3 +201,17 @@ class LoggingAPI(ABC):
     @abstractmethod
     def _critical(self, content_func: Callable[[], str | BytesIO]):
         raise NotImplementedError
+
+    def trace(self, func: Callable):
+        def wrapper(*args, **kwargs):
+            try:
+                self.__enter__()
+                self.debug(lambda: "Initiated")
+                return func(*args, **kwargs)
+            except Exception as e:
+                self.critical(lambda: f"Failed: {e}")
+                self.critical(lambda: ''.join(traceback.format_exception(e))[:-1])
+            finally:
+                self.__exit__(None, None, None)
+                self.debug(lambda: "Terminated")
+        return wrapper

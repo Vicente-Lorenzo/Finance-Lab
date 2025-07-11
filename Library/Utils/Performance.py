@@ -2,13 +2,14 @@ import io
 import pstats
 import cProfile
 
+from typing import Callable
 from functools import wraps
 from time import perf_counter
 from datetime import datetime
 
 from Library.Utils import datetime_to_string
 
-def time(func):
+def time(func: Callable):
     @wraps(func)
     def wrapper(*args, **kwargs):
         from Library.Logging import HandlerAPI
@@ -20,7 +21,7 @@ def time(func):
         return result
     return wrapper
 
-def profile(func):
+def profile(func: Callable):
     @wraps(func)
     def wrapper(*args, **kwargs):
         from Library.Logging import HandlerAPI

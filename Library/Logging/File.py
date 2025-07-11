@@ -35,16 +35,14 @@ class FileAPI(LoggingAPI):
         unique_time = datetime_to_string(dt=now, fmt="%H-%M-%S")
         cls._file_path = cls._dir_path / f"{unique_name}_{unique_date}_{unique_time}.log"
 
-    def __enter__(self):
+    def _enter_(self):
         FileAPI._file = FileAPI._file_path.open("a", encoding="utf-8")
-        return super().__enter__()
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def _exit_(self):
         if FileAPI._buffer_size:
             FileAPI._flush()
         FileAPI._clear()
         FileAPI._file.close()
-        return super().__exit__(exc_type, exc_value, exc_traceback)
 
     @staticmethod
     def _format_tag(static: str, tag: str) -> str:
