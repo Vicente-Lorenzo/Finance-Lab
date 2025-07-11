@@ -61,57 +61,58 @@ class LoggingAPI(ABC):
     def level(cls, verbose: VerboseType) -> None:
         if verbose == cls._current_verbose:
             return
-        match verbose:
-            case VerboseType.Debug:
-                cls.debug = cls._debug
-                cls.info = cls._info
-                cls.alert = cls._alert
-                cls.warning = cls._warning
-                cls.error = cls._error
-                cls.critical = cls._critical
-            case VerboseType.Info:
-                cls.debug = cls._dummy
-                cls.info = cls._info
-                cls.alert = cls._alert
-                cls.warning = cls._warning
-                cls.error = cls._error
-                cls.critical = cls._critical
-            case VerboseType.Alert:
-                cls.debug = cls._dummy
-                cls.info = cls._dummy
-                cls.alert = cls._alert
-                cls.warning = cls._warning
-                cls.error = cls._error
-                cls.critical = cls._critical
-            case VerboseType.Warning:
-                cls.debug = cls._dummy
-                cls.info = cls._dummy
-                cls.alert = cls._dummy
-                cls.warning = cls._warning
-                cls.error = cls._error
-                cls.critical = cls._critical
-            case VerboseType.Error:
-                cls.debug = cls._dummy
-                cls.info = cls._dummy
-                cls.alert = cls._dummy
-                cls.warning = cls._dummy
-                cls.error = cls._error
-                cls.critical = cls._critical
-            case VerboseType.Critical:
-                cls.debug = cls._dummy
-                cls.info = cls._dummy
-                cls.alert = cls._dummy
-                cls.warning = cls._dummy
-                cls.error = cls._dummy
-                cls.critical = cls._critical
-            case VerboseType.Silent:
-                cls.debug = cls._dummy
-                cls.info = cls._dummy
-                cls.alert = cls._dummy
-                cls.warning = cls._dummy
-                cls.error = cls._dummy
-                cls.critical = cls._dummy
-        cls._current_verbose = verbose
+        with cls._lock:
+            match verbose:
+                case VerboseType.Debug:
+                    cls.debug = cls._debug
+                    cls.info = cls._info
+                    cls.alert = cls._alert
+                    cls.warning = cls._warning
+                    cls.error = cls._error
+                    cls.critical = cls._critical
+                case VerboseType.Info:
+                    cls.debug = cls._dummy
+                    cls.info = cls._info
+                    cls.alert = cls._alert
+                    cls.warning = cls._warning
+                    cls.error = cls._error
+                    cls.critical = cls._critical
+                case VerboseType.Alert:
+                    cls.debug = cls._dummy
+                    cls.info = cls._dummy
+                    cls.alert = cls._alert
+                    cls.warning = cls._warning
+                    cls.error = cls._error
+                    cls.critical = cls._critical
+                case VerboseType.Warning:
+                    cls.debug = cls._dummy
+                    cls.info = cls._dummy
+                    cls.alert = cls._dummy
+                    cls.warning = cls._warning
+                    cls.error = cls._error
+                    cls.critical = cls._critical
+                case VerboseType.Error:
+                    cls.debug = cls._dummy
+                    cls.info = cls._dummy
+                    cls.alert = cls._dummy
+                    cls.warning = cls._dummy
+                    cls.error = cls._error
+                    cls.critical = cls._critical
+                case VerboseType.Critical:
+                    cls.debug = cls._dummy
+                    cls.info = cls._dummy
+                    cls.alert = cls._dummy
+                    cls.warning = cls._dummy
+                    cls.error = cls._dummy
+                    cls.critical = cls._critical
+                case VerboseType.Silent:
+                    cls.debug = cls._dummy
+                    cls.info = cls._dummy
+                    cls.alert = cls._dummy
+                    cls.warning = cls._dummy
+                    cls.error = cls._dummy
+                    cls.critical = cls._dummy
+            cls._current_verbose = verbose
 
     @classmethod
     def reset(cls) -> None:
