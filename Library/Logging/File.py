@@ -28,12 +28,12 @@ class FileAPI(LoggingAPI):
         FileAPI._buffer_size = 0
 
     @classmethod
-    def setup(cls, verbose: VerboseType, unique_name: str, **kwargs) -> None:
+    def setup(cls, verbose: VerboseType, uid: list[str], **kwargs) -> None:
         super().setup(verbose, **kwargs)
         now = datetime.now()
         unique_date = datetime_to_string(dt=now, fmt="%Y-%m-%d")
         unique_time = datetime_to_string(dt=now, fmt="%H-%M-%S")
-        cls._file_path = cls._dir_path / f"{unique_name}_{unique_date}_{unique_time}.log"
+        cls._file_path = cls._dir_path / f"{'_'.join(uid)}_{unique_date}_{unique_time}.log"
 
     def _enter_(self):
         FileAPI._file = FileAPI._file_path.open("a", encoding="utf-8")

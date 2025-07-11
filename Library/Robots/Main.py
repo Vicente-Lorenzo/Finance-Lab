@@ -62,8 +62,8 @@ def main():
     )
 
     ConsoleAPI.setup(VerboseType(VerboseType[args.console]))
-    TelegramAPI.setup(VerboseType(VerboseType[args.telegram]), args.group)
-    FileAPI.setup(VerboseType(VerboseType[args.file]), execution)
+    TelegramAPI.setup(VerboseType(VerboseType[args.telegram]), uid=args.group)
+    FileAPI.setup(VerboseType(VerboseType[args.file]), uid=[execution, args.system])
 
     log = HandlerAPI(Class=execution, Subclass="Execution Management")
 
