@@ -41,9 +41,8 @@ class TelegramAPI(LoggingAPI):
     _GROUP_DOCUMENT_URL: str | None = None
 
     @classmethod
-    def setup(cls, verbose: VerboseType, *args):
-        super().setup(verbose)
-        group_name = args[0]
+    def setup(cls, verbose: VerboseType, group_name: str, **kwargs) -> None:
+        super().setup(verbose, **kwargs)
         group = TelegramAPI._GROUP[group_name]
         cls._GROUP_MESSAGE_URL = TelegramAPI._MESSAGE_URL.format(group.Token, group.ChatID)
         cls._GROUP_DOCUMENT_URL = TelegramAPI._DOCUMENT_URL.format(group.Token, group.ChatID)
@@ -63,10 +62,12 @@ class TelegramAPI(LoggingAPI):
             "<pre>{content}</pre>\n"
             f"<code>{middle_line}\n</code>"
         )
-        for shared_tag in LoggingAPI._SHARED_TAGS.values():
-            static = TelegramAPI._format_tag(static, shared_tag)
-        for custom_tag in self._CUSTOM_TAGS.values():
-            static = TelegramAPI._format_tag(static, custom_tag)
+        for base_tags in LoggingAPI._base_tags.values():
+            static = TelegramAPI._format_tag(static, base_tags)
+        for class_tags in TelegramAPI._class_tags.values():
+            static = TelegramAPI._format_tag(static, class_tags)
+        for instance_tags in self._instance_tags.values():
+            static = TelegramAPI._format_tag(static, instance_tags)
         static += (
             f"<code>{middle_line}\n</code>"
             "<code>{timestamp}</code>\n"
@@ -75,12 +76,12 @@ class TelegramAPI(LoggingAPI):
         return static
 
     def _format(self) -> None:
-        self._STATIC_LOG_DEBUG: str = self._format_level(VerboseType.Debug, TelegramAPI._DEBUG_ICON)
-        self._STATIC_LOG_INFO: str = self._format_level(VerboseType.Info, TelegramAPI._INFO_ICON)
-        self._STATIC_LOG_ALERT: str = self._format_level(VerboseType.Alert, TelegramAPI._ALERT_ICON)
-        self._STATIC_LOG_WARNING: str = self._format_level(VerboseType.Warning, TelegramAPI._WARNING_ICON)
-        self._STATIC_LOG_ERROR: str = self._format_level(VerboseType.Error, TelegramAPI._ERROR_ICON)
-        self._STATIC_LOG_CRITICAL: str = self._format_level(VerboseType.Critical, TelegramAPI._CRITICAL_ICON)
+        self._static_log_debug: str = self._format_level(VerboseType.Debug, TelegramAPI._DEBUG_ICON)
+        self._static_log_info: str = self._format_level(VerboseType.Info, TelegramAPI._INFO_ICON)
+        self._static_log_alert: str = self._format_level(VerboseType.Alert, TelegramAPI._ALERT_ICON)
+        self._static_log_warning: str = self._format_level(VerboseType.Warning, TelegramAPI._WARNING_ICON)
+        self._static_log_error: str = self._format_level(VerboseType.Error, TelegramAPI._ERROR_ICON)
+        self._static_log_critical: str = self._format_level(VerboseType.Critical, TelegramAPI._CRITICAL_ICON)
 
     @staticmethod
     def _build_log(message_url: str, document_url: str, static_log: str, content_func: Callable[[], str | BytesIO]):
@@ -101,19 +102,19 @@ class TelegramAPI(LoggingAPI):
         return requests.post(url, data=data, files=files)
 
     def _debug(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._LAB_MESSAGE_URL, self._LAB_DOCUMENT_URL, self._STATIC_LOG_DEBUG, content_func)
+        self._log(self._LAB_MESSAGE_URL, self._LAB_DOCUMENT_URL, self._static_log_debug, content_func)
 
     def _info(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._LAB_MESSAGE_URL, self._LAB_DOCUMENT_URL, self._STATIC_LOG_INFO, content_func)
+        self._log(self._LAB_MESSAGE_URL, self._LAB_DOCUMENT_URL, self._static_log_info, content_func)
 
     def _alert(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._GROUP_MESSAGE_URL, self._GROUP_DOCUMENT_URL, self._STATIC_LOG_ALERT, content_func)
+        self._log(self._GROUP_MESSAGE_URL, self._GROUP_DOCUMENT_URL, self._static_log_alert, content_func)
 
     def _warning(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._LOG_MESSAGE_URL, self._LOG_DOCUMENT_URL, self._STATIC_LOG_WARNING, content_func)
+        self._log(self._LOG_MESSAGE_URL, self._LOG_DOCUMENT_URL, self._static_log_warning, content_func)
 
     def _error(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._LOG_MESSAGE_URL, self._LOG_DOCUMENT_URL, self._STATIC_LOG_ERROR, content_func)
+        self._log(self._LOG_MESSAGE_URL, self._LOG_DOCUMENT_URL, self._static_log_error, content_func)
 
     def _critical(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._LOG_MESSAGE_URL, self._LOG_DOCUMENT_URL, self._STATIC_LOG_CRITICAL, content_func)
+        self._log(self._LOG_MESSAGE_URL, self._LOG_DOCUMENT_URL, self._static_log_critical, content_func)

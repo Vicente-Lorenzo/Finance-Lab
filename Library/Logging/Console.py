@@ -23,22 +23,25 @@ class ConsoleAPI(LoggingAPI):
 
     def _format_level(self, level: VerboseType, level_color: str) -> str:
         static = ""
-        for shared_tag in LoggingAPI._SHARED_TAGS.values():
-            static = ConsoleAPI._format_tag(static, shared_tag)
+        for base_tag in LoggingAPI._base_tags.values():
+            static = ConsoleAPI._format_tag(static, base_tag)
+            static += " - "
+        for class_tag in ConsoleAPI._class_tags.values():
+            static = ConsoleAPI._format_tag(static, class_tag)
             static += " - "
         static += f"{level_color}{level.name}{ConsoleAPI._LIGHT_GRAY}"
-        for custom_tag in self._CUSTOM_TAGS.values():
+        for instance_tags in self._instance_tags.values():
             static += " - "
-            static = ConsoleAPI._format_tag(static, custom_tag)
+            static = ConsoleAPI._format_tag(static, instance_tags)
         return static
 
     def _format(self) -> None:
-        self._STATIC_LOG_DEBUG: str = self._format_level(VerboseType.Debug, ConsoleAPI._GREEN)
-        self._STATIC_LOG_INFO: str = self._format_level(VerboseType.Info, ConsoleAPI._BLUE)
-        self._STATIC_LOG_ALERT: str = self._format_level(VerboseType.Alert, ConsoleAPI._ORANGE)
-        self._STATIC_LOG_WARNING: str = self._format_level(VerboseType.Warning, ConsoleAPI._YELLOW)
-        self._STATIC_LOG_ERROR: str = self._format_level(VerboseType.Error, ConsoleAPI._RED)
-        self._STATIC_LOG_CRITICAL: str = self._format_level(VerboseType.Critical, ConsoleAPI._DARK_RED)
+        self._static_log_debug: str = self._format_level(VerboseType.Debug, ConsoleAPI._GREEN)
+        self._static_log_info: str = self._format_level(VerboseType.Info, ConsoleAPI._BLUE)
+        self._static_log_alert: str = self._format_level(VerboseType.Alert, ConsoleAPI._ORANGE)
+        self._static_log_warning: str = self._format_level(VerboseType.Warning, ConsoleAPI._YELLOW)
+        self._static_log_error: str = self._format_level(VerboseType.Error, ConsoleAPI._RED)
+        self._static_log_critical: str = self._format_level(VerboseType.Critical, ConsoleAPI._DARK_RED)
 
     @staticmethod
     def _build_log(static_log: str, content_func: Callable[[], str | BytesIO]):
@@ -49,19 +52,19 @@ class ConsoleAPI(LoggingAPI):
         print(ConsoleAPI._build_log(static_log, content_func))
 
     def _debug(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._STATIC_LOG_DEBUG, content_func)
+        self._log(self._static_log_debug, content_func)
 
     def _info(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._STATIC_LOG_INFO, content_func)
+        self._log(self._static_log_info, content_func)
 
     def _alert(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._STATIC_LOG_ALERT, content_func)
+        self._log(self._static_log_alert, content_func)
 
     def _warning(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._STATIC_LOG_WARNING, content_func)
+        self._log(self._static_log_warning, content_func)
 
     def _error(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._STATIC_LOG_ERROR, content_func)
+        self._log(self._static_log_error, content_func)
 
     def _critical(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._STATIC_LOG_CRITICAL, content_func)
+        self._log(self._static_log_critical, content_func)

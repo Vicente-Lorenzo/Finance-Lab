@@ -9,61 +9,113 @@ from Library.Utils.DateTime import datetime_to_string
 
 class LoggingAPI(ABC):
 
-    _DEFAULT_VERBOSE: VerboseType = VerboseType.Debug
+    _default_verbose: VerboseType = VerboseType.Silent
+    _current_verbose: VerboseType = VerboseType.Silent
 
-    _SHARED_TAGS: dict = {}
-    _CUSTOM_TAGS: dict = {}
+    _base_tags: dict = {}
+    _class_tags: dict = {}
+    _instance_tags: dict = {}
 
-    _DUMMY_LOG_FUNCTION: Callable[[Callable[[], str]], None] = lambda *_: None
+    _static_log_debug: str | None = None
+    _static_log_info: str | None = None
+    _static_log_alert: str | None = None
+    _static_log_warning: str | None = None
+    _static_log_error: str | None = None
+    _static_log_critical: str | None = None
 
-    _STATIC_LOG_DEBUG: str | None = None
-    _STATIC_LOG_INFO: str | None = None
-    _STATIC_LOG_ALERT: str | None = None
-    _STATIC_LOG_WARNING: str | None = None
-    _STATIC_LOG_ERROR: str | None = None
-    _STATIC_LOG_CRITICAL: str | None = None
+    _lock: Lock = None
 
-    _LOCK: Lock = None
-
-    debug: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY_LOG_FUNCTION
-    info: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY_LOG_FUNCTION
-    alert: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY_LOG_FUNCTION
-    warning: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY_LOG_FUNCTION
-    error: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY_LOG_FUNCTION
-    critical: Callable[[Callable[[], str | BytesIO]], None] = _DUMMY_LOG_FUNCTION
+    _dummy: Callable[[Callable[[], str]], None] = lambda *_: None
+    debug: Callable[[Callable[[], str | BytesIO]], None] = _dummy
+    info: Callable[[Callable[[], str | BytesIO]], None] = _dummy
+    alert: Callable[[Callable[[], str | BytesIO]], None] = _dummy
+    warning: Callable[[Callable[[], str | BytesIO]], None] = _dummy
+    error: Callable[[Callable[[], str | BytesIO]], None] = _dummy
+    critical: Callable[[Callable[[], str | BytesIO]], None] = _dummy
 
     @staticmethod
     def init(**kwargs) -> None:
-        LoggingAPI._SHARED_TAGS.clear()
-        LoggingAPI._SHARED_TAGS.update(kwargs)
+        LoggingAPI._base_tags.clear()
+        LoggingAPI._base_tags.update(kwargs)
 
     @classmethod
-    def setup(cls, verbose: VerboseType, *args):
-        cls._LOCK = Lock()
-        cls._DEFAULT_VERBOSE = verbose
+    def setup(cls, verbose: VerboseType, **kwargs) -> None:
+        cls._class_tags.clear()
+        cls._class_tags.update(kwargs)
+        cls._default_verbose = verbose
+        cls._lock = Lock()
         cls.reset()
+
+    def __init__(self, **kwargs):
+        self._instance_tags.clear()
+        for k, v in kwargs.items():
+            if k in LoggingAPI._base_tags:
+                self._base_tags[k] = v
+            elif k in self._class_tags:
+                self._class_tags[k] = v
+            else:
+                self._instance_tags[k] = v
+        self._format()
 
     @classmethod
     def level(cls, verbose: VerboseType) -> None:
-        cls.debug = cls._debug if verbose.value >= VerboseType.Debug.value else LoggingAPI._DUMMY_LOG_FUNCTION
-        cls.info = cls._info if verbose.value >= VerboseType.Info.value else LoggingAPI._DUMMY_LOG_FUNCTION
-        cls.alert = cls._alert if verbose.value >= VerboseType.Alert.value else LoggingAPI._DUMMY_LOG_FUNCTION
-        cls.warning = cls._warning if verbose.value >= VerboseType.Warning.value else LoggingAPI._DUMMY_LOG_FUNCTION
-        cls.error = cls._error if verbose.value >= VerboseType.Error.value else LoggingAPI._DUMMY_LOG_FUNCTION
-        cls.critical = cls._critical if verbose.value >= VerboseType.Critical.value else LoggingAPI._DUMMY_LOG_FUNCTION
+        if verbose == cls._current_verbose:
+            return
+        match verbose:
+            case VerboseType.Debug:
+                cls.debug = cls._debug
+                cls.info = cls._info
+                cls.alert = cls._alert
+                cls.warning = cls._warning
+                cls.error = cls._error
+                cls.critical = cls._critical
+            case VerboseType.Info:
+                cls.debug = cls._dummy
+                cls.info = cls._info
+                cls.alert = cls._alert
+                cls.warning = cls._warning
+                cls.error = cls._error
+                cls.critical = cls._critical
+            case VerboseType.Alert:
+                cls.debug = cls._dummy
+                cls.info = cls._dummy
+                cls.alert = cls._alert
+                cls.warning = cls._warning
+                cls.error = cls._error
+                cls.critical = cls._critical
+            case VerboseType.Warning:
+                cls.debug = cls._dummy
+                cls.info = cls._dummy
+                cls.alert = cls._dummy
+                cls.warning = cls._warning
+                cls.error = cls._error
+                cls.critical = cls._critical
+            case VerboseType.Error:
+                cls.debug = cls._dummy
+                cls.info = cls._dummy
+                cls.alert = cls._dummy
+                cls.warning = cls._dummy
+                cls.error = cls._error
+                cls.critical = cls._critical
+            case VerboseType.Critical:
+                cls.debug = cls._dummy
+                cls.info = cls._dummy
+                cls.alert = cls._dummy
+                cls.warning = cls._dummy
+                cls.error = cls._dummy
+                cls.critical = cls._critical
+            case VerboseType.Silent:
+                cls.debug = cls._dummy
+                cls.info = cls._dummy
+                cls.alert = cls._dummy
+                cls.warning = cls._dummy
+                cls.error = cls._dummy
+                cls.critical = cls._dummy
+        cls._current_verbose = verbose
 
     @classmethod
     def reset(cls) -> None:
-        cls.level(cls._DEFAULT_VERBOSE)
-
-    def __init__(self, **kwargs):
-        self._CUSTOM_TAGS.clear()
-        for k, v in kwargs.items():
-            if k in LoggingAPI._SHARED_TAGS:
-                self._SHARED_TAGS.update({k: v})
-            else:
-                self._CUSTOM_TAGS.update({k: v})
-        self._format()
+        cls.level(cls._default_verbose)
 
     def __enter__(self):
         return self
@@ -100,7 +152,7 @@ class LoggingAPI(ABC):
 
     @classmethod
     def _log(cls, *args, **kwargs):
-        with cls._LOCK:
+        with cls._lock:
             cls._output_log(*args, **kwargs)
 
     @abstractmethod
