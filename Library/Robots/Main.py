@@ -184,8 +184,6 @@ def main():
                     fitness=args.fitness
                 )
 
-        log.debug(lambda: "Executing")
-
         with system:
             system.start()
             system.join()
