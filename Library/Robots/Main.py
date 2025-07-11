@@ -47,8 +47,9 @@ def main():
     parser.add_argument("--training", type=int, required=False)
     parser.add_argument("--validation", type=int, required=False)
     parser.add_argument("--testing", type=int, required=False)
-    parser.add_argument("--episodes", type=int, required=False)
     parser.add_argument("--fitness", type=str, required=False, choices=StatisticsAPI.Metrics)
+
+    parser.add_argument("--episodes", type=int, required=False)
 
     args = parser.parse_args()
 
