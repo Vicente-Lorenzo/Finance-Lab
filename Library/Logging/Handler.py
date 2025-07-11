@@ -1,5 +1,7 @@
+import traceback
 from io import BytesIO
 from typing import Callable
+from functools import wraps
 
 from Library.Classes import VerboseType
 from Library.Logging import *
@@ -62,3 +64,17 @@ class HandlerAPI:
         self.telegram.__exit__(exc_type, exc_value, exc_traceback)
         self.file.__exit__(exc_type, exc_value, exc_traceback)
         return self
+
+    def trace(self, func: Callable):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                self.__enter__()
+                self.debug(lambda: "Initiated")
+                return func(*args, **kwargs)
+            except Exception as e:
+                self.critical(lambda: f"Failed\n{''.join(traceback.format_exception(e))[:-1]}")
+            finally:
+                self.__exit__(None, None, None)
+                self.debug(lambda: "Terminated")
+        return wrapper

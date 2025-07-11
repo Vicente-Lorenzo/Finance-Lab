@@ -1,5 +1,4 @@
 import datetime
-import traceback
 from io import BytesIO
 from typing import Callable
 from abc import ABC, abstractmethod
@@ -201,17 +200,3 @@ class LoggingAPI(ABC):
     @abstractmethod
     def _critical(self, content_func: Callable[[], str | BytesIO]):
         raise NotImplementedError
-
-    def trace(self, func: Callable):
-        def wrapper(*args, **kwargs):
-            try:
-                self.__enter__()
-                self.debug(lambda: "Initiated")
-                return func(*args, **kwargs)
-            except Exception as e:
-                self.critical(lambda: f"Failed: {e}")
-                self.critical(lambda: ''.join(traceback.format_exception(e))[:-1])
-            finally:
-                self.__exit__(None, None, None)
-                self.debug(lambda: "Terminated")
-        return wrapper
