@@ -59,9 +59,9 @@ class LoggingAPI(ABC):
 
     @classmethod
     def level(cls, verbose: VerboseType) -> None:
-        if verbose == cls._current_verbose:
-            return
         with cls._lock:
+            if verbose == cls._current_verbose:
+                return
             match verbose:
                 case VerboseType.Debug:
                     cls.debug = cls._debug
