@@ -4,8 +4,6 @@ from attrs import define, field
 
 from Library.Classes import Account, Symbol, Position, Trade, Bar, Tick
 
-
-
 class UpdateID(Enum):
     Complete = 0
     Account = 1
