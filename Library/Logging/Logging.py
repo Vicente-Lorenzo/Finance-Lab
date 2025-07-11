@@ -51,7 +51,7 @@ class LoggingAPI(ABC):
         for k, v in kwargs.items():
             if k in LoggingAPI._base_tags:
                 self._base_tags[k] = v
-            elif k in self._class_tags:
+            elif k in self.__class__._class_tags:
                 self._class_tags[k] = v
             else:
                 self._instance_tags[k] = v
