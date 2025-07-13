@@ -478,9 +478,11 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
         self._log.telegram.info(lambda: image(wf_df))
         self._log.file.info(lambda: f"Completed Optimisation {wf_df}")
 
-        self.strategy = self._strategy(money_management=opt_parameters.MoneyManagement,
-                                       risk_management=opt_parameters.RiskManagement,
-                                       signal_management=opt_parameters.SignalManagement)
+        self.strategy = self._strategy(
+            money_management=opt_parameters.MoneyManagement,
+            risk_management=opt_parameters.RiskManagement,
+            signal_management=opt_parameters.SignalManagement
+        )
         self.analyst = AnalystAPI(analyst_management=opt_parameters.AnalystManagement)
         self.manager = ManagerAPI(manager_management=opt_parameters.ManagerManagement)
 
