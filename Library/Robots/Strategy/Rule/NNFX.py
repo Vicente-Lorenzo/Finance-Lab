@@ -182,25 +182,21 @@ class NNFXStrategyAPI(StrategyAPI):
         return [CloseSellAction(self._last_position_id)] if update.Manager.Positions.Sells else []
 
     def update_position(self, update: BarUpdate):
-
         if not update.Manager.Positions.Buys:
             if self._normal_entry_buy(update):
                 return self.open_buy_position(update, PositionType.Normal)
             if self._last_position_trade_type and self._last_position_trade_type == TradeType.Buy and self._continuation_entry_buy(update):
                 return self.open_buy_position(update, PositionType.Continuation)
-        else:
-            if self._normal_exit_buy(update):
-                return self.close_buy_position(update)
+        elif self._normal_exit_buy(update):
+            return self.close_buy_position(update)
 
         if not update.Manager.Positions.Sells:
             if self._normal_entry_sell(update):
                 return self.open_sell_position(update, PositionType.Normal)
             if self._last_position_trade_type and self._last_position_trade_type == TradeType.Sell and self._continuation_entry_sell(update):
                 return self.open_sell_position(update, PositionType.Continuation)
-        else:
-            if self._normal_exit_sell(update):
-                return self.close_sell_position(update)
-
+        elif self._normal_exit_sell(update):
+            return self.close_sell_position(update)
         return None
 
     def signal_management(self):
