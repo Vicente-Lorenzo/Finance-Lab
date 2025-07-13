@@ -5,9 +5,9 @@ from Library.Robots.Engine import MachineAPI
 
 class EngineAPI:
     
-    def __init__(self, system_engine: MachineAPI = None, strategy_management: MachineAPI = None, signal_engine: MachineAPI = None, risk_engine: MachineAPI = None):
+    def __init__(self, system_engine: MachineAPI = None, strategy_engine: MachineAPI = None, signal_engine: MachineAPI = None, risk_engine: MachineAPI = None):
         self._system_engine: MachineAPI = system_engine or self._create_dummy_engine()
-        self._strategy_management: MachineAPI = strategy_management or self._create_dummy_engine()
+        self._strategy_engine: MachineAPI = strategy_engine or self._create_dummy_engine()
         self._signal_engine: MachineAPI = signal_engine or self._create_dummy_engine()
         self._risk_engine: MachineAPI = risk_engine or self._create_dummy_engine()
         
@@ -40,61 +40,61 @@ class EngineAPI:
         return []
     
     def is_terminated(self) -> bool:
-        return self._system_engine.at.end and self._strategy_management.at.end and self._signal_engine.at.end and self._risk_engine.at.end
+        return self._system_engine.at.end and self._strategy_engine.at.end and self._signal_engine.at.end and self._risk_engine.at.end
 
     def perform_update_shutdown(self, args: CompleteUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_shutdown, self._strategy_management.perform_update_shutdown, self._signal_engine.perform_update_shutdown, self._risk_engine.perform_update_shutdown, args)
+        return self._perform_update(self._system_engine.perform_update_shutdown, self._strategy_engine.perform_update_shutdown, self._signal_engine.perform_update_shutdown, self._risk_engine.perform_update_shutdown, args)
 
     def perform_update_complete(self, args: CompleteUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_complete, self._strategy_management.perform_update_complete, self._signal_engine.perform_update_complete, self._risk_engine.perform_update_complete, args)
+        return self._perform_update(self._system_engine.perform_update_complete, self._strategy_engine.perform_update_complete, self._signal_engine.perform_update_complete, self._risk_engine.perform_update_complete, args)
 
     def perform_update_account(self, args: AccountUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_account, self._strategy_management.perform_update_account, self._signal_engine.perform_update_account, self._risk_engine.perform_update_account, args)
+        return self._perform_update(self._system_engine.perform_update_account, self._strategy_engine.perform_update_account, self._signal_engine.perform_update_account, self._risk_engine.perform_update_account, args)
 
     def perform_update_symbol(self, args: SymbolUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_symbol, self._strategy_management.perform_update_symbol, self._signal_engine.perform_update_symbol, self._risk_engine.perform_update_symbol, args)
+        return self._perform_update(self._system_engine.perform_update_symbol, self._strategy_engine.perform_update_symbol, self._signal_engine.perform_update_symbol, self._risk_engine.perform_update_symbol, args)
 
     def perform_update_opened_buy(self, args: PositionUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_opened_buy, self._strategy_management.perform_update_opened_buy, self._signal_engine.perform_update_opened_buy, self._risk_engine.perform_update_opened_buy, args)
+        return self._perform_update(self._system_engine.perform_update_opened_buy, self._strategy_engine.perform_update_opened_buy, self._signal_engine.perform_update_opened_buy, self._risk_engine.perform_update_opened_buy, args)
 
     def perform_update_opened_sell(self, args: PositionUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_opened_sell, self._strategy_management.perform_update_opened_sell, self._signal_engine.perform_update_opened_sell, self._risk_engine.perform_update_opened_sell, args)
+        return self._perform_update(self._system_engine.perform_update_opened_sell, self._strategy_engine.perform_update_opened_sell, self._signal_engine.perform_update_opened_sell, self._risk_engine.perform_update_opened_sell, args)
 
     def perform_update_modified_volume_buy(self, args: PositionTradeUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_modified_volume_buy, self._strategy_management.perform_update_modified_volume_buy, self._signal_engine.perform_update_modified_volume_buy, self._risk_engine.perform_update_modified_volume_buy, args)
+        return self._perform_update(self._system_engine.perform_update_modified_volume_buy, self._strategy_engine.perform_update_modified_volume_buy, self._signal_engine.perform_update_modified_volume_buy, self._risk_engine.perform_update_modified_volume_buy, args)
 
     def perform_update_modified_stop_loss_buy(self, args: PositionUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_modified_stop_loss_buy, self._strategy_management.perform_update_modified_stop_loss_buy, self._signal_engine.perform_update_modified_stop_loss_buy, self._risk_engine.perform_update_modified_stop_loss_buy, args)
+        return self._perform_update(self._system_engine.perform_update_modified_stop_loss_buy, self._strategy_engine.perform_update_modified_stop_loss_buy, self._signal_engine.perform_update_modified_stop_loss_buy, self._risk_engine.perform_update_modified_stop_loss_buy, args)
 
     def perform_update_modified_take_profit_buy(self, args: PositionUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_modified_take_profit_buy, self._strategy_management.perform_update_modified_take_profit_buy, self._signal_engine.perform_update_modified_take_profit_buy, self._risk_engine.perform_update_modified_take_profit_buy, args)
+        return self._perform_update(self._system_engine.perform_update_modified_take_profit_buy, self._strategy_engine.perform_update_modified_take_profit_buy, self._signal_engine.perform_update_modified_take_profit_buy, self._risk_engine.perform_update_modified_take_profit_buy, args)
 
     def perform_update_modified_volume_sell(self, args: PositionTradeUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_modified_volume_sell, self._strategy_management.perform_update_modified_volume_sell, self._signal_engine.perform_update_modified_volume_sell, self._risk_engine.perform_update_modified_volume_sell, args)
+        return self._perform_update(self._system_engine.perform_update_modified_volume_sell, self._strategy_engine.perform_update_modified_volume_sell, self._signal_engine.perform_update_modified_volume_sell, self._risk_engine.perform_update_modified_volume_sell, args)
 
     def perform_update_modified_stop_loss_sell(self, args: PositionUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_modified_stop_loss_sell, self._strategy_management.perform_update_modified_stop_loss_sell, self._signal_engine.perform_update_modified_stop_loss_sell, self._risk_engine.perform_update_modified_stop_loss_sell, args)
+        return self._perform_update(self._system_engine.perform_update_modified_stop_loss_sell, self._strategy_engine.perform_update_modified_stop_loss_sell, self._signal_engine.perform_update_modified_stop_loss_sell, self._risk_engine.perform_update_modified_stop_loss_sell, args)
 
     def perform_update_modified_take_profit_sell(self, args: PositionUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_modified_take_profit_sell, self._strategy_management.perform_update_modified_take_profit_sell, self._signal_engine.perform_update_modified_take_profit_sell, self._risk_engine.perform_update_modified_take_profit_sell, args)
+        return self._perform_update(self._system_engine.perform_update_modified_take_profit_sell, self._strategy_engine.perform_update_modified_take_profit_sell, self._signal_engine.perform_update_modified_take_profit_sell, self._risk_engine.perform_update_modified_take_profit_sell, args)
 
     def perform_update_closed_buy(self, args: TradeUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_closed_buy, self._strategy_management.perform_update_closed_buy, self._signal_engine.perform_update_closed_buy, self._risk_engine.perform_update_closed_buy, args)
+        return self._perform_update(self._system_engine.perform_update_closed_buy, self._strategy_engine.perform_update_closed_buy, self._signal_engine.perform_update_closed_buy, self._risk_engine.perform_update_closed_buy, args)
 
     def perform_update_closed_sell(self, args: TradeUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_closed_sell, self._strategy_management.perform_update_closed_sell, self._signal_engine.perform_update_closed_sell, self._risk_engine.perform_update_closed_sell, args)
+        return self._perform_update(self._system_engine.perform_update_closed_sell, self._strategy_engine.perform_update_closed_sell, self._signal_engine.perform_update_closed_sell, self._risk_engine.perform_update_closed_sell, args)
 
     def perform_update_bar_closed(self, args: BarUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_bar_closed, self._strategy_management.perform_update_bar_closed, self._signal_engine.perform_update_bar_closed, self._risk_engine.perform_update_bar_closed, args)
+        return self._perform_update(self._system_engine.perform_update_bar_closed, self._strategy_engine.perform_update_bar_closed, self._signal_engine.perform_update_bar_closed, self._risk_engine.perform_update_bar_closed, args)
 
     def perform_update_ask_above_target(self, args: TickUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_ask_above_target, self._strategy_management.perform_update_ask_above_target, self._signal_engine.perform_update_ask_above_target, self._risk_engine.perform_update_ask_above_target, args)
+        return self._perform_update(self._system_engine.perform_update_ask_above_target, self._strategy_engine.perform_update_ask_above_target, self._signal_engine.perform_update_ask_above_target, self._risk_engine.perform_update_ask_above_target, args)
 
     def perform_update_ask_below_target(self, args: TickUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_ask_below_target, self._strategy_management.perform_update_ask_below_target, self._signal_engine.perform_update_ask_below_target, self._risk_engine.perform_update_ask_below_target, args)
+        return self._perform_update(self._system_engine.perform_update_ask_below_target, self._strategy_engine.perform_update_ask_below_target, self._signal_engine.perform_update_ask_below_target, self._risk_engine.perform_update_ask_below_target, args)
 
     def perform_update_bid_above_target(self, args: TickUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_bid_above_target, self._strategy_management.perform_update_bid_above_target, self._signal_engine.perform_update_bid_above_target, self._risk_engine.perform_update_bid_above_target, args)
+        return self._perform_update(self._system_engine.perform_update_bid_above_target, self._strategy_engine.perform_update_bid_above_target, self._signal_engine.perform_update_bid_above_target, self._risk_engine.perform_update_bid_above_target, args)
 
     def perform_update_bid_below_target(self, args: TickUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_bid_below_target, self._strategy_management.perform_update_bid_below_target, self._signal_engine.perform_update_bid_below_target, self._risk_engine.perform_update_bid_below_target, args)
+        return self._perform_update(self._system_engine.perform_update_bid_below_target, self._strategy_engine.perform_update_bid_below_target, self._signal_engine.perform_update_bid_below_target, self._risk_engine.perform_update_bid_below_target, args)
