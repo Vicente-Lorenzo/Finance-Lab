@@ -98,7 +98,8 @@ class Parameters:
             if isinstance(value, dict):
                 return Parameters(value, self.path, parent=self, parent_key=key)
             return value
-        raise AttributeError(f"Key {key} not found.")
+        else:
+            return None
 
     def __getitem__(self, key):
         return self.__getattr__(key)
@@ -107,21 +108,21 @@ class Parameters:
         if key in ["data", "path", "parent", "parent_key"]:
             super().__setattr__(key, value)
         else:
-            self.__setitem__(key, value)
+            self.data[key] = value
+            self.__save()
 
     def __setitem__(self, key, value):
-        self.data[key] = value
-        self.__save()
+        return self.__setattr__(key, value)
 
     def __delattr__(self, key):
-        self.__delitem__(key)
-
-    def __delitem__(self, key):
         if key in self.data:
             del self.data[key]
             self.__save()
         else:
             raise KeyError(f"Key {key} not found.")
+
+    def __delitem__(self, key):
+        self.__delattr__(key)
 
     def __save(self):
         if self.parent:
