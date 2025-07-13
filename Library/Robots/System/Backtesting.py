@@ -24,10 +24,17 @@ class BacktestingSystemAPI(SystemAPI):
     SYMBOLS = [symbol for group in watchlist.Symbols.values() for symbol in group]
 
     tick_data: pl.DataFrame | None = None
+    tick_db: DatabaseAPI | None = None
+
     bar_data: pl.DataFrame | None = None
+    bar_db: DatabaseAPI | None = None
+
     symbol_data: Symbol | None = None
+
+    conversion_db: DatabaseAPI | None = None
     conversion_data: pl.DataFrame | None = None
     conversion_rate: Callable[[datetime], float] | None = None
+
     window: int | None = None
 
     def __init__(self,
@@ -58,23 +65,19 @@ class BacktestingSystemAPI(SystemAPI):
         self._spread_pips: float = spread
         self._spread_price: float | None = None
 
-        self._tick_db: DatabaseAPI | None = None
         self._tick_data_iterator: Iterator | None = None
         self._tick_data_next: Bar | None = None
         self._tick_open_next: Tick | None = None
 
-        self._bar_db: DatabaseAPI | None = None
         self._bar_data_iterator: Iterator | None = None
         self._bar_data_at: Bar | None = None
         self._bar_data_at_last: Bar | None = None
         self._bar_data_next: Bar | None = None
 
-        self._conversion_db: DatabaseAPI | None = None
-
         self._offset: int | None = None
 
-        self._update_id_queue: Queue[UpdateID] = Queue()
-        self._update_args_queue: Queue[Account | Symbol | Position | Trade | Bar | Tick] = Queue()
+        self._update_id_queue: Queue[UpdateID] | None = None
+        self._update_args_queue: Queue[Account | Symbol | Position | Trade | Bar | Tick] | None = None
 
         self._pids: count = count(start=1)
         self._tids: count = count(start=1)
@@ -98,16 +101,17 @@ class BacktestingSystemAPI(SystemAPI):
             self.window = self.analyst.Window
 
         if self.tick_data is None:
-            self._tick_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=self._symbol, timeframe=self.TICK)
-            self._tick_db.__enter__()
-            self.tick_data = self._tick_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
+            self.tick_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=self._symbol, timeframe=self.TICK)
+            self.tick_db.__enter__()
+            self.tick_data = self.tick_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
         self._tick_data_iterator = self.tick_data.iter_rows()
         self._tick_data_next = Bar(*next(self._tick_data_iterator))
+        self._tick_open_next = None
 
         if self.bar_data is None:
-            self._bar_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=self._symbol, timeframe=self._timeframe)
-            self._bar_db.__enter__()
-            self.bar_data = self._bar_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=self.window)
+            self.bar_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=self._symbol, timeframe=self._timeframe)
+            self.bar_db.__enter__()
+            self.bar_data = self.bar_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=self.window)
         self._bar_data_iterator = self.bar_data.filter((pl.col(DatabaseAPI.MARKET_TIMESTAMP) >= self._start_date) & (pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= self._stop_date)).iter_rows()
         start_bar_data_index = Bar(*self.bar_data.row(self.window))
         self._bar_data_at = Bar(*next(self._bar_data_iterator))
@@ -119,38 +123,41 @@ class BacktestingSystemAPI(SystemAPI):
         self._offset = self.bar_data.height - self.window + 1
 
         if self.symbol_data is None:
-            self.symbol_data: Symbol = self._bar_db.pull_symbol_data()
+            self.symbol_data: Symbol = self.bar_db.pull_symbol_data()
         self._spread_price = self._spread_pips * self.symbol_data.PipSize
 
         if self.conversion_data is None or self.conversion_rate is None:
             current_rate = lambda timestamp: self.conversion_data.filter(pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= timestamp).tail(1).select(DatabaseAPI.MARKET_OPENPRICE).item()
             if self.symbol_data.BaseAsset == AssetType.EUR:
-                self._conversion_db = self._tick_db
+                self.conversion_db = self.tick_db
                 self.conversion_data = self.tick_data
                 self.conversion_rate = lambda timestamp: 1.0 / (current_rate(timestamp) + self._spread_price)
             elif (symbol := f"{AssetType.EUR.name}{self.symbol_data.QuoteAsset.name}") in self.SYMBOLS:
-                self._conversion_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=symbol, timeframe=self.TICK)
-                self._conversion_db.__enter__()
-                self.conversion_data = self._conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
+                self.conversion_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=symbol, timeframe=self.TICK)
+                self.conversion_db.__enter__()
+                self.conversion_data = self.conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
                 self.conversion_rate = lambda timestamp: 1.0 / (current_rate(timestamp) + self._spread_price)
             elif (symbol := f"{self.symbol_data.QuoteAsset.name}{AssetType.EUR.name}") in self.SYMBOLS:
-                self._conversion_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=symbol, timeframe=self.TICK)
-                self._conversion_db.__enter__()
-                self.conversion_data = self._conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
+                self.conversion_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=symbol, timeframe=self.TICK)
+                self.conversion_db.__enter__()
+                self.conversion_data = self.conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
                 self.conversion_rate = lambda timestamp: current_rate(timestamp)
             else:
                 self.conversion_data = self.tick_data
                 self.conversion_rate = lambda timestamp: 1.0
 
+        self._update_id_queue = Queue()
+        self._update_args_queue = Queue()
+
         return super().__enter__()
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        if self._tick_db:
-            self._tick_db.__exit__(None, None, None)
-        if self._bar_db:
-            self._bar_db.__exit__(None, None, None)
-        if self._conversion_db:
-            self._conversion_db.__exit__(None, None, None)
+        if self.tick_db:
+            self.tick_db.__exit__(None, None, None)
+        if self.bar_db:
+            self.bar_db.__exit__(None, None, None)
+        if self.conversion_db:
+            self.conversion_db.__exit__(None, None, None)
         return super().__exit__(exc_type, exc_value, exc_traceback)
 
     def _calculate_ask_bid(self, price: float) -> (float, float):
