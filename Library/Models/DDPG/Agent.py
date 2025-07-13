@@ -80,19 +80,22 @@ class DDPGAgentAPI(AgentAPI):
 
         self.update(force_tau=1)
 
-    def save(self):
+    def save(self) -> None:
         self.actor.save()
         self.target_actor.save()
         self.critic.save()
         self.target_critic.save()
         super().save()
 
-    def load(self):
+    def load(self) -> None:
         self.actor.load()
         self.target_actor.load()
         self.critic.load()
         self.target_critic.load()
         super().load()
+
+    def reset(self) -> None:
+        self.noise.reset()
 
     def memorise(self, state, action, reward, next_state, done) -> None:
         self.memory.memorise(state, action, reward, next_state, done)

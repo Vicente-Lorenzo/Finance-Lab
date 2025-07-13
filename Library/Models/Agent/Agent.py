@@ -21,6 +21,10 @@ class AgentAPI(ABC):
         self._log.debug(lambda: f"Loaded agent state for {self._model}")
 
     @abstractmethod
+    def reset(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
     def memorise(self, state, action, reward, next_state, done) -> None:
         raise NotImplementedError
 
