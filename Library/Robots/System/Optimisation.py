@@ -294,7 +294,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
             parameters=parameters,
             start=start,
             stop=stop,
-            balance=self._account.Balance,
+            balance=self._balance,
             spread=self._spread_pips)
 
         thread.strategy = self._strategy(money_management=parameters.MoneyManagement, risk_management=parameters.RiskManagement, signal_management=parameters.SignalManagement)

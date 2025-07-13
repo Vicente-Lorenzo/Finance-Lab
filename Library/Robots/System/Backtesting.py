@@ -23,11 +23,13 @@ class BacktestingSystemAPI(SystemAPI):
     TICK = watchlist.Timeframes[0]
     SYMBOLS = [symbol for group in watchlist.Symbols.values() for symbol in group]
 
-    tick_data: pl.DataFrame | None = None
-    tick_db: DatabaseAPI | None = None
+    account_data: Account | None = None
 
-    bar_data: pl.DataFrame | None = None
+    tick_db: DatabaseAPI | None = None
+    tick_data: pl.DataFrame | None = None
+
     bar_db: DatabaseAPI | None = None
+    bar_data: pl.DataFrame | None = None
 
     symbol_data: Symbol | None = None
 
@@ -36,6 +38,7 @@ class BacktestingSystemAPI(SystemAPI):
     conversion_rate: Callable[[datetime], float] | None = None
 
     window: int | None = None
+    offset: int | None = None
 
     def __init__(self,
                  broker: str,
@@ -60,8 +63,8 @@ class BacktestingSystemAPI(SystemAPI):
         self._start_str, self._start_date = parse_date(start)
         self._stop_str, self._stop_date = parse_date(stop)
 
-        self._initial_account: Account = Account(balance, balance)
-        self._account: Account = Account(balance, balance)
+        self._balance = balance
+        self._account_data: Account | None = None
         self._spread_pips: float = spread
         self._spread_price: float | None = None
 
@@ -100,6 +103,10 @@ class BacktestingSystemAPI(SystemAPI):
         if self.window is None:
             self.window = self.analyst.Window
 
+        if self.account_data is None:
+            self.account_data: Account = Account(self._balance, self._balance)
+        self._account_data: Account = Account(self.account_data.Balance, self.account_data.Equity)
+
         if self.tick_data is None:
             self.tick_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=self._symbol, timeframe=self.TICK)
             self.tick_db.__enter__()
@@ -112,6 +119,8 @@ class BacktestingSystemAPI(SystemAPI):
             self.bar_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=self._symbol, timeframe=self._timeframe)
             self.bar_db.__enter__()
             self.bar_data = self.bar_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=self.window)
+            self.offset = self.bar_data.height - self.window + 1
+        self._offset = self.offset
         self._bar_data_iterator = self.bar_data.filter((pl.col(DatabaseAPI.MARKET_TIMESTAMP) >= self._start_date) & (pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= self._stop_date)).iter_rows()
         start_bar_data_index = Bar(*self.bar_data.row(self.window))
         self._bar_data_at = Bar(*next(self._bar_data_iterator))
@@ -120,7 +129,6 @@ class BacktestingSystemAPI(SystemAPI):
             self._bar_data_at = self._bar_data_next
             self._bar_data_next = Bar(*next(self._bar_data_iterator))
         self._bar_data_at_last = Bar(self._bar_data_at.Timestamp, self._bar_data_at.OpenPrice, self._bar_data_at.OpenPrice, self._bar_data_at.OpenPrice, self._bar_data_at.OpenPrice, 0.0)
-        self._offset = self.bar_data.height - self.window + 1
 
         if self.symbol_data is None:
             self.symbol_data: Symbol = self.bar_db.pull_symbol_data()
@@ -253,7 +261,7 @@ class BacktestingSystemAPI(SystemAPI):
         self._update_position(position.PositionID, position)
         self._update_id_queue.put(update_id)
         self._update_args_queue.put(self._bar_data_at_last)
-        self._update_args_queue.put(self._account)
+        self._update_args_queue.put(self._account_data)
         self._update_args_queue.put(position)
         self._update_id_queue.put(UpdateID.Complete)
 
@@ -290,12 +298,12 @@ class BacktestingSystemAPI(SystemAPI):
                 trade = self._close_sell_position(position, self._tick_open_next)
                 position.Volume = action.Volume
             
-        self._account.Balance += trade.NetPnL
-        self._account.Equity += trade.NetPnL
+        self._account_data.Balance += trade.NetPnL
+        self._account_data.Equity += trade.NetPnL
         self._update_position(position.PositionID, position)
         self._update_id_queue.put(update_id)
         self._update_args_queue.put(self._bar_data_at_last)
-        self._update_args_queue.put(self._account)
+        self._update_args_queue.put(self._account_data)
         self._update_args_queue.put(position)
         self._update_args_queue.put(trade)
         self._update_id_queue.put(UpdateID.Complete)
@@ -324,7 +332,7 @@ class BacktestingSystemAPI(SystemAPI):
         self._update_position(position.PositionID, position)
         self._update_id_queue.put(update_id)
         self._update_args_queue.put(self._bar_data_at_last)
-        self._update_args_queue.put(self._account)
+        self._update_args_queue.put(self._account_data)
         self._update_args_queue.put(position)
         self._update_id_queue.put(UpdateID.Complete)
 
@@ -352,7 +360,7 @@ class BacktestingSystemAPI(SystemAPI):
         self._update_position(position.PositionID, position)
         self._update_id_queue.put(update_id)
         self._update_args_queue.put(self._bar_data_at_last)
-        self._update_args_queue.put(self._account)
+        self._update_args_queue.put(self._account_data)
         self._update_args_queue.put(position)
         self._update_id_queue.put(UpdateID.Complete)
 
@@ -371,12 +379,12 @@ class BacktestingSystemAPI(SystemAPI):
                 update_id = UpdateID.ClosedSell
                 trade = self._close_sell_position(position, self._tick_open_next if not tick else tick)
 
-        self._account.Balance += trade.NetPnL
-        self._account.Equity += trade.NetPnL
+        self._account_data.Balance += trade.NetPnL
+        self._account_data.Equity += trade.NetPnL
         self._delete_position(position.PositionID)
         self._update_id_queue.put(update_id)
         self._update_args_queue.put(self._bar_data_at_last)
-        self._update_args_queue.put(self._account)
+        self._update_args_queue.put(self._account_data)
         self._update_args_queue.put(trade)
         self._update_id_queue.put(UpdateID.Complete)
 
@@ -518,14 +526,14 @@ class BacktestingSystemAPI(SystemAPI):
 
         def init_market(update: CompleteUpdate):
             update.Analyst.init_market_data(self.bar_data)
-            update.Analyst.update_market_offset(self._offset)
+            update.Analyst.update_market_offset(self.offset)
 
         def update_market(update: BarUpdate):
             self._offset -= 1
             update.Analyst.update_market_offset(self._offset)
 
         def update_results(update: CompleteUpdate):
-            self.individual_trades, self.aggregated_trades, self.statistics = update.Manager.Statistics.data(self._initial_account, self._start_date, self._stop_date)
+            self.individual_trades, self.aggregated_trades, self.statistics = update.Manager.Statistics.data(self.account_data, self._start_date, self._stop_date)
             self._log.info(lambda: str(self.individual_trades))
             self._log.info(lambda: str(self.aggregated_trades))
             self._log.info(lambda: str(self.statistics))
@@ -541,7 +549,7 @@ class BacktestingSystemAPI(SystemAPI):
     @time
     def run(self) -> None:
         self._update_id_queue.put(UpdateID.Account)
-        self._update_args_queue.put(self._initial_account)
+        self._update_args_queue.put(self.account_data)
 
         self._update_id_queue.put(UpdateID.Symbol)
         self._update_args_queue.put(self.symbol_data)
