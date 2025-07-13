@@ -131,7 +131,7 @@ class SystemAPI(Thread, ABC):
 
     def deploy(self, strategy: StrategyAPI, analyst: AnalystAPI, manager: ManagerAPI) -> None:
         system = EngineAPI(system_engine=self.system_management(),
-                           strategy_management=strategy.strategy_management(),
+                           strategy_engine=strategy.strategy_management(),
                            signal_engine=strategy.signal_management(),
                            risk_engine=strategy.risk_management())
         while not system.is_terminated():
