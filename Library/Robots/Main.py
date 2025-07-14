@@ -69,7 +69,7 @@ def main():
     log = HandlerAPI(Class=execution, Subclass="Execution Management")
 
     @time
-    @log.trace
+    @log.guard
     def launch():
 
         strategy: Type[StrategyAPI] | None = None

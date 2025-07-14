@@ -65,7 +65,7 @@ class HandlerAPI:
         self.file.__exit__(exc_type, exc_value, exc_traceback)
         return self
 
-    def trace(self, func: Callable):
+    def guard(self, func: Callable):
         @wraps(func)
         def wrapper(*args, **kwargs):
             try:
@@ -75,6 +75,6 @@ class HandlerAPI:
             except Exception as e:
                 self.critical(lambda: f"Failed\n{''.join(traceback.format_exception(e))[:-1]}")
             finally:
-                self.__exit__(None, None, None)
                 self.debug(lambda: "Terminated")
+                self.__exit__(None, None, None)
         return wrapper
