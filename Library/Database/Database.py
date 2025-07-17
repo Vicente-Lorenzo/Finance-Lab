@@ -31,10 +31,10 @@ class DatabaseAPI:
     SYMBOL_VOLUMEINUNITSMAX = "VolumeInUnitsMax"
     SYMBOL_VOLUMEINUNITSSTEP = "VolumeInUnitsStep"
     SYMBOL_COMMISSION = "Commission"
-    SYMBOL_COMMISSIONTYPE = "CommissionType"
+    SYMBOL_COMMISSIONMODE = "CommissionType"
     SYMBOL_SWAPLONG = "SwapLong"
     SYMBOL_SWAPSHORT = "SwapShort"
-    SYMBOL_SWAPCALCULATIONSTYPE = "SwapCalculationType"
+    SYMBOL_SWAPMODE = "SwapCalculationType"
     SYMBOL_SWAP3DAYROLLOVER = "Swap3DaysRollover"
 
     TRADE_POSITIONID = "PositionID"
@@ -81,10 +81,10 @@ class DatabaseAPI:
         SYMBOL_VOLUMEINUNITSMAX: pl.Float32(),
         SYMBOL_VOLUMEINUNITSSTEP: pl.Float32(),
         SYMBOL_COMMISSION: pl.Float32(),
-        SYMBOL_COMMISSIONTYPE: pl.Enum([commission.name for commission in CommissionType]),
+        SYMBOL_COMMISSIONMODE: pl.Enum([commission.name for commission in CommissionMode]),
         SYMBOL_SWAPLONG: pl.Float32(),
         SYMBOL_SWAPSHORT: pl.Float32(),
-        SYMBOL_SWAPCALCULATIONSTYPE: pl.Enum([swap.name for swap in SwapType]),
+        SYMBOL_SWAPMODE: pl.Enum([swap.name for swap in SwapMode]),
         SYMBOL_SWAP3DAYROLLOVER: pl.Enum([day.name for day in DayOfWeek])
     }
 
@@ -256,10 +256,10 @@ class DatabaseAPI:
                     "{self.SYMBOL_VOLUMEINUNITSMAX}" = %s,
                     "{self.SYMBOL_VOLUMEINUNITSSTEP}" = %s,
                     "{self.SYMBOL_COMMISSION}" = %s,
-                    "{self.SYMBOL_COMMISSIONTYPE}" = %s,
+                    "{self.SYMBOL_COMMISSIONMODE}" = %s,
                     "{self.SYMBOL_SWAPLONG}" = %s,
                     "{self.SYMBOL_SWAPSHORT}" = %s,
-                    "{self.SYMBOL_SWAPCALCULATIONSTYPE}" = %s,
+                    "{self.SYMBOL_SWAPMODE}" = %s,
                     "{self.SYMBOL_SWAP3DAYROLLOVER}" = %s;
                 """
 
@@ -353,10 +353,10 @@ class DatabaseAPI:
                               VolumeInUnitsMax=result[7],
                               VolumeInUnitsStep=result[8],
                               Commission=result[9],
-                              CommissionType=CommissionType(CommissionType[result[10]]),
+                              CommissionMode=CommissionMode(CommissionMode[result[10]]),
                               SwapLong=result[11],
                               SwapShort=result[12],
-                              SwapType=SwapType(SwapType[result[13]]),
+                              SwapMode=SwapMode(SwapMode[result[13]]),
                               SwapExtraDay=DayOfWeek(DayOfWeek[result[14]]))
         except Exception as e:
             self._log.error(lambda: str(e))

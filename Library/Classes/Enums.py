@@ -39,13 +39,41 @@ class TradeType(Enum):
     Buy = 0
     Sell = 1
 
+class FeesType(Enum):
+    Points = 0
+    Pips = 1
+    Percentage = 2
+    Amount = 3
+    Accurate = 4
+
+class SpreadType(Enum):
+    Points = FeesType.Points.value
+    Pips = FeesType.Pips.value
+    Percentage = FeesType.Percentage.value
+    Amount = FeesType.Amount.value
+    Accurate = FeesType.Accurate.value
+
 class CommissionType(Enum):
+    Points = FeesType.Points.value
+    Pips = FeesType.Pips.value
+    Percentage = FeesType.Percentage.value
+    Amount = FeesType.Amount.value
+    Accurate = FeesType.Accurate.value
+
+class CommissionMode(Enum):
     UsdPerMillionUsdVolume = 0
     UsdPerOneLot = 1
     PercentageOfTradingVolume = 2
     QuoteCurrencyPerOneLot = 3
 
 class SwapType(Enum):
+    Points = FeesType.Points.value
+    Pips = FeesType.Pips.value
+    Percentage = FeesType.Percentage.value
+    Amount = FeesType.Amount.value
+    Accurate = FeesType.Accurate.value
+
+class SwapMode(Enum):
     Pips = 0
     Percentage = 1
 

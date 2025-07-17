@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Callable
 from attrs import define, field, fields
 
-from Library.Classes import AssetType, PositionType, TradeType, CommissionType, SwapType, DayOfWeek, TechnicalType
+from Library.Classes import AssetType, PositionType, TradeType, CommissionMode, SwapMode, DayOfWeek, TechnicalType
 
 @define(slots=True)
 class Account:
@@ -22,10 +22,10 @@ class Symbol:
     VolumeInUnitsMax: float = field()
     VolumeInUnitsStep: float = field()
     Commission: float = field()
-    CommissionType: CommissionType = field(converter=CommissionType)
+    CommissionMode: CommissionMode = field(converter=CommissionMode)
     SwapLong: float = field()
     SwapShort: float = field()
-    SwapType: SwapType = field(converter=SwapType)
+    SwapMode: SwapMode = field(converter=SwapMode)
     SwapExtraDay: DayOfWeek = field(converter=DayOfWeek)
 
 @define(slots=True)

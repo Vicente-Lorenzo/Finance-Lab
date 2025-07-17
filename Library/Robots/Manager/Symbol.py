@@ -1,4 +1,4 @@
-from Library.Classes import AssetType, CommissionType, SwapType, DayOfWeek, Symbol, Bar
+from Library.Classes import AssetType, CommissionMode, SwapMode, DayOfWeek, Symbol, Bar
 
 class SymbolAPI:
 
@@ -13,10 +13,10 @@ class SymbolAPI:
         self.VolumeInUnitsMax: float | None = None
         self.VolumeInUnitsStep: float | None = None
         self.Commission: float | None = None
-        self.CommissionType: CommissionType | None = None
+        self.CommissionMode: CommissionMode | None = None
         self.SwapLong: float | None = None
         self.SwapShort: float | None = None
-        self.SwapType: SwapType | None = None
+        self.SwapMode: SwapMode | None = None
         self.SwapExtraDay: DayOfWeek | None = None
         
         self.PipValue: float | None = None
@@ -33,10 +33,10 @@ class SymbolAPI:
         self.VolumeInUnitsMax = symbol.VolumeInUnitsMax
         self.VolumeInUnitsStep = symbol.VolumeInUnitsStep
         self.Commission = symbol.Commission
-        self.CommissionType = symbol.CommissionType
+        self.CommissionMode = symbol.CommissionMode
         self.SwapLong = symbol.SwapLong
         self.SwapShort = symbol.SwapShort
-        self.SwapType = symbol.SwapType
+        self.SwapMode = symbol.SwapMode
         self.SwapExtraDay = symbol.SwapExtraDay
 
     def update_symbol(self, bar: Bar) -> None:
@@ -54,10 +54,10 @@ class SymbolAPI:
                       self.VolumeInUnitsMax,
                       self.VolumeInUnitsStep,
                       self.Commission,
-                      self.CommissionType,
+                      self.CommissionMode,
                       self.SwapLong,
                       self.SwapShort,
-                      self.SwapType,
+                      self.SwapMode,
                       self.SwapExtraDay)
 
     def __repr__(self):
