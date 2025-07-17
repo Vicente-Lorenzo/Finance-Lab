@@ -6,13 +6,13 @@ from argparse import ArgumentParser
 from Library.Logging import *
 from Library.Classes import VerboseType, SystemType, StrategyType
 from Library.Parameters import ParametersAPI, Parameters
-from Library.Utils import time
+from Library.Utils import timer
 
 from Library.Robots.Manager import StatisticsAPI
 from Library.Robots.Strategy import *
 from Library.Robots.System import *
 
-@time
+@timer
 def main():
 
     pl.Config.set_tbl_cols(-1)
@@ -68,7 +68,7 @@ def main():
 
     log = HandlerAPI(Class=execution, Subclass="Execution Management")
 
-    @time
+    @timer
     @log.guard
     def launch():
 

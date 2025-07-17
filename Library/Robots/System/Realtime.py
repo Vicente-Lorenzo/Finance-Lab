@@ -7,7 +7,7 @@ from datetime import datetime
 from Library.Classes import *
 from Library.Database import DatabaseAPI
 from Library.Parameters import Parameters
-from Library.Utils import time, timestamp_to_datetime
+from Library.Utils import timer, timestamp_to_datetime
 
 from Library.Robots.Protocol import *
 from Library.Robots.Engine import MachineAPI
@@ -200,6 +200,6 @@ class RealtimeSystemAPI(SystemAPI):
 
         return system_engine
 
-    @time
+    @timer
     def run(self) -> None:
         self.deploy(strategy=self.strategy, analyst=self.analyst, manager=self.manager)

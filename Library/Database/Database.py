@@ -7,7 +7,7 @@ from typing import List
 
 from Library.Classes import *
 from Library.Logging import HandlerAPI
-from Library.Utils import time
+from Library.Utils import timer
 
 class DatabaseAPI:
 
@@ -206,7 +206,7 @@ class DatabaseAPI:
             trade_data = None
         return pl.DataFrame(data=trade_data, schema=cls.SCHEMA_TRADE, orient="row")
 
-    @time
+    @timer
     def push_market_data(self, data: pl.DataFrame) -> None:
         if not self._connection:
             self._log.error(lambda: "Connection is not established")
@@ -235,7 +235,7 @@ class DatabaseAPI:
             self._log.error(lambda: str(e))
             raise e
 
-    @time
+    @timer
     def push_symbol_data(self, symbol: Symbol) -> None:
         if not self._connection:
             self._log.error(lambda: "Connection is not established")
@@ -271,7 +271,7 @@ class DatabaseAPI:
             self._log.error(lambda: str(e))
             raise e
 
-    @time
+    @timer
     def pull_market_data(self, start: str | None = None, stop: str | None = None, window: int | None = None) -> pl.DataFrame | None:
         if not self._connection:
             self._log.error(lambda: "Connection is not established")
@@ -329,7 +329,7 @@ class DatabaseAPI:
             self._log.error(lambda: str(e))
             raise e
 
-    @time
+    @timer
     def pull_symbol_data(self) -> Symbol | None:
         if not self._connection:
             self._log.error(lambda: "Connection is not established")

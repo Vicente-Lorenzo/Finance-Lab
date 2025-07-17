@@ -6,11 +6,12 @@ from Library.Utils.DateTime import (
     datetime_to_timestamp,
     timestamp_to_datetime,
     datetime_to_iso,
-    iso_to_datetime
+    iso_to_datetime,
+    seconds_to_string
 )
 from Library.Utils.Performance import (
-    time,
-    profile
+    timer,
+    profiler
 )
 
 __all__ = [
@@ -22,6 +23,7 @@ __all__ = [
     "timestamp_to_datetime",
     "datetime_to_iso",
     "iso_to_datetime",
-    "time",
-    "profile",
+    "seconds_to_string",
+    "timer",
+    "profiler",
 ]

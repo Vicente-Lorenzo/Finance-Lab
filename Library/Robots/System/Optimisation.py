@@ -15,7 +15,7 @@ from dateutil.relativedelta import relativedelta
 
 from Library.Classes import VerboseType, TechnicalType, Technical
 from Library.Parameters import Parameters
-from Library.Utils import time, image, gantt
+from Library.Utils import timer, image, gantt
 
 from Library.Robots.Analyst import AnalystAPI, TechnicalsAPI
 from Library.Robots.Manager import ManagerAPI, StatisticsAPI
@@ -435,7 +435,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
 
         return last_btid, last_fitness, last_parameters, dof_df
 
-    @time
+    @timer
     def run(self) -> None:
 
         self._log.telegram.info(lambda: gantt(self._wf_stages))

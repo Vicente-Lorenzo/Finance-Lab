@@ -8,7 +8,7 @@ from typing import Type, Iterator, Callable
 from Library.Classes import *
 from Library.Database import DatabaseAPI
 from Library.Parameters import ParametersAPI, Parameters
-from Library.Utils import time, datetime_to_string, string_to_datetime
+from Library.Utils import timer, datetime_to_string, string_to_datetime
 
 from Library.Robots.Protocol import *
 from Library.Robots.Analyst import AnalystAPI
@@ -546,7 +546,7 @@ class BacktestingSystemAPI(SystemAPI):
 
         return system_engine
 
-    @time
+    @timer
     def run(self) -> None:
         self._update_id_queue.put(UpdateID.Account)
         self._update_args_queue.put(self.account_data)

@@ -11,7 +11,6 @@ from Library.Models.Noise import OrnsteinUhlenbeckNoiseAPI
 class DDPGAgentAPI(AgentAPI):
 
     def __init__(self,
-                 model: str,
                  path: Path,
                  input_shape: tuple,
                  action_shape: int,
@@ -24,7 +23,7 @@ class DDPGAgentAPI(AgentAPI):
                  batch_size: int = 64,
                  gamma: float = 0.99):
 
-        super().__init__(model=model, path=path)
+        super().__init__(model="DDPG", path=path)
 
         self.batch_size = batch_size
         self.gamma = gamma
@@ -35,7 +34,7 @@ class DDPGAgentAPI(AgentAPI):
         self.noise = OrnsteinUhlenbeckNoiseAPI(mu=np.zeros(action_shape))
 
         self.actor = ActorNetworkAPI(
-            model=model,
+            model=self._model,
             role="actor",
             path=path,
             input_shape=input_shape,
@@ -46,7 +45,7 @@ class DDPGAgentAPI(AgentAPI):
         )
 
         self.target_actor = ActorNetworkAPI(
-            model=model,
+            model=self._model,
             role="target_actor",
             path=path,
             input_shape=input_shape,
@@ -57,7 +56,7 @@ class DDPGAgentAPI(AgentAPI):
         )
 
         self.critic = CriticNetworkAPI(
-            model=model,
+            model=self._model,
             role="critic",
             path=path,
             input_shape=input_shape,
@@ -68,7 +67,7 @@ class DDPGAgentAPI(AgentAPI):
         )
 
         self.target_critic = CriticNetworkAPI(
-            model=model,
+            model=self._model,
             role="target_critic",
             path=path,
             input_shape=input_shape,
