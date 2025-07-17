@@ -70,11 +70,13 @@ class HandlerAPI:
         def wrapper(*args, **kwargs):
             try:
                 self.__enter__()
-                self.debug(lambda: "Initiated")
+                self.debug(lambda: f"Initiated @ {func.__name__}")
                 return func(*args, **kwargs)
             except Exception as e:
-                self.critical(lambda: f"Failed\n{''.join(traceback.format_exception(e))[:-1]}")
+                self.critical(lambda: f"Failed @ {func.__name__}")
+                self.critical(lambda: ''.join(traceback.format_exception(e))[:-1])
+                raise e
             finally:
-                self.debug(lambda: "Terminated")
+                self.debug(lambda: f"Terminated @ {func.__name__}")
                 self.__exit__(None, None, None)
         return wrapper
