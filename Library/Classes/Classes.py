@@ -128,5 +128,5 @@ class Telegram:
     ChatID: str
 
 def astuple(instance) -> tuple:
-    parse_enum = lambda attribute: attribute.name if isinstance(attribute, Enum) else attribute
-    return tuple(parse_enum(getattr(instance, attr.name)) for attr in fields(instance.__class__))
+    def parse_enum(attr): return attr.name if isinstance(attr, Enum) else attr
+    return tuple(parse_enum(getattr(instance, f.name)) for f in fields(instance.__class__))
