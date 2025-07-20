@@ -50,7 +50,6 @@ class SpreadType(Enum):
     Points = FeesType.Points.value
     Pips = FeesType.Pips.value
     Percentage = FeesType.Percentage.value
-    Amount = FeesType.Amount.value
     Accurate = FeesType.Accurate.value
 
 class CommissionType(Enum):
