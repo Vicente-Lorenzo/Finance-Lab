@@ -29,8 +29,8 @@ class OpenBuyAction:
     ActionID: ActionID = field(default=ActionID.OpenBuy, init=False)
     PositionType: PositionType
     Volume: float
-    StopLoss: float
-    TakeProfit: float
+    StopLoss: float | None
+    TakeProfit: float | None
 
     def __post_init__(self):
         self.PositionType = PositionType(self.PositionType)
@@ -42,8 +42,8 @@ class OpenSellAction:
     ActionID: ActionID = field(default=ActionID.OpenSell, init=False)
     PositionType: PositionType
     Volume: float
-    StopLoss: float
-    TakeProfit: float
+    StopLoss: float | None
+    TakeProfit: float | None
 
     def __post_init__(self):
         self.PositionType = PositionType(self.PositionType)
@@ -66,25 +66,25 @@ class ModifySellVolumeAction:
 class ModifyBuyStopLossAction:
     ActionID: ActionID = field(default=ActionID.ModifyBuyStopLoss, init=False)
     PositionID: int
-    StopLoss: float
+    StopLoss: float | None
 
 @dataclass(slots=True)
 class ModifySellStopLossAction:
     ActionID: ActionID = field(default=ActionID.ModifySellStopLoss, init=False)
     PositionID: int
-    StopLoss: float
+    StopLoss: float | None
 
 @dataclass(slots=True)
 class ModifyBuyTakeProfitAction:
     ActionID: ActionID = field(default=ActionID.ModifyBuyTakeProfit, init=False)
     PositionID: int
-    TakeProfit: float
+    TakeProfit: float | None
 
 @dataclass(slots=True)
 class ModifySellTakeProfitAction:
     ActionID: ActionID = field(default=ActionID.ModifySellTakeProfit, init=False)
     PositionID: int
-    TakeProfit: float
+    TakeProfit: float | None
 
 @dataclass(slots=True)
 class CloseBuyAction:
@@ -99,7 +99,7 @@ class CloseSellAction:
 @dataclass(slots=True)
 class AskAboveTargetAction:
     ActionID: ActionID = field(default=ActionID.AskAboveTarget, init=False)
-    Ask: float
+    Ask: float | None
 
     def __post_init__(self):
         self.Ask = None if self.Ask is None else float(self.Ask)
@@ -107,7 +107,7 @@ class AskAboveTargetAction:
 @dataclass(slots=True)
 class AskBelowTargetAction:
     ActionID: ActionID = field(default=ActionID.AskBelowTarget, init=False)
-    Ask: float
+    Ask: float | None
 
     def __post_init__(self):
         self.Ask = None if self.Ask is None else float(self.Ask)
@@ -115,7 +115,7 @@ class AskBelowTargetAction:
 @dataclass(slots=True)
 class BidAboveTargetAction:
     ActionID: ActionID = field(default=ActionID.BidAboveTarget, init=False)
-    Bid: float
+    Bid: float | None
 
     def __post_init__(self):
         self.Bid = None if self.Bid is None else float(self.Bid)
@@ -123,7 +123,7 @@ class BidAboveTargetAction:
 @dataclass(slots=True)
 class BidBelowTargetAction:
     ActionID: ActionID = field(default=ActionID.BidBelowTarget, init=False)
-    Bid: float
+    Bid: float | None
 
     def __post_init__(self):
         self.Bid = None if self.Bid is None else float(self.Bid)

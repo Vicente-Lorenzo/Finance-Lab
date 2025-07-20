@@ -43,8 +43,8 @@ class Position:
     EntryTimestamp: datetime
     EntryPrice: float
     Volume: float
-    StopLoss: float
-    TakeProfit: float
+    StopLoss: float | None
+    TakeProfit: float | None
     DrawdownPips: float = field(default=0.0, init=False)
     DrawdownPnL: float = field(default=None, init=False)
     BaseBalance: float = field(default=None, init=False)
