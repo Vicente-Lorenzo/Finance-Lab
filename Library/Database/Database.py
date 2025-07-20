@@ -343,21 +343,23 @@ class DatabaseAPI:
                 result = cursor.fetchone()
                 self._log.debug(lambda: f"Loaded symbol data points")
                 
-                return Symbol(BaseAsset=AssetType(AssetType[result[0]]),
-                              QuoteAsset=AssetType(AssetType[result[1]]),
-                              Digits=result[2],
-                              PipSize=result[3],
-                              PointSize=result[4],
-                              LotSize=result[5],
-                              VolumeInUnitsMin=result[6],
-                              VolumeInUnitsMax=result[7],
-                              VolumeInUnitsStep=result[8],
-                              Commission=result[9],
-                              CommissionMode=CommissionMode(CommissionMode[result[10]]),
-                              SwapLong=result[11],
-                              SwapShort=result[12],
-                              SwapMode=SwapMode(SwapMode[result[13]]),
-                              SwapExtraDay=DayOfWeek(DayOfWeek[result[14]]))
+                return Symbol(
+                    BaseAsset=AssetType(AssetType[result[0]]),
+                    QuoteAsset=AssetType(AssetType[result[1]]),
+                    Digits=result[2],
+                    PipSize=result[3],
+                    PointSize=result[4],
+                    LotSize=result[5],
+                    VolumeInUnitsMin=result[6],
+                    VolumeInUnitsMax=result[7],
+                    VolumeInUnitsStep=result[8],
+                    Commission=result[9],
+                    CommissionMode=CommissionMode(CommissionMode[result[10]]),
+                    SwapLong=result[11],
+                    SwapShort=result[12],
+                    SwapMode=SwapMode(SwapMode[result[13]]),
+                    SwapExtraDay=DayOfWeek(DayOfWeek[result[14]])
+                )
         except Exception as e:
             self._log.error(lambda: str(e))
             raise e
