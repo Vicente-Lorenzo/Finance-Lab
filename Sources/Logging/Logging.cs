@@ -1,4 +1,3 @@
-using cAlgo.API;
 using cAlgo.API.Internals;
 
 namespace cAlgo.Robots;
@@ -11,9 +10,9 @@ public class Logging
         Critical = 1,
         Error = 2,
         Warning = 3,
-        Info = 4,
-        Debug = 5,
-        Alert = 6
+        Alert = 4,
+        Info = 5,
+        Debug = 6
     }
     
     private readonly Algo _algo;
