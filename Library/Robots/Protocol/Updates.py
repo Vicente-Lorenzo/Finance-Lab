@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Union
-from attrs import define, field
+from dataclasses import dataclass
 
 from Library.Classes import Account, Symbol, Position, Trade, Bar, Tick
 
@@ -25,74 +25,83 @@ class UpdateID(Enum):
     BidBelowTarget = 17
     Shutdown = 18
 
-@define(slots=True)
+@dataclass(slots=True)
 class CompleteUpdate:
     from Library.Robots.Analyst import AnalystAPI
     from Library.Robots.Manager import ManagerAPI
-    Analyst: AnalystAPI = field()
-    Manager: ManagerAPI = field()
+    Analyst: AnalystAPI
+    Manager: ManagerAPI
 
-@define(slots=True)
+@dataclass(slots=True)
 class AccountUpdate:
     from Library.Robots.Analyst import AnalystAPI
     from Library.Robots.Manager import ManagerAPI
-    Analyst: AnalystAPI = field()
-    Manager: ManagerAPI = field()
-    Account: Account = field()
+    Analyst: AnalystAPI
+    Manager: ManagerAPI
+    Account: Account
 
-@define(slots=True)
+@dataclass(slots=True)
 class SymbolUpdate:
     from Library.Robots.Analyst import AnalystAPI
     from Library.Robots.Manager import ManagerAPI
-    Analyst: AnalystAPI = field()
-    Manager: ManagerAPI = field()
-    Symbol: Symbol = field()
+    Analyst: AnalystAPI
+    Manager: ManagerAPI
+    Symbol: Symbol
 
-@define(slots=True)
+@dataclass(slots=True)
 class PositionUpdate:
     from Library.Robots.Analyst import AnalystAPI
     from Library.Robots.Manager import ManagerAPI
-    Analyst: AnalystAPI = field()
-    Manager: ManagerAPI = field()
-    Bar: Bar = field()
-    Account: Account = field()
-    Position: Position = field()
+    Analyst: AnalystAPI
+    Manager: ManagerAPI
+    Bar: Bar
+    Account: Account
+    Position: Position
 
-@define(slots=True)
+@dataclass(slots=True)
 class TradeUpdate:
     from Library.Robots.Analyst import AnalystAPI
     from Library.Robots.Manager import ManagerAPI
-    Analyst: AnalystAPI = field()
-    Manager: ManagerAPI = field()
-    Bar: Bar = field()
-    Account: Account = field()
-    Trade: Trade = field()
+    Analyst: AnalystAPI
+    Manager: ManagerAPI
+    Bar: Bar
+    Account: Account
+    Trade: Trade
 
-@define(slots=True)
+@dataclass(slots=True)
 class PositionTradeUpdate:
     from Library.Robots.Analyst import AnalystAPI
     from Library.Robots.Manager import ManagerAPI
-    Analyst: AnalystAPI = field()
-    Manager: ManagerAPI = field()
-    Bar: Bar = field()
-    Account: Account = field()
-    Position: Position = field()
-    Trade: Trade = field()
+    Analyst: AnalystAPI
+    Manager: ManagerAPI
+    Bar: Bar
+    Account: Account
+    Position: Position
+    Trade: Trade
 
-@define(slots=True)
+@dataclass(slots=True)
 class BarUpdate:
     from Library.Robots.Analyst import AnalystAPI
     from Library.Robots.Manager import ManagerAPI
-    Analyst: AnalystAPI = field()
-    Manager: ManagerAPI = field()
-    Bar: Bar = field()
+    Analyst: AnalystAPI
+    Manager: ManagerAPI
+    Bar: Bar
 
-@define(slots=True)
+@dataclass(slots=True)
 class TickUpdate:
     from Library.Robots.Analyst import AnalystAPI
     from Library.Robots.Manager import ManagerAPI
-    Analyst: AnalystAPI = field()
-    Manager: ManagerAPI = field()
-    Tick: Tick = field()
-    
-Update = Union[CompleteUpdate, AccountUpdate, SymbolUpdate, PositionUpdate, TradeUpdate, PositionTradeUpdate, BarUpdate, TickUpdate]
+    Analyst: AnalystAPI
+    Manager: ManagerAPI
+    Tick: Tick
+
+Update = Union[
+    CompleteUpdate,
+    AccountUpdate,
+    SymbolUpdate,
+    PositionUpdate,
+    TradeUpdate,
+    PositionTradeUpdate,
+    BarUpdate,
+    TickUpdate
+]

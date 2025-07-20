@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import Union
-from attrs import define, field
-
+from dataclasses import dataclass, field
 from Library.Classes import PositionType
 
 class ActionID(Enum):
@@ -21,92 +20,128 @@ class ActionID(Enum):
     BidAboveTarget = 13
     BidBelowTarget = 14
 
-@define(slots=True)
+@dataclass(slots=True)
 class CompleteAction:
     ActionID: ActionID = field(default=ActionID.Complete, init=False)
 
-@define(slots=True)
+@dataclass(slots=True)
 class OpenBuyAction:
     ActionID: ActionID = field(default=ActionID.OpenBuy, init=False)
-    PositionType: PositionType = field(converter=PositionType)
-    Volume: float = field(converter=float)
-    StopLoss: float | None = field(converter=lambda x: None if x is None else float(x))
-    TakeProfit: float | None = field(converter=lambda x: None if x is None else float(x))
+    PositionType: PositionType
+    Volume: float
+    StopLoss: float
+    TakeProfit: float
 
-@define(slots=True)
+    def __post_init__(self):
+        self.PositionType = PositionType(self.PositionType)
+        self.StopLoss = None if self.StopLoss is None else float(self.StopLoss)
+        self.TakeProfit = None if self.TakeProfit is None else float(self.TakeProfit)
+
+@dataclass(slots=True)
 class OpenSellAction:
     ActionID: ActionID = field(default=ActionID.OpenSell, init=False)
-    PositionType: PositionType = field(converter=PositionType)
-    Volume: float = field(converter=float)
-    StopLoss: float | None = field(converter=lambda x: None if x is None else float(x))
-    TakeProfit: float | None = field(converter=lambda x: None if x is None else float(x))
+    PositionType: PositionType
+    Volume: float
+    StopLoss: float
+    TakeProfit: float
 
-@define(slots=True)
+    def __post_init__(self):
+        self.PositionType = PositionType(self.PositionType)
+        self.StopLoss = None if self.StopLoss is None else float(self.StopLoss)
+        self.TakeProfit = None if self.TakeProfit is None else float(self.TakeProfit)
+
+@dataclass(slots=True)
 class ModifyBuyVolumeAction:
     ActionID: ActionID = field(default=ActionID.ModifyBuyVolume, init=False)
-    PositionID: int = field(converter=int)
-    Volume: float = field(converter=float)
+    PositionID: int
+    Volume: float
 
-@define(slots=True)
+@dataclass(slots=True)
 class ModifySellVolumeAction:
     ActionID: ActionID = field(default=ActionID.ModifySellVolume, init=False)
-    PositionID: int = field(converter=int)
-    Volume: float = field(converter=float)
+    PositionID: int
+    Volume: float
 
-@define(slots=True)
+@dataclass(slots=True)
 class ModifyBuyStopLossAction:
     ActionID: ActionID = field(default=ActionID.ModifyBuyStopLoss, init=False)
-    PositionID: int = field(converter=int)
-    StopLoss: float = field(converter=float)
+    PositionID: int
+    StopLoss: float
 
-@define(slots=True)
+@dataclass(slots=True)
 class ModifySellStopLossAction:
     ActionID: ActionID = field(default=ActionID.ModifySellStopLoss, init=False)
-    PositionID: int = field(converter=int)
-    StopLoss: float = field(converter=float)
+    PositionID: int
+    StopLoss: float
 
-@define(slots=True)
+@dataclass(slots=True)
 class ModifyBuyTakeProfitAction:
     ActionID: ActionID = field(default=ActionID.ModifyBuyTakeProfit, init=False)
-    PositionID: int = field(converter=int)
-    TakeProfit: float = field(converter=float)
+    PositionID: int
+    TakeProfit: float
 
-@define(slots=True)
+@dataclass(slots=True)
 class ModifySellTakeProfitAction:
     ActionID: ActionID = field(default=ActionID.ModifySellTakeProfit, init=False)
-    PositionID: int = field(converter=int)
-    TakeProfit: float = field(converter=float)
+    PositionID: int
+    TakeProfit: float
 
-@define(slots=True)
+@dataclass(slots=True)
 class CloseBuyAction:
     ActionID: ActionID = field(default=ActionID.CloseBuy, init=False)
-    PositionID: int = field(converter=int)
+    PositionID: int
 
-@define(slots=True)
+@dataclass(slots=True)
 class CloseSellAction:
     ActionID: ActionID = field(default=ActionID.CloseSell, init=False)
-    PositionID: int = field(converter=int)
+    PositionID: int
 
-@define(slots=True)
+@dataclass(slots=True)
 class AskAboveTargetAction:
     ActionID: ActionID = field(default=ActionID.AskAboveTarget, init=False)
-    Ask: float | None = field(converter=lambda x: None if x is None else float(x))
+    Ask: float
 
-@define(slots=True)
+    def __post_init__(self):
+        self.Ask = None if self.Ask is None else float(self.Ask)
+
+@dataclass(slots=True)
 class AskBelowTargetAction:
     ActionID: ActionID = field(default=ActionID.AskBelowTarget, init=False)
-    Ask: float | None = field(converter=lambda x: None if x is None else float(x))
+    Ask: float
 
-@define(slots=True)
+    def __post_init__(self):
+        self.Ask = None if self.Ask is None else float(self.Ask)
+
+@dataclass(slots=True)
 class BidAboveTargetAction:
     ActionID: ActionID = field(default=ActionID.BidAboveTarget, init=False)
-    Bid: float | None = field(converter=lambda x: None if x is None else float(x))
+    Bid: float
 
-@define(slots=True)
+    def __post_init__(self):
+        self.Bid = None if self.Bid is None else float(self.Bid)
+
+@dataclass(slots=True)
 class BidBelowTargetAction:
     ActionID: ActionID = field(default=ActionID.BidBelowTarget, init=False)
-    Bid: float | None = field(converter=lambda x: None if x is None else float(x))
-    
-Action = Union[CompleteAction, OpenBuyAction, OpenSellAction, ModifyBuyVolumeAction, ModifyBuyStopLossAction,
-               ModifyBuyTakeProfitAction, ModifySellVolumeAction, ModifySellStopLossAction, ModifySellTakeProfitAction,
-               CloseBuyAction, CloseSellAction, AskAboveTargetAction, AskBelowTargetAction, BidAboveTargetAction, BidBelowTargetAction]
+    Bid: float
+
+    def __post_init__(self):
+        self.Bid = None if self.Bid is None else float(self.Bid)
+
+Action = Union[
+    CompleteAction,
+    OpenBuyAction,
+    OpenSellAction,
+    ModifyBuyVolumeAction,
+    ModifyBuyStopLossAction,
+    ModifyBuyTakeProfitAction,
+    ModifySellVolumeAction,
+    ModifySellStopLossAction,
+    ModifySellTakeProfitAction,
+    CloseBuyAction,
+    CloseSellAction,
+    AskAboveTargetAction,
+    AskBelowTargetAction,
+    BidAboveTargetAction,
+    BidBelowTargetAction
+]
