@@ -1,109 +1,132 @@
 from enum import Enum
 from datetime import datetime
-from typing import Callable
-from attrs import define, field, fields
+from typing import Callable, Optional
+from dataclasses import dataclass, field, fields
 
 from Library.Classes import AssetType, PositionType, TradeType, CommissionMode, SwapMode, DayOfWeek, TechnicalType
 
-@define(slots=True)
+@dataclass(slots=True)
 class Account:
-    Balance: float = field()
-    Equity: float = field()
+    Balance: float
+    Equity: float
 
-@define(slots=True)
+@dataclass(slots=True)
 class Symbol:
-    BaseAsset: AssetType = field(converter=AssetType)
-    QuoteAsset: AssetType = field(converter=AssetType)
-    Digits: int = field()
-    PipSize: float = field()
-    PointSize: float = field()
-    LotSize: int = field()
-    VolumeInUnitsMin: float = field()
-    VolumeInUnitsMax: float = field()
-    VolumeInUnitsStep: float = field()
-    Commission: float = field()
-    CommissionMode: CommissionMode = field(converter=CommissionMode)
-    SwapLong: float = field()
-    SwapShort: float = field()
-    SwapMode: SwapMode = field(converter=SwapMode)
-    SwapExtraDay: DayOfWeek = field(converter=DayOfWeek)
+    BaseAsset: AssetType
+    QuoteAsset: AssetType
+    Digits: int
+    PipSize: float
+    PointSize: float
+    LotSize: int
+    VolumeInUnitsMin: float
+    VolumeInUnitsMax: float
+    VolumeInUnitsStep: float
+    Commission: float
+    CommissionMode: CommissionMode
+    SwapLong: float
+    SwapShort: float
+    SwapMode: SwapMode
+    SwapExtraDay: DayOfWeek
 
-@define(slots=True)
+    def __post_init__(self):
+        self.BaseAsset = AssetType(self.BaseAsset)
+        self.QuoteAsset = AssetType(self.QuoteAsset)
+        self.CommissionMode = CommissionMode(self.CommissionMode)
+        self.SwapMode = SwapMode(self.SwapMode)
+        self.SwapExtraDay = DayOfWeek(self.SwapExtraDay)
+
+@dataclass(slots=True)
 class Position:
-    PositionID: int = field()
-    PositionType: PositionType = field(converter=PositionType)
-    TradeType: TradeType = field(converter=TradeType)
-    EntryTimestamp: datetime = field()
-    EntryPrice: float = field()
-    Volume: float = field()
-    StopLoss: float | None = field(converter=lambda x: None if x is None else float(x))
-    TakeProfit: float | None = field(converter=lambda x: None if x is None else float(x))
-    DrawdownPips: float = field(default=0.0)
-    DrawdownPnL: float = field(default=None)
-    BaseBalance: float = field(default=None)
-    EntryBalance: float = field(default=None)
+    PositionID: int
+    PositionType: PositionType
+    TradeType: TradeType
+    EntryTimestamp: datetime
+    EntryPrice: float
+    Volume: float
+    StopLoss: Optional[float] = None
+    TakeProfit: Optional[float] = None
+    DrawdownPips: float = 0.0
+    DrawdownPnL: Optional[float] = None
+    BaseBalance: Optional[float] = None
+    EntryBalance: Optional[float] = None
 
-@define(slots=True)
+    def __post_init__(self):
+        self.PositionType = PositionType(self.PositionType)
+        self.TradeType = TradeType(self.TradeType)
+        self.StopLoss = None if self.StopLoss is None else float(self.StopLoss)
+        self.TakeProfit = None if self.TakeProfit is None else float(self.TakeProfit)
+
+@dataclass(slots=True)
 class Trade:
-    PositionID: int = field()
-    TradeID: int = field()
-    PositionType: PositionType = field(converter=PositionType)
-    TradeType: TradeType = field(converter=TradeType)
-    EntryTimestamp: datetime = field()
-    ExitTimestamp: datetime = field()
-    EntryPrice: float = field()
-    ExitPrice: float = field()
-    Volume: float = field()
-    GrossPnL: float = field()
-    CommissionPnL: float = field()
-    SwapPnL: float = field()
-    NetPips: float = field()
-    NetPnL: float = field()
-    DrawdownPips: float = field(default=0.0)
-    DrawdownPnL: float = field(default=None)
-    DrawdownReturn: float = field(default=None)
-    NetReturn: float = field(default=None)
-    NetLogReturn: float = field(default=None)
-    NetReturnDrawdown: float = field(default=None)
-    BaseBalance: float = field(default=None)
-    EntryBalance: float = field(default=None)
-    ExitBalance: float = field(default=None)
+    PositionID: int
+    TradeID: int
+    PositionType: PositionType
+    TradeType: TradeType
+    EntryTimestamp: datetime
+    ExitTimestamp: datetime
+    EntryPrice: float
+    ExitPrice: float
+    Volume: float
+    GrossPnL: float
+    CommissionPnL: float
+    SwapPnL: float
+    NetPips: float
+    NetPnL: float
+    DrawdownPips: float = 0.0
+    DrawdownPnL: Optional[float] = None
+    DrawdownReturn: Optional[float] = None
+    NetReturn: Optional[float] = None
+    NetLogReturn: Optional[float] = None
+    NetReturnDrawdown: Optional[float] = None
+    BaseBalance: Optional[float] = None
+    EntryBalance: Optional[float] = None
+    ExitBalance: Optional[float] = None
 
-@define(slots=True)
+    def __post_init__(self):
+        self.PositionType = PositionType(self.PositionType)
+        self.TradeType = TradeType(self.TradeType)
+
+@dataclass(slots=True)
 class Bar:
-    Timestamp: datetime = field()
-    OpenPrice: float = field()
-    HighPrice: float = field()
-    LowPrice: float = field()
-    ClosePrice: float = field()
-    TickVolume: float = field()
+    Timestamp: datetime
+    OpenPrice: float
+    HighPrice: float
+    LowPrice: float
+    ClosePrice: float
+    TickVolume: float
 
-@define(slots=True)
+@dataclass(slots=True)
 class Tick:
-    Timestamp: datetime = field()
-    Ask: float = field()
-    Bid: float = field()
+    Timestamp: datetime
+    Ask: float
+    Bid: float
+    Spread: float = field(init=False)
 
-@define(slots=True, frozen=True)
+    def __post_init__(self):
+        self.Spread = self.Ask - self.Bid
+
+@dataclass(slots=True)
 class Technical:
-    Name: str = field()
-    TechnicalType: TechnicalType = field(converter=TechnicalType)
-    Input: Callable = field()
-    Parameters: dict[str, list[list[int | float]]] = field()
-    Constraints: Callable = field()
-    Function: Callable = field()
-    Output: list[str] = field()
-    FilterBuy: Callable = field()
-    FilterSell: Callable = field()
-    SignalBuy: Callable = field()
-    SignalSell: Callable = field()
+    Name: str
+    TechnicalType: TechnicalType
+    Input: Callable
+    Parameters: dict[str, list[list[int | float]]]
+    Constraints: Callable
+    Function: Callable
+    Output: list[str]
+    FilterBuy: Callable
+    FilterSell: Callable
+    SignalBuy: Callable
+    SignalSell: Callable
 
-@define(slots=True, frozen=True)
+    def __post_init__(self):
+        self.TechnicalType = TechnicalType(self.TechnicalType)
+
+@dataclass(slots=True, frozen=True)
 class Telegram:
-    Token: str = field()
-    ChatID: str = field()
+    Token: str
+    ChatID: str
 
 def astuple(instance) -> tuple:
     parse_enum = lambda attribute: attribute.name if isinstance(attribute, Enum) else attribute
     return tuple(parse_enum(getattr(instance, attr.name)) for attr in fields(instance.__class__))
-    
