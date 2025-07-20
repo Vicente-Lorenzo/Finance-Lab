@@ -16,7 +16,7 @@ class Symbol:
     QuoteAsset: AssetType = field(converter=AssetType)
     Digits: int = field()
     PipSize: float = field()
-    TickSize: float = field()
+    PointSize: float = field()
     LotSize: int = field()
     VolumeInUnitsMin: float = field()
     VolumeInUnitsMax: float = field()

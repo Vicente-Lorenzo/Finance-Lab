@@ -115,7 +115,7 @@ WHERE NOT EXISTS (
             create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_QUOTEASSET,      "VARCHAR"))
             create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_DIGITS,            "INT"))
             create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_PIPSIZE,           "DOUBLE PRECISION"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_TICKSIZE,          "DOUBLE PRECISION"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_POINTSIZE, "DOUBLE PRECISION"))
             create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_LOTSIZE,           "DOUBLE PRECISION"))
             create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_VOLUMEINUNITSMIN,  "DOUBLE PRECISION"))
             create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_VOLUMEINUNITSMAX,  "DOUBLE PRECISION"))

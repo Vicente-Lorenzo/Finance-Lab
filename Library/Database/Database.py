@@ -25,7 +25,7 @@ class DatabaseAPI:
     SYMBOL_QUOTEASSET = "QuoteAsset"
     SYMBOL_DIGITS = "Digits"
     SYMBOL_PIPSIZE = "PipSize"
-    SYMBOL_TICKSIZE = "TickSize"
+    SYMBOL_POINTSIZE = "TickSize"
     SYMBOL_LOTSIZE = "LotSize"
     SYMBOL_VOLUMEINUNITSMIN = "VolumeInUnitsMin"
     SYMBOL_VOLUMEINUNITSMAX = "VolumeInUnitsMax"
@@ -75,7 +75,7 @@ class DatabaseAPI:
         SYMBOL_QUOTEASSET: pl.Enum([currency.name for currency in AssetType]),
         SYMBOL_DIGITS: pl.Int8(),
         SYMBOL_PIPSIZE: pl.Float32(),
-        SYMBOL_TICKSIZE: pl.Float32(),
+        SYMBOL_POINTSIZE: pl.Float32(),
         SYMBOL_LOTSIZE: pl.Float32(),
         SYMBOL_VOLUMEINUNITSMIN: pl.Float32(),
         SYMBOL_VOLUMEINUNITSMAX: pl.Float32(),
@@ -250,7 +250,7 @@ class DatabaseAPI:
                     "{self.SYMBOL_QUOTEASSET}" = %s,
                     "{self.SYMBOL_DIGITS}" = %s,
                     "{self.SYMBOL_PIPSIZE}" = %s,
-                    "{self.SYMBOL_TICKSIZE}" = %s,
+                    "{self.SYMBOL_POINTSIZE}" = %s,
                     "{self.SYMBOL_LOTSIZE}" = %s,
                     "{self.SYMBOL_VOLUMEINUNITSMIN}" = %s,
                     "{self.SYMBOL_VOLUMEINUNITSMAX}" = %s,
@@ -347,7 +347,7 @@ class DatabaseAPI:
                               QuoteAsset=AssetType(AssetType[result[1]]),
                               Digits=result[2],
                               PipSize=result[3],
-                              TickSize=result[4],
+                              PointSize=result[4],
                               LotSize=result[5],
                               VolumeInUnitsMin=result[6],
                               VolumeInUnitsMax=result[7],

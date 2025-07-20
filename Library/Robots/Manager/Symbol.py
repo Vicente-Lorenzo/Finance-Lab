@@ -7,7 +7,7 @@ class SymbolAPI:
         self.QuoteAsset: AssetType | None = None
         self.Digits: int | None = None
         self.PipSize: float | None = None
-        self.TickSize: float | None = None
+        self.PointSize: float | None = None
         self.LotSize: int | None = None
         self.VolumeInUnitsMin: float | None = None
         self.VolumeInUnitsMax: float | None = None
@@ -27,7 +27,7 @@ class SymbolAPI:
         self.QuoteAsset = symbol.QuoteAsset
         self.Digits = symbol.Digits
         self.PipSize = symbol.PipSize
-        self.TickSize = symbol.TickSize
+        self.PointSize = symbol.PointSize
         self.LotSize = symbol.LotSize
         self.VolumeInUnitsMin = symbol.VolumeInUnitsMin
         self.VolumeInUnitsMax = symbol.VolumeInUnitsMax
@@ -48,7 +48,7 @@ class SymbolAPI:
                       self.QuoteAsset,
                       self.Digits,
                       self.PipSize,
-                      self.TickSize,
+                      self.PointSize,
                       self.LotSize,
                       self.VolumeInUnitsMin,
                       self.VolumeInUnitsMax,
