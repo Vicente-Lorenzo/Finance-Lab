@@ -8,7 +8,7 @@ public class StrategyDDPG : Robot
 {
     private RobotAPI _strategy;
 
-    [Parameter("Console Verbose", DefaultValue = Logging.VerboseType.Alert)]
+    [Parameter("Console Verbose", DefaultValue = Logging.VerboseType.Debug)]
     public Logging.VerboseType Console { get; set; }
     [Parameter("Telegram Verbose", DefaultValue = Logging.VerboseType.Silent)]
     public Logging.VerboseType Telegram { get; set; }
