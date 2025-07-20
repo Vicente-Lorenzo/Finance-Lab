@@ -1,6 +1,6 @@
 from enum import Enum
 from datetime import datetime
-from typing import Callable, Optional
+from typing import Callable
 from dataclasses import dataclass, field, fields
 
 from Library.Classes import AssetType, PositionType, TradeType, CommissionMode, SwapMode, DayOfWeek, TechnicalType
@@ -43,12 +43,12 @@ class Position:
     EntryTimestamp: datetime
     EntryPrice: float
     Volume: float
-    StopLoss: Optional[float] = None
-    TakeProfit: Optional[float] = None
-    DrawdownPips: float = 0.0
-    DrawdownPnL: Optional[float] = None
-    BaseBalance: Optional[float] = None
-    EntryBalance: Optional[float] = None
+    StopLoss: float
+    TakeProfit: float
+    DrawdownPips: float = field(default=0.0, init=False)
+    DrawdownPnL: float = field(default=None, init=False)
+    BaseBalance: float = field(default=None, init=False)
+    EntryBalance: float =  field(default=None, init=False)
 
     def __post_init__(self):
         self.PositionType = PositionType(self.PositionType)
@@ -72,15 +72,15 @@ class Trade:
     SwapPnL: float
     NetPips: float
     NetPnL: float
-    DrawdownPips: float = 0.0
-    DrawdownPnL: Optional[float] = None
-    DrawdownReturn: Optional[float] = None
-    NetReturn: Optional[float] = None
-    NetLogReturn: Optional[float] = None
-    NetReturnDrawdown: Optional[float] = None
-    BaseBalance: Optional[float] = None
-    EntryBalance: Optional[float] = None
-    ExitBalance: Optional[float] = None
+    DrawdownPips: float = field(default=0.0, init=False)
+    DrawdownPnL: float = field(default=None, init=False)
+    DrawdownReturn: float = field(default=None, init=False)
+    NetReturn: float = field(default=None, init=False)
+    NetLogReturn: float = field(default=None, init=False)
+    NetReturnDrawdown: float = field(default=None, init=False)
+    BaseBalance: float = field(default=None, init=False)
+    EntryBalance: float = field(default=None, init=False)
+    ExitBalance: float = field(default=None, init=False)
 
     def __post_init__(self):
         self.PositionType = PositionType(self.PositionType)
