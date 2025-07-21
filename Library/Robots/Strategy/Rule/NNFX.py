@@ -96,10 +96,10 @@ class NNFXStrategyAPI(StrategyAPI):
         return [ModifySellStopLossAction(self._last_position_id, update.Position.EntryPrice)]
 
     def define_tsl_buy_action(self, update: PositionUpdate):
-        return [BidAboveTargetAction(update.Position.StopLoss + self._trailing_stop_loss_scale * self._last_position_atr + update.Manager.Symbol.TickSize)]
+        return [BidAboveTargetAction(update.Position.StopLoss + self._trailing_stop_loss_scale * self._last_position_atr + update.Manager.Symbol.PointSize)]
 
     def define_tsl_sell_action(self, update: PositionUpdate):
-        return [AskBelowTargetAction(update.Position.StopLoss - self._trailing_stop_loss_scale * self._last_position_atr - update.Manager.Symbol.TickSize)]
+        return [AskBelowTargetAction(update.Position.StopLoss - self._trailing_stop_loss_scale * self._last_position_atr - update.Manager.Symbol.PointSize)]
 
     def detected_tsl_buy_action(self, update: TickUpdate):
         return [ModifyBuyStopLossAction(self._last_position_id, update.Tick.Bid - self._trailing_stop_loss_scale * self._last_position_atr)]

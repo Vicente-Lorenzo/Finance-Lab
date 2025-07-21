@@ -1,7 +1,7 @@
 import math
 
-from Library.Classes import Account, Position, Trade, Bar
-from Library.Robots.Manager import EPSILON
+from Library.Classes import Position, Trade, Bar
+from Library.Robots.Manager import EPSILON, AccountAPI, SymbolAPI
 
 class PositionAPI:
 
@@ -10,7 +10,7 @@ class PositionAPI:
         self.Sells: dict[int, Position] = {}
 
     @staticmethod
-    def _open_position(positions: dict[int, Position], account: Account, new_position: Position) -> None:
+    def _open_position(positions: dict[int, Position], account: AccountAPI, new_position: Position) -> None:
         new_position.BaseBalance = new_position.EntryBalance = account.Balance
         positions[new_position.PositionID] = new_position
 
@@ -56,10 +56,10 @@ class PositionAPI:
         PositionAPI.__modify_position(old_position, new_position)
         positions[new_position.PositionID] = new_position
 
-    def open_position_buy(self, account: Account, position: Position) -> None:
+    def open_position_buy(self, account: AccountAPI, position: Position) -> None:
         return self._open_position(self.Buys, account, position)
 
-    def open_position_sell(self, account: Account, position: Position) -> None:
+    def open_position_sell(self, account: AccountAPI, position: Position) -> None:
         return self._open_position(self.Sells, account, position)
 
     def modify_position_buy(self, position: Position) -> None:
@@ -80,12 +80,12 @@ class PositionAPI:
     def close_position_sell(self, trade: Trade) -> None:
         return self._close_position(self.Sells, trade)
     
-    def update_position(self, bar: Bar, pip_size: float) -> None:
+    def update_position(self, symbol: SymbolAPI, bar: Bar) -> None:
         for position in self.Buys.values():
-            drawdown = (bar.LowPrice - position.EntryPrice) / pip_size
+            drawdown = (bar.LowPrice - position.EntryPrice) / symbol.PipSize
             position.DrawdownPips = min(position.DrawdownPips, drawdown)
         for position in self.Sells.values():
-            drawdown = (position.EntryPrice - bar.HighPrice) / pip_size
+            drawdown = (position.EntryPrice - bar.HighPrice) / symbol.PipSize
             position.DrawdownPips = min(position.DrawdownPips, drawdown)
 
     def data(self):

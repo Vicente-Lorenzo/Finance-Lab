@@ -113,13 +113,48 @@ class RealtimeSystemAPI(SystemAPI):
         return UpdateID(*self._receive_update("<1b"))
 
     def receive_update_account(self) -> Account:
-        return Account(*self._receive_update(size="<2d"))
+        content = self._receive_update(size="<2d")
+        balance = content[0]
+        equity = content[1]
+        return Account(Balance=balance, Equity=equity)
 
     def receive_update_symbol(self) -> Symbol:
-        return Symbol(*self._receive_update(size="<2b1i2d1q4d1b2d2b"))
+        content = self._receive_update(size="<2b1i2d1q4d1b2d2b")
+        base_asset = content[0]
+        quote_asset = content[1]
+        digits = content[2]
+        point_size = content[3]
+        pip_size = content[4]
+        lot_size = content[5]
+        volume_min = content[6]
+        volume_max = content[7]
+        volume_step = content[8]
+        commission = content[9]
+        commission_mode = content[10]
+        swap_long = content[11]
+        swap_short = content[12]
+        swap_mode = content[13]
+        swap_extra_day = content[14]
+        return Symbol(
+            BaseAsset=base_asset,
+            QuoteAsset=quote_asset,
+            Digits=digits,
+            PointSize=point_size,
+            PipSize=pip_size,
+            LotSize=lot_size,
+            VolumeInUnitsMin=volume_min,
+            VolumeInUnitsMax=volume_max,
+            VolumeInUnitsStep=volume_step,
+            Commission=commission,
+            CommissionMode=commission_mode,
+            SwapLong=swap_long,
+            SwapShort=swap_short,
+            SwapMode=swap_mode,
+            SwapExtraDay=swap_extra_day
+        )
 
     def receive_update_position(self) -> Position:
-        content = self._receive_update(size="<1i2b1q4d")
+        content = self._receive_update(size="<1i2b1q6d")
         position_id = content[0]
         position_type = PositionType(content[1])
         trade_type = TradeType(content[2])
@@ -130,10 +165,23 @@ class RealtimeSystemAPI(SystemAPI):
         tp = content[7]
         sl = sl if sl is not self.SENTINEL else None
         tp = tp if tp is not self.SENTINEL else None
-        return Position(position_id, position_type, trade_type, timestamp, entry_price, volume, sl, tp)
+        points = content[8]
+        pips = content[9]
+        return Position(
+            PositionID=position_id,
+            PositionType=position_type,
+            TradeType=trade_type,
+            EntryTimestamp=timestamp,
+            EntryPrice=entry_price,
+            Volume=volume,
+            StopLoss=sl,
+            TakeProfit=tp,
+            Points=points,
+            Pips=pips
+        )
 
     def receive_update_trade(self) -> Trade:
-        content = self._receive_update(size="<2i2b2q8d")
+        content = self._receive_update(size="<2i2b2q9d")
         position_id = content[0]
         trade_id = content[1]
         position_type = PositionType(content[2])
@@ -143,12 +191,29 @@ class RealtimeSystemAPI(SystemAPI):
         entry_price = content[6]
         exit_price = content[7]
         volume = content[8]
-        gross_pnl = content[9]
-        commission_pnl = content[10]
-        swap_pnl = content[11]
-        net_pips = content[12]
-        net_pnl = content[13]
-        return Trade(position_id, trade_id, position_type, trade_type, entry_timestamp, exit_timestamp, entry_price, exit_price, volume, gross_pnl, commission_pnl, swap_pnl, net_pips, net_pnl)
+        points = content[9]
+        pips = content[10]
+        gross_pnl = content[11]
+        commission_pnl = content[12]
+        swap_pnl = content[13]
+        net_pnl = content[14]
+        return Trade(
+            PositionID=position_id,
+            TradeID=trade_id,
+            PositionType=position_type,
+            TradeType=trade_type,
+            EntryTimestamp=entry_timestamp,
+            ExitTimestamp=exit_timestamp,
+            EntryPrice=entry_price,
+            ExitPrice=exit_price,
+            Volume=volume,
+            Points=points,
+            Pips=pips,
+            GrossPnL=gross_pnl,
+            CommissionPnL=commission_pnl,
+            SwapPnL=swap_pnl,
+            NetPnL=net_pnl
+        )
 
     def receive_update_bar(self) -> Bar:
         content = self._receive_update(size="<1q4d1q")
@@ -158,10 +223,25 @@ class RealtimeSystemAPI(SystemAPI):
         low_price = content[3]
         close_price = content[4]
         volume = content[5]
-        return Bar(timestamp, open_price, high_price, low_price, close_price, volume)
+        return Bar(
+            Timestamp=timestamp,
+            OpenPrice=open_price,
+            HighPrice=high_price,
+            LowPrice=low_price,
+            ClosePrice=close_price,
+            TickVolume=volume
+        )
 
     def receive_update_target(self) -> Tick:
-        return Tick(*self._receive_update(size="<1q2d"))
+        content = self._receive_update(size="<1q2d")
+        timestamp = timestamp_to_datetime(content[0], milliseconds=True)
+        ask = content[1]
+        bid = content[2]
+        return Tick(
+            Timestamp=timestamp,
+            Ask=ask,
+            Bid=bid
+        )
 
     def system_management(self) -> MachineAPI:
 

@@ -6,8 +6,8 @@ class SymbolAPI:
         self.BaseAsset: AssetType | None = None
         self.QuoteAsset: AssetType | None = None
         self.Digits: int | None = None
-        self.PipSize: float | None = None
         self.PointSize: float | None = None
+        self.PipSize: float | None = None
         self.LotSize: int | None = None
         self.VolumeInUnitsMin: float | None = None
         self.VolumeInUnitsMax: float | None = None
@@ -19,15 +19,15 @@ class SymbolAPI:
         self.SwapMode: SwapMode | None = None
         self.SwapExtraDay: DayOfWeek | None = None
         
+        self.PointValue: float | None = None
         self.PipValue: float | None = None
-        self.TickValue: float | None = None
 
     def init_symbol(self, symbol: Symbol) -> None:
         self.BaseAsset = symbol.BaseAsset
         self.QuoteAsset = symbol.QuoteAsset
         self.Digits = symbol.Digits
-        self.PipSize = symbol.PipSize
         self.PointSize = symbol.PointSize
+        self.PipSize = symbol.PipSize
         self.LotSize = symbol.LotSize
         self.VolumeInUnitsMin = symbol.VolumeInUnitsMin
         self.VolumeInUnitsMax = symbol.VolumeInUnitsMax
@@ -40,8 +40,8 @@ class SymbolAPI:
         self.SwapExtraDay = symbol.SwapExtraDay
 
     def update_symbol(self, bar: Bar) -> None:
+        self.PointValue = self.PointSize * self.LotSize / bar.ClosePrice
         self.PipValue = self.PipSize * self.LotSize / bar.ClosePrice
-        self.TickValue = self.PipValue / 10
 
     def data(self) -> Symbol:
         return Symbol(

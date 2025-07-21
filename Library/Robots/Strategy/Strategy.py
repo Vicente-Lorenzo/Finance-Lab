@@ -7,7 +7,7 @@ from Library.Robots.Protocol import *
 from Library.Robots.Engine import MachineAPI
 
 class StrategyAPI(ABC):
-    
+
     OPENED_BUY = "Opened Buy ({0} Position)"
     OPENED_SELL = "Opened Sell ({0} Position)"
     MODIFIED_VOLUME_BUY = "Modified Buy Volume ({0} Position)"
@@ -84,68 +84,68 @@ class StrategyAPI(ABC):
 
         def update_bar(update: BarUpdate):
             update.Manager.Symbol.update_symbol(update.Bar)
-            update.Manager.Positions.update_position(update.Bar, update.Manager.Symbol.PipSize)
-        
+            update.Manager.Positions.update_position(update.Manager.Symbol, update.Bar)
+
         def update_opened_buy(update: PositionUpdate):
             update.Manager.Account.update_account(update.Account)
-            update.Manager.Positions.update_position(update.Bar, update.Manager.Symbol.PipSize)
-            update.Manager.Positions.open_position_buy(update.Account, update.Position)
+            update.Manager.Positions.update_position(update.Manager.Symbol, update.Bar)
+            update.Manager.Positions.open_position_buy(update.Manager.Account, update.Position)
             self._log_opened_buy(update)
 
         def update_opened_sell(update: PositionUpdate):
             update.Manager.Account.update_account(update.Account)
-            update.Manager.Positions.update_position(update.Bar, update.Manager.Symbol.PipSize)
-            update.Manager.Positions.open_position_sell(update.Account, update.Position)
+            update.Manager.Positions.update_position(update.Manager.Symbol, update.Bar)
+            update.Manager.Positions.open_position_sell(update.Manager.Account, update.Position)
             self._log_opened_sell(update)
 
         def update_modified_buy_volume(update: PositionTradeUpdate):
             update.Manager.Account.update_account(update.Account)
-            update.Manager.Positions.update_position(update.Bar, update.Manager.Symbol.PipSize)
+            update.Manager.Positions.update_position(update.Manager.Symbol, update.Bar)
             update.Manager.Positions.modify_position_trade_buy(update.Position, update.Trade)
             update.Manager.Statistics.update_data(update.Trade)
             self._log_modified_volume_buy(update)
 
         def update_modified_buy_stop_loss(update: PositionUpdate):
             update.Manager.Account.update_account(update.Account)
-            update.Manager.Positions.update_position(update.Bar, update.Manager.Symbol.PipSize)
+            update.Manager.Positions.update_position(update.Manager.Symbol, update.Bar)
             update.Manager.Positions.modify_position_buy(update.Position)
             self._log_modified_stop_loss_buy(update)
 
         def update_modified_buy_take_profit(update: PositionUpdate):
             update.Manager.Account.update_account(update.Account)
-            update.Manager.Positions.update_position(update.Bar, update.Manager.Symbol.PipSize)
+            update.Manager.Positions.update_position(update.Manager.Symbol, update.Bar)
             update.Manager.Positions.modify_position_buy(update.Position)
             self._log_modified_take_profit_buy(update)
 
         def update_modified_sell_volume(update: PositionTradeUpdate):
             update.Manager.Account.update_account(update.Account)
-            update.Manager.Positions.update_position(update.Bar, update.Manager.Symbol.PipSize)
+            update.Manager.Positions.update_position(update.Manager.Symbol, update.Bar)
             update.Manager.Positions.modify_position_trade_sell(update.Position, update.Trade)
             update.Manager.Statistics.update_data(update.Trade)
             self._log_modified_volume_sell(update)
 
         def update_modified_sell_stop_loss(update: PositionUpdate):
             update.Manager.Account.update_account(update.Account)
-            update.Manager.Positions.update_position(update.Bar, update.Manager.Symbol.PipSize)
+            update.Manager.Positions.update_position(update.Manager.Symbol, update.Bar)
             update.Manager.Positions.modify_position_sell(update.Position)
             self._log_modified_stop_loss_sell(update)
 
         def update_modified_sell_take_profit(update: PositionUpdate):
             update.Manager.Account.update_account(update.Account)
-            update.Manager.Positions.update_position(update.Bar, update.Manager.Symbol.PipSize)
+            update.Manager.Positions.update_position(update.Manager.Symbol, update.Bar)
             update.Manager.Positions.modify_position_sell(update.Position)
             self._log_modified_take_profit_sell(update)
 
         def update_closed_buy(update: TradeUpdate):
             update.Manager.Account.update_account(update.Account)
-            update.Manager.Positions.update_position(update.Bar, update.Manager.Symbol.PipSize)
+            update.Manager.Positions.update_position(update.Manager.Symbol, update.Bar)
             update.Manager.Positions.close_position_buy(update.Trade)
             update.Manager.Statistics.update_data(update.Trade)
             self._log_closed_buy(update)
 
         def update_closed_sell(update: TradeUpdate):
             update.Manager.Account.update_account(update.Account)
-            update.Manager.Positions.update_position(update.Bar, update.Manager.Symbol.PipSize)
+            update.Manager.Positions.update_position(update.Manager.Symbol, update.Bar)
             update.Manager.Positions.close_position_sell(update.Trade)
             update.Manager.Statistics.update_data(update.Trade)
             self._log_closed_sell(update)
