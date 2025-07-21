@@ -34,11 +34,11 @@ def seconds_to_string(seconds: float) -> str:
     if days:
         result.append(f"{round(days)} days")
     if hours:
-        result.append(f"{round(hours)} hrs")
+        result.append(f"{round(hours)} hours")
     if minutes:
-        result.append(f"{round(minutes)} mins")
+        result.append(f"{round(minutes)} minutes")
     if seconds:
-        result.append(f"{round(seconds)} secs")
+        result.append(f"{round(seconds)} seconds")
     if milliseconds:
-        result.append(f"{round(milliseconds * 1000)} msecs")
+        result.append(f"{round(milliseconds * 1000)} milliseconds")
     return " ".join(result)
