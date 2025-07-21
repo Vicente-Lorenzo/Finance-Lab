@@ -80,8 +80,8 @@ public class SystemAPI
         writer.Write((byte)(Enum.TryParse<AssetType>(symbol.BaseAsset.Name, out var baseType) ?  baseType : AssetType.Other));
         writer.Write((byte)Enum.Parse<AssetType>(symbol.QuoteAsset.Name));
         writer.Write(symbol.Digits);
-        writer.Write(symbol.PipSize);
         writer.Write(symbol.TickSize);
+        writer.Write(symbol.PipSize);
         writer.Write(symbol.LotSize);
         writer.Write(symbol.VolumeInUnitsMin);
         writer.Write(symbol.VolumeInUnitsMax);
@@ -94,7 +94,7 @@ public class SystemAPI
         writer.Write((sbyte?)symbol.Swap3DaysRollover ?? (sbyte)Sentinel);
     }
 
-    private static void BuildUpdatePosition(BinaryWriter writer, Position position)
+    private static void BuildUpdatePosition(BinaryWriter writer, Symbol symbol, Position position)
     {
         writer.Write(position.Id);
         writer.Write((byte)Enum.Parse<RobotAPI.PositionType>(position.Comment));
@@ -104,9 +104,11 @@ public class SystemAPI
         writer.Write(position.VolumeInUnits);
         writer.Write(position.StopLoss ?? Sentinel);
         writer.Write(position.TakeProfit ?? Sentinel);
+        writer.Write(position.Pips * symbol.PipSize / symbol.TickSize);
+        writer.Write(position.Pips);
     }
 
-    private static void BuildUpdateTrade(BinaryWriter writer, HistoricalTrade trade)
+    private static void BuildUpdateTrade(BinaryWriter writer, Symbol symbol, HistoricalTrade trade)
     {
         writer.Write(trade.PositionId);
         writer.Write(trade.ClosingDealId);
@@ -117,10 +119,11 @@ public class SystemAPI
         writer.Write(trade.EntryPrice);
         writer.Write(trade.ClosingPrice);
         writer.Write(trade.VolumeInUnits);
+        writer.Write(trade.Pips * symbol.PipSize / symbol.TickSize);
+        writer.Write(trade.Pips);
         writer.Write(trade.GrossProfit);
         writer.Write(trade.Commissions);
         writer.Write(trade.Swap);
-        writer.Write(trade.Pips);
         writer.Write(trade.NetProfit);
     }
 
@@ -134,7 +137,7 @@ public class SystemAPI
         writer.Write(bar.TickVolume);
     }
 
-    private static void BuildUpdateTarget(BinaryWriter writer, DateTime tickTime, double ask, double bid)
+    private static void BuildUpdateTick(BinaryWriter writer, DateTime tickTime, double ask, double bid)
     {
         writer.Write(((DateTimeOffset)tickTime).ToUnixTimeMilliseconds());
         writer.Write(ask);
@@ -232,7 +235,7 @@ public class SystemAPI
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
         BuildUpdateID(writer, targetType);
-        BuildUpdateTarget(writer, tickTime, ask, bid);
+        BuildUpdateTick(writer, tickTime, ask, bid);
         SendUpdate(memoryStream.ToArray());
     }
 
