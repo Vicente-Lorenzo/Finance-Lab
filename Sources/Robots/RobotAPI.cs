@@ -100,7 +100,7 @@ public abstract class RobotAPI
         var psi = new ProcessStartInfo
         {
             FileName = "cmd.exe",
-            Arguments = $"/k \"cd {baseDirectory} && conda activate Trading && python -m Library.Robots.Main {scriptArgs}\"",
+            Arguments = $"/k \"cd {baseDirectory} && conda activate trading && python -m Library.Robots.Main {scriptArgs}\"",
             WindowStyle = ProcessWindowStyle.Minimized,
             UseShellExecute = true
         };
