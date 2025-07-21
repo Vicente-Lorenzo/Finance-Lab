@@ -1,11 +1,10 @@
-name: Trading
+name: trading
 channels:
     - defaults
     - conda-forge
 dependencies:
     - tqdm
     - pytorch
-    - attrs
     - numpy
     - pandas
     - polars
