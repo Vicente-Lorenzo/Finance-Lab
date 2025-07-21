@@ -8,7 +8,7 @@ from Library.Classes import TradeType, Account, Trade
 from Library.Robots.Manager import EPSILON
 
 class StatisticsAPI:
-    
+
     STATISTICS_METRICS_LABEL = "Statistical Metrics"
     BUY_METRICS_INDIVIDUAL = "Buy Metrics (Individual)"
     SELL_METRICS_INDIVIDUAL = "Sell Metrics (Individual)"
@@ -17,13 +17,20 @@ class StatisticsAPI:
     SELL_METRICS_AGGREGATED = "Sell Metrics (Aggregated)"
     TOTAL_METRICS_AGGREGATED = "Total Metrics (Aggregated)"
 
-    NUMBEROFTRADES = "Nr of Trades"
-    
-    NUMBEROFWINNINGTRADES = "Nr of Winning Trades"
+    TOTALTRADESVALUE = "Nr Total of Trades"
+    TOTALPOINTSVALUE = "Total Points"
+    TOTALPIPSVALUE = "Total Pips"
+
+    WINNINGTRADESVALUE = "Nr of Winning Trades"
+    WINNINGPOINTSVALUE = "Winning Points"
+    WINNINGPIPSVALUE = "Winning Pips"
     WINNINGRATEPERC = "Winning Rate (%)"
     MAXWINNINGTRADE = "Max Winning Trade (€)"
     AVERAGEWINNINGTRADE = "Avg Winning Trade (€)"
     MINWINNINGTRADE = "Min Winning Trade (€)"
+    MAXWINNINGPOINTS = "Max Winning Points"
+    AVERAGEWINNINGPOINTS = "Avg Winning Points"
+    MINWINNINGPOINTS = "Min Winning Points"
     MAXWINNINGPIPS = "Max Winning Pips"
     AVERAGEWINNINGPIPS = "Avg Winning Pips"
     MINWINNINGPIPS = "Min Winning Pips"
@@ -33,12 +40,17 @@ class StatisticsAPI:
     WINNINGRETURNANNPERC = "Winning Return Annualised (%) [µ_up]"
     WINNINGVOLATILITYPERC = "Winning Volatility (%)"
     WINNINGVOLATILITYANNPERC = "Winning Volatility Annualised (%) [σ_up]"
-    
-    NUMBEROFLOSINGTRADES = "Nr of Losing Trades"
+
+    LOSINGTRADESVALUE = "Nr of Losing Trades"
+    LOSINGPOINTSVALUE = "Losing Points"
+    LOSINGPIPSVALUE = "Losing Pips"
     LOSINGRATEPERC = "Losing Rate (%)"
     MAXLOSINGTRADE = "Max Losing Trade (€)"
     AVERAGELOSINGTRADE = "Avg Losing Trade (€)"
     MINLOSINGTRADE = "Min Losing Trade (€)"
+    MAXLOSINGPOINTS = "Max Losing Points"
+    AVERAGELOSINGPOINTS = "Avg Losing Points"
+    MINLOSINGPOINTS = "Min Losing Points"
     MAXLOSINGPIPS = "Max Losing Pips"
     AVERAGELOSINGPIPS = "Avg Losing Pips"
     MINLOSINGPIPS = "Min Losing Pips"
@@ -48,12 +60,14 @@ class StatisticsAPI:
     LOSINGRETURNANNPERC = "Losing Return Annualised (%) [µ_down]"
     LOSINGVOLATILITYPERC = "Losing Volatility (%)"
     LOSINGVOLATILITYANNPERC = "Losing Volatility Annualised (%) [σ_down]"
-    
+
     AVERAGETRADE = "Average Trade (€) [Backward]"
+    AVERAGEPOINTS = "Average Points [Backward]"
     AVERAGEPIPS = "Average Pips [Backward]"
     EXPECTEDTRADE = "Expected Trade (€) [Forward]"
+    EXPECTEDPOINTS = "Expected Points [Forward]"
     EXPECTEDPIPS = "Expected Pips [Forward]"
-    
+
     GROSSPNLVALUE = "Gross Profit/Loss (€)"
     COMMISSIONSPNLVALUE = "Commissions Profit/Loss (€)"
     SWAPSPNLVALUE = "Swaps Profit/Loss (€)"
@@ -63,7 +77,6 @@ class StatisticsAPI:
     NETRETURNANNPERC = "Net Return Annualised (%) [µ]"
     NETVOLATILITYPERC = "Net Volatility (%)"
     NETVOLATILITYANNPERC = "Net Volatility Annualised (%) [σ]"
-    NETPIPSVALUE = "Net Pips"
 
     PROFITFACTOR = "Profit Factor"
     RISKTOREWARDRATIO = "Risk-to-Reward Ratio"
@@ -78,15 +91,22 @@ class StatisticsAPI:
     SORTINORATIO = "Sortino Ratio"
     CALMARRATIO = "Calmar Ratio"
     FITNESSRATIO = "Fitness Ratio"
-    
-    Metrics = [
-        NUMBEROFTRADES,
 
-        NUMBEROFWINNINGTRADES,
+    Metrics = [
+        TOTALTRADESVALUE,
+        TOTALPOINTSVALUE,
+        TOTALPIPSVALUE,
+
+        WINNINGTRADESVALUE,
+        WINNINGPOINTSVALUE,
+        WINNINGPIPSVALUE,
         WINNINGRATEPERC,
         MAXWINNINGTRADE,
         AVERAGEWINNINGTRADE,
         MINWINNINGTRADE,
+        MAXWINNINGPOINTS,
+        AVERAGEWINNINGPOINTS,
+        MINWINNINGPOINTS,
         MAXWINNINGPIPS,
         AVERAGEWINNINGPIPS,
         MINWINNINGPIPS,
@@ -97,11 +117,16 @@ class StatisticsAPI:
         WINNINGVOLATILITYPERC,
         WINNINGVOLATILITYANNPERC,
     
-        NUMBEROFLOSINGTRADES,
+        LOSINGTRADESVALUE,
+        LOSINGPOINTSVALUE,
+        LOSINGPIPSVALUE,
         LOSINGRATEPERC,
         MAXLOSINGTRADE,
         AVERAGELOSINGTRADE,
         MINLOSINGTRADE,
+        MAXLOSINGPOINTS,
+        AVERAGELOSINGPOINTS,
+        MINLOSINGPOINTS,
         MAXLOSINGPIPS,
         AVERAGELOSINGPIPS,
         MINLOSINGPIPS,
@@ -111,12 +136,14 @@ class StatisticsAPI:
         LOSINGRETURNANNPERC,
         LOSINGVOLATILITYPERC,
         LOSINGVOLATILITYANNPERC,
-    
+
         AVERAGETRADE,
+        AVERAGEPOINTS,
         AVERAGEPIPS,
         EXPECTEDTRADE,
+        EXPECTEDPOINTS,
         EXPECTEDPIPS,
-    
+
         GROSSPNLVALUE,
         COMMISSIONSPNLVALUE,
         SWAPSPNLVALUE,
@@ -126,8 +153,7 @@ class StatisticsAPI:
         NETRETURNANNPERC,
         NETVOLATILITYPERC,
         NETVOLATILITYANNPERC,
-        NETPIPSVALUE,
-    
+
         PROFITFACTOR,
         RISKTOREWARDRATIO,
         MAXDRAWDOWNVALUE,
@@ -142,7 +168,7 @@ class StatisticsAPI:
         CALMARRATIO,
         FITNESSRATIO
     ]
-    
+
     def __init__(self):
         self._data : pl.DataFrame = DatabaseAPI.format_trade_data(None)        
 
@@ -164,11 +190,13 @@ class StatisticsAPI:
             pl.col(DatabaseAPI.TRADE_ENTRYPRICE).first().alias(DatabaseAPI.TRADE_ENTRYPRICE),
             pl.col(DatabaseAPI.TRADE_EXITPRICE).last().alias(DatabaseAPI.TRADE_EXITPRICE),
             pl.col(DatabaseAPI.TRADE_VOLUME).sum().alias(DatabaseAPI.TRADE_VOLUME),
+            pl.col(DatabaseAPI.TRADE_POINTS).sum().alias(DatabaseAPI.TRADE_POINTS),
+            pl.col(DatabaseAPI.TRADE_PIPS).sum().alias(DatabaseAPI.TRADE_PIPS),
             pl.col(DatabaseAPI.TRADE_GROSSPNL).sum().alias(DatabaseAPI.TRADE_GROSSPNL),
             pl.col(DatabaseAPI.TRADE_COMMISSIONPNL).sum().alias(DatabaseAPI.TRADE_COMMISSIONPNL),
             pl.col(DatabaseAPI.TRADE_SWAPPNL).sum().alias(DatabaseAPI.TRADE_SWAPPNL),
-            pl.col(DatabaseAPI.TRADE_NETPIPS).sum().alias(DatabaseAPI.TRADE_NETPIPS),
             pl.col(DatabaseAPI.TRADE_NETPNL).sum().alias(DatabaseAPI.TRADE_NETPNL),
+            pl.col(DatabaseAPI.TRADE_DRAWDOWNPOINTS).min().alias(DatabaseAPI.TRADE_DRAWDOWNPOINTS),
             pl.col(DatabaseAPI.TRADE_DRAWDOWNPIPS).min().alias(DatabaseAPI.TRADE_DRAWDOWNPIPS),
             pl.col(DatabaseAPI.TRADE_DRAWDOWNPNL).min().alias(DatabaseAPI.TRADE_DRAWDOWNPNL),
             pl.col(DatabaseAPI.TRADE_DRAWDOWNRETURN).min().alias(DatabaseAPI.TRADE_DRAWDOWNRETURN),
@@ -303,15 +331,22 @@ class StatisticsAPI:
     def calculate_independent_metrics(self, initial_account: Account, start_timestamp: datetime, stop_timestamp: datetime, total_trades_df: pl.DataFrame) -> dict:
         winning_trades_df, losing_trades_df = self.split_winning_losing_trades(total_trades_df)
         total_nr_trades = self.calculate_total_trades(total_trades_df)
+        total_points_value = self.calculate_sum(total_trades_df, DatabaseAPI.TRADE_POINTS)
+        total_pips_value = self.calculate_sum(total_trades_df, DatabaseAPI.TRADE_PIPS)
         winning_nr_trades = self.calculate_total_trades(winning_trades_df)
+        winning_points_value = self.calculate_sum(winning_trades_df, DatabaseAPI.TRADE_POINTS)
+        winning_pips_value = self.calculate_sum(winning_trades_df, DatabaseAPI.TRADE_PIPS)
         losing_nr_trades = self.calculate_total_trades(losing_trades_df)
+        losing_points_value = self.calculate_sum(losing_trades_df, DatabaseAPI.TRADE_POINTS)
+        losing_pips_value = self.calculate_sum(losing_trades_df, DatabaseAPI.TRADE_PIPS)
         winning_rate_perc = self.calculate_rate_perc(winning_nr_trades, total_nr_trades)
         losing_rate_perc = self.calculate_rate_perc(losing_nr_trades, total_nr_trades)
         winning_max_trade, winning_avg_trade, winning_min_trade = self.calculate_min_avg_max(winning_nr_trades, winning_trades_df, DatabaseAPI.TRADE_NETPNL)
         losing_min_trade, losing_avg_trade, losing_max_trade = self.calculate_min_avg_max(losing_nr_trades, losing_trades_df, DatabaseAPI.TRADE_NETPNL)
-        winning_max_pips, winning_avg_pips, winning_min_pips = self.calculate_min_avg_max(winning_nr_trades, winning_trades_df, DatabaseAPI.TRADE_NETPIPS)
-        losing_min_pips, losing_avg_pips, losing_max_pips = self.calculate_min_avg_max(losing_nr_trades, losing_trades_df, DatabaseAPI.TRADE_NETPIPS)
-        net_pips_value = self.calculate_sum(total_trades_df, DatabaseAPI.TRADE_NETPIPS)
+        winning_max_points, winning_avg_points, winning_min_points = self.calculate_min_avg_max(winning_nr_trades, winning_trades_df, DatabaseAPI.TRADE_POINTS)
+        losing_min_points, losing_avg_points, losing_max_points = self.calculate_min_avg_max(losing_nr_trades, losing_trades_df, DatabaseAPI.TRADE_POINTS)
+        winning_max_pips, winning_avg_pips, winning_min_pips = self.calculate_min_avg_max(winning_nr_trades, winning_trades_df, DatabaseAPI.TRADE_PIPS)
+        losing_min_pips, losing_avg_pips, losing_max_pips = self.calculate_min_avg_max(losing_nr_trades, losing_trades_df, DatabaseAPI.TRADE_PIPS)
         gross_pnl_value = self.calculate_sum(total_trades_df, DatabaseAPI.TRADE_GROSSPNL)
         commissions_value = self.calculate_sum(total_trades_df, DatabaseAPI.TRADE_COMMISSIONPNL)
         swaps_value = self.calculate_sum(total_trades_df, DatabaseAPI.TRADE_SWAPPNL)
@@ -331,8 +366,10 @@ class StatisticsAPI:
         net_volatility_annualized_perc = self.calculate_volatility_annualized_perc(start_timestamp, stop_timestamp, net_volatility_perc)
         
         average_trade = self.calculate_average_value(total_pnl_value, total_nr_trades)
-        average_pips = self.calculate_average_value(net_pips_value, total_nr_trades)
+        average_points = self.calculate_average_value(total_points_value, total_nr_trades)
+        average_pips = self.calculate_average_value(total_pips_value, total_nr_trades)
         expected_trade = self.calculate_expected_value(winning_rate_perc, winning_avg_trade, losing_rate_perc, losing_avg_trade)
+        expected_points = self.calculate_expected_value(winning_rate_perc, winning_avg_points, losing_rate_perc, losing_avg_points)
         expected_pips = self.calculate_expected_value(winning_rate_perc, winning_avg_pips, losing_rate_perc, losing_avg_pips)
         
         risk_to_reward = self.calculate_risk_to_reward(winning_avg_trade, losing_avg_trade)
@@ -345,72 +382,87 @@ class StatisticsAPI:
         calmar_ratio = self.calculate_calmar_ratio(net_return_annualized_perc, max_drawdown_perc)
         fitness_ratio = self.calculate_fitness_ratio(net_return_annualized_perc, mean_drawdown_perc)
         
-        return {self.NUMBEROFTRADES: total_nr_trades,
+        return {
+            self.TOTALTRADESVALUE: total_nr_trades,
+            self.TOTALPOINTSVALUE: total_points_value,
+            self.TOTALPIPSVALUE: total_pips_value,
                 
-                self.NUMBEROFWINNINGTRADES: winning_nr_trades,
-                self.WINNINGRATEPERC: winning_rate_perc,
-                self.MAXWINNINGTRADE: winning_max_trade,
-                self.AVERAGEWINNINGTRADE: winning_avg_trade,
-                self.MINWINNINGTRADE: winning_min_trade,
-                self.MAXWINNINGPIPS: winning_max_pips,
-                self.AVERAGEWINNINGPIPS: winning_avg_pips,
-                self.MINWINNINGPIPS: winning_min_pips,
-                self.EXPECTEDWINNINGRETURNPERC: expected_winning_return_perc,
-                self.WINNINGRETURNPERC: winning_return_perc,
-                self.WINNINGRETURNANNPERC: winning_return_annualized_perc,
-                self.WINNINGVOLATILITYPERC: winning_volatility_perc,
-                self.WINNINGVOLATILITYANNPERC: winning_volatility_annualized_perc,
-                
-                self.NUMBEROFLOSINGTRADES: losing_nr_trades,
-                self.LOSINGRATEPERC: losing_rate_perc,
-                self.MAXLOSINGTRADE: losing_max_trade,
-                self.AVERAGELOSINGTRADE: losing_avg_trade,
-                self.MINLOSINGTRADE: losing_min_trade,
-                self.MAXLOSINGPIPS: losing_max_pips,
-                self.AVERAGELOSINGPIPS: losing_avg_pips,
-                self.MINLOSINGPIPS: losing_min_pips,
-                self.EXPECTEDLOSINGRETURNPERC: expected_losing_return_perc,
-                self.LOSINGRETURNPERC: losing_return_perc,
-                self.LOSINGRETURNANNPERC: losing_return_annualized_perc,
-                self.LOSINGVOLATILITYPERC: losing_volatility_perc,
-                self.LOSINGVOLATILITYANNPERC: losing_volatility_annualized_perc,
-                
-                self.AVERAGETRADE: average_trade,
-                self.AVERAGEPIPS: average_pips,
-                self.EXPECTEDTRADE: expected_trade,
-                self.EXPECTEDPIPS: expected_pips,
-                
-                self.GROSSPNLVALUE:gross_pnl_value,
-                self.COMMISSIONSPNLVALUE: commissions_value,
-                self.SWAPSPNLVALUE: swaps_value,
-                self.NETPNLVALUE: total_pnl_value,
-                self.EXPECTEDNETRETURNPERC: expected_net_return_perc,
-                self.NETRETURNPERC: net_return_perc,
-                self.NETRETURNANNPERC: net_return_annualized_perc,
-                self.NETVOLATILITYPERC: net_volatility_perc,
-                self.NETVOLATILITYANNPERC: net_volatility_annualized_perc,
-                self.NETPIPSVALUE: net_pips_value,
-                
-                self.PROFITFACTOR: profit_factor,
-                self.RISKTOREWARDRATIO: risk_to_reward,
-                self.MAXDRAWDOWNVALUE: max_drawdown_value,
-                self.MAXDRAWDOWNPERC: max_drawdown_perc,
-                self.MEANDRAWDOWNVALUE: mean_drawdown_value,
-                self.MEANDRAWDOWNPERC: mean_drawdown_perc,
-                self.MAXHOLDINGTIME: max_holding_time,
-                self.AVERAGEHOLDINGTIME: avg_holding_time,
-                self.MINHOLDINGTIME: min_holding_time,
-                self.SHARPERATIO: sharpe_ratio,
-                self.SORTINORATIO: sortino_ratio,
-                self.CALMARRATIO: calmar_ratio,
-                self.FITNESSRATIO: fitness_ratio}
-        
+            self.WINNINGTRADESVALUE: winning_nr_trades,
+            self.WINNINGPOINTSVALUE: winning_points_value,
+            self.WINNINGPIPSVALUE: winning_pips_value,
+            self.WINNINGRATEPERC: winning_rate_perc,
+            self.MAXWINNINGTRADE: winning_max_trade,
+            self.AVERAGEWINNINGTRADE: winning_avg_trade,
+            self.MINWINNINGTRADE: winning_min_trade,
+            self.MAXWINNINGPOINTS: winning_max_points,
+            self.AVERAGEWINNINGPOINTS: winning_avg_points,
+            self.MINWINNINGPOINTS: winning_min_points,
+            self.MAXWINNINGPIPS: winning_max_pips,
+            self.AVERAGEWINNINGPIPS: winning_avg_pips,
+            self.MINWINNINGPIPS: winning_min_pips,
+            self.EXPECTEDWINNINGRETURNPERC: expected_winning_return_perc,
+            self.WINNINGRETURNPERC: winning_return_perc,
+            self.WINNINGRETURNANNPERC: winning_return_annualized_perc,
+            self.WINNINGVOLATILITYPERC: winning_volatility_perc,
+            self.WINNINGVOLATILITYANNPERC: winning_volatility_annualized_perc,
+
+            self.LOSINGTRADESVALUE: losing_nr_trades,
+            self.LOSINGPOINTSVALUE: losing_points_value,
+            self.LOSINGPIPSVALUE: losing_pips_value,
+            self.LOSINGRATEPERC: losing_rate_perc,
+            self.MAXLOSINGTRADE: losing_max_trade,
+            self.AVERAGELOSINGTRADE: losing_avg_trade,
+            self.MINLOSINGTRADE: losing_min_trade,
+            self.MAXLOSINGPOINTS: losing_max_points,
+            self.AVERAGELOSINGPOINTS: losing_avg_points,
+            self.MINLOSINGPOINTS: losing_min_points,
+            self.MAXLOSINGPIPS: losing_max_pips,
+            self.AVERAGELOSINGPIPS: losing_avg_pips,
+            self.MINLOSINGPIPS: losing_min_pips,
+            self.EXPECTEDLOSINGRETURNPERC: expected_losing_return_perc,
+            self.LOSINGRETURNPERC: losing_return_perc,
+            self.LOSINGRETURNANNPERC: losing_return_annualized_perc,
+            self.LOSINGVOLATILITYPERC: losing_volatility_perc,
+            self.LOSINGVOLATILITYANNPERC: losing_volatility_annualized_perc,
+
+            self.AVERAGETRADE: average_trade,
+            self.AVERAGEPOINTS: average_points,
+            self.AVERAGEPIPS: average_pips,
+            self.EXPECTEDTRADE: expected_trade,
+            self.EXPECTEDPOINTS: expected_points,
+            self.EXPECTEDPIPS: expected_pips,
+
+            self.GROSSPNLVALUE:gross_pnl_value,
+            self.COMMISSIONSPNLVALUE: commissions_value,
+            self.SWAPSPNLVALUE: swaps_value,
+            self.NETPNLVALUE: total_pnl_value,
+            self.EXPECTEDNETRETURNPERC: expected_net_return_perc,
+            self.NETRETURNPERC: net_return_perc,
+            self.NETRETURNANNPERC: net_return_annualized_perc,
+            self.NETVOLATILITYPERC: net_volatility_perc,
+            self.NETVOLATILITYANNPERC: net_volatility_annualized_perc,
+
+            self.PROFITFACTOR: profit_factor,
+            self.RISKTOREWARDRATIO: risk_to_reward,
+            self.MAXDRAWDOWNVALUE: max_drawdown_value,
+            self.MAXDRAWDOWNPERC: max_drawdown_perc,
+            self.MEANDRAWDOWNVALUE: mean_drawdown_value,
+            self.MEANDRAWDOWNPERC: mean_drawdown_perc,
+            self.MAXHOLDINGTIME: max_holding_time,
+            self.AVERAGEHOLDINGTIME: avg_holding_time,
+            self.MINHOLDINGTIME: min_holding_time,
+            self.SHARPERATIO: sharpe_ratio,
+            self.SORTINORATIO: sortino_ratio,
+            self.CALMARRATIO: calmar_ratio,
+            self.FITNESSRATIO: fitness_ratio
+        }
+
     def calculate_dependent_metrics(self, initial_account: Account, start_timestamp: datetime, stop_timestamp: datetime, total_trades_df: pl.DataFrame, buy_metrics_label: str, sell_metrics_label: str, total_metrics_label: str) -> pl.DataFrame:
         buy_trades_df, sell_trades_df = self.split_buy_sell_trades(total_trades_df)
         buy_metrics_dict = self.calculate_independent_metrics(initial_account, start_timestamp, stop_timestamp, buy_trades_df)
         sell_metrics_dict = self.calculate_independent_metrics(initial_account, start_timestamp, stop_timestamp, sell_trades_df)
         total_metrics_dict = self.calculate_independent_metrics(initial_account, start_timestamp, stop_timestamp, total_trades_df)
-        
+
         current_winning_streak = current_losing_streak = 0
         total_winning_streak = total_losing_streak = 0
         max_winning_streak_index = max_losing_streak_index = 0
@@ -422,7 +474,7 @@ class StatisticsAPI:
             else:
                 current_losing_streak += 1
                 current_winning_streak = 0
-        
+
             if current_winning_streak > total_winning_streak:
                 max_winning_streak_index = idx
                 total_winning_streak = current_winning_streak
@@ -435,13 +487,13 @@ class StatisticsAPI:
         buy_metrics_dict[self.MAXWINNINGSTREAK] = self.calculate_total_trades(buy_winning_streak_df)
         sell_metrics_dict[self.MAXWINNINGSTREAK] = self.calculate_total_trades(sell_winning_streak_df)
         total_metrics_dict[self.MAXWINNINGSTREAK] = self.calculate_total_trades(winning_streak_df)
-        
+
         losing_streak_df = total_trades_df.slice(offset=max_losing_streak_index - total_losing_streak + 1, length=total_losing_streak)
         buy_losing_streak_df, sell_losing_streak_df = self.split_buy_sell_trades(losing_streak_df)
         buy_metrics_dict[self.MAXLOSINGSTREAK] = self.calculate_total_trades(buy_losing_streak_df)
         sell_metrics_dict[self.MAXLOSINGSTREAK] = self.calculate_total_trades(sell_losing_streak_df)
         total_metrics_dict[self.MAXLOSINGSTREAK] = self.calculate_total_trades(losing_streak_df)
-        
+
         buy_metrics_list = [buy_metrics_dict[key] for key in self.Metrics]
         sell_metrics_list = [sell_metrics_dict[key] for key in self.Metrics]
         total_metrics_list = [total_metrics_dict[key] for key in self.Metrics]
@@ -450,7 +502,7 @@ class StatisticsAPI:
                                   sell_metrics_label: sell_metrics_list,
                                   total_metrics_label: total_metrics_list},
                             strict=False)
-    
+
     def data(self, initial_account: Account, start_timestamp: datetime, stop_timestamp: datetime) -> (pl.DataFrame, pl.DataFrame, pl.DataFrame):
         statistical_metrics_df = pl.DataFrame(data=self.Metrics, schema={self.STATISTICS_METRICS_LABEL: pl.String()})
         individual_df = self.sort_trades(self._data)

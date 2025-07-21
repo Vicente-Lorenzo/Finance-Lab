@@ -15,7 +15,7 @@ class AccountAPI:
         self.Equity = account.Equity
 
     def data(self) -> Account:
-        return Account(self.Balance, self.Equity)
+        return Account(Balance=self.Balance, Equity=self.Equity)
 
     def __repr__(self):
         return repr(self.data())

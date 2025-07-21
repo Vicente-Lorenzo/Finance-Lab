@@ -44,21 +44,23 @@ class SymbolAPI:
         self.TickValue = self.PipValue / 10
 
     def data(self) -> Symbol:
-        return Symbol(self.BaseAsset,
-                      self.QuoteAsset,
-                      self.Digits,
-                      self.PipSize,
-                      self.PointSize,
-                      self.LotSize,
-                      self.VolumeInUnitsMin,
-                      self.VolumeInUnitsMax,
-                      self.VolumeInUnitsStep,
-                      self.Commission,
-                      self.CommissionMode,
-                      self.SwapLong,
-                      self.SwapShort,
-                      self.SwapMode,
-                      self.SwapExtraDay)
+        return Symbol(
+            BaseAsset=self.BaseAsset,
+            QuoteAsset=self.QuoteAsset,
+            Digits=self.Digits,
+            PointSize=self.PointSize,
+            PipSize=self.PipSize,
+            LotSize=self.LotSize,
+            VolumeInUnitsMin=self.VolumeInUnitsMin,
+            VolumeInUnitsMax=self.VolumeInUnitsMax,
+            VolumeInUnitsStep=self.VolumeInUnitsStep,
+            Commission=self.Commission,
+            CommissionMode=self.CommissionMode,
+            SwapLong=self.SwapLong,
+            SwapShort=self.SwapShort,
+            SwapMode=self.SwapMode,
+            SwapExtraDay=self.SwapExtraDay
+        )
 
     def __repr__(self):
         return repr(self.data())

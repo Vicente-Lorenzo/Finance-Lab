@@ -24,8 +24,8 @@ class DatabaseAPI:
     SYMBOL_BASEASSET = "BaseAsset"
     SYMBOL_QUOTEASSET = "QuoteAsset"
     SYMBOL_DIGITS = "Digits"
-    SYMBOL_PIPSIZE = "PipSize"
     SYMBOL_POINTSIZE = "TickSize"
+    SYMBOL_PIPSIZE = "PipSize"
     SYMBOL_LOTSIZE = "LotSize"
     SYMBOL_VOLUMEINUNITSMIN = "VolumeInUnitsMin"
     SYMBOL_VOLUMEINUNITSMAX = "VolumeInUnitsMax"
@@ -46,11 +46,13 @@ class DatabaseAPI:
     TRADE_ENTRYPRICE = "EntryPrice"
     TRADE_EXITPRICE = "ExitPrice"
     TRADE_VOLUME = "Volume"
+    TRADE_POINTS = "Points"
+    TRADE_PIPS = "Pips"
     TRADE_GROSSPNL = "GrossPnL"
     TRADE_COMMISSIONPNL = "CommissionPnL"
     TRADE_SWAPPNL = "SwapPnL"
-    TRADE_NETPIPS = "NetPips"
     TRADE_NETPNL = "NetPnL"
+    TRADE_DRAWDOWNPOINTS = "DrawdownPoints"
     TRADE_DRAWDOWNPIPS = "DrawdownPips"
     TRADE_DRAWDOWNPNL = "DrawdownPnL"
     TRADE_DRAWDOWNRETURN = "DrawdownReturn"
@@ -74,8 +76,8 @@ class DatabaseAPI:
         SYMBOL_BASEASSET: pl.Enum([currency.name for currency in AssetType]),
         SYMBOL_QUOTEASSET: pl.Enum([currency.name for currency in AssetType]),
         SYMBOL_DIGITS: pl.Int8(),
-        SYMBOL_PIPSIZE: pl.Float32(),
         SYMBOL_POINTSIZE: pl.Float32(),
+        SYMBOL_PIPSIZE: pl.Float32(),
         SYMBOL_LOTSIZE: pl.Float32(),
         SYMBOL_VOLUMEINUNITSMIN: pl.Float32(),
         SYMBOL_VOLUMEINUNITSMAX: pl.Float32(),
@@ -98,11 +100,13 @@ class DatabaseAPI:
         TRADE_ENTRYPRICE: pl.Float32(),
         TRADE_EXITPRICE: pl.Float32(),
         TRADE_VOLUME: pl.Float32(),
+        TRADE_POINTS: pl.Float32(),
+        TRADE_PIPS: pl.Float32(),
         TRADE_GROSSPNL: pl.Float32(),
         TRADE_COMMISSIONPNL: pl.Float32(),
         TRADE_SWAPPNL: pl.Float32(),
-        TRADE_NETPIPS: pl.Float32(),
         TRADE_NETPNL: pl.Float32(),
+        TRADE_DRAWDOWNPOINTS: pl.Float32(),
         TRADE_DRAWDOWNPIPS: pl.Float32(),
         TRADE_DRAWDOWNPNL: pl.Float32(),
         TRADE_DRAWDOWNRETURN: pl.Float32(),
@@ -249,8 +253,8 @@ class DatabaseAPI:
                     "{self.SYMBOL_BASEASSET}" = %s,
                     "{self.SYMBOL_QUOTEASSET}" = %s,
                     "{self.SYMBOL_DIGITS}" = %s,
-                    "{self.SYMBOL_PIPSIZE}" = %s,
                     "{self.SYMBOL_POINTSIZE}" = %s,
+                    "{self.SYMBOL_PIPSIZE}" = %s,
                     "{self.SYMBOL_LOTSIZE}" = %s,
                     "{self.SYMBOL_VOLUMEINUNITSMIN}" = %s,
                     "{self.SYMBOL_VOLUMEINUNITSMAX}" = %s,
@@ -347,8 +351,8 @@ class DatabaseAPI:
                     BaseAsset=AssetType(AssetType[result[0]]),
                     QuoteAsset=AssetType(AssetType[result[1]]),
                     Digits=result[2],
-                    PipSize=result[3],
                     PointSize=result[4],
+                    PipSize=result[3],
                     LotSize=result[5],
                     VolumeInUnitsMin=result[6],
                     VolumeInUnitsMax=result[7],

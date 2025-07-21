@@ -15,8 +15,8 @@ class Symbol:
     BaseAsset: AssetType
     QuoteAsset: AssetType
     Digits: int
-    PipSize: float
     PointSize: float
+    PipSize: float
     LotSize: int
     VolumeInUnitsMin: float
     VolumeInUnitsMax: float
@@ -45,10 +45,21 @@ class Position:
     Volume: float
     StopLoss: float | None
     TakeProfit: float | None
+    Points: float
+    Pips: float
+    GrossPnL: float = field(default=None, init=False)
+    CommissionPnL: float = field(default=None, init=False)
+    SwapPnL: float = field(default=None, init=False)
+    NetPnL: float = field(default=None, init=False)
+    DrawdownPoints: float = field(default=0.0, init=False)
     DrawdownPips: float = field(default=0.0, init=False)
     DrawdownPnL: float = field(default=None, init=False)
+    DrawdownReturn: float = field(default=None, init=False)
+    NetReturn: float = field(default=None, init=False)
+    NetLogReturn: float = field(default=None, init=False)
+    NetReturnDrawdown: float = field(default=None, init=False)
     BaseBalance: float = field(default=None, init=False)
-    EntryBalance: float =  field(default=None, init=False)
+    EntryBalance: float = field(default=None, init=False)
 
     def __post_init__(self):
         self.PositionType = PositionType(self.PositionType)
@@ -67,11 +78,13 @@ class Trade:
     EntryPrice: float
     ExitPrice: float
     Volume: float
+    Points: float
+    Pips: float
     GrossPnL: float
     CommissionPnL: float
     SwapPnL: float
-    NetPips: float
     NetPnL: float
+    DrawdownPoints: float = field(default=0.0, init=False)
     DrawdownPips: float = field(default=0.0, init=False)
     DrawdownPnL: float = field(default=None, init=False)
     DrawdownReturn: float = field(default=None, init=False)

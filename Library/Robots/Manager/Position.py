@@ -29,12 +29,12 @@ class PositionAPI:
 
     @staticmethod
     def __close_position(old_position: Position, new_trade: Trade) -> None:
-        if old_position.DrawdownPnL is not None and old_position.DrawdownPips <= new_trade.NetPips:
+        if old_position.DrawdownPnL is not None and old_position.DrawdownPips <= new_trade.Pips:
             new_trade.DrawdownPips = old_position.DrawdownPips
             new_trade.DrawdownPnL = old_position.DrawdownPnL
         else:
-            new_trade.DrawdownPips = old_position.DrawdownPips = min(old_position.DrawdownPips, new_trade.NetPips)
-            new_trade.DrawdownPnL = old_position.DrawdownPnL = min(new_trade.NetPnL * new_trade.DrawdownPips / new_trade.NetPips, new_trade.NetPnL)
+            new_trade.DrawdownPips = old_position.DrawdownPips = min(old_position.DrawdownPips, new_trade.Pips)
+            new_trade.DrawdownPnL = old_position.DrawdownPnL = min(new_trade.NetPnL * new_trade.DrawdownPips / new_trade.Pips, new_trade.NetPnL)
         new_trade.BaseBalance = old_position.BaseBalance
         new_trade.EntryBalance = old_position.EntryBalance
         new_trade.ExitBalance = old_position.EntryBalance = new_trade.EntryBalance + new_trade.NetPnL
