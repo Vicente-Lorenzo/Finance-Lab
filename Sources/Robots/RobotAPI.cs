@@ -169,9 +169,9 @@ public abstract class RobotAPI
             LastTakeProfit = args.Position.TakeProfit
         };
         if (args.Position.TradeType == TradeType.Buy)
-            _systemApi.SendUpdateOpenedBuy(_robot.Bars.LastBar, _robot.Account, args.Position);
+            _systemApi.SendUpdateOpenedBuy(_robot.Bars.LastBar, _robot.Account, _robot.Symbol, args.Position);
         else
-            _systemApi.SendUpdateOpenedSell(_robot.Bars.LastBar, _robot.Account, args.Position);
+            _systemApi.SendUpdateOpenedSell(_robot.Bars.LastBar, _robot.Account, _robot.Symbol, args.Position);
         _positions.Add(args.Position.Id, positionData);
         _systemApi.SendUpdateComplete();
         ReceiveAndProcessActions();
@@ -186,9 +186,9 @@ public abstract class RobotAPI
         {
             var trade = FindTrade(args.Position.Id);
             if (args.Position.TradeType == TradeType.Buy)
-                _systemApi.SendUpdateModifiedBuyVolume(_robot.Bars.LastBar, _robot.Account, args.Position, trade);
+                _systemApi.SendUpdateModifiedBuyVolume(_robot.Bars.LastBar, _robot.Account, _robot.Symbol, args.Position, trade);
             else
-                _systemApi.SendUpdateModifiedSellVolume(_robot.Bars.LastBar, _robot.Account, args.Position, trade);
+                _systemApi.SendUpdateModifiedSellVolume(_robot.Bars.LastBar, _robot.Account, _robot.Symbol, args.Position, trade);
             positionData.LastVolume = args.Position.VolumeInUnits;
             _systemApi.SendUpdateComplete();
             ReceiveAndProcessActions();
@@ -199,9 +199,9 @@ public abstract class RobotAPI
             (positionData.LastStopLoss != null && args.Position.StopLoss != null && Math.Abs((double)args.Position.StopLoss - (double)positionData.LastStopLoss) > double.Epsilon))
         {
             if (args.Position.TradeType == TradeType.Buy)
-                _systemApi.SendUpdateModifiedBuyStopLoss(_robot.Bars.LastBar, _robot.Account, args.Position);
+                _systemApi.SendUpdateModifiedBuyStopLoss(_robot.Bars.LastBar, _robot.Account, _robot.Symbol, args.Position);
             else
-                _systemApi.SendUpdateModifiedSellStopLoss(_robot.Bars.LastBar, _robot.Account, args.Position);
+                _systemApi.SendUpdateModifiedSellStopLoss(_robot.Bars.LastBar, _robot.Account, _robot.Symbol, args.Position);
             positionData.LastStopLoss = args.Position.StopLoss;
             _systemApi.SendUpdateComplete();
             ReceiveAndProcessActions();
@@ -212,9 +212,9 @@ public abstract class RobotAPI
             (positionData.LastTakeProfit != null && args.Position.TakeProfit != null && Math.Abs((double)args.Position.TakeProfit - (double)positionData.LastTakeProfit) > double.Epsilon))
         {
             if (args.Position.TradeType == TradeType.Buy)
-                _systemApi.SendUpdateModifiedBuyTakeProfit(_robot.Bars.LastBar, _robot.Account, args.Position);
+                _systemApi.SendUpdateModifiedBuyTakeProfit(_robot.Bars.LastBar, _robot.Account, _robot.Symbol, args.Position);
             else
-                _systemApi.SendUpdateModifiedSellTakeProfit(_robot.Bars.LastBar, _robot.Account, args.Position);
+                _systemApi.SendUpdateModifiedSellTakeProfit(_robot.Bars.LastBar, _robot.Account, _robot.Symbol, args.Position);
             positionData.LastTakeProfit = args.Position.TakeProfit;
             _systemApi.SendUpdateComplete();
             ReceiveAndProcessActions();
@@ -227,9 +227,9 @@ public abstract class RobotAPI
             return;
         var trade = FindTrade(args.Position.Id);
         if (args.Position.TradeType == TradeType.Buy)
-            _systemApi.SendUpdateClosedBuy(_robot.Bars.LastBar, _robot.Account, trade);
+            _systemApi.SendUpdateClosedBuy(_robot.Bars.LastBar, _robot.Account, _robot.Symbol, trade);
         else
-            _systemApi.SendUpdateClosedSell(_robot.Bars.LastBar, _robot.Account, trade);
+            _systemApi.SendUpdateClosedSell(_robot.Bars.LastBar, _robot.Account, _robot.Symbol, trade);
         _positions.Remove(args.Position.Id);
         _systemApi.SendUpdateComplete();
         ReceiveAndProcessActions();
