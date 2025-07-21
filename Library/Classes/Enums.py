@@ -86,8 +86,9 @@ class DayOfWeek(Enum):
     Saturday = 6
 
 class ManagerType(Enum):
-    Netting = 0
-    Hedging = 1
+    Investing = 0
+    Netting = 1
+    Hedging = 2
     
 class TechnicalType(Enum):
     Baseline = 0
