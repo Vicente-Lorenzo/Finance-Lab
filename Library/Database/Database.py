@@ -348,8 +348,8 @@ class DatabaseAPI:
                 self._log.debug(lambda: f"Loaded symbol data points")
                 
                 return Symbol(
-                    BaseAsset=AssetType(AssetType[result[0]]),
-                    QuoteAsset=AssetType(AssetType[result[1]]),
+                    BaseAssetType=AssetType(AssetType[result[0]]),
+                    QuoteAssetType=AssetType(AssetType[result[1]]),
                     Digits=result[2],
                     PointSize=result[4],
                     PipSize=result[3],

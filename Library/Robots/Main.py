@@ -4,7 +4,7 @@ from pathlib import Path
 from argparse import ArgumentParser
 
 from Library.Logging import *
-from Library.Classes import VerboseType, SpreadType, CommissionType, SwapType, SystemType, StrategyType
+from Library.Classes import VerboseType, AssetType, SpreadType, CommissionType, SwapType, SystemType, StrategyType
 from Library.Parameters import ParametersAPI, Parameters
 from Library.Utils import timer
 
@@ -38,12 +38,13 @@ parser.add_argument("--iid", type=str, required=False)
 
 parser.add_argument("--start", type=str, required=False)
 parser.add_argument("--stop", type=str, required=False)
-parser.add_argument("--balance", type=float, required=False)
+parser.add_argument("--account-asset", type=str, required=False, choices=[_.name for _ in AssetType])
+parser.add_argument("--account-balance", type=float, required=False)
+parser.add_argument("--account-leverage", type=float, required=False)
 parser.add_argument("--spread-type", type=str, required=False, choices=[_.name for _ in SpreadType])
 parser.add_argument("--spread-value", type=float, required=False)
 parser.add_argument("--commission-type", type=str, required=False, choices=[_.name for _ in CommissionType])
-parser.add_argument("--commission-buy", type=float, required=False)
-parser.add_argument("--commission-sell", type=float, required=False)
+parser.add_argument("--commission-value", type=float, required=False)
 parser.add_argument("--swap-type", type=str, required=False, choices=[_.name for _ in SwapType])
 parser.add_argument("--swap-buy", type=float, required=False)
 parser.add_argument("--swap-sell", type=float, required=False)
@@ -107,18 +108,20 @@ def main():
                 parser.error("--start is required for Backtesting System")
             if args.stop is None:
                 parser.error("--stop is required for Backtesting System")
-            if args.balance is None:
-                parser.error("--balance is required for Backtesting System")
+            if args.account_asset is None:
+                parser.error("--account-asset is required for Backtesting System")
+            if args.account_balance is None:
+                parser.error("--account-balance is required for Backtesting System")
+            if args.account_leverage is None:
+                parser.error("--account-leverage is required for Backtesting System")
             if args.spread_type is None:
                 parser.error("--spread-type is required for Backtesting System")
             if args.spread_type != SpreadType.Accurate.name and args.spread_value is None:
                 parser.error("--spread-value is required for Backtesting System")
             if args.commission_type is None:
                 parser.error("--commission-type is required for Backtesting System")
-            if args.commission_type != CommissionType.Accurate.name and args.commission_buy is None:
-                parser.error("--commission-buy is required for Backtesting System")
-            if args.commission_type != CommissionType.Accurate.name and args.commission_sell is None:
-                parser.error("--commission-sell is required for Backtesting System")
+            if args.commission_type != CommissionType.Accurate.name and args.commission_value is None:
+                parser.error("--commission-value is required for Backtesting System")
             if args.swap_type is None:
                 parser.error("--swap-type is required for Backtesting System")
             if args.swap_type != SwapType.Accurate.name and args.swap_buy is None:
@@ -135,9 +138,9 @@ def main():
                 parameters=params,
                 start=args.start,
                 stop=args.stop,
-                balance=args.balance,
+                account=(AssetType(AssetType[args.account_asset]), args.account_balance, args.account_leverage),
                 spread=(SpreadType(SpreadType[args.spread_type]), args.spread_value),
-                commission=(CommissionType(CommissionType[args.commission_type]), args.commission_buy, args.commission_sell),
+                commission=(CommissionType(CommissionType[args.commission_type]), args.commission_value),
                 swap=(SwapType(SwapType[args.swap_type]), args.swap_buy, args.swap_sell)
             )
         case SystemType.Optimisation.name:

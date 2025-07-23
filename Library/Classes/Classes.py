@@ -3,17 +3,31 @@ from datetime import datetime
 from typing import Callable
 from dataclasses import dataclass, field, fields
 
-from Library.Classes import AssetType, PositionType, TradeType, CommissionMode, SwapMode, DayOfWeek, TechnicalType
+from Library.Classes import *
 
 @dataclass(slots=True)
 class Account:
+    AccountType: AccountType
+    AssetType: AssetType
     Balance: float
     Equity: float
+    Credit: float
+    Leverage: float
+    MarginUsed: float
+    MarginFree: float
+    MarginLevel: float | None
+    MarginStopLevel: float
+    MarginMode: MarginMode
+
+    def __post_init__(self):
+        self.AccountType = AccountType(self.AccountType)
+        self.AssetType = AssetType(self.AssetType)
+        self.MarginMode = MarginMode(self.MarginMode)
 
 @dataclass(slots=True)
 class Symbol:
-    BaseAsset: AssetType
-    QuoteAsset: AssetType
+    BaseAssetType: AssetType
+    QuoteAssetType: AssetType
     Digits: int
     PointSize: float
     PipSize: float
@@ -29,8 +43,8 @@ class Symbol:
     SwapExtraDay: DayOfWeek
 
     def __post_init__(self):
-        self.BaseAsset = AssetType(self.BaseAsset)
-        self.QuoteAsset = AssetType(self.QuoteAsset)
+        self.BaseAssetType = AssetType(self.BaseAssetType)
+        self.QuoteAssetType = AssetType(self.QuoteAssetType)
         self.CommissionMode = CommissionMode(self.CommissionMode)
         self.SwapMode = SwapMode(self.SwapMode)
         self.SwapExtraDay = DayOfWeek(self.SwapExtraDay)

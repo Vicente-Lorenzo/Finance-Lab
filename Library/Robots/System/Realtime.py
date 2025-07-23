@@ -113,10 +113,32 @@ class RealtimeSystemAPI(SystemAPI):
         return UpdateID(*self._receive_update("<1b"))
 
     def receive_update_account(self) -> Account:
-        content = self._receive_update(size="<2d")
-        balance = content[0]
-        equity = content[1]
-        return Account(Balance=balance, Equity=equity)
+        content = self._receive_update(size="<2b8d1b")
+        account_type = content[0]
+        asset_type = content[1]
+        balance = content[2]
+        equity = content[3]
+        credit = content[4]
+        leverage = content[5]
+        margin_used = content[6]
+        margin_free = content[7]
+        margin_level = content[8]
+        margin_level = margin_level if margin_level is not self.SENTINEL else None
+        margin_stop_level = content[9]
+        margin_mode = content[10]
+        return Account(
+            AccountType=account_type,
+            AssetType=asset_type,
+            Balance=balance,
+            Equity=equity,
+            Credit=credit,
+            Leverage=leverage,
+            MarginUsed=margin_used,
+            MarginFree=margin_free,
+            MarginLevel=margin_level,
+            MarginStopLevel=margin_stop_level,
+            MarginMode=margin_mode
+        )
 
     def receive_update_symbol(self) -> Symbol:
         content = self._receive_update(size="<2b1i2d1q4d1b2d2b")
@@ -136,8 +158,8 @@ class RealtimeSystemAPI(SystemAPI):
         swap_mode = content[13]
         swap_extra_day = content[14]
         return Symbol(
-            BaseAsset=base_asset,
-            QuoteAsset=quote_asset,
+            BaseAssetType=base_asset,
+            QuoteAssetType=quote_asset,
             Digits=digits,
             PointSize=point_size,
             PipSize=pip_size,

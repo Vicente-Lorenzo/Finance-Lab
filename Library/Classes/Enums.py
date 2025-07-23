@@ -9,6 +9,10 @@ class VerboseType(Enum):
     Info = 5
     Debug = 6
 
+class AccountType(Enum):
+    Hedged = 0
+    Netted = 1
+
 class AssetType(Enum):
     USD = 0
     EUR = 1
@@ -19,6 +23,11 @@ class AssetType(Enum):
     NZD = 6
     CHF = 7
     Other = 8
+
+class MarginMode(Enum):
+    Sum = 0
+    Max = 1
+    Net = 2
 
 class FeesType(Enum):
     Points = 0
@@ -85,7 +94,7 @@ class SystemType(Enum):
     Optimisation = 2
     Learning = 3
 
-class ManagerType(Enum):
+class ManagerMode(Enum):
     Investing = 0
     Netting = 1
     Hedging = 2

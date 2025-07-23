@@ -71,13 +71,22 @@ public class SystemAPI
 
     private static void BuildUpdateAccount(BinaryWriter writer, IAccount account)
     {
+        writer.Write((byte)account.AccountType);
+        writer.Write((byte)Enum.Parse<AssetType>(account.Asset.Name));
         writer.Write(account.Balance);
         writer.Write(account.Equity);
+        writer.Write(account.Credit);
+        writer.Write(account.PreciseLeverage);
+        writer.Write(account.Margin);
+        writer.Write(account.FreeMargin);
+        writer.Write(account.MarginLevel ?? Sentinel);
+        writer.Write(account.StopOutLevel);
+        writer.Write((byte)account.TotalMarginCalculationType);
     }
 
     private static void BuildUpdateSymbol(BinaryWriter writer, Symbol symbol)
     {
-        writer.Write((byte)(Enum.TryParse<AssetType>(symbol.BaseAsset.Name, out var baseType) ?  baseType : AssetType.Other));
+        writer.Write((byte)Enum.Parse<AssetType>(symbol.BaseAsset.Name));
         writer.Write((byte)Enum.Parse<AssetType>(symbol.QuoteAsset.Name));
         writer.Write(symbol.Digits);
         writer.Write(symbol.TickSize);

@@ -23,8 +23,8 @@ class SymbolAPI:
         self.PipValue: float | None = None
 
     def init_symbol(self, symbol: Symbol) -> None:
-        self.BaseAsset = symbol.BaseAsset
-        self.QuoteAsset = symbol.QuoteAsset
+        self.BaseAsset = symbol.BaseAssetType
+        self.QuoteAsset = symbol.QuoteAssetType
         self.Digits = symbol.Digits
         self.PointSize = symbol.PointSize
         self.PipSize = symbol.PipSize
@@ -45,8 +45,8 @@ class SymbolAPI:
 
     def data(self) -> Symbol:
         return Symbol(
-            BaseAsset=self.BaseAsset,
-            QuoteAsset=self.QuoteAsset,
+            BaseAssetType=self.BaseAsset,
+            QuoteAssetType=self.QuoteAsset,
             Digits=self.Digits,
             PointSize=self.PointSize,
             PipSize=self.PipSize,
