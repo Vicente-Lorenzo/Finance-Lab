@@ -74,22 +74,22 @@ class TradeType(Enum):
     Buy = 0
     Sell = 1
 
+class StrategyType(Enum):
+    Download = 0
+    NNFX = 1
+    DDPG = 2
+
 class SystemType(Enum):
     Realtime = 0
     Backtesting = 1
     Optimisation = 2
     Learning = 3
 
-class StrategyType(Enum):
-    Download = 0
-    NNFX = 1
-    DDPG = 2
-
 class ManagerType(Enum):
     Investing = 0
     Netting = 1
     Hedging = 2
-    
+
 class TechnicalType(Enum):
     Baseline = 0
     Overlap = 1
