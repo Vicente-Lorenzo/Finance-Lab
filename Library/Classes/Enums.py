@@ -9,17 +9,6 @@ class VerboseType(Enum):
     Info = 5
     Debug = 6
 
-class SystemType(Enum):
-    Realtime = 0
-    Backtesting = 1
-    Optimisation = 2
-    Learning = 3
-
-class StrategyType(Enum):
-    Download = 0
-    NNFX = 1
-    DDPG = 2
-
 class AssetType(Enum):
     USD = 0
     EUR = 1
@@ -30,14 +19,6 @@ class AssetType(Enum):
     NZD = 6
     CHF = 7
     Other = 8
-
-class PositionType(Enum):
-    Normal = 0
-    Continuation = 1
-
-class TradeType(Enum):
-    Buy = 0
-    Sell = 1
 
 class FeesType(Enum):
     Points = 0
@@ -84,6 +65,25 @@ class DayOfWeek(Enum):
     Thursday = 4
     Friday = 5
     Saturday = 6
+
+class PositionType(Enum):
+    Normal = 0
+    Continuation = 1
+
+class TradeType(Enum):
+    Buy = 0
+    Sell = 1
+
+class SystemType(Enum):
+    Realtime = 0
+    Backtesting = 1
+    Optimisation = 2
+    Learning = 3
+
+class StrategyType(Enum):
+    Download = 0
+    NNFX = 1
+    DDPG = 2
 
 class ManagerType(Enum):
     Investing = 0

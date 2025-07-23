@@ -18,7 +18,7 @@ def timer(func: Callable):
         result = func(*args, **kwargs)
         stop_time = perf_counter()
         time_delta = stop_time - start_time
-        log.debug(lambda: f"Time @ {func.__name__}: {seconds_to_string(time_delta)}")
+        log.warning(lambda: f"Time @ {func.__name__}: {seconds_to_string(time_delta)}")
         return result
     return wrapper
 
@@ -34,6 +34,6 @@ def profiler(func: Callable):
         snapshot_path = f"profile-{timestamp}.pstat"
         ps.dump_stats(snapshot_path)
         log = HandlerAPI(Class="Performance", Subclass=f"")
-        log.debug(lambda: f"Profile @ {func.__name__}: Snapshot {snapshot_path}")
+        log.warning(lambda: f"Profile @ {func.__name__}: Snapshot {snapshot_path}")
         return result
     return wrapper
