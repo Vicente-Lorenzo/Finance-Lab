@@ -303,9 +303,9 @@ class RealtimeSystemAPI(SystemAPI):
             self._bar_db.push_symbol_data(update.Manager.Symbol.data())
             self._bar_db.push_market_data(update.Analyst.Market.data())
             self.individual_trades, self.aggregated_trades, self.statistics = update.Manager.Statistics.data(self._initial_account, self._start_timestamp, self._stop_timestamp)
-            self._log.debug(lambda: str(self.individual_trades))
-            self._log.debug(lambda: str(self.aggregated_trades))
-            self._log.debug(lambda: str(self.statistics))
+            self._log.warning(lambda: str(self.individual_trades))
+            self._log.warning(lambda: str(self.aggregated_trades))
+            self._log.warning(lambda: str(self.statistics))
 
         initialisation.on_bar_closed(to=initialisation, action=sync_market, reason=None)
         initialisation.on_complete(to=execution, action=init_market, reason="Market Initialized")
