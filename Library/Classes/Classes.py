@@ -57,14 +57,16 @@ class Position:
     EntryTimestamp: datetime
     EntryPrice: float
     Volume: float
-    StopLoss: float | None
-    TakeProfit: float | None
+    Quantity: float
     Points: float
     Pips: float
-    GrossPnL: float = field(default=None, init=False)
-    CommissionPnL: float = field(default=None, init=False)
-    SwapPnL: float = field(default=None, init=False)
-    NetPnL: float = field(default=None, init=False)
+    GrossPnL: float
+    CommissionPnL: float
+    SwapPnL: float
+    NetPnL: float
+    StopLoss: float | None
+    TakeProfit: float | None
+    UsedMargin: float
     DrawdownPoints: float = field(default=0.0, init=False)
     DrawdownPips: float = field(default=0.0, init=False)
     DrawdownPnL: float = field(default=None, init=False)
@@ -92,6 +94,7 @@ class Trade:
     EntryPrice: float
     ExitPrice: float
     Volume: float
+    Quantity: float
     Points: float
     Pips: float
     GrossPnL: float

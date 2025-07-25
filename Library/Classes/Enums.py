@@ -50,10 +50,10 @@ class CommissionType(Enum):
     Accurate = FeesType.Accurate.value
 
 class CommissionMode(Enum):
-    UsdPerMillionUsdVolume = 0
-    UsdPerOneLot = 1
-    PercentageOfTradingVolume = 2
-    QuoteCurrencyPerOneLot = 3
+    BaseAssetPerMillionVolume = 0
+    BaseAssetPerOneLot = 1
+    PercentageOfVolume = 2
+    QuoteAssetPerOneLot = 3
 
 class SwapType(Enum):
     Points = FeesType.Points.value

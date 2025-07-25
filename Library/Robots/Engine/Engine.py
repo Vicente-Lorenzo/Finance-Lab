@@ -13,7 +13,7 @@ class EngineAPI:
         
     @staticmethod
     def _create_dummy_engine() -> MachineAPI:
-        engine = MachineAPI(None)
+        engine = MachineAPI("Dummy Management")
         execution = engine.create_state(None, False)
         termination = engine.create_state(None, True)
         execution.on_shutdown(to=termination, action=None, reason="Safely Terminated")

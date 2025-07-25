@@ -305,8 +305,8 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
         thread.tick_data = self.tick_data
         thread.bar_data = self.bar_data
         thread.symbol_data = self.symbol_data
-        thread.conversion_data = self.conversion_data
-        thread.conversion_rate = self.conversion_rate
+        thread.quote_conversion_data = self.quote_conversion_data
+        thread.quote_conversion_rate = self.quote_conversion_rate
 
         with thread:
             thread.start()

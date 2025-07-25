@@ -111,10 +111,16 @@ public class SystemAPI
         writer.Write(((DateTimeOffset)position.EntryTime).ToUnixTimeMilliseconds());
         writer.Write(position.EntryPrice);
         writer.Write(position.VolumeInUnits);
-        writer.Write(position.StopLoss ?? Sentinel);
-        writer.Write(position.TakeProfit ?? Sentinel);
+        writer.Write(position.Quantity);
         writer.Write(position.Pips * symbol.PipSize / symbol.TickSize);
         writer.Write(position.Pips);
+        writer.Write(position.GrossProfit);
+        writer.Write(position.Commissions);
+        writer.Write(position.Swap);
+        writer.Write(position.NetProfit);
+        writer.Write(position.StopLoss ?? Sentinel);
+        writer.Write(position.TakeProfit ?? Sentinel);
+        writer.Write(position.Margin);
     }
 
     private static void BuildUpdateTrade(BinaryWriter writer, Symbol symbol, HistoricalTrade trade)
@@ -128,6 +134,7 @@ public class SystemAPI
         writer.Write(trade.EntryPrice);
         writer.Write(trade.ClosingPrice);
         writer.Write(trade.VolumeInUnits);
+        writer.Write(trade.Quantity);
         writer.Write(trade.Pips * symbol.PipSize / symbol.TickSize);
         writer.Write(trade.Pips);
         writer.Write(trade.GrossProfit);

@@ -1,3 +1,4 @@
+import copy
 import polars as pl
 
 from datetime import date, datetime
@@ -33,9 +34,18 @@ class BacktestingSystemAPI(SystemAPI):
 
     symbol_data: Symbol | None = None
 
-    conversion_db: DatabaseAPI | None = None
-    conversion_data: pl.DataFrame | None = None
-    conversion_rate: Callable[[datetime], float] | None = None
+    base_conversion_db: DatabaseAPI | None = None
+    base_conversion_data: pl.DataFrame | None = None
+    base_conversion_rate: Callable[[datetime, float], float] | None = None
+
+    quote_conversion_db: DatabaseAPI | None = None
+    quote_conversion_data: pl.DataFrame | None = None
+    quote_conversion_rate: Callable[[datetime, float], float] | None = None
+
+    spread_fees: Callable[[datetime, float], float] | None = None
+    commission_fees: Callable[[datetime, float], float] | None = None
+    swap_fees_buy: Callable[[datetime, float], float] | None = None
+    swap_fees_sell: Callable[[datetime, float], float] | None = None
 
     window: int | None = None
     offset: int | None = None
@@ -49,8 +59,10 @@ class BacktestingSystemAPI(SystemAPI):
                  parameters: Parameters,
                  start: str | date,
                  stop: str | date,
-                 balance: float,
-                 spread: float):
+                 account: tuple[AssetType, float, float],
+                 spread: tuple[SpreadType, float],
+                 commission: tuple[CommissionType, float],
+                 swap: tuple[SwapType, float, float]):
 
         super().__init__(broker=broker, group=group, symbol=symbol, timeframe=timeframe, strategy=strategy, parameters=parameters)
 
@@ -63,10 +75,12 @@ class BacktestingSystemAPI(SystemAPI):
         self._start_str, self._start_date = parse_date(start)
         self._stop_str, self._stop_date = parse_date(stop)
 
-        self._balance = balance
+        self._account_asset, self._account_balance, self._account_leverage = account
         self._account_data: Account | None = None
-        self._spread_pips: float = spread
-        self._spread_price: float | None = None
+
+        self._spread_type, self._spread_value = spread
+        self._commission_type, self._commission_value = commission
+        self._swap_type, self._swap_buy, self._swap_sell  = swap
 
         self._tick_data_iterator: Iterator | None = None
         self._tick_data_next: Bar | None = None
@@ -104,8 +118,20 @@ class BacktestingSystemAPI(SystemAPI):
             self.window = self.analyst.Window
 
         if self.account_data is None:
-            self.account_data: Account = Account(self._balance, self._balance)
-        self._account_data: Account = Account(self.account_data.Balance, self.account_data.Equity)
+            self.account_data: Account = Account(
+                AccountType=AccountType.Hedged,
+                AssetType=self._account_asset,
+                Balance=self._account_balance,
+                Equity=self._account_balance,
+                Credit=0.0,
+                Leverage=self._account_leverage,
+                MarginUsed=0.0,
+                MarginFree=self._account_balance,
+                MarginLevel=None,
+                MarginStopLevel=50.0,
+                MarginMode=MarginMode.Max
+            )
+        self._account_data: Account = copy.deepcopy(self.account_data)
 
         if self.tick_data is None:
             self.tick_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=self._symbol, timeframe=self.TICK)
@@ -132,27 +158,99 @@ class BacktestingSystemAPI(SystemAPI):
 
         if self.symbol_data is None:
             self.symbol_data: Symbol = self.bar_db.pull_symbol_data()
-        self._spread_price = self._spread_pips * self.symbol_data.PipSize
 
-        if self.conversion_data is None or self.conversion_rate is None:
-            current_rate = lambda timestamp: self.conversion_data.filter(pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= timestamp).tail(1).select(DatabaseAPI.MARKET_OPENPRICE).item()
-            if self.symbol_data.BaseAsset == AssetType.EUR:
-                self.conversion_db = self.tick_db
-                self.conversion_data = self.tick_data
-                self.conversion_rate = lambda timestamp: 1.0 / (current_rate(timestamp) + self._spread_price)
-            elif (symbol := f"{AssetType.EUR.name}{self.symbol_data.QuoteAsset.name}") in self.SYMBOLS:
-                self.conversion_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=symbol, timeframe=self.TICK)
-                self.conversion_db.__enter__()
-                self.conversion_data = self.conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
-                self.conversion_rate = lambda timestamp: 1.0 / (current_rate(timestamp) + self._spread_price)
-            elif (symbol := f"{self.symbol_data.QuoteAsset.name}{AssetType.EUR.name}") in self.SYMBOLS:
-                self.conversion_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=symbol, timeframe=self.TICK)
-                self.conversion_db.__enter__()
-                self.conversion_data = self.conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
-                self.conversion_rate = lambda timestamp: current_rate(timestamp)
+        if self.base_conversion_data is None or self.base_conversion_rate is None or self.quote_conversion_data is None or self.quote_conversion_rate is None:
+            base_rate = lambda timestamp: self.base_conversion_data.filter(pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= timestamp).tail(1).select(DatabaseAPI.MARKET_OPENPRICE).item()
+            quote_rate = lambda timestamp: self.quote_conversion_data.filter(pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= timestamp).tail(1).select(DatabaseAPI.MARKET_OPENPRICE).item()
+
+            self.base_conversion_db = self.tick_db
+            self.base_conversion_data = self.tick_db
+            self.base_conversion_rate = lambda timestamp, spread: 1.0
+
+            self.quote_conversion_db = self.tick_db
+            self.quote_conversion_data = self.tick_data
+            self.quote_conversion_rate = lambda timestamp, spread: 1.0
+
+            if self.account_data.AssetType == self.symbol_data.BaseAssetType:
+                self.quote_conversion_db = self.tick_db
+                self.quote_conversion_data = self.tick_data
+                self.quote_conversion_rate = lambda timestamp, spread: 1.0 / (quote_rate(timestamp) + spread)
+            elif self.account_data.AssetType == self.symbol_data.QuoteAssetType:
+                self.base_conversion_db = self.tick_db
+                self.base_conversion_data = self.tick_db
+                self.base_conversion_rate = lambda timestamp, spread: 1.0 / (base_rate(timestamp) + spread)
             else:
-                self.conversion_data = self.tick_data
-                self.conversion_rate = lambda timestamp: 1.0
+                if (symbol := f"{self.account_data.AssetType.name}{self.symbol_data.BaseAssetType.name}") in self.SYMBOLS:
+                    self.base_conversion_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=symbol, timeframe=self.TICK)
+                    self.base_conversion_db.__enter__()
+                    self.base_conversion_data = self.base_conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
+                    self.base_conversion_rate = lambda timestamp, spread: 1.0 / (base_rate(timestamp) + spread)
+                elif (symbol := f"{self.symbol_data.BaseAssetType.name}{self.account_data.AssetType.name}") in self.SYMBOLS:
+                    self.base_conversion_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=symbol, timeframe=self.TICK)
+                    self.base_conversion_db.__enter__()
+                    self.base_conversion_data = self.base_conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
+                    self.base_conversion_rate = lambda timestamp, spread: base_rate(timestamp)
+                else:
+                    self._log.error(lambda: f"Base Asset to Account Asset convertion formula not found")
+
+                if (symbol := f"{self.account_data.AssetType.name}{self.symbol_data.QuoteAssetType.name}") in self.SYMBOLS:
+                    self.quote_conversion_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=symbol, timeframe=self.TICK)
+                    self.quote_conversion_db.__enter__()
+                    self.quote_conversion_data = self.quote_conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
+                    self.quote_conversion_rate = lambda timestamp, spread: 1.0 / (quote_rate(timestamp) + spread)
+                elif (symbol := f"{self.symbol_data.QuoteAssetType.name}{self.account_data.AssetType.name}") in self.SYMBOLS:
+                    self.quote_conversion_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=symbol, timeframe=self.TICK)
+                    self.quote_conversion_db.__enter__()
+                    self.quote_conversion_data = self.quote_conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
+                    self.quote_conversion_rate = lambda timestamp, spread: quote_rate(timestamp)
+                else:
+                    self._log.error(lambda: f"Quote Asset to Account Asset convertion formula not found")
+
+        if self.spread_fees is None:
+            match self._spread_type:
+                case SpreadType.Points:
+                    self.spread_fees = lambda timestamp, price: self._spread_value * self.symbol_data.PointSize
+                case SpreadType.Pips:
+                    self.spread_fees = lambda timestamp, price: self._spread_value * self.symbol_data.PipSize
+                case SpreadType.Percentage:
+                    self.spread_fees = lambda timestamp, price: (self._spread_value / 100) * price
+                case SpreadType.Accurate:
+                    raise NotImplementedError
+
+        if self.commission_fees is None:
+            match self._commission_type:
+                case CommissionType.Points:
+                    pass # raise NotImplementedError
+                case CommissionType.Pips:
+                    pass # raise NotImplementedError
+                case CommissionType.Percentage:
+                    pass # raise NotImplementedError
+                case CommissionType.Amount:
+                    pass # raise NotImplementedError
+                case CommissionType.Accurate:
+                    print(self.symbol_data)
+                    match self.symbol_data.CommissionMode:
+                        case CommissionMode.BaseAssetPerMillionVolume:
+                            self.commission_fees = lambda timestamp, spread: (self.symbol_data.Commission / 1_000_000) * self.base_conversion_rate(timestamp, spread)
+                        case CommissionMode.BaseAssetPerOneLot:
+                            self.commission_fees = lambda timestamp, spread: (self.symbol_data.Commission / self.symbol_data.LotSize) * self.base_conversion_rate(timestamp, spread)
+                        case CommissionMode.PercentageOfVolume:
+                            pass
+                        case CommissionMode.QuoteAssetPerOneLot:
+                            pass
+
+        if self.swap_fees_buy is None or self.swap_fees_sell is None:
+            match self._swap_type:
+                case SwapType.Points:
+                    pass # raise NotImplementedError
+                case SwapType.Pips:
+                    pass # raise NotImplementedError
+                case SwapType.Percentage:
+                    pass # raise NotImplementedError
+                case SwapType.Amount:
+                    pass # raise NotImplementedError
+                case SwapType.Accurate:
+                    raise NotImplementedError
 
         self._update_id_queue = Queue()
         self._update_args_queue = Queue()
@@ -164,12 +262,12 @@ class BacktestingSystemAPI(SystemAPI):
             self.tick_db.__exit__(None, None, None)
         if self.bar_db:
             self.bar_db.__exit__(None, None, None)
-        if self.conversion_db:
-            self.conversion_db.__exit__(None, None, None)
+        if self.quote_conversion_db:
+            self.quote_conversion_db.__exit__(None, None, None)
         return super().__exit__(exc_type, exc_value, exc_traceback)
 
-    def _calculate_ask_bid(self, price: float) -> (float, float):
-        return price + self._spread_price, price
+    def _calculate_ask_bid(self, timestamp: datetime, price: float) -> (float, float):
+        return price + self.spread_fees(timestamp, price), price
 
     def _update_position(self, pid: int, position: Position) -> None:
         self._positions[pid] = position
@@ -187,45 +285,86 @@ class BacktestingSystemAPI(SystemAPI):
     def _next_tid(self):
         return next(self._tids)
 
-    def _open_buy_position(self, position_type: PositionType, volume: float, sl_price_delta: float | None, tp_price_delta: float | None, tick: Tick) -> Position:
+    def _calculate_metrics(self, volume: float, price_delta: float, tick: Tick) -> (float, float, float, float, float, float, float, float):
+        quantity = volume / self.symbol_data.LotSize
+        points = price_delta / self.symbol_data.PointSize
+        pips = price_delta / self.symbol_data.PipSize
+        gross_pnl = price_delta * volume * self.quote_conversion_rate(tick.Timestamp, tick.Spread)
+        commission_pnl = - volume * self.commission_fees(tick.Timestamp, tick.Spread)
+        swap_pnl = 0.0
+        net_pnl = gross_pnl + commission_pnl + swap_pnl
+        used_margin = 0.0
+        return quantity, points, pips, gross_pnl, commission_pnl, swap_pnl, net_pnl, used_margin
+
+    def _open_position(self, position_type: PositionType, trade_type: TradeType, volume: float, entry_price: float, sl_price: float | None, tp_price: float | None, price_delta: float, tick: Tick) -> Position:
         pid = self._next_pid()
         entry_time = tick.Timestamp
+        quantity, points, pips, gross_pnl, commission_pnl, swap_pnl, net_pnl, used_margin = self._calculate_metrics(volume, price_delta, tick)
+        return Position(
+            PositionID=pid,
+            PositionType=position_type,
+            TradeType=trade_type,
+            EntryTimestamp=entry_time,
+            EntryPrice=entry_price,
+            Volume=volume,
+            Quantity=quantity,
+            Points=points,
+            Pips=pips,
+            GrossPnL=gross_pnl,
+            CommissionPnL=commission_pnl,
+            SwapPnL=swap_pnl,
+            NetPnL=net_pnl,
+            StopLoss=sl_price,
+            TakeProfit=tp_price,
+            UsedMargin=used_margin
+        )
+
+    def _open_buy_position(self, position_type: PositionType, volume: float, sl_price_delta: float | None, tp_price_delta: float | None, tick: Tick) -> Position:
         entry_price = tick.Ask
         sl_price = None if sl_price_delta is None else entry_price - sl_price_delta
         tp_price = None if tp_price_delta is None else entry_price + tp_price_delta
-        return Position(pid, position_type, TradeType.Buy, entry_time, entry_price, volume, sl_price, tp_price)
+        price_delta = tick.Bid - entry_price
+        return self._open_position(position_type, TradeType.Buy, volume, entry_price, sl_price, tp_price, price_delta, tick)
 
     def _open_sell_position(self, position_type: PositionType, volume: float, sl_price_delta: float | None, tp_price_delta: float | None, tick: Tick) -> Position:
-        pid = self._next_pid()
-        entry_time = tick.Timestamp
         entry_price = tick.Bid
         sl_price = None if sl_price_delta is None else entry_price + sl_price_delta
         tp_price = None if tp_price_delta is None else entry_price - tp_price_delta
-        return Position(pid, position_type, TradeType.Sell, entry_time, entry_price, volume, sl_price, tp_price)
+        price_delta = entry_price - tick.Ask
+        return self._open_position(position_type, TradeType.Sell, volume, entry_price, sl_price, tp_price, price_delta, tick)
+
+    def _close_position(self, position: Position, exit_price: float, price_delta: float, tick: Tick) -> Trade:
+        tid = self._next_tid()
+        exit_time = tick.Timestamp
+        quantity, points, pips, gross_pnl, commission_pnl, swap_pnl, net_pnl, used_margin = self._calculate_metrics(position.Volume, price_delta, tick)
+        return Trade(
+            PositionID=position.PositionID,
+            TradeID=tid,
+            PositionType=position.PositionType,
+            TradeType=position.TradeType,
+            EntryTimestamp=position.EntryTimestamp,
+            ExitTimestamp=exit_time,
+            EntryPrice=position.EntryPrice,
+            ExitPrice=exit_price,
+            Volume=position.Volume,
+            Quantity=quantity,
+            Points=points,
+            Pips=pips,
+            GrossPnL=gross_pnl,
+            CommissionPnL=position.CommissionPnL+commission_pnl,
+            SwapPnL=swap_pnl,
+            NetPnL=net_pnl
+        )
 
     def _close_buy_position(self, position: Position, tick: Tick) -> Trade:
-        tid = self._next_tid()
-        exit_time = tick.Timestamp
         exit_price = tick.Bid
         price_delta = exit_price - position.EntryPrice
-        gross_pnl = price_delta * position.Volume * self.conversion_rate(tick.Timestamp)
-        commission_pnl = 0.0
-        swap_pnl = 0.0
-        net_pips = price_delta / self.symbol_data.PipSize
-        net_pnl = gross_pnl - commission_pnl - swap_pnl
-        return Trade(position.PositionID, tid, position.PositionType, position.TradeType, position.EntryTimestamp, exit_time, position.EntryPrice, exit_price, position.Volume, gross_pnl, commission_pnl, swap_pnl, net_pips, net_pnl)
+        return self._close_position(position, exit_price, price_delta, tick)
 
     def _close_sell_position(self, position: Position, tick: Tick) -> Trade:
-        tid = self._next_tid()
-        exit_time = tick.Timestamp
         exit_price = tick.Ask
-        price_delta = position.EntryPrice - exit_price 
-        gross_pnl = price_delta * position.Volume * self.conversion_rate(tick.Timestamp)
-        commission_pnl = 0.0
-        swap_pnl = 0.0
-        net_pips = price_delta / self.symbol_data.PipSize
-        net_pnl = gross_pnl - commission_pnl - swap_pnl
-        return Trade(position.PositionID, tid, position.PositionType, position.TradeType, position.EntryTimestamp, exit_time, position.EntryPrice, exit_price, position.Volume, gross_pnl, commission_pnl, swap_pnl, net_pips, net_pnl)
+        price_delta = position.EntryPrice - exit_price
+        return self._close_position(position, exit_price, price_delta, tick)
 
     def send_action_complete(self, action: CompleteAction) -> None:
         pass
@@ -239,12 +378,12 @@ class BacktestingSystemAPI(SystemAPI):
             return self._log.error(lambda: f"Action Open: Invalid Volume not normalised to minimum step ({action.Volume})")
         if action.StopLoss:
             action.StopLoss = action.StopLoss * self.symbol_data.PipSize
-            if action.StopLoss < self.symbol_data.TickSize:
+            if action.StopLoss < self.symbol_data.PointSize:
                 self._log.error(lambda: f"Action Open: Invalid Stop Loss below the minimum tick ({action.StopLoss})")
                 action.StopLoss = None
         if action.TakeProfit:
             action.TakeProfit = action.TakeProfit * self.symbol_data.PipSize
-            if action.TakeProfit < self.symbol_data.TickSize:
+            if action.TakeProfit < self.symbol_data.PointSize:
                 self._log.error(lambda: f"Action Open: Invalid Take Profit below the minimum tick ({action.TakeProfit})")
                 action.TakeProfit = None
 
@@ -263,7 +402,7 @@ class BacktestingSystemAPI(SystemAPI):
         self._update_args_queue.put(self._bar_data_at_last)
         self._update_args_queue.put(self._account_data)
         self._update_args_queue.put(position)
-        self._update_id_queue.put(UpdateID.Complete)
+        return self._update_id_queue.put(UpdateID.Complete)
 
     def send_action_modify_volume(self, action: ModifyBuyVolumeAction | ModifySellVolumeAction) -> None:
         position: Position = self._find_position(action.PositionID)
@@ -280,24 +419,28 @@ class BacktestingSystemAPI(SystemAPI):
 
         update_id: UpdateID | None = None
         trade: Trade | None = None
+        initial_volume: float = position.Volume
+        initial_commission: float = position.CommissionPnL
         match action.ActionID:
             case ActionID.ModifyBuyVolume:
                 if action.Volume == 0.0:
                     self._log.warning(lambda: f"Action Modify Volume: Closing Buy position as Volume is zero")
                     return self.send_action_close(CloseBuyAction(action.PositionID))
                 update_id = UpdateID.ModifiedBuyVolume
-                position.Volume = position.Volume - action.Volume
+                position.Volume = initial_volume - action.Volume
+                position.CommissionPnL = initial_commission * (position.Volume / initial_volume)
                 trade = self._close_buy_position(position, self._tick_open_next)
-                position.Volume = action.Volume
             case ActionID.ModifySellVolume:
                 if action.Volume == 0.0:
                     self._log.warning(lambda: f"Action Modify Volume: Closing Sell position as Volume is zero")
                     return self.send_action_close(CloseSellAction(action.PositionID))
                 update_id = UpdateID.ModifiedSellVolume
-                position.Volume = position.Volume - action.Volume
+                position.Volume = initial_volume - action.Volume
+                position.CommissionPnL = initial_commission * (position.Volume / initial_volume)
                 trade = self._close_sell_position(position, self._tick_open_next)
-                position.Volume = action.Volume
-            
+
+        position.Volume = action.Volume
+        position.CommissionPnL = initial_commission * (action.Volume / initial_volume)
         self._account_data.Balance += trade.NetPnL
         self._account_data.Equity += trade.NetPnL
         self._update_position(position.PositionID, position)
@@ -306,7 +449,7 @@ class BacktestingSystemAPI(SystemAPI):
         self._update_args_queue.put(self._account_data)
         self._update_args_queue.put(position)
         self._update_args_queue.put(trade)
-        self._update_id_queue.put(UpdateID.Complete)
+        return self._update_id_queue.put(UpdateID.Complete)
 
     def send_action_modify_stop_loss(self, action: ModifyBuyStopLossAction | ModifySellStopLossAction) -> None:
         position: Position = self._find_position(action.PositionID)
@@ -334,7 +477,7 @@ class BacktestingSystemAPI(SystemAPI):
         self._update_args_queue.put(self._bar_data_at_last)
         self._update_args_queue.put(self._account_data)
         self._update_args_queue.put(position)
-        self._update_id_queue.put(UpdateID.Complete)
+        return self._update_id_queue.put(UpdateID.Complete)
 
     def send_action_modify_take_profit(self, action: ModifyBuyTakeProfitAction | ModifySellTakeProfitAction) -> None:
         position: Position = self._find_position(action.PositionID)
@@ -362,7 +505,7 @@ class BacktestingSystemAPI(SystemAPI):
         self._update_args_queue.put(self._bar_data_at_last)
         self._update_args_queue.put(self._account_data)
         self._update_args_queue.put(position)
-        self._update_id_queue.put(UpdateID.Complete)
+        return self._update_id_queue.put(UpdateID.Complete)
 
     def send_action_close(self, action: CloseBuyAction | CloseSellAction, tick: Tick = None) -> None:
         position: Position = self._find_position(action.PositionID)
@@ -386,7 +529,7 @@ class BacktestingSystemAPI(SystemAPI):
         self._update_args_queue.put(self._bar_data_at_last)
         self._update_args_queue.put(self._account_data)
         self._update_args_queue.put(trade)
-        self._update_id_queue.put(UpdateID.Complete)
+        return self._update_id_queue.put(UpdateID.Complete)
 
     def send_action_ask_above_target(self, action: AskAboveTargetAction) -> None:
         self._ask_above_target = action.Ask
@@ -425,8 +568,8 @@ class BacktestingSystemAPI(SystemAPI):
 
             if self._tick_data_next:
                 
-                high_ask_at, high_bid_at = self._calculate_ask_bid(self._tick_data_next.HighPrice)
-                low_ask_at, low_bid_at = self._calculate_ask_bid(self._tick_data_next.LowPrice)
+                high_ask_at, high_bid_at = self._calculate_ask_bid(self._tick_data_next.Timestamp,self._tick_data_next.HighPrice)
+                low_ask_at, low_bid_at = self._calculate_ask_bid(self._tick_data_next.Timestamp, self._tick_data_next.LowPrice)
                 
                 self._bar_data_at_last.HighPrice = max(self._bar_data_at_last.HighPrice, self._tick_data_next.HighPrice)
                 self._bar_data_at_last.LowPrice = min(self._bar_data_at_last.LowPrice, self._tick_data_next.LowPrice)
@@ -435,7 +578,7 @@ class BacktestingSystemAPI(SystemAPI):
 
                 try:
                     self._tick_data_next = Bar(*next(self._tick_data_iterator))
-                    self._tick_open_next = Tick(self._tick_data_next.Timestamp, *self._calculate_ask_bid(self._tick_data_next.OpenPrice))
+                    self._tick_open_next = Tick(self._tick_data_next.Timestamp, *self._calculate_ask_bid(self._tick_data_next.Timestamp, self._tick_data_next.OpenPrice))
                 except StopIteration:
                     self._tick_data_next = None
 
@@ -534,9 +677,9 @@ class BacktestingSystemAPI(SystemAPI):
 
         def update_results(update: CompleteUpdate):
             self.individual_trades, self.aggregated_trades, self.statistics = update.Manager.Statistics.data(self.account_data, self._start_date, self._stop_date)
-            self._log.info(lambda: str(self.individual_trades))
-            self._log.info(lambda: str(self.aggregated_trades))
-            self._log.info(lambda: str(self.statistics))
+            self._log.warning(lambda: str(self.individual_trades))
+            self._log.warning(lambda: str(self.aggregated_trades))
+            self._log.warning(lambda: str(self.statistics))
 
         initialisation.on_complete(to=execution, action=init_market, reason="Market Initialized")
         initialisation.on_shutdown(to=termination, action=None, reason="Abruptly Terminated")

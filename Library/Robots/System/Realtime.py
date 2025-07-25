@@ -176,19 +176,25 @@ class RealtimeSystemAPI(SystemAPI):
         )
 
     def receive_update_position(self) -> Position:
-        content = self._receive_update(size="<1i2b1q6d")
+        content = self._receive_update(size="<1i2b1q12d")
         position_id = content[0]
         position_type = PositionType(content[1])
         trade_type = TradeType(content[2])
         timestamp = timestamp_to_datetime(content[3], milliseconds=True)
         entry_price = content[4]
         volume = content[5]
-        sl = content[6]
-        tp = content[7]
+        quantity = content[6]
+        points = content[7]
+        pips = content[8]
+        gross_pnl = content[9]
+        commission_pnl = content[10]
+        swap_pnl = content[11]
+        net_pnl = content[12]
+        sl = content[13]
+        tp = content[14]
         sl = sl if sl is not self.SENTINEL else None
         tp = tp if tp is not self.SENTINEL else None
-        points = content[8]
-        pips = content[9]
+        used_margin = content[15]
         return Position(
             PositionID=position_id,
             PositionType=position_type,
@@ -196,14 +202,20 @@ class RealtimeSystemAPI(SystemAPI):
             EntryTimestamp=timestamp,
             EntryPrice=entry_price,
             Volume=volume,
+            Quantity=quantity,
+            Points=points,
+            Pips=pips,
+            GrossPnL=gross_pnl,
+            CommissionPnL=commission_pnl,
+            SwapPnL=swap_pnl,
+            NetPnL=net_pnl,
             StopLoss=sl,
             TakeProfit=tp,
-            Points=points,
-            Pips=pips
+            UsedMargin=used_margin
         )
 
     def receive_update_trade(self) -> Trade:
-        content = self._receive_update(size="<2i2b2q9d")
+        content = self._receive_update(size="<2i2b2q10d")
         position_id = content[0]
         trade_id = content[1]
         position_type = PositionType(content[2])
@@ -213,12 +225,13 @@ class RealtimeSystemAPI(SystemAPI):
         entry_price = content[6]
         exit_price = content[7]
         volume = content[8]
-        points = content[9]
-        pips = content[10]
-        gross_pnl = content[11]
-        commission_pnl = content[12]
-        swap_pnl = content[13]
-        net_pnl = content[14]
+        quantity = content[9]
+        points = content[10]
+        pips = content[11]
+        gross_pnl = content[12]
+        commission_pnl = content[13]
+        swap_pnl = content[14]
+        net_pnl = content[15]
         return Trade(
             PositionID=position_id,
             TradeID=trade_id,
@@ -229,6 +242,7 @@ class RealtimeSystemAPI(SystemAPI):
             EntryPrice=entry_price,
             ExitPrice=exit_price,
             Volume=volume,
+            Quantity=quantity,
             Points=points,
             Pips=pips,
             GrossPnL=gross_pnl,

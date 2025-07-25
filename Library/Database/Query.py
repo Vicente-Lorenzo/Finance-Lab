@@ -125,7 +125,7 @@ WHERE NOT EXISTS (
             create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAPLONG,          "DOUBLE PRECISION"))
             create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAPSHORT,         "DOUBLE PRECISION"))
             create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAPMODE, "VARCHAR"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAP3DAYROLLOVER,  "VARCHAR"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAPEXTRADAY, "VARCHAR"))
 
             # Insert default row if table is empty
             create_script.append(

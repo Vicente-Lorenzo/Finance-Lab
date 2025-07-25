@@ -35,7 +35,7 @@ class DatabaseAPI:
     SYMBOL_SWAPLONG = "SwapLong"
     SYMBOL_SWAPSHORT = "SwapShort"
     SYMBOL_SWAPMODE = "SwapCalculationType"
-    SYMBOL_SWAP3DAYROLLOVER = "Swap3DaysRollover"
+    SYMBOL_SWAPEXTRADAY = "Swap3DaysRollover"
 
     TRADE_POSITIONID = "PositionID"
     TRADE_TRADEID = "TradeID"
@@ -46,6 +46,7 @@ class DatabaseAPI:
     TRADE_ENTRYPRICE = "EntryPrice"
     TRADE_EXITPRICE = "ExitPrice"
     TRADE_VOLUME = "Volume"
+    TRADE_QUANTITY = "Quantity"
     TRADE_POINTS = "Points"
     TRADE_PIPS = "Pips"
     TRADE_GROSSPNL = "GrossPnL"
@@ -87,7 +88,7 @@ class DatabaseAPI:
         SYMBOL_SWAPLONG: pl.Float32(),
         SYMBOL_SWAPSHORT: pl.Float32(),
         SYMBOL_SWAPMODE: pl.Enum([swap.name for swap in SwapMode]),
-        SYMBOL_SWAP3DAYROLLOVER: pl.Enum([day.name for day in DayOfWeek])
+        SYMBOL_SWAPEXTRADAY: pl.Enum([day.name for day in DayOfWeek])
     }
 
     SCHEMA_TRADE: dict = {
@@ -100,6 +101,7 @@ class DatabaseAPI:
         TRADE_ENTRYPRICE: pl.Float32(),
         TRADE_EXITPRICE: pl.Float32(),
         TRADE_VOLUME: pl.Float32(),
+        TRADE_QUANTITY: pl.Float32(),
         TRADE_POINTS: pl.Float32(),
         TRADE_PIPS: pl.Float32(),
         TRADE_GROSSPNL: pl.Float32(),
@@ -264,7 +266,7 @@ class DatabaseAPI:
                     "{self.SYMBOL_SWAPLONG}" = %s,
                     "{self.SYMBOL_SWAPSHORT}" = %s,
                     "{self.SYMBOL_SWAPMODE}" = %s,
-                    "{self.SYMBOL_SWAP3DAYROLLOVER}" = %s;
+                    "{self.SYMBOL_SWAPEXTRADAY}" = %s;
                 """
 
                 cursor.execute(query, astuple(symbol))

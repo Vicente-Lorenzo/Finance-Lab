@@ -12,7 +12,7 @@ public class StrategyDownload : Robot
     public Logging.VerboseType Console { get; set; }
     [Parameter("Telegram Verbose", DefaultValue = Logging.VerboseType.Silent)]
     public Logging.VerboseType Telegram { get; set; }
-    [Parameter("File Verbose", DefaultValue = Logging.VerboseType.Silent)]
+    [Parameter("File Verbose", DefaultValue = Logging.VerboseType.Debug)]
     public Logging.VerboseType File { get; set; }
 
     protected override void OnStart() { _robotApi = new Download(this, Console, Telegram, File); }
