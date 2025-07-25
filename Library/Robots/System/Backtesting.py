@@ -228,7 +228,6 @@ class BacktestingSystemAPI(SystemAPI):
                 case CommissionType.Amount:
                     pass # raise NotImplementedError
                 case CommissionType.Accurate:
-                    print(self.symbol_data)
                     match self.symbol_data.CommissionMode:
                         case CommissionMode.BaseAssetPerMillionVolume:
                             self.commission_fees = lambda timestamp, spread: (self.symbol_data.Commission / 1_000_000) * self.base_conversion_rate(timestamp, spread)
