@@ -246,19 +246,19 @@ public class SystemAPI
         SendUpdate(memoryStream.ToArray());
     }
 
-    private void SendUpdateTarget(DateTime tickTime, RobotAPI.UpdateID targetType, double ask, double bid)
+    private void SendUpdateTarget(DateTime timestamp, RobotAPI.UpdateID targetType, double ask, double bid)
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
         BuildUpdateID(writer, targetType);
-        BuildUpdateTick(writer, tickTime, ask, bid);
+        BuildUpdateTick(writer, timestamp, ask, bid);
         SendUpdate(memoryStream.ToArray());
     }
 
-    public void SendUpdateAskAboveTarget(DateTime tickTime, double ask, double bid) { SendUpdateTarget(tickTime, RobotAPI.UpdateID.AskAboveTarget, ask, bid); }
-    public void SendUpdateAskBelowTarget(DateTime tickTime, double ask, double bid) { SendUpdateTarget(tickTime, RobotAPI.UpdateID.AskBelowTarget, ask, bid); }
-    public void SendUpdateBidAboveTarget(DateTime tickTime, double ask, double bid) { SendUpdateTarget(tickTime, RobotAPI.UpdateID.BidAboveTarget, ask, bid); }
-    public void SendUpdateBidBelowTarget(DateTime tickTime, double ask, double bid) { SendUpdateTarget(tickTime, RobotAPI.UpdateID.BidBelowTarget, ask, bid); }
+    public void SendUpdateAskAboveTarget(DateTime timestamp, double ask, double bid) { SendUpdateTarget(timestamp, RobotAPI.UpdateID.AskAboveTarget, ask, bid); }
+    public void SendUpdateAskBelowTarget(DateTime timestamp, double ask, double bid) { SendUpdateTarget(timestamp, RobotAPI.UpdateID.AskBelowTarget, ask, bid); }
+    public void SendUpdateBidAboveTarget(DateTime timestamp, double ask, double bid) { SendUpdateTarget(timestamp, RobotAPI.UpdateID.BidAboveTarget, ask, bid); }
+    public void SendUpdateBidBelowTarget(DateTime timestamp, double ask, double bid) { SendUpdateTarget(timestamp, RobotAPI.UpdateID.BidBelowTarget, ask, bid); }
     
     public void SendUpdateShutdown()
     {
