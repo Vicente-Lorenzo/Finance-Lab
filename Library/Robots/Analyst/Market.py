@@ -10,7 +10,7 @@ class MarketAPI:
         self._data: pl.DataFrame | None = None
 
     def data(self) -> pl.DataFrame:
-        return self._data
+        return self._data if self._data is not None else pl.DataFrame()
     
     def head(self, n: int | None = None) -> pl.DataFrame:
         return self._data.head(n)

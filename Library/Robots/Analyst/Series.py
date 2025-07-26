@@ -8,7 +8,7 @@ class SeriesAPI:
         self._data: pl.DataFrame | None = None
 
     def data(self) -> pl.Series:
-        return self._data[self._sid]
+        return self._data[self._sid] if self._data is not None else pl.Series()
 
     def head(self, n: int | None = None) -> pl.Series:
         return self.data().head(n)
