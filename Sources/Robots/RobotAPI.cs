@@ -50,17 +50,17 @@ public abstract class RobotAPI
         BidAboveTarget = 13,
         BidBelowTarget = 14
     }
-    
+
     public enum PositionType
     {
         Normal = 0,
         Continuation = 1
     }
-    
+
     private readonly SystemAPI _systemApi;
     private readonly Robot _robot;
     private readonly Logging _logging;
-    
+
     private class LastPositionData
     {
         public double LastVolume { get; set; }
@@ -68,7 +68,7 @@ public abstract class RobotAPI
         public double? LastTakeProfit { get; set; }
     }
     private readonly Dictionary<int, LastPositionData> _positions;
-    
+
     private double? _lastAskAboveTarget;
     private double? _lastAskBelowTarget;
     private double? _lastBidAboveTarget;
@@ -140,22 +140,22 @@ public abstract class RobotAPI
     {
         return _robot.TimeFrame.Name.Replace(" ", "");
     }
-    
+
     private bool IsPositionFromRobot(Position position)
     {
         return string.Equals(position.Label, _robot.InstanceId);
     }
-    
+
     private Position FindPosition(int positionID)
     {
         var positions = _robot.Positions.FindAll(_robot.InstanceId);
-        return positions.Where(position => position.Id == positionID).OrderByDescending(position => position.EntryTime).First();
+        return !positions.Any() ? null : positions.Where(position => position.Id == positionID).OrderByDescending(position => position.EntryTime).First();
     }
 
     private HistoricalTrade FindTrade(int positionID)
     {
         var trades = _robot.History.FindAll(_robot.InstanceId);
-        return trades.Where(trade => trade.PositionId == positionID).OrderByDescending(trade => trade.ClosingTime).First();
+        return !trades.Any() ? null : trades.Where(trade => trade.PositionId == positionID).OrderByDescending(trade => trade.ClosingTime).First();
     }
 
     private void OnPositionOpened(PositionOpenedEventArgs args)
@@ -247,28 +247,24 @@ public abstract class RobotAPI
         if (_lastAskAboveTarget != null && args.Ask >= _lastAskAboveTarget)
         {
             _systemApi.SendUpdateAskAboveTarget(_robot.Server.Time, args.Ask, args.Bid);
-            _lastAskAboveTarget = null;
             _systemApi.SendUpdateComplete();
             ReceiveAndProcessActions();
         }
         if (_lastAskBelowTarget != null && args.Ask <= _lastAskBelowTarget)
         {
             _systemApi.SendUpdateAskBelowTarget(_robot.Server.Time, args.Ask, args.Bid);
-            _lastAskBelowTarget = null;
             _systemApi.SendUpdateComplete();
             ReceiveAndProcessActions();
         }
         if (_lastBidAboveTarget != null && args.Bid >= _lastBidAboveTarget)
         {
             _systemApi.SendUpdateBidAboveTarget(_robot.Server.Time, args.Ask, args.Bid);
-            _lastBidAboveTarget = null;
             _systemApi.SendUpdateComplete();
             ReceiveAndProcessActions();
         }
         if (_lastBidBelowTarget != null && args.Bid <= _lastBidBelowTarget)
         {
             _systemApi.SendUpdateBidBelowTarget(_robot.Server.Time, args.Ask, args.Bid);
-            _lastBidBelowTarget = null;
             _systemApi.SendUpdateComplete();
             ReceiveAndProcessActions();
         }
@@ -294,7 +290,7 @@ public abstract class RobotAPI
         ReceiveAndProcessActions();
         _systemApi.Disconnect();
     }
-    
+
     private bool ProcessActionOpenPosition(TradeType tradeType, PositionType posType, double volume, double? slPips, double? tpPips)
     {
         var result = _robot.ExecuteMarketOrder(tradeType, _robot.SymbolName, volume, _robot.InstanceId, slPips, tpPips, posType.ToString(), false, StopTriggerMethod.Trade);
@@ -304,8 +300,7 @@ public abstract class RobotAPI
     private bool ProcessActionModifyVolume(int positionID, double volume)
     {
         var position = FindPosition(positionID);
-        if (position == null)
-            return false;
+        if (position == null) { _logging.Warning("Modify Volume did not find the position"); return true; }
         if (Math.Abs(position.VolumeInUnits - volume) < _robot.Symbol.VolumeInUnitsMin)
             _logging.Warning("Modified volume to the same value causing unexpected behaviour");
         var result = position.ModifyVolume(volume);
@@ -315,8 +310,7 @@ public abstract class RobotAPI
     private bool ProcessActionModifyStopLoss(int positionID, double? slPrice)
     {
         var position = FindPosition(positionID);
-        if (position == null)
-            return false;
+        if (position == null) { _logging.Warning("Modify Stop Loss did not find the position"); return true;}
         if (position.StopLoss != null && slPrice != null && Math.Abs((double)position.StopLoss - (double)slPrice) < _robot.Symbol.TickSize)
             _logging.Warning("Modified stop-loss to the same value causing unexpected behaviour");
         var result = position.ModifyStopLossPrice(slPrice);
@@ -326,20 +320,20 @@ public abstract class RobotAPI
     private bool ProcessActionModifyTakeProfit(int positionID, double? tpPrice)
     {
         var position = FindPosition(positionID);
-        if (position == null)
-            return false;
+        if (position == null) { _logging.Warning("Modify Take Profit did not find the position"); return true; }
         if (position.TakeProfit != null && tpPrice != null && Math.Abs((double)position.TakeProfit - (double)tpPrice) < _robot.Symbol.TickSize)
             _logging.Warning("Modified take-profit to the same value causing unexpected behaviour");
         var result = position.ModifyTakeProfitPrice(tpPrice);
         return result.IsSuccessful;
     }
-    
+
     private bool ProcessActionClosePosition(int positionID)
     {
         var position = FindPosition(positionID);
-        return position == null || _robot.ClosePosition(position).IsSuccessful;
+        if (position == null) { _logging.Warning("Close Position did not find the position"); return true; }
+        return _robot.ClosePosition(position).IsSuccessful;
     }
-    
+
     private void ReceiveAndProcessActions()
     {
         ActionID actionID;

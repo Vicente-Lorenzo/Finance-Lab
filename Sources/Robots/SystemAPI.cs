@@ -22,7 +22,7 @@ public class SystemAPI
     }
 
     private const double Sentinel = -1.0;
-    
+
     private readonly string _iid;
     private readonly string _broker;
     private readonly string _symbol;
@@ -159,7 +159,7 @@ public class SystemAPI
         writer.Write(ask);
         writer.Write(bid);
     }
-    
+
     private void SendUpdate(byte[] message)
     {
         _pipe.Write(message, 0, message.Length);
@@ -236,7 +236,7 @@ public class SystemAPI
     public void SendUpdateModifiedSellTakeProfit(Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedSellTakeProfit, bar, account, symbol, position); }
     public void SendUpdateClosedBuy(Bar bar, IAccount account, Symbol symbol, HistoricalTrade trade) { SendUpdateTrade(RobotAPI.UpdateID.ClosedBuy, bar, account, symbol, trade); }
     public void SendUpdateClosedSell(Bar bar, IAccount account, Symbol symbol, HistoricalTrade trade) { SendUpdateTrade(RobotAPI.UpdateID.ClosedSell, bar, account, symbol, trade); }
-    
+
     public void SendUpdateBarClosed(Bar bar)
     {
         using var memoryStream = new MemoryStream();
@@ -259,7 +259,7 @@ public class SystemAPI
     public void SendUpdateAskBelowTarget(DateTime timestamp, double ask, double bid) { SendUpdateTarget(timestamp, RobotAPI.UpdateID.AskBelowTarget, ask, bid); }
     public void SendUpdateBidAboveTarget(DateTime timestamp, double ask, double bid) { SendUpdateTarget(timestamp, RobotAPI.UpdateID.BidAboveTarget, ask, bid); }
     public void SendUpdateBidBelowTarget(DateTime timestamp, double ask, double bid) { SendUpdateTarget(timestamp, RobotAPI.UpdateID.BidBelowTarget, ask, bid); }
-    
+
     public void SendUpdateShutdown()
     {
         using var memoryStream = new MemoryStream();
@@ -296,7 +296,7 @@ public class SystemAPI
     {
         var content = ReceiveAction(sizeof(int) + sizeof(double));
         var positionID = BitConverter.ToInt32(content, 0);
-        var volume = BitConverter.ToDouble(content, 1 * sizeof(int));
+        var volume = BitConverter.ToDouble(content, sizeof(int));
         return (positionID, volume);
     }
 
@@ -307,7 +307,7 @@ public class SystemAPI
         var limit = BitConverter.ToDouble(content, sizeof(int));
         return (positionID, Math.Abs(limit - Sentinel) < double.Epsilon ? null : limit);
     }
-    
+
     public (int, double?) ReceiveActionModifyStopLoss() { return ReceiveActionModifyLimit(); }
     public (int, double?) ReceiveActionModifyTakeProfit() { return ReceiveActionModifyLimit(); }
 
@@ -324,7 +324,7 @@ public class SystemAPI
         var target = BitConverter.ToDouble(content, 0);
         return Math.Abs(target - Sentinel) < double.Epsilon ? null : target;
     }
-    
+
     public double? ReceiveActionAskAboveTarget() { return ReceiveActionTarget(); }
     public double? ReceiveActionAskBelowTarget() { return ReceiveActionTarget(); }
     public double? ReceiveActionBidAboveTarget() { return ReceiveActionTarget(); }

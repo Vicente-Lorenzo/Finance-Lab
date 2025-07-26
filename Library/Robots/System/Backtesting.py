@@ -615,25 +615,21 @@ class BacktestingSystemAPI(SystemAPI):
                                     continue
 
                 if self._ask_above_target is not None and self._tick_open_next.Ask >= self._ask_above_target:
-                    self._ask_above_target = None
                     self._update_id_queue.put(UpdateID.AskAboveTarget)
                     self._update_args_queue.put(self._tick_open_next)
                     self._update_id_queue.put(UpdateID.Complete)
 
                 if self._ask_below_target is not None and self._tick_open_next.Ask <= self._ask_below_target:
-                    self._ask_below_target = None
                     self._update_id_queue.put(UpdateID.AskBelowTarget)
                     self._update_args_queue.put(self._tick_open_next)
                     self._update_id_queue.put(UpdateID.Complete)
 
                 if self._bid_above_target is not None and self._tick_open_next.Bid >= self._bid_above_target:
-                    self._bid_above_target = None
                     self._update_id_queue.put(UpdateID.BidAboveTarget)
                     self._update_args_queue.put(self._tick_open_next)
                     self._update_id_queue.put(UpdateID.Complete)
 
                 if self._bid_below_target is not None and self._tick_open_next.Bid <= self._bid_below_target:
-                    self._bid_below_target = None
                     self._update_id_queue.put(UpdateID.BidBelowTarget)
                     self._update_args_queue.put(self._tick_open_next)
                     self._update_id_queue.put(UpdateID.Complete)
