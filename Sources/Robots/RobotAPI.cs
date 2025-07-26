@@ -302,7 +302,7 @@ public abstract class RobotAPI
         var position = FindPosition(positionID);
         if (position == null) { _logging.Warning("Modify Volume did not find the position"); return true; }
         if (Math.Abs(position.VolumeInUnits - volume) < _robot.Symbol.VolumeInUnitsMin)
-            _logging.Warning("Modified volume to the same value causing unexpected behaviour");
+            _logging.Warning("Modified Volume to the same value causing unexpected behaviour");
         var result = position.ModifyVolume(volume);
         return result.IsSuccessful;
     }
@@ -312,7 +312,7 @@ public abstract class RobotAPI
         var position = FindPosition(positionID);
         if (position == null) { _logging.Warning("Modify Stop Loss did not find the position"); return true;}
         if (position.StopLoss != null && slPrice != null && Math.Abs((double)position.StopLoss - (double)slPrice) < _robot.Symbol.TickSize)
-            _logging.Warning("Modified stop-loss to the same value causing unexpected behaviour");
+            _logging.Warning("Modified Stop-Loss to the same value causing unexpected behaviour");
         var result = position.ModifyStopLossPrice(slPrice);
         return result.IsSuccessful;
     }
@@ -322,7 +322,7 @@ public abstract class RobotAPI
         var position = FindPosition(positionID);
         if (position == null) { _logging.Warning("Modify Take Profit did not find the position"); return true; }
         if (position.TakeProfit != null && tpPrice != null && Math.Abs((double)position.TakeProfit - (double)tpPrice) < _robot.Symbol.TickSize)
-            _logging.Warning("Modified take-profit to the same value causing unexpected behaviour");
+            _logging.Warning("Modified Take-Profit to the same value causing unexpected behaviour");
         var result = position.ModifyTakeProfitPrice(tpPrice);
         return result.IsSuccessful;
     }
