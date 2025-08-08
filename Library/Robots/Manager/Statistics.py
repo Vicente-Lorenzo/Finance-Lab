@@ -1,7 +1,7 @@
 import math
 import polars as pl
 
-from datetime import datetime, timedelta
+from datetime import date, timedelta
 
 from Library.Database import DatabaseAPI
 from Library.Classes import TradeType, Account, Trade
@@ -209,12 +209,12 @@ class StatisticsAPI:
         ])
 
     @staticmethod
-    def split_buy_sell_trades(trades_df: pl.DataFrame) -> (pl.DataFrame, pl.DataFrame):
+    def split_buy_sell_trades(trades_df: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
         return (trades_df.filter(pl.col(DatabaseAPI.TRADE_TRADETYPE) == TradeType.Buy.name),
                 trades_df.filter(pl.col(DatabaseAPI.TRADE_TRADETYPE) == TradeType.Sell.name))
     
     @staticmethod
-    def split_winning_losing_trades(trades_df: pl.DataFrame) -> (pl.DataFrame, pl.DataFrame):
+    def split_winning_losing_trades(trades_df: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
         return (trades_df.filter(pl.col(DatabaseAPI.TRADE_NETPNL) > 0),
                 trades_df.filter(pl.col(DatabaseAPI.TRADE_NETPNL) <= 0))
 
@@ -227,7 +227,7 @@ class StatisticsAPI:
         return (nr_cases / nr_trades) * 100 if nr_trades else 0.0
     
     @staticmethod
-    def calculate_min_avg_max(nr_trades: int, trades_df: pl.DataFrame, column) -> (float, float, float):
+    def calculate_min_avg_max(nr_trades: int, trades_df: pl.DataFrame, column) -> tuple[float, float, float]:
         if nr_trades > 0:
             max_value = trades_df[column].max()
             avg_value = trades_df[column].mean()
@@ -248,7 +248,7 @@ class StatisticsAPI:
         return (winning_perc / 100 * avg_winning_value) - (losing_perc / 100 * avg_losing_value)
 
     @staticmethod
-    def calculate_return_and_volatility_perc(trades_df: pl.DataFrame) -> (float, float, float):
+    def calculate_return_and_volatility_perc(trades_df: pl.DataFrame) -> tuple[float, float, float]:
         expected_log_return = trades_df[DatabaseAPI.TRADE_NETLOGRETURN].mean()
         total_log_return = trades_df[DatabaseAPI.TRADE_NETLOGRETURN].sum()
         log_return_volatility = trades_df[DatabaseAPI.TRADE_NETLOGRETURN].std()
@@ -258,14 +258,14 @@ class StatisticsAPI:
         return expected_return_perc, total_return_perc, return_volatility_perc
 
     @staticmethod
-    def calculate_return_annualized_perc(start_timestamp: datetime, stop_timestamp: datetime, return_value_perc: float, trading_days: int = 365) -> float:
+    def calculate_return_annualized_perc(start_timestamp: date, stop_timestamp: date, return_value_perc: float, trading_days: int = 365) -> float:
         if not return_value_perc:
             return 0.0
         days = (stop_timestamp - start_timestamp).days
         return (((1 + (return_value_perc / 100)) ** (trading_days / days)) - 1) * 100
 
     @staticmethod
-    def calculate_volatility_annualized_perc(start_timestamp: datetime, stop_timestamp: datetime, volatility_value_perc: float, trading_days: int = 365) -> float:
+    def calculate_volatility_annualized_perc(start_timestamp: date, stop_timestamp: date, volatility_value_perc: float, trading_days: int = 365) -> float:
         if not volatility_value_perc:
             return 0.0
         days = (stop_timestamp - start_timestamp).days
@@ -280,7 +280,7 @@ class StatisticsAPI:
         return winning_pnl_value / abs(losing_pnl_value) if losing_pnl_value else 0.0
 
     @staticmethod
-    def calculate_max_and_mean_drawdown(initial_account: Account, trades_df: pl.DataFrame) -> (float, float, float, float):
+    def calculate_max_and_mean_drawdown(initial_account: Account, trades_df: pl.DataFrame) -> tuple[float, float, float, float]:
         if trades_df.is_empty():
             return 0.0, 0.0, 0.0, 0.0
         initial_balance = initial_account.Balance
@@ -295,7 +295,7 @@ class StatisticsAPI:
         return max_drawdown_value, max_drawdown_perc, mean_drawdown_value, mean_drawdown_perc
 
     @staticmethod
-    def calculate_holding_times(trades_df: pl.DataFrame) -> (float, float, float):
+    def calculate_holding_times(trades_df: pl.DataFrame) -> tuple[float, float, float]:
         if trades_df.is_empty():
             return 0.0, 0.0, 0.0
         holding_times: pl.Series = trades_df[DatabaseAPI.TRADE_EXITTIMESTAMP] - trades_df[DatabaseAPI.TRADE_ENTRYTIMESTAMP]
@@ -328,7 +328,7 @@ class StatisticsAPI:
         mean_drawdown_perc = mean_drawdown_perc if mean_drawdown_perc else EPSILON
         return (annualized_return_perc - risk_free_rate) / abs(mean_drawdown_perc) if mean_drawdown_perc else 0.0
 
-    def calculate_independent_metrics(self, initial_account: Account, start_timestamp: datetime, stop_timestamp: datetime, total_trades_df: pl.DataFrame) -> dict:
+    def calculate_independent_metrics(self, initial_account: Account, start_timestamp: date, stop_timestamp: date, total_trades_df: pl.DataFrame) -> dict:
         winning_trades_df, losing_trades_df = self.split_winning_losing_trades(total_trades_df)
         total_nr_trades = self.calculate_total_trades(total_trades_df)
         total_points_value = self.calculate_sum(total_trades_df, DatabaseAPI.TRADE_POINTS)
@@ -457,7 +457,7 @@ class StatisticsAPI:
             self.FITNESSRATIO: fitness_ratio
         }
 
-    def calculate_dependent_metrics(self, initial_account: Account, start_timestamp: datetime, stop_timestamp: datetime, total_trades_df: pl.DataFrame, buy_metrics_label: str, sell_metrics_label: str, total_metrics_label: str) -> pl.DataFrame:
+    def calculate_dependent_metrics(self, initial_account: Account, start_timestamp: date, stop_timestamp: date, total_trades_df: pl.DataFrame, buy_metrics_label: str, sell_metrics_label: str, total_metrics_label: str) -> pl.DataFrame:
         buy_trades_df, sell_trades_df = self.split_buy_sell_trades(total_trades_df)
         buy_metrics_dict = self.calculate_independent_metrics(initial_account, start_timestamp, stop_timestamp, buy_trades_df)
         sell_metrics_dict = self.calculate_independent_metrics(initial_account, start_timestamp, stop_timestamp, sell_trades_df)
@@ -503,7 +503,7 @@ class StatisticsAPI:
                                   total_metrics_label: total_metrics_list},
                             strict=False)
 
-    def data(self, initial_account: Account, start_timestamp: datetime, stop_timestamp: datetime) -> (pl.DataFrame, pl.DataFrame, pl.DataFrame):
+    def data(self, initial_account: Account, start_timestamp: date, stop_timestamp: date) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame]:
         statistical_metrics_df = pl.DataFrame(data=self.Metrics, schema={self.STATISTICS_METRICS_LABEL: pl.String()})
         individual_df = self.sort_trades(self._data)
         individual_metrics_df = self.calculate_dependent_metrics(initial_account, start_timestamp, stop_timestamp, individual_df, self.BUY_METRICS_INDIVIDUAL, self.SELL_METRICS_INDIVIDUAL, self.TOTAL_METRICS_INDIVIDUAL)

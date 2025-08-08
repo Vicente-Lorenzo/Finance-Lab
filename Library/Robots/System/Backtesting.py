@@ -66,7 +66,7 @@ class BacktestingSystemAPI(SystemAPI):
 
         super().__init__(broker=broker, group=group, symbol=symbol, timeframe=timeframe, strategy=strategy, parameters=parameters)
 
-        def parse_date(x: str | date) -> (str, date):
+        def parse_date(x: str | date) -> tuple[str | date, str | date]:
             if isinstance(x, str):
                 return x, string_to_datetime(x, "%d-%m-%Y").date()
             else:
@@ -265,7 +265,7 @@ class BacktestingSystemAPI(SystemAPI):
             self.quote_conversion_db.__exit__(None, None, None)
         return super().__exit__(exc_type, exc_value, exc_traceback)
 
-    def _calculate_ask_bid(self, timestamp: datetime, price: float) -> (float, float):
+    def _calculate_ask_bid(self, timestamp: datetime, price: float) -> tuple[float, float]:
         return price + self.spread_fees(timestamp, price), price
 
     def _update_position(self, pid: int, position: Position) -> None:
@@ -284,7 +284,7 @@ class BacktestingSystemAPI(SystemAPI):
     def _next_tid(self):
         return next(self._tids)
 
-    def _calculate_metrics(self, volume: float, price_delta: float, tick: Tick) -> (float, float, float, float, float, float, float, float):
+    def _calculate_metrics(self, volume: float, price_delta: float, tick: Tick) -> tuple[float, float, float, float, float, float, float, float]:
         quantity = volume / self.symbol_data.LotSize
         points = price_delta / self.symbol_data.PointSize
         pips = price_delta / self.symbol_data.PipSize
