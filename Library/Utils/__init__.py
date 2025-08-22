@@ -1,5 +1,8 @@
 from Library.Utils.Chart import gantt
 from Library.Utils.Image import image
+from Library.Utils.Math import (
+    equals
+)
 from Library.Utils.DateTime import (
     datetime_to_string,
     string_to_datetime,
@@ -17,6 +20,7 @@ from Library.Utils.Performance import (
 __all__ = [
     "gantt",
     "image",
+    "equals",
     "datetime_to_string",
     "string_to_datetime",
     "datetime_to_timestamp",

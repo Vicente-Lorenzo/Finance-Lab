@@ -9,7 +9,7 @@ from typing import Type, Iterator, Callable
 from Library.Classes import *
 from Library.Database import DatabaseAPI
 from Library.Parameters import ParametersAPI, Parameters
-from Library.Utils import timer, datetime_to_string, string_to_datetime
+from Library.Utils import timer, equals, datetime_to_string, string_to_datetime
 
 from Library.Robots.Protocol import *
 from Library.Robots.Analyst import AnalystAPI
@@ -372,7 +372,7 @@ class BacktestingSystemAPI(SystemAPI):
             return self._log.error(lambda: f"Action Open: Invalid Volume above the maximum units ({action.Volume})")
         if action.Volume < self.symbol_data.VolumeInUnitsMin:
             return self._log.error(lambda: f"Action Open: Invalid Volume below the minimum units ({action.Volume})")
-        if action.Volume % self.symbol_data.VolumeInUnitsStep != 0.0:
+        if not equals(action.Volume % self.symbol_data.VolumeInUnitsStep, 0.0):
             return self._log.error(lambda: f"Action Open: Invalid Volume not normalised to minimum step ({action.Volume})")
         if action.StopLoss:
             action.StopLoss = action.StopLoss * self.symbol_data.PipSize
@@ -406,13 +406,13 @@ class BacktestingSystemAPI(SystemAPI):
         position: Position = self._find_position(action.PositionID)
         if not position:
             return self._log.error(lambda: "Action Modify Volume: Position not found")
-        if action.Volume == position.Volume:
+        if equals(action.Volume, position.Volume):
             return self._log.error(lambda: f"Action Modify Volume: Invalid new Volume equal to old Volume ({action.Volume})")
         if action.Volume > self.symbol_data.VolumeInUnitsMax:
             return self._log.error(lambda: f"Action Modify Volume: Invalid Volume above the maximum units ({action.Volume})")
         if action.Volume < self.symbol_data.VolumeInUnitsMin:
             return self._log.error(lambda: f"Action Modify Volume: Invalid Volume below the minimum units ({action.Volume})")
-        if action.Volume % self.symbol_data.VolumeInUnitsStep != 0.0:
+        if not equals(action.Volume % self.symbol_data.VolumeInUnitsStep, 0.0):
             return self._log.error(lambda: f"Action Modify Volume: Invalid Volume not normalised to minimum step ({action.Volume})")
 
         update_id: UpdateID | None = None
@@ -421,7 +421,7 @@ class BacktestingSystemAPI(SystemAPI):
         initial_commission: float = position.CommissionPnL
         match action.ActionID:
             case ActionID.ModifyBuyVolume:
-                if action.Volume == 0.0:
+                if equals(action.Volume, 0.0):
                     self._log.warning(lambda: f"Action Modify Volume: Closing Buy position as Volume is zero")
                     return self.send_action_close(CloseBuyAction(action.PositionID))
                 update_id = UpdateID.ModifiedBuyVolume
@@ -429,7 +429,7 @@ class BacktestingSystemAPI(SystemAPI):
                 position.CommissionPnL = initial_commission * (position.Volume / initial_volume)
                 trade = self._close_buy_position(position, self._tick_open_next)
             case ActionID.ModifySellVolume:
-                if action.Volume == 0.0:
+                if equals(action.Volume, 0.0):
                     self._log.warning(lambda: f"Action Modify Volume: Closing Sell position as Volume is zero")
                     return self.send_action_close(CloseSellAction(action.PositionID))
                 update_id = UpdateID.ModifiedSellVolume
@@ -453,10 +453,11 @@ class BacktestingSystemAPI(SystemAPI):
         position: Position = self._find_position(action.PositionID)
         if not position:
             return self._log.error(lambda: "Action Modify Stop Loss: Position not found")
-        if action.StopLoss == position.StopLoss:
+        if equals(action.StopLoss, position.StopLoss):
             return self._log.error(lambda: f"Action Modify Stop Loss: Invalid new Stop Loss equal to old Stop Loss ({action.StopLoss})")
-        if action.StopLoss:
-            action.StopLoss = action.StopLoss
+        # Investigate why I did this
+        # if action.StopLoss:
+        #     action.StopLoss = action.StopLoss
 
         update_id: UpdateID | None = None
         match action.ActionID:
@@ -481,10 +482,11 @@ class BacktestingSystemAPI(SystemAPI):
         position: Position = self._find_position(action.PositionID)
         if not position:
             return self._log.error(lambda: "Action Modify Take Profit: Position not found")
-        if action.TakeProfit == position.TakeProfit:
+        if equals(action.TakeProfit, position.TakeProfit):
             return self._log.error(lambda: f"Action Modify Take Profit: Invalid new Take Profit equal to old Take Profit ({action.TakeProfit})")
-        if action.TakeProfit:
-            action.TakeProfit = action.TakeProfit
+        # Investigate why I did this
+        # if action.TakeProfit:
+        #     action.TakeProfit = action.TakeProfit
 
         update_id: UpdateID | None = None
         match action.ActionID:
