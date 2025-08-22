@@ -33,8 +33,9 @@ class FeesType(Enum):
     Points = 0
     Pips = 1
     Percentage = 2
-    Amount = 3
-    Accurate = 4
+    Relative = 3
+    Absolute = 4
+    Accurate = 5
 
 class SpreadType(Enum):
     Points = FeesType.Points.value
@@ -46,7 +47,8 @@ class CommissionType(Enum):
     Points = FeesType.Points.value
     Pips = FeesType.Pips.value
     Percentage = FeesType.Percentage.value
-    Amount = FeesType.Amount.value
+    Relative = FeesType.Relative.value
+    Absolute = FeesType.Absolute.value
     Accurate = FeesType.Accurate.value
 
 class CommissionMode(Enum):
@@ -59,7 +61,8 @@ class SwapType(Enum):
     Points = FeesType.Points.value
     Pips = FeesType.Pips.value
     Percentage = FeesType.Percentage.value
-    Amount = FeesType.Amount.value
+    Relative = FeesType.Relative.value
+    Absolute = FeesType.Absolute.value
     Accurate = FeesType.Accurate.value
 
 class SwapMode(Enum):
