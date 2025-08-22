@@ -27,25 +27,25 @@ class BacktestingSystemAPI(SystemAPI):
     account_data: Account | None = None
 
     tick_db: DatabaseAPI | None = None
-    tick_data: pl.DataFrame | None = None
+    tick_df: pl.DataFrame | None = None
 
     bar_db: DatabaseAPI | None = None
-    bar_data: pl.DataFrame | None = None
+    bar_df: pl.DataFrame | None = None
 
     symbol_data: Symbol | None = None
 
     base_conversion_db: DatabaseAPI | None = None
-    base_conversion_data: pl.DataFrame | None = None
+    base_conversion_df: pl.DataFrame | None = None
     base_conversion_rate: Callable[[datetime, float], float] | None = None
 
     quote_conversion_db: DatabaseAPI | None = None
-    quote_conversion_data: pl.DataFrame | None = None
+    quote_conversion_df: pl.DataFrame | None = None
     quote_conversion_rate: Callable[[datetime, float], float] | None = None
 
-    spread_fee_rate: Callable[[datetime, float], float] | None = None
-    commission_fee_rate: Callable[[datetime, float], float] | None = None
-    swap_buy_fee_rate: Callable[[datetime, float], float] | None = None
-    swap_sell_fee_rate: Callable[[datetime, float], float] | None = None
+    spread_fee: Callable[[datetime, float], float] | None = None
+    commission_fee: Callable[[datetime, float, float], float] | None = None
+    swap_buy_fee: Callable[[datetime, float], float] | None = None
+    swap_sell_fee: Callable[[datetime, float], float] | None = None
 
     window: int | None = None
     offset: int | None = None
@@ -82,11 +82,11 @@ class BacktestingSystemAPI(SystemAPI):
         self._commission_type, self._commission_value = commission
         self._swap_type, self._swap_buy, self._swap_sell  = swap
 
-        self._tick_data_iterator: Iterator | None = None
+        self._tick_df_iterator: Iterator | None = None
         self._tick_data_next: Bar | None = None
         self._tick_open_next: Tick | None = None
 
-        self._bar_data_iterator: Iterator | None = None
+        self._bar_df_iterator: Iterator | None = None
         self._bar_data_at: Bar | None = None
         self._bar_data_at_last: Bar | None = None
         self._bar_data_next: Bar | None = None
@@ -133,62 +133,59 @@ class BacktestingSystemAPI(SystemAPI):
             )
         self._account_data: Account = copy.deepcopy(self.account_data)
 
-        if self.tick_data is None:
+        if self.tick_df is None:
             self.tick_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=self._symbol, timeframe=self.TICK)
             self.tick_db.__enter__()
-            self.tick_data = self.tick_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
-        self._tick_data_iterator = self.tick_data.iter_rows()
-        self._tick_data_next = Bar(*next(self._tick_data_iterator))
+            self.tick_df = self.tick_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
+        self._tick_df_iterator = self.tick_df.iter_rows()
+        self._tick_data_next = Bar(*next(self._tick_df_iterator))
         self._tick_open_next = None
 
-        if self.bar_data is None:
+        if self.bar_df is None:
             self.bar_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=self._symbol, timeframe=self._timeframe)
             self.bar_db.__enter__()
-            self.bar_data = self.bar_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=self.window)
-            self.offset = self.bar_data.height - self.window + 1
+            self.bar_df = self.bar_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=self.window)
+            self.offset = self.bar_df.height - self.window + 1
         self._offset = self.offset
-        self._bar_data_iterator = self.bar_data.filter((pl.col(DatabaseAPI.MARKET_TIMESTAMP) >= self._start_date) & (pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= self._stop_date)).iter_rows()
-        start_bar_data_index = Bar(*self.bar_data.row(self.window))
-        self._bar_data_at = Bar(*next(self._bar_data_iterator))
-        self._bar_data_next = Bar(*next(self._bar_data_iterator))
+        self._bar_df_iterator = self.bar_df.filter((pl.col(DatabaseAPI.MARKET_TIMESTAMP) >= self._start_date) & (pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= self._stop_date)).iter_rows()
+        start_bar_data_index = Bar(*self.bar_df.row(self.window))
+        self._bar_data_at = Bar(*next(self._bar_df_iterator))
+        self._bar_data_next = Bar(*next(self._bar_df_iterator))
         while self._bar_data_at.Timestamp < start_bar_data_index.Timestamp:
             self._bar_data_at = self._bar_data_next
-            self._bar_data_next = Bar(*next(self._bar_data_iterator))
+            self._bar_data_next = Bar(*next(self._bar_df_iterator))
         self._bar_data_at_last = Bar(self._bar_data_at.Timestamp, self._bar_data_at.OpenPrice, self._bar_data_at.OpenPrice, self._bar_data_at.OpenPrice, self._bar_data_at.OpenPrice, 0.0)
 
         if self.symbol_data is None:
             self.symbol_data: Symbol = self.bar_db.pull_symbol_data()
 
-        if self.base_conversion_data is None or self.base_conversion_rate is None or self.quote_conversion_data is None or self.quote_conversion_rate is None:
-            base_rate = lambda timestamp: self.base_conversion_data.filter(pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= timestamp).tail(1).select(DatabaseAPI.MARKET_OPENPRICE).item()
-            quote_rate = lambda timestamp: self.quote_conversion_data.filter(pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= timestamp).tail(1).select(DatabaseAPI.MARKET_OPENPRICE).item()
+        if self.base_conversion_df is None or self.base_conversion_rate is None or self.quote_conversion_df is None or self.quote_conversion_rate is None:
+            symbol_rate = lambda timestamp: self.tick_df.filter(pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= timestamp).tail(1).select(DatabaseAPI.MARKET_OPENPRICE).item()
+            base_rate = lambda timestamp: self.base_conversion_df.filter(pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= timestamp).tail(1).select(DatabaseAPI.MARKET_OPENPRICE).item()
+            quote_rate = lambda timestamp: self.quote_conversion_df.filter(pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= timestamp).tail(1).select(DatabaseAPI.MARKET_OPENPRICE).item()
 
             self.base_conversion_db = self.tick_db
-            self.base_conversion_data = self.tick_db
+            self.base_conversion_df = self.tick_df
             self.base_conversion_rate = lambda timestamp, spread: 1.0
 
             self.quote_conversion_db = self.tick_db
-            self.quote_conversion_data = self.tick_data
+            self.quote_conversion_df = self.tick_df
             self.quote_conversion_rate = lambda timestamp, spread: 1.0
 
             if self.account_data.AssetType == self.symbol_data.BaseAssetType:
-                self.quote_conversion_db = self.tick_db
-                self.quote_conversion_data = self.tick_data
-                self.quote_conversion_rate = lambda timestamp, spread: 1.0 / (quote_rate(timestamp) + spread)
+                self.quote_conversion_rate = lambda timestamp, spread: 1.0 / (symbol_rate(timestamp) + spread)
             elif self.account_data.AssetType == self.symbol_data.QuoteAssetType:
-                self.base_conversion_db = self.tick_db
-                self.base_conversion_data = self.tick_db
-                self.base_conversion_rate = lambda timestamp, spread: 1.0 / (base_rate(timestamp) + spread)
+                self.base_conversion_rate = lambda timestamp, spread: symbol_rate(timestamp)
             else:
                 if (symbol := f"{self.account_data.AssetType.name}{self.symbol_data.BaseAssetType.name}") in self.SYMBOLS:
                     self.base_conversion_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=symbol, timeframe=self.TICK)
                     self.base_conversion_db.__enter__()
-                    self.base_conversion_data = self.base_conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
+                    self.base_conversion_df = self.base_conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
                     self.base_conversion_rate = lambda timestamp, spread: 1.0 / (base_rate(timestamp) + spread)
                 elif (symbol := f"{self.symbol_data.BaseAssetType.name}{self.account_data.AssetType.name}") in self.SYMBOLS:
                     self.base_conversion_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=symbol, timeframe=self.TICK)
                     self.base_conversion_db.__enter__()
-                    self.base_conversion_data = self.base_conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
+                    self.base_conversion_df = self.base_conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
                     self.base_conversion_rate = lambda timestamp, spread: base_rate(timestamp)
                 else:
                     self._log.error(lambda: f"Base Asset to Account Asset convertion formula not found")
@@ -196,28 +193,28 @@ class BacktestingSystemAPI(SystemAPI):
                 if (symbol := f"{self.account_data.AssetType.name}{self.symbol_data.QuoteAssetType.name}") in self.SYMBOLS:
                     self.quote_conversion_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=symbol, timeframe=self.TICK)
                     self.quote_conversion_db.__enter__()
-                    self.quote_conversion_data = self.quote_conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
+                    self.quote_conversion_df = self.quote_conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
                     self.quote_conversion_rate = lambda timestamp, spread: 1.0 / (quote_rate(timestamp) + spread)
                 elif (symbol := f"{self.symbol_data.QuoteAssetType.name}{self.account_data.AssetType.name}") in self.SYMBOLS:
                     self.quote_conversion_db = DatabaseAPI(broker=self._broker, group=self._group, symbol=symbol, timeframe=self.TICK)
                     self.quote_conversion_db.__enter__()
-                    self.quote_conversion_data = self.quote_conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
+                    self.quote_conversion_df = self.quote_conversion_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
                     self.quote_conversion_rate = lambda timestamp, spread: quote_rate(timestamp)
                 else:
                     self._log.error(lambda: f"Quote Asset to Account Asset convertion formula not found")
 
-        if self.spread_fee_rate is None:
+        if self.spread_fee is None:
             match self._spread_type:
                 case SpreadType.Points:
-                    self.spread_fee_rate = lambda timestamp, price: self._spread_value * self.symbol_data.PointSize
+                    self.spread_fee = lambda timestamp, price: self._spread_value * self.symbol_data.PointSize
                 case SpreadType.Pips:
-                    self.spread_fee_rate = lambda timestamp, price: self._spread_value * self.symbol_data.PipSize
+                    self.spread_fee = lambda timestamp, price: self._spread_value * self.symbol_data.PipSize
                 case SpreadType.Percentage:
-                    self.spread_fee_rate = lambda timestamp, price: (self._spread_value / 100) * price
+                    self.spread_fee = lambda timestamp, price: (self._spread_value / 100) * price
                 case SpreadType.Accurate:
                     raise NotImplementedError
 
-        if self.commission_fee_rate is None:
+        if self.commission_fee is None:
             match self._commission_type:
                 case CommissionType.Points:
                     pass # raise NotImplementedError
@@ -230,15 +227,15 @@ class BacktestingSystemAPI(SystemAPI):
                 case CommissionType.Accurate:
                     match self.symbol_data.CommissionMode:
                         case CommissionMode.BaseAssetPerMillionVolume:
-                            self.commission_fee_rate = lambda timestamp, spread: (self.symbol_data.Commission / 1_000_000) * self.base_conversion_rate(timestamp, spread)
+                            self.commission_fee = lambda timestamp, volume, spread: volume * (self.symbol_data.Commission / 1_000_000) * self.base_conversion_rate(timestamp, spread)
                         case CommissionMode.BaseAssetPerOneLot:
-                            self.commission_fee_rate = lambda timestamp, spread: (self.symbol_data.Commission / self.symbol_data.LotSize) * self.base_conversion_rate(timestamp, spread)
+                            self.commission_fee = lambda timestamp, volume, spread: volume * (self.symbol_data.Commission / self.symbol_data.LotSize) * self.base_conversion_rate(timestamp, spread)
                         case CommissionMode.PercentageOfVolume:
                             pass
                         case CommissionMode.QuoteAssetPerOneLot:
                             pass
 
-        if self.swap_buy_fee_rate is None or self.swap_sell_fee_rate is None:
+        if self.swap_buy_fee is None or self.swap_sell_fee is None:
             match self._swap_type:
                 case SwapType.Points:
                     pass # raise NotImplementedError
@@ -261,12 +258,14 @@ class BacktestingSystemAPI(SystemAPI):
             self.tick_db.__exit__(None, None, None)
         if self.bar_db:
             self.bar_db.__exit__(None, None, None)
+        if self.base_conversion_db:
+            self.base_conversion_db.__exit__(None, None, None)
         if self.quote_conversion_db:
             self.quote_conversion_db.__exit__(None, None, None)
         return super().__exit__(exc_type, exc_value, exc_traceback)
 
     def _calculate_ask_bid(self, timestamp: datetime, price: float) -> tuple[float, float]:
-        return price + self.spread_fee_rate(timestamp, price), price
+        return price + self.spread_fee(timestamp=timestamp, price=price), price
 
     def _update_position(self, pid: int, position: Position) -> None:
         self._positions[pid] = position
@@ -289,7 +288,7 @@ class BacktestingSystemAPI(SystemAPI):
         points = price_delta / self.symbol_data.PointSize
         pips = price_delta / self.symbol_data.PipSize
         gross_pnl = price_delta * volume * self.quote_conversion_rate(tick.Timestamp, tick.Spread)
-        commission_pnl = - volume * self.commission_fee_rate(tick.Timestamp, tick.Spread)
+        commission_pnl = - self.commission_fee(timestamp=tick.Timestamp, volume=volume, spread=tick.Spread)
         swap_pnl = 0.0
         net_pnl = gross_pnl + commission_pnl + swap_pnl
         used_margin = 0.0
@@ -549,7 +548,7 @@ class BacktestingSystemAPI(SystemAPI):
             if not self._update_id_queue.empty():
                 return self._update_id_queue.get()
 
-            if self._bar_data_next and self._tick_data_next.Timestamp >= self._bar_data_next.Timestamp:
+            if self._bar_data_next and (not self._tick_data_next or self._tick_data_next.Timestamp >= self._bar_data_next.Timestamp):
 
                 self._update_id_queue.put(UpdateID.BarClosed)
                 self._update_args_queue.put(self._bar_data_at)
@@ -560,7 +559,7 @@ class BacktestingSystemAPI(SystemAPI):
                 self._bar_data_at_last.OpenPrice = self._bar_data_at_last.HighPrice = self._bar_data_at_last.LowPrice = self._bar_data_at_last.ClosePrice = self._bar_data_at.OpenPrice
                 self._bar_data_at_last.TickVolume = 0.0
                 try:
-                    self._bar_data_next = Bar(*next(self._bar_data_iterator))
+                    self._bar_data_next = Bar(*next(self._bar_df_iterator))
                 except StopIteration:
                     self._bar_data_next = None
                 continue
@@ -576,7 +575,7 @@ class BacktestingSystemAPI(SystemAPI):
                 self._bar_data_at_last.TickVolume += self._tick_data_next.TickVolume
 
                 try:
-                    self._tick_data_next = Bar(*next(self._tick_data_iterator))
+                    self._tick_data_next = Bar(*next(self._tick_df_iterator))
                     self._tick_open_next = Tick(self._tick_data_next.Timestamp, *self._calculate_ask_bid(self._tick_data_next.Timestamp, self._tick_data_next.OpenPrice))
                 except StopIteration:
                     self._tick_data_next = None
@@ -663,7 +662,7 @@ class BacktestingSystemAPI(SystemAPI):
         termination = system_engine.create_state(name="Termination", end=True)
 
         def init_market(update: CompleteUpdate):
-            update.Analyst.init_market_data(self.bar_data)
+            update.Analyst.init_market_data(self.bar_df)
             update.Analyst.update_market_offset(self.offset)
 
         def update_market(update: BarUpdate):
