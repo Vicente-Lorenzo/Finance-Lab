@@ -217,13 +217,15 @@ class BacktestingSystemAPI(SystemAPI):
         if self.commission_fee is None:
             match self._commission_type:
                 case CommissionType.Points:
-                    pass # raise NotImplementedError
+                    self.commission_fee = lambda timestamp, volume, spread: volume * (self._commission_value * self.symbol_data.PointSize) * self.quote_conversion_rate(timestamp, spread)
                 case CommissionType.Pips:
-                    pass # raise NotImplementedError
+                    self.commission_fee = lambda timestamp, volume, spread: volume * (self._commission_value * self.symbol_data.PipSize) * self.quote_conversion_rate(timestamp, spread)
                 case CommissionType.Percentage:
-                    pass # raise NotImplementedError
-                case CommissionType.Amount:
-                    pass # raise NotImplementedError
+                    self.commission_fee = lambda timestamp, volume, spread: volume * (self._commission_value / 100.0) * symbol_rate(timestamp) * self.quote_conversion_rate(timestamp, spread)
+                case CommissionType.Relative:
+                    self.commission_fee = lambda timestamp, volume, spread: volume * self._commission_value
+                case CommissionType.Absolute:
+                    self.commission_fee = lambda timestamp, volume, spread: self._commission_value
                 case CommissionType.Accurate:
                     match self.symbol_data.CommissionMode:
                         case CommissionMode.BaseAssetPerMillionVolume:
@@ -231,9 +233,9 @@ class BacktestingSystemAPI(SystemAPI):
                         case CommissionMode.BaseAssetPerOneLot:
                             self.commission_fee = lambda timestamp, volume, spread: volume * (self.symbol_data.Commission / self.symbol_data.LotSize) * self.base_conversion_rate(timestamp, spread)
                         case CommissionMode.PercentageOfVolume:
-                            pass
+                            self.commission_fee = lambda timestamp, volume, spread: volume * (self.symbol_data.Commission / 100.0) * symbol_rate(timestamp) * self.quote_conversion_rate(timestamp, spread)
                         case CommissionMode.QuoteAssetPerOneLot:
-                            pass
+                            self.commission_fee = lambda timestamp, volume, spread: volume * (self.symbol_data.Commission / self.symbol_data.LotSize) * self.quote_conversion_rate(timestamp, spread)
 
         if self.swap_buy_fee is None or self.swap_sell_fee is None:
             match self._swap_type:
@@ -243,8 +245,10 @@ class BacktestingSystemAPI(SystemAPI):
                     pass # raise NotImplementedError
                 case SwapType.Percentage:
                     pass # raise NotImplementedError
-                case SwapType.Amount:
+                case SwapType.Relative:
                     pass # raise NotImplementedError
+                case SwapType.Absolute:
+                    pass  # raise NotImplementedError
                 case SwapType.Accurate:
                     raise NotImplementedError
 
