@@ -42,10 +42,10 @@ class BacktestingSystemAPI(SystemAPI):
     quote_conversion_data: pl.DataFrame | None = None
     quote_conversion_rate: Callable[[datetime, float], float] | None = None
 
-    spread_fees: Callable[[datetime, float], float] | None = None
-    commission_fees: Callable[[datetime, float], float] | None = None
-    swap_fees_buy: Callable[[datetime, float], float] | None = None
-    swap_fees_sell: Callable[[datetime, float], float] | None = None
+    spread_fee_rate: Callable[[datetime, float], float] | None = None
+    commission_fee_rate: Callable[[datetime, float], float] | None = None
+    swap_buy_fee_rate: Callable[[datetime, float], float] | None = None
+    swap_sell_fee_rate: Callable[[datetime, float], float] | None = None
 
     window: int | None = None
     offset: int | None = None
@@ -206,18 +206,18 @@ class BacktestingSystemAPI(SystemAPI):
                 else:
                     self._log.error(lambda: f"Quote Asset to Account Asset convertion formula not found")
 
-        if self.spread_fees is None:
+        if self.spread_fee_rate is None:
             match self._spread_type:
                 case SpreadType.Points:
-                    self.spread_fees = lambda timestamp, price: self._spread_value * self.symbol_data.PointSize
+                    self.spread_fee_rate = lambda timestamp, price: self._spread_value * self.symbol_data.PointSize
                 case SpreadType.Pips:
-                    self.spread_fees = lambda timestamp, price: self._spread_value * self.symbol_data.PipSize
+                    self.spread_fee_rate = lambda timestamp, price: self._spread_value * self.symbol_data.PipSize
                 case SpreadType.Percentage:
-                    self.spread_fees = lambda timestamp, price: (self._spread_value / 100) * price
+                    self.spread_fee_rate = lambda timestamp, price: (self._spread_value / 100) * price
                 case SpreadType.Accurate:
                     raise NotImplementedError
 
-        if self.commission_fees is None:
+        if self.commission_fee_rate is None:
             match self._commission_type:
                 case CommissionType.Points:
                     pass # raise NotImplementedError
@@ -230,15 +230,15 @@ class BacktestingSystemAPI(SystemAPI):
                 case CommissionType.Accurate:
                     match self.symbol_data.CommissionMode:
                         case CommissionMode.BaseAssetPerMillionVolume:
-                            self.commission_fees = lambda timestamp, spread: (self.symbol_data.Commission / 1_000_000) * self.base_conversion_rate(timestamp, spread)
+                            self.commission_fee_rate = lambda timestamp, spread: (self.symbol_data.Commission / 1_000_000) * self.base_conversion_rate(timestamp, spread)
                         case CommissionMode.BaseAssetPerOneLot:
-                            self.commission_fees = lambda timestamp, spread: (self.symbol_data.Commission / self.symbol_data.LotSize) * self.base_conversion_rate(timestamp, spread)
+                            self.commission_fee_rate = lambda timestamp, spread: (self.symbol_data.Commission / self.symbol_data.LotSize) * self.base_conversion_rate(timestamp, spread)
                         case CommissionMode.PercentageOfVolume:
                             pass
                         case CommissionMode.QuoteAssetPerOneLot:
                             pass
 
-        if self.swap_fees_buy is None or self.swap_fees_sell is None:
+        if self.swap_buy_fee_rate is None or self.swap_sell_fee_rate is None:
             match self._swap_type:
                 case SwapType.Points:
                     pass # raise NotImplementedError
@@ -266,7 +266,7 @@ class BacktestingSystemAPI(SystemAPI):
         return super().__exit__(exc_type, exc_value, exc_traceback)
 
     def _calculate_ask_bid(self, timestamp: datetime, price: float) -> tuple[float, float]:
-        return price + self.spread_fees(timestamp, price), price
+        return price + self.spread_fee_rate(timestamp, price), price
 
     def _update_position(self, pid: int, position: Position) -> None:
         self._positions[pid] = position
@@ -289,7 +289,7 @@ class BacktestingSystemAPI(SystemAPI):
         points = price_delta / self.symbol_data.PointSize
         pips = price_delta / self.symbol_data.PipSize
         gross_pnl = price_delta * volume * self.quote_conversion_rate(tick.Timestamp, tick.Spread)
-        commission_pnl = - volume * self.commission_fees(tick.Timestamp, tick.Spread)
+        commission_pnl = - volume * self.commission_fee_rate(tick.Timestamp, tick.Spread)
         swap_pnl = 0.0
         net_pnl = gross_pnl + commission_pnl + swap_pnl
         used_margin = 0.0
@@ -514,10 +514,10 @@ class BacktestingSystemAPI(SystemAPI):
         update_id: UpdateID | None = None
         trade: Trade | None = None
         match action.ActionID:
-            case action.ActionID.CloseBuy:
+            case ActionID.CloseBuy:
                 update_id = UpdateID.ClosedBuy
                 trade = self._close_buy_position(position, self._tick_open_next if not tick else tick)
-            case action.ActionID.CloseSell:
+            case ActionID.CloseSell:
                 update_id = UpdateID.ClosedSell
                 trade = self._close_sell_position(position, self._tick_open_next if not tick else tick)
 
