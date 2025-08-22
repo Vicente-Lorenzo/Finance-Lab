@@ -7,7 +7,7 @@ import numpy as np
 import polars as pl
 
 from tqdm import tqdm
-from typing import Type
+from typing import Type, Callable
 from concurrent.futures import as_completed, ThreadPoolExecutor
 
 from datetime import date
@@ -179,8 +179,8 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
     @staticmethod
     def unpack_coarse_to_fine_parameters(dof_stage: dict, ctf_params: list[Parameters]) -> dict | None:
         ctf_runs = len(ctf_params)
-        def unpack_engine(engine_name: str, engine_parameters: Parameters) -> (bool, dict):
-            def unpack_combos(tid: str, tparams: dict, tconstraints: callable) -> (bool, list):
+        def unpack_engine(engine_name: str, engine_parameters: Parameters) -> tuple[bool, dict]:
+            def unpack_combos(tid: str, tparams: dict, tconstraints: Callable) -> tuple[bool, list]:
                 truns = 0
                 for tparam in tparams.values():
                     truns = max(truns, len(tparam))
@@ -279,7 +279,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
                                   **unpack_selected("AnalystManagement", ctf_stage["AnalystManagement"]),
                                   **unpack_selected("ManagerManagement", ctf_stage["ManagerManagement"])})
 
-    def run_backtest_stage(self, parameters: Parameters, start: date, stop: date) -> (int, BacktestingSystemAPI):
+    def run_backtest_stage(self, parameters: Parameters, start: date, stop: date) -> tuple[int, BacktestingSystemAPI]:
 
         with self._btid_lock:
             self._btid += 1
@@ -314,7 +314,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
 
         return btid, thread
 
-    def run_coarse_to_fine_stage(self, stage: dict, start: date, stop: date) -> (int, float, Parameters, pl.DataFrame):
+    def run_coarse_to_fine_stage(self, stage: dict, start: date, stop: date) -> tuple[int, float, Parameters, pl.DataFrame]:
 
         parameters = self.unpack_coarse_to_fine_backtests(stage)
 
@@ -360,7 +360,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
 
         return best_id, best_fitness, best_parameters, df
 
-    def run_degrees_of_freedom_stage(self, ctf_stage: dict, start: date, stop: date) -> (int, float, Parameters, pl.DataFrame):
+    def run_degrees_of_freedom_stage(self, ctf_stage: dict, start: date, stop: date) -> tuple[int, float, Parameters, pl.DataFrame]:
 
         results: list[dict] = []
         parameters: list[Parameters] = []
@@ -399,7 +399,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
 
         return last_btid, last_fitness, last_parameters, ctf_df
 
-    def run_optimisation_stage(self, start: date, stop: date) -> (int, float, Parameters, pl.DataFrame):
+    def run_optimisation_stage(self, start: date, stop: date) -> tuple[int, float, Parameters, pl.DataFrame]:
 
         results: list[dict] = []
         parameters: list[Parameters] = []
