@@ -2,7 +2,7 @@ from enum import Enum
 
 class VerboseType(Enum):
     Silent = 0
-    Critical = 1
+    Exception = 1
     Error = 2
     Warning = 3
     Alert = 4

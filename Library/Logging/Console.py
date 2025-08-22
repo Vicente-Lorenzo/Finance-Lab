@@ -41,7 +41,7 @@ class ConsoleAPI(LoggingAPI):
         self._static_log_alert: str = self._format_level(VerboseType.Alert, ConsoleAPI._ORANGE)
         self._static_log_warning: str = self._format_level(VerboseType.Warning, ConsoleAPI._YELLOW)
         self._static_log_error: str = self._format_level(VerboseType.Error, ConsoleAPI._RED)
-        self._static_log_critical: str = self._format_level(VerboseType.Critical, ConsoleAPI._DARK_RED)
+        self._static_log_exception: str = self._format_level(VerboseType.Exception, ConsoleAPI._DARK_RED)
 
     @staticmethod
     def _build_log(static_log: str, content_func: Callable[[], str | BytesIO]):
@@ -66,5 +66,5 @@ class ConsoleAPI(LoggingAPI):
     def _error(self, content_func: Callable[[], str | BytesIO]):
         self._log(self._static_log_error, content_func)
 
-    def _critical(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._static_log_critical, content_func)
+    def _exception(self, content_func: Callable[[], str | BytesIO]):
+        self._log(self._static_log_exception, content_func)

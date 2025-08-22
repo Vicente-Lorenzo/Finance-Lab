@@ -324,7 +324,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
         best_fitness: float = float("-inf")
         best_parameters: Parameters | None = None
 
-        self._log.level(VerboseType.Critical)
+        self._log.level(VerboseType.Exception)
 
         with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
 
@@ -445,7 +445,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
         opt_parameters = self.parameters
         for wf_id, ((opt_start, opt_stop), (val_start, val_stop)) in enumerate(self._wf_stages, start=1):
             opt_id, opt_fitness, opt_parameters, opt_df = self.run_optimisation_stage(opt_start, opt_stop)
-            self._log.level(VerboseType.Critical)
+            self._log.level(VerboseType.Exception)
             val_id, val_bt = self.run_backtest_stage(opt_parameters, val_start, val_stop)
             self._log.reset()
             val_bt_fitness = val_bt.statistics.filter(pl.col(StatisticsAPI.STATISTICS_METRICS_LABEL) == self._fitness)[StatisticsAPI.TOTAL_METRICS_AGGREGATED].item()
@@ -486,6 +486,6 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
         self.analyst = AnalystAPI(analyst_management=opt_parameters.AnalystManagement)
         self.manager = ManagerAPI(manager_management=opt_parameters.ManagerManagement)
 
-        self._log.telegram.level(VerboseType.Critical)
+        self._log.telegram.level(VerboseType.Exception)
         super().run()
         self._log.telegram.reset()

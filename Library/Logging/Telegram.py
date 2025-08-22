@@ -13,7 +13,7 @@ class TelegramAPI(LoggingAPI):
     _ALERT_ICON: str = "🔔"
     _WARNING_ICON: str = "⚠️"
     _ERROR_ICON: str = "❌"
-    _CRITICAL_ICON: str = "🛑"
+    _EXCEPTION_ICON: str = "🛑"
     
     _TIMESTAMP: str = "at {timestamp}"
 
@@ -81,7 +81,7 @@ class TelegramAPI(LoggingAPI):
         self._static_log_alert: str = self._format_level(VerboseType.Alert, TelegramAPI._ALERT_ICON)
         self._static_log_warning: str = self._format_level(VerboseType.Warning, TelegramAPI._WARNING_ICON)
         self._static_log_error: str = self._format_level(VerboseType.Error, TelegramAPI._ERROR_ICON)
-        self._static_log_critical: str = self._format_level(VerboseType.Critical, TelegramAPI._CRITICAL_ICON)
+        self._static_log_exception: str = self._format_level(VerboseType.Exception, TelegramAPI._EXCEPTION_ICON)
 
     @staticmethod
     def _build_log(message_url: str, document_url: str, static_log: str, content_func: Callable[[], str | BytesIO]):
@@ -116,5 +116,5 @@ class TelegramAPI(LoggingAPI):
     def _error(self, content_func: Callable[[], str | BytesIO]):
         self._log(self._LOG_MESSAGE_URL, self._LOG_DOCUMENT_URL, self._static_log_error, content_func)
 
-    def _critical(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._LOG_MESSAGE_URL, self._LOG_DOCUMENT_URL, self._static_log_critical, content_func)
+    def _exception(self, content_func: Callable[[], str | BytesIO]):
+        self._log(self._LOG_MESSAGE_URL, self._LOG_DOCUMENT_URL, self._static_log_exception, content_func)

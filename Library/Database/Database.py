@@ -170,9 +170,9 @@ class DatabaseAPI:
         if self._connection:
             self._connection.close()
         if exc_type or exc_value or exc_traceback:
-            self._log.critical(lambda: f"Exception type: {exc_type}")
-            self._log.critical(lambda: f"Exception value: {exc_value}")
-            self._log.critical(lambda: f"Traceback: {exc_traceback}")
+            self._log.exception(lambda: f"Exception type: {exc_type}")
+            self._log.exception(lambda: f"Exception value: {exc_value}")
+            self._log.exception(lambda: f"Traceback: {exc_traceback}")
         self._log.debug(lambda: "Disconnected")
         return self
 

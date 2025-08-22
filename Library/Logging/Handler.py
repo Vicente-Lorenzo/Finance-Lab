@@ -48,10 +48,10 @@ class HandlerAPI:
         self.telegram.error(content_func)
         self.file.error(content_func)
 
-    def critical(self, content_func: Callable[[], str | BytesIO]):
-        self.console.critical(content_func)
-        self.telegram.critical(content_func)
-        self.file.critical(content_func)
+    def exception(self, content_func: Callable[[], str | BytesIO]):
+        self.console.exception(content_func)
+        self.telegram.exception(content_func)
+        self.file.exception(content_func)
 
     def __enter__(self):
         self.console.__enter__()
@@ -73,8 +73,8 @@ class HandlerAPI:
                 self.debug(lambda: f"Initiated @ {func.__name__}")
                 return func(*args, **kwargs)
             except Exception as e:
-                self.critical(lambda: f"Failed @ {func.__name__}")
-                self.critical(lambda: ''.join(traceback.format_exception(e))[:-1])
+                self.exception(lambda: f"Failed @ {func.__name__}")
+                self.exception(lambda: ''.join(traceback.format_exception(e))[:-1])
                 raise e
             finally:
                 self.debug(lambda: f"Terminated @ {func.__name__}")

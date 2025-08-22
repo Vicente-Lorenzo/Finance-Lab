@@ -69,7 +69,7 @@ class FileAPI(LoggingAPI):
         self._static_log_alert: str = self._format_level(VerboseType.Alert)
         self._static_log_warning: str = self._format_level(VerboseType.Warning)
         self._static_log_error: str = self._format_level(VerboseType.Error)
-        self._static_log_critical: str = self._format_level(VerboseType.Critical)
+        self._static_log_exception: str = self._format_level(VerboseType.Exception)
 
     @staticmethod
     def _build_log(static_log: str, content_func: Callable[[], str | BytesIO]):
@@ -99,5 +99,5 @@ class FileAPI(LoggingAPI):
     def _error(self, content_func: Callable[[], str | BytesIO]):
         self._log(self._static_log_error, content_func)
 
-    def _critical(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._static_log_critical, content_func)
+    def _exception(self, content_func: Callable[[], str | BytesIO]):
+        self._log(self._static_log_exception, content_func)

@@ -21,7 +21,7 @@ class LoggingAPI(ABC):
     _static_log_alert: str | None = None
     _static_log_warning: str | None = None
     _static_log_error: str | None = None
-    _static_log_critical: str | None = None
+    _static_log_exception: str | None = None
 
     _lock: Lock = None
 
@@ -31,7 +31,7 @@ class LoggingAPI(ABC):
     alert: Callable[[Callable[[], str | BytesIO]], None] = _dummy
     warning: Callable[[Callable[[], str | BytesIO]], None] = _dummy
     error: Callable[[Callable[[], str | BytesIO]], None] = _dummy
-    critical: Callable[[Callable[[], str | BytesIO]], None] = _dummy
+    exception: Callable[[Callable[[], str | BytesIO]], None] = _dummy
 
     _enter_flag: bool = False
     _exit_flag: bool = False
@@ -72,49 +72,49 @@ class LoggingAPI(ABC):
                     cls.alert = cls._alert
                     cls.warning = cls._warning
                     cls.error = cls._error
-                    cls.critical = cls._critical
+                    cls.exception = cls._exception
                 case VerboseType.Info:
                     cls.debug = cls._dummy
                     cls.info = cls._info
                     cls.alert = cls._alert
                     cls.warning = cls._warning
                     cls.error = cls._error
-                    cls.critical = cls._critical
+                    cls.exception = cls._exception
                 case VerboseType.Alert:
                     cls.debug = cls._dummy
                     cls.info = cls._dummy
                     cls.alert = cls._alert
                     cls.warning = cls._warning
                     cls.error = cls._error
-                    cls.critical = cls._critical
+                    cls.exception = cls._exception
                 case VerboseType.Warning:
                     cls.debug = cls._dummy
                     cls.info = cls._dummy
                     cls.alert = cls._dummy
                     cls.warning = cls._warning
                     cls.error = cls._error
-                    cls.critical = cls._critical
+                    cls.exception = cls._exception
                 case VerboseType.Error:
                     cls.debug = cls._dummy
                     cls.info = cls._dummy
                     cls.alert = cls._dummy
                     cls.warning = cls._dummy
                     cls.error = cls._error
-                    cls.critical = cls._critical
-                case VerboseType.Critical:
+                    cls.exception = cls._exception
+                case VerboseType.Exception:
                     cls.debug = cls._dummy
                     cls.info = cls._dummy
                     cls.alert = cls._dummy
                     cls.warning = cls._dummy
                     cls.error = cls._dummy
-                    cls.critical = cls._critical
+                    cls.exception = cls._exception
                 case VerboseType.Silent:
                     cls.debug = cls._dummy
                     cls.info = cls._dummy
                     cls.alert = cls._dummy
                     cls.warning = cls._dummy
                     cls.error = cls._dummy
-                    cls.critical = cls._dummy
+                    cls.exception = cls._dummy
             cls._current_verbose = verbose
 
     @classmethod
@@ -198,5 +198,5 @@ class LoggingAPI(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _critical(self, content_func: Callable[[], str | BytesIO]):
+    def _exception(self, content_func: Callable[[], str | BytesIO]):
         raise NotImplementedError
