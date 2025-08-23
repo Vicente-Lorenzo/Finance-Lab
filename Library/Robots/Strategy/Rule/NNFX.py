@@ -161,18 +161,20 @@ class NNFXStrategyAPI(StrategyAPI):
 
         return risk_engine
 
-    def open_buy_position(self, update: BarUpdate, position_type: PositionType):
-        self._last_position_trade_type = TradeType.Buy
+    def calculate_position(self, update: BarUpdate):
         self._last_position_atr = update.Analyst.Volatility.Result.last()
         sl_pips = self._stop_loss_scale * self._last_position_atr / update.Manager.Symbol.PipSize
         volume = update.Manager.volume_by_risk(self._risk_percentage, sl_pips)
+        return volume, sl_pips
+
+    def open_buy_position(self, update: BarUpdate, position_type: PositionType):
+        self._last_position_trade_type = TradeType.Buy
+        volume, sl_pips = self.calculate_position(update)
         return self.close_sell_position(update) + [OpenBuyAction(position_type, volume, sl_pips, None)]
 
     def open_sell_position(self, update: BarUpdate, position_type: PositionType):
         self._last_position_trade_type = TradeType.Sell
-        self._last_position_atr = update.Analyst.Volatility.Result.last()
-        sl_pips = self._stop_loss_scale * self._last_position_atr / update.Manager.Symbol.PipSize
-        volume = update.Manager.volume_by_risk(self._risk_percentage, sl_pips)
+        volume, sl_pips = self.calculate_position(update)
         return self.close_buy_position(update) + [OpenSellAction(position_type, volume, sl_pips, None)]
 
     def close_buy_position(self, update: BarUpdate):
