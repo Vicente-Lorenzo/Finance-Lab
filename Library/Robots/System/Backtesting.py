@@ -222,9 +222,7 @@ class BacktestingSystemAPI(SystemAPI):
                     self.commission_fee = lambda timestamp, volume, spread: volume * (self._commission_value * self.symbol_data.PipSize) * self.quote_conversion_rate(timestamp, spread)
                 case CommissionType.Percentage:
                     self.commission_fee = lambda timestamp, volume, spread: volume * (self._commission_value / 100.0) * symbol_rate(timestamp) * self.quote_conversion_rate(timestamp, spread)
-                case CommissionType.Relative:
-                    self.commission_fee = lambda timestamp, volume, spread: volume * self._commission_value
-                case CommissionType.Absolute:
+                case CommissionType.Amount:
                     self.commission_fee = lambda timestamp, volume, spread: self._commission_value
                 case CommissionType.Accurate:
                     match self.symbol_data.CommissionMode:
@@ -240,15 +238,13 @@ class BacktestingSystemAPI(SystemAPI):
         if self.swap_buy_fee is None or self.swap_sell_fee is None:
             match self._swap_type:
                 case SwapType.Points:
-                    pass # raise NotImplementedError
+                    raise NotImplementedError
                 case SwapType.Pips:
-                    pass # raise NotImplementedError
+                    raise NotImplementedError
                 case SwapType.Percentage:
-                    pass # raise NotImplementedError
-                case SwapType.Relative:
-                    pass # raise NotImplementedError
-                case SwapType.Absolute:
-                    pass  # raise NotImplementedError
+                    raise NotImplementedError
+                case SwapType.Amount:
+                    raise NotImplementedError
                 case SwapType.Accurate:
                     raise NotImplementedError
 

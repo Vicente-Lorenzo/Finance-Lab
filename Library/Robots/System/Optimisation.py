@@ -302,10 +302,10 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
         thread.manager = ManagerAPI(manager_management=parameters.ManagerManagement)
 
         thread.window = self.window
-        thread.tick_data = self.tick_data
-        thread.bar_data = self.bar_data
+        thread.tick_df = self.tick_df
+        thread.bar_df = self.bar_df
         thread.symbol_data = self.symbol_data
-        thread.quote_conversion_data = self.quote_conversion_data
+        thread.quote_conversion_df = self.quote_conversion_df
         thread.quote_conversion_rate = self.quote_conversion_rate
 
         with thread:
