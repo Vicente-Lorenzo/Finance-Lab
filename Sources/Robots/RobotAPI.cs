@@ -274,7 +274,6 @@ public abstract class RobotAPI
     {
         _logging.Error("An unexpected error occurred in the robot execution");
         _logging.Error(error.TradeResult.ToString());
-        
     }
 
     public void OnException(Exception exception)
