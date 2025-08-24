@@ -18,6 +18,8 @@ class SymbolAPI:
         self.SwapShort: float | None = None
         self.SwapMode: SwapMode | None = None
         self.SwapExtraDay: DayOfWeek | None = None
+        self.SwapTime: int | None = None
+        self.SwapPeriod: int | None = None
         
         self.PointValue: float | None = None
         self.PipValue: float | None = None
@@ -38,6 +40,8 @@ class SymbolAPI:
         self.SwapShort = symbol.SwapShort
         self.SwapMode = symbol.SwapMode
         self.SwapExtraDay = symbol.SwapExtraDay
+        self.SwapTime = symbol.SwapTime
+        self.SwapPeriod = symbol.SwapPeriod
 
     def update_symbol(self, bar: Bar) -> None:
         self.PointValue = self.PointSize * self.LotSize / bar.ClosePrice
@@ -59,7 +63,9 @@ class SymbolAPI:
             SwapLong=self.SwapLong,
             SwapShort=self.SwapShort,
             SwapMode=self.SwapMode,
-            SwapExtraDay=self.SwapExtraDay
+            SwapExtraDay=self.SwapExtraDay,
+            SwapTime=self.SwapTime,
+            SwapPeriod=self.SwapPeriod,
         )
 
     def __repr__(self):

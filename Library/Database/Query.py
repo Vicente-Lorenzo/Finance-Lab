@@ -126,11 +126,13 @@ WHERE NOT EXISTS (
             create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAPSHORT,         "DOUBLE PRECISION"))
             create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAPMODE, "VARCHAR"))
             create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAPEXTRADAY, "VARCHAR"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAPTIME, "INT"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAPPERIOD, "INT"))
 
             # Insert default row if table is empty
             create_script.append(
                 f'INSERT INTO "{symbol}"."Symbol" '
-                f"SELECT 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '0', 0, 0, '0', '0' "
+                f"SELECT 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '0', 0, 0, '0', '0', 0, 0 "
                 f'WHERE NOT EXISTS (SELECT 1 FROM "{symbol}"."Symbol");\n'
             )
 

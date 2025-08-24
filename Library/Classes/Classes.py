@@ -41,6 +41,8 @@ class Symbol:
     SwapShort: float
     SwapMode: SwapMode
     SwapExtraDay: DayOfWeek
+    SwapTime: int = field(default=21)
+    SwapPeriod: int = field(default=24)
 
     def __post_init__(self):
         self.BaseAssetType = AssetType(self.BaseAssetType)

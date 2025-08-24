@@ -24,7 +24,7 @@ class DatabaseAPI:
     SYMBOL_BASEASSET = "BaseAsset"
     SYMBOL_QUOTEASSET = "QuoteAsset"
     SYMBOL_DIGITS = "Digits"
-    SYMBOL_POINTSIZE = "TickSize"
+    SYMBOL_POINTSIZE = "PointSize"
     SYMBOL_PIPSIZE = "PipSize"
     SYMBOL_LOTSIZE = "LotSize"
     SYMBOL_VOLUMEINUNITSMIN = "VolumeInUnitsMin"
@@ -36,6 +36,8 @@ class DatabaseAPI:
     SYMBOL_SWAPSHORT = "SwapShort"
     SYMBOL_SWAPMODE = "SwapCalculationType"
     SYMBOL_SWAPEXTRADAY = "Swap3DaysRollover"
+    SYMBOL_SWAPTIME = "SwapTime"
+    SYMBOL_SWAPPERIOD = "SwapPeriod"
 
     TRADE_POSITIONID = "PositionID"
     TRADE_TRADEID = "TradeID"
@@ -223,14 +225,14 @@ class DatabaseAPI:
                 records = [tuple(row) for row in data.rows()]
 
                 query = f"""
-                INSERT INTO "{self._symbol}"."{self._timeframe}" ("{self.MARKET_TIMESTAMP}", "{self.MARKET_OPENPRICE}", "{self.MARKET_HIGHPRICE}", "{self.MARKET_LOWPRICE}", "{self.MARKET_CLOSEPRICE}", "{self.MARKET_TICKVOLUME}")
+                INSERT INTO "{self._symbol}"."{self._timeframe}" ("{DatabaseAPI.MARKET_TIMESTAMP}", "{DatabaseAPI.MARKET_OPENPRICE}", "{DatabaseAPI.MARKET_HIGHPRICE}", "{DatabaseAPI.MARKET_LOWPRICE}", "{DatabaseAPI.MARKET_CLOSEPRICE}", "{DatabaseAPI.MARKET_TICKVOLUME}")
                 VALUES %s
-                ON CONFLICT ("{self.MARKET_TIMESTAMP}") DO UPDATE SET
-                    "{self.MARKET_OPENPRICE}" = EXCLUDED."{self.MARKET_OPENPRICE}",
-                    "{self.MARKET_HIGHPRICE}" = EXCLUDED."{self.MARKET_HIGHPRICE}",
-                    "{self.MARKET_LOWPRICE}" = EXCLUDED."{self.MARKET_LOWPRICE}",
-                    "{self.MARKET_CLOSEPRICE}" = EXCLUDED."{self.MARKET_CLOSEPRICE}",
-                    "{self.MARKET_TICKVOLUME}" = EXCLUDED."{self.MARKET_TICKVOLUME}";
+                ON CONFLICT ("{DatabaseAPI.MARKET_TIMESTAMP}") DO UPDATE SET
+                    "{DatabaseAPI.MARKET_OPENPRICE}" = EXCLUDED."{DatabaseAPI.MARKET_OPENPRICE}",
+                    "{DatabaseAPI.MARKET_HIGHPRICE}" = EXCLUDED."{DatabaseAPI.MARKET_HIGHPRICE}",
+                    "{DatabaseAPI.MARKET_LOWPRICE}" = EXCLUDED."{DatabaseAPI.MARKET_LOWPRICE}",
+                    "{DatabaseAPI.MARKET_CLOSEPRICE}" = EXCLUDED."{DatabaseAPI.MARKET_CLOSEPRICE}",
+                    "{DatabaseAPI.MARKET_TICKVOLUME}" = EXCLUDED."{DatabaseAPI.MARKET_TICKVOLUME}";
                 """
 
                 pge.execute_values(cursor, query, records)
@@ -252,21 +254,23 @@ class DatabaseAPI:
                 
                 query = f"""
                 UPDATE "{self._symbol}"."Symbol" SET 
-                    "{self.SYMBOL_BASEASSET}" = %s,
-                    "{self.SYMBOL_QUOTEASSET}" = %s,
-                    "{self.SYMBOL_DIGITS}" = %s,
-                    "{self.SYMBOL_POINTSIZE}" = %s,
-                    "{self.SYMBOL_PIPSIZE}" = %s,
-                    "{self.SYMBOL_LOTSIZE}" = %s,
-                    "{self.SYMBOL_VOLUMEINUNITSMIN}" = %s,
-                    "{self.SYMBOL_VOLUMEINUNITSMAX}" = %s,
-                    "{self.SYMBOL_VOLUMEINUNITSSTEP}" = %s,
-                    "{self.SYMBOL_COMMISSION}" = %s,
-                    "{self.SYMBOL_COMMISSIONMODE}" = %s,
-                    "{self.SYMBOL_SWAPLONG}" = %s,
-                    "{self.SYMBOL_SWAPSHORT}" = %s,
-                    "{self.SYMBOL_SWAPMODE}" = %s,
-                    "{self.SYMBOL_SWAPEXTRADAY}" = %s;
+                    "{DatabaseAPI.SYMBOL_BASEASSET}" = %s,
+                    "{DatabaseAPI.SYMBOL_QUOTEASSET}" = %s,
+                    "{DatabaseAPI.SYMBOL_DIGITS}" = %s,
+                    "{DatabaseAPI.SYMBOL_POINTSIZE}" = %s,
+                    "{DatabaseAPI.SYMBOL_PIPSIZE}" = %s,
+                    "{DatabaseAPI.SYMBOL_LOTSIZE}" = %s,
+                    "{DatabaseAPI.SYMBOL_VOLUMEINUNITSMIN}" = %s,
+                    "{DatabaseAPI.SYMBOL_VOLUMEINUNITSMAX}" = %s,
+                    "{DatabaseAPI.SYMBOL_VOLUMEINUNITSSTEP}" = %s,
+                    "{DatabaseAPI.SYMBOL_COMMISSION}" = %s,
+                    "{DatabaseAPI.SYMBOL_COMMISSIONMODE}" = %s,
+                    "{DatabaseAPI.SYMBOL_SWAPLONG}" = %s,
+                    "{DatabaseAPI.SYMBOL_SWAPSHORT}" = %s,
+                    "{DatabaseAPI.SYMBOL_SWAPMODE}" = %s,
+                    "{DatabaseAPI.SYMBOL_SWAPEXTRADAY}" = %s,
+                    "{DatabaseAPI.SYMBOL_SWAPTIME}" = %s,
+                    "{DatabaseAPI.SYMBOL_SWAPPERIOD}" = %s;
                 """
 
                 cursor.execute(query, astuple(symbol))
@@ -288,17 +292,17 @@ class DatabaseAPI:
         conditions = []
 
         if start is not None:
-            start_condition = f'"{self.MARKET_TIMESTAMP}" >= %s'
+            start_condition = f'"{DatabaseAPI.MARKET_TIMESTAMP}" >= %s'
 
 
             if window is not None and window > 0:
                 try:
                     with self._connection.cursor() as cursor:
                         window_query = f"""
-                        SELECT "{self.MARKET_TIMESTAMP}" 
+                        SELECT "{DatabaseAPI.MARKET_TIMESTAMP}" 
                         FROM {table_name} 
-                        WHERE "{self.MARKET_TIMESTAMP}" < %s
-                        ORDER BY "{self.MARKET_TIMESTAMP}" DESC
+                        WHERE "{DatabaseAPI.MARKET_TIMESTAMP}" < %s
+                        ORDER BY "{DatabaseAPI.MARKET_TIMESTAMP}" DESC
                         LIMIT %s;
                         """
                         cursor.execute(window_query, (start, window))
@@ -314,14 +318,14 @@ class DatabaseAPI:
             conditions.append(start_condition)
 
         if stop is not None:
-            stop_condition = f'"{self.MARKET_TIMESTAMP}" <= %s'
+            stop_condition = f'"{DatabaseAPI.MARKET_TIMESTAMP}" <= %s'
             params.append(stop)
             conditions.append(stop_condition)
 
         query = f"SELECT * FROM {table_name}"
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
-        query += f' ORDER BY "{self.MARKET_TIMESTAMP}"'
+        query += f' ORDER BY "{DatabaseAPI.MARKET_TIMESTAMP}"'
 
         try:
             with self._connection.cursor() as cursor:
