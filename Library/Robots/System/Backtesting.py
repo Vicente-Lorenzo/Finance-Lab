@@ -217,23 +217,23 @@ class BacktestingSystemAPI(SystemAPI):
         if self.commission_fee is None:
             match self._commission_type:
                 case CommissionType.Points:
-                    self.commission_fee = lambda timestamp, volume, spread: volume * (self._commission_value * self.symbol_data.PointSize) * self.quote_conversion_rate(timestamp, spread)
+                    self.commission_fee = lambda timestamp, volume, spread: volume * (-self._commission_value * self.symbol_data.PointSize) * self.quote_conversion_rate(timestamp, spread)
                 case CommissionType.Pips:
-                    self.commission_fee = lambda timestamp, volume, spread: volume * (self._commission_value * self.symbol_data.PipSize) * self.quote_conversion_rate(timestamp, spread)
+                    self.commission_fee = lambda timestamp, volume, spread: volume * (-self._commission_value * self.symbol_data.PipSize) * self.quote_conversion_rate(timestamp, spread)
                 case CommissionType.Percentage:
-                    self.commission_fee = lambda timestamp, volume, spread: volume * (self._commission_value / 100.0) * symbol_rate(timestamp) * self.quote_conversion_rate(timestamp, spread)
+                    self.commission_fee = lambda timestamp, volume, spread: volume * (-self._commission_value / 100.0) * symbol_rate(timestamp) * self.quote_conversion_rate(timestamp, spread)
                 case CommissionType.Amount:
-                    self.commission_fee = lambda timestamp, volume, spread: self._commission_value
+                    self.commission_fee = lambda timestamp, volume, spread: -self._commission_value
                 case CommissionType.Accurate:
                     match self.symbol_data.CommissionMode:
                         case CommissionMode.BaseAssetPerMillionVolume:
-                            self.commission_fee = lambda timestamp, volume, spread: volume * (self.symbol_data.Commission / 1_000_000) * self.base_conversion_rate(timestamp, spread)
+                            self.commission_fee = lambda timestamp, volume, spread: volume * (-self.symbol_data.Commission / 1_000_000) * self.base_conversion_rate(timestamp, spread)
                         case CommissionMode.BaseAssetPerOneLot:
-                            self.commission_fee = lambda timestamp, volume, spread: volume * (self.symbol_data.Commission / self.symbol_data.LotSize) * self.base_conversion_rate(timestamp, spread)
+                            self.commission_fee = lambda timestamp, volume, spread: volume * (-self.symbol_data.Commission / self.symbol_data.LotSize) * self.base_conversion_rate(timestamp, spread)
                         case CommissionMode.PercentageOfVolume:
-                            self.commission_fee = lambda timestamp, volume, spread: volume * (self.symbol_data.Commission / 100.0) * symbol_rate(timestamp) * self.quote_conversion_rate(timestamp, spread)
+                            self.commission_fee = lambda timestamp, volume, spread: volume * (-self.symbol_data.Commission / 100.0) * symbol_rate(timestamp) * self.quote_conversion_rate(timestamp, spread)
                         case CommissionMode.QuoteAssetPerOneLot:
-                            self.commission_fee = lambda timestamp, volume, spread: volume * (self.symbol_data.Commission / self.symbol_data.LotSize) * self.quote_conversion_rate(timestamp, spread)
+                            self.commission_fee = lambda timestamp, volume, spread: volume * (-self.symbol_data.Commission / self.symbol_data.LotSize) * self.quote_conversion_rate(timestamp, spread)
 
         if self.swap_buy_fee is None or self.swap_sell_fee is None:
             match self._swap_type:
@@ -288,7 +288,7 @@ class BacktestingSystemAPI(SystemAPI):
         points = price_delta / self.symbol_data.PointSize
         pips = price_delta / self.symbol_data.PipSize
         gross_pnl = price_delta * volume * self.quote_conversion_rate(tick.Timestamp, tick.Spread)
-        commission_pnl = - self.commission_fee(timestamp=tick.Timestamp, volume=volume, spread=tick.Spread)
+        commission_pnl = self.commission_fee(timestamp=tick.Timestamp, volume=volume, spread=tick.Spread)
         swap_pnl = 0.0
         net_pnl = gross_pnl + commission_pnl + swap_pnl
         used_margin = 0.0
