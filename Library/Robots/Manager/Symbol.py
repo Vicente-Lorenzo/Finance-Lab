@@ -18,7 +18,8 @@ class SymbolAPI:
         self.SwapShort: float | None = None
         self.SwapMode: SwapMode | None = None
         self.SwapExtraDay: DayOfWeek | None = None
-        self.SwapTime: int | None = None
+        self.SwapSummerTime: int | None = None
+        self.SwapWinterTime: int | None = None
         self.SwapPeriod: int | None = None
         
         self.PointValue: float | None = None
@@ -40,7 +41,8 @@ class SymbolAPI:
         self.SwapShort = symbol.SwapShort
         self.SwapMode = symbol.SwapMode
         self.SwapExtraDay = symbol.SwapExtraDay
-        self.SwapTime = symbol.SwapTime
+        self.SwapSummerTime = symbol.SwapSummerTime
+        self.SwapWinterTime = symbol.SwapWinterTime
         self.SwapPeriod = symbol.SwapPeriod
 
     def update_symbol(self, bar: Bar) -> None:
@@ -64,7 +66,8 @@ class SymbolAPI:
             SwapShort=self.SwapShort,
             SwapMode=self.SwapMode,
             SwapExtraDay=self.SwapExtraDay,
-            SwapTime=self.SwapTime,
+            SwapSummerTime=self.SwapSummerTime,
+            SwapWinterTime=self.SwapWinterTime,
             SwapPeriod=self.SwapPeriod,
         )
 

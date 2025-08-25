@@ -36,7 +36,8 @@ class DatabaseAPI:
     SYMBOL_SWAPSHORT = "SwapShort"
     SYMBOL_SWAPMODE = "SwapCalculationType"
     SYMBOL_SWAPEXTRADAY = "Swap3DaysRollover"
-    SYMBOL_SWAPTIME = "SwapTime"
+    SYMBOL_SWAPSUMMERTIME = "SwapSummerTime"
+    SYMBOL_SWAPWINTERTIME = "SwapWinterTime"
     SYMBOL_SWAPPERIOD = "SwapPeriod"
 
     TRADE_POSITIONID = "PositionID"
@@ -91,7 +92,8 @@ class DatabaseAPI:
         SYMBOL_SWAPSHORT: pl.Float32(),
         SYMBOL_SWAPMODE: pl.Enum([swap.name for swap in SwapMode]),
         SYMBOL_SWAPEXTRADAY: pl.Enum([day.name for day in DayOfWeek]),
-        SYMBOL_SWAPTIME: pl.Int8(),
+        SYMBOL_SWAPSUMMERTIME: pl.Int8(),
+        SYMBOL_SWAPWINTERTIME: pl.Int8(),
         SYMBOL_SWAPPERIOD: pl.Int8()
     }
 
@@ -271,7 +273,8 @@ class DatabaseAPI:
                     "{DatabaseAPI.SYMBOL_SWAPSHORT}" = %s,
                     "{DatabaseAPI.SYMBOL_SWAPMODE}" = %s,
                     "{DatabaseAPI.SYMBOL_SWAPEXTRADAY}" = %s,
-                    "{DatabaseAPI.SYMBOL_SWAPTIME}" = %s,
+                    "{DatabaseAPI.SYMBOL_SWAPSUMMERTIME}" = %s,
+                    "{DatabaseAPI.SYMBOL_SWAPWINTERTIME}" = %s,
                     "{DatabaseAPI.SYMBOL_SWAPPERIOD}" = %s;
                 """
 
@@ -371,8 +374,9 @@ class DatabaseAPI:
                     SwapShort=result[12],
                     SwapMode=SwapMode(SwapMode[result[13]]),
                     SwapExtraDay=DayOfWeek(DayOfWeek[result[14]]),
-                    SwapTime=result[15],
-                    SwapPeriod=result[16],
+                    SwapSummerTime=result[15],
+                    SwapWinterTime=result[16],
+                    SwapPeriod=result[17],
                 )
         except Exception as e:
             self._log.error(lambda: str(e))
