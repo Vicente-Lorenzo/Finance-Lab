@@ -156,7 +156,7 @@ class RealtimeSystemAPI(SystemAPI):
         swap_long = content[11]
         swap_short = content[12]
         swap_mode = content[13]
-        swap_extra_day = content[14]
+        swap_extra_day = content[14] - 1 % 7
         return Symbol(
             BaseAssetType=base_asset,
             QuoteAssetType=quote_asset,
