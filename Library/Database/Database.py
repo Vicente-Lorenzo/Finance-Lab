@@ -90,7 +90,9 @@ class DatabaseAPI:
         SYMBOL_SWAPLONG: pl.Float32(),
         SYMBOL_SWAPSHORT: pl.Float32(),
         SYMBOL_SWAPMODE: pl.Enum([swap.name for swap in SwapMode]),
-        SYMBOL_SWAPEXTRADAY: pl.Enum([day.name for day in DayOfWeek])
+        SYMBOL_SWAPEXTRADAY: pl.Enum([day.name for day in DayOfWeek]),
+        SYMBOL_SWAPTIME: pl.Int8(),
+        SYMBOL_SWAPPERIOD: pl.Int8()
     }
 
     SCHEMA_TRADE: dict = {
@@ -357,8 +359,8 @@ class DatabaseAPI:
                     BaseAssetType=AssetType(AssetType[result[0]]),
                     QuoteAssetType=AssetType(AssetType[result[1]]),
                     Digits=result[2],
-                    PointSize=result[4],
-                    PipSize=result[3],
+                    PointSize=result[3],
+                    PipSize=result[4],
                     LotSize=result[5],
                     VolumeInUnitsMin=result[6],
                     VolumeInUnitsMax=result[7],
@@ -368,7 +370,9 @@ class DatabaseAPI:
                     SwapLong=result[11],
                     SwapShort=result[12],
                     SwapMode=SwapMode(SwapMode[result[13]]),
-                    SwapExtraDay=DayOfWeek(DayOfWeek[result[14]])
+                    SwapExtraDay=DayOfWeek(DayOfWeek[result[14]]),
+                    SwapTime=result[15],
+                    SwapPeriod=result[16],
                 )
         except Exception as e:
             self._log.error(lambda: str(e))
