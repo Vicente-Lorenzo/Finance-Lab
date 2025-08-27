@@ -41,8 +41,8 @@ class Symbol:
     SwapShort: float
     SwapMode: SwapMode
     SwapExtraDay: DayOfWeek
-    SwapSummerTime: int = field(default=21)
-    SwapWinterTime: int = field(default=22)
+    SwapSummerTime: int = field(default=22)
+    SwapWinterTime: int = field(default=21)
     SwapPeriod: int = field(default=24)
 
     def __post_init__(self):
