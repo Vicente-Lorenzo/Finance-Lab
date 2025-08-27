@@ -320,52 +320,52 @@ class BacktestingSystemAPI(SystemAPI):
                     rollover_timestamp, rollover_isdst = rollover(rollover_timestamp, rollover_isdst)
                 return overnights
 
-            def build_swap_fee_points(swap_points: float):
+            def build_swap_fee_points(points: float):
                 def fn(timestamp, entry_timestamp, exit_timestamp, volume, spread):
                     overnights = calculate_overnights(entry_timestamp, exit_timestamp)
-                    total_quote = volume * swap_points * self.symbol_data.PointSize * overnights
+                    total_quote = volume * points * self.symbol_data.PointSize * overnights
                     return total_quote * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
                 return fn
 
-            def build_swap_fee_pips(swap_pips: float):
+            def build_swap_fee_pips(pips: float):
                 def fn(timestamp, entry_timestamp, exit_timestamp, volume, spread):
                     overnights = calculate_overnights(entry_timestamp, exit_timestamp)
-                    total_quote = volume * swap_pips * self.symbol_data.PipSize * overnights
+                    total_quote = volume * pips * self.symbol_data.PipSize * overnights
                     return total_quote * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
                 return fn
 
-            def build_swap_fee_percent(swap_percent: float, day_count: int = 365):
+            def build_swap_fee_percent(percent: float, day_count: int = 365):
                 def fn(timestamp, entry_timestamp, exit_timestamp, volume, spread):
                     overnights = calculate_overnights(entry_timestamp, exit_timestamp)
                     notional_quote = volume * symbol_rate(timestamp)
-                    total_quote = notional_quote * (swap_percent / 100.0) * (overnights / day_count)
+                    total_quote = notional_quote * (percent / 100.0) * (overnights / day_count)
                     return total_quote * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
                 return fn
 
-            def build_swap_fee_amount(swap_amount: float):
-                return lambda timestamp, entry_timestamp, exit_timestamp, volume, spread: swap_amount
+            def build_swap_fee_amount(amount: float):
+                return lambda timestamp, entry_timestamp, exit_timestamp, volume, spread: amount
 
             match self._swap_type:
                 case SwapType.Points:
-                    self.swap_buy_fee = build_swap_fee_points(self._swap_buy)
-                    self.swap_sell_fee = build_swap_fee_points(self._swap_sell)
+                    self.swap_buy_fee = build_swap_fee_points(points=self._swap_buy)
+                    self.swap_sell_fee = build_swap_fee_points(points=self._swap_sell)
                 case SwapType.Pips:
-                    self.swap_buy_fee = build_swap_fee_pips(self._swap_buy)
-                    self.swap_sell_fee = build_swap_fee_pips(self._swap_sell)
+                    self.swap_buy_fee = build_swap_fee_pips(pips=self._swap_buy)
+                    self.swap_sell_fee = build_swap_fee_pips(pips=self._swap_sell)
                 case SwapType.Percentage:
-                    self.swap_buy_fee = build_swap_fee_percent(self._swap_buy)
-                    self.swap_sell_fee = build_swap_fee_percent(self._swap_sell)
+                    self.swap_buy_fee = build_swap_fee_percent(percent=self._swap_buy)
+                    self.swap_sell_fee = build_swap_fee_percent(percent=self._swap_sell)
                 case SwapType.Amount:
-                    self.swap_buy_fee = build_swap_fee_amount(self._swap_buy)
-                    self.swap_sell_fee = build_swap_fee_amount(self._swap_buy)
+                    self.swap_buy_fee = build_swap_fee_amount(amount=self._swap_buy)
+                    self.swap_sell_fee = build_swap_fee_amount(amount=self._swap_sell)
                 case SwapType.Accurate:
                     match self.symbol_data.SwapMode:
                         case SwapMode.Pips:
-                            self.swap_buy_fee = build_swap_fee_pips(self.symbol_data.SwapLong)
-                            self.swap_sell_fee = build_swap_fee_pips(self.symbol_data.SwapShort)
+                            self.swap_buy_fee = build_swap_fee_pips(pips=self.symbol_data.SwapLong)
+                            self.swap_sell_fee = build_swap_fee_pips(pips=self.symbol_data.SwapShort)
                         case SwapMode.Percentage:
-                            self.swap_buy_fee = build_swap_fee_percent(self.symbol_data.SwapLong)
-                            self.swap_sell_fee = build_swap_fee_percent(self.symbol_data.SwapShort)
+                            self.swap_buy_fee = build_swap_fee_percent(percent=self.symbol_data.SwapLong)
+                            self.swap_sell_fee = build_swap_fee_percent(percent=self.symbol_data.SwapShort)
 
         self._update_id_queue = Queue()
         self._update_args_queue = Queue()
