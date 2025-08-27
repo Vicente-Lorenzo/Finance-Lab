@@ -16,6 +16,7 @@ class PositionAPI:
 
     @staticmethod
     def __modify_position(old_position: Position, new_position: Position) -> None:
+        new_position.DrawdownPoints = old_position.DrawdownPoints
         new_position.DrawdownPips = old_position.DrawdownPips
         new_position.DrawdownPnL = old_position.DrawdownPnL
         new_position.BaseBalance = old_position.BaseBalance
@@ -30,9 +31,11 @@ class PositionAPI:
     @staticmethod
     def __close_position(old_position: Position, new_trade: Trade) -> None:
         if old_position.DrawdownPnL is not None and old_position.DrawdownPips <= new_trade.Pips:
+            new_trade.DrawdownPoints = old_position.DrawdownPoints
             new_trade.DrawdownPips = old_position.DrawdownPips
             new_trade.DrawdownPnL = old_position.DrawdownPnL
         else:
+            new_trade.DrawdownPoints = old_position.DrawdownPoints = min(old_position.DrawdownPoints, new_trade.Points)
             new_trade.DrawdownPips = old_position.DrawdownPips = min(old_position.DrawdownPips, new_trade.Pips)
             new_trade.DrawdownPnL = old_position.DrawdownPnL = min(new_trade.NetPnL * new_trade.DrawdownPips / new_trade.Pips, new_trade.NetPnL)
         new_trade.BaseBalance = old_position.BaseBalance
@@ -82,11 +85,13 @@ class PositionAPI:
     
     def update_position(self, symbol: SymbolAPI, bar: Bar) -> None:
         for position in self.Buys.values():
-            drawdown = (bar.LowPrice - position.EntryPrice) / symbol.PipSize
-            position.DrawdownPips = min(position.DrawdownPips, drawdown)
+            drawdown = (bar.LowPrice - position.EntryPrice)
+            position.DrawdownPoints = min(position.DrawdownPoints, drawdown / symbol.PointSize)
+            position.DrawdownPips = min(position.DrawdownPips, drawdown / symbol.PipSize)
         for position in self.Sells.values():
-            drawdown = (position.EntryPrice - bar.HighPrice) / symbol.PipSize
-            position.DrawdownPips = min(position.DrawdownPips, drawdown)
+            drawdown = (position.EntryPrice - bar.HighPrice)
+            position.DrawdownPoints = min(position.DrawdownPoints, drawdown / symbol.PointSize)
+            position.DrawdownPips = min(position.DrawdownPips, drawdown / symbol.PipSize)
 
     def data(self):
         return self.Buys, self.Sells
