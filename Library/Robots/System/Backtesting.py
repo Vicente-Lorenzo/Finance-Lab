@@ -283,23 +283,23 @@ class BacktestingSystemAPI(SystemAPI):
 
             def build_swap_fee_points(swap_points: float):
                 def fn(timestamp, entry_timestamp, exit_timestamp, volume, spread):
-                    w = calculate_overnights(entry_timestamp, exit_timestamp)
-                    total_quote = volume * swap_points * self.symbol_data.PointSize * w
+                    overnights = calculate_overnights(entry_timestamp, exit_timestamp)
+                    total_quote = volume * swap_points * self.symbol_data.PointSize * overnights
                     return total_quote * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
                 return fn
 
             def build_swap_fee_pips(swap_pips: float):
                 def fn(timestamp, entry_timestamp, exit_timestamp, volume, spread):
-                    w = calculate_overnights(entry_timestamp, exit_timestamp)
-                    total_quote = volume * swap_pips * self.symbol_data.PipSize * w
+                    overnights = calculate_overnights(entry_timestamp, exit_timestamp)
+                    total_quote = volume * swap_pips * self.symbol_data.PipSize * overnights
                     return total_quote * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
                 return fn
 
             def build_swap_fee_percent(swap_percent: float, day_count: int = 365):
                 def fn(timestamp, entry_timestamp, exit_timestamp, volume, spread):
-                    w = calculate_overnights(entry_timestamp, exit_timestamp)
+                    overnights = calculate_overnights(entry_timestamp, exit_timestamp)
                     notional_quote = volume * symbol_rate(timestamp)
-                    total_quote = notional_quote * (swap_percent / 100.0) * (w / day_count)
+                    total_quote = notional_quote * (swap_percent / 100.0) * (overnights / day_count)
                     return total_quote * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
                 return fn
 
