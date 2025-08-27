@@ -205,13 +205,23 @@ class BacktestingSystemAPI(SystemAPI):
                     self._log.error(lambda: f"Quote Asset to Account Asset convertion formula not found")
 
         if self.spread_fee is None:
+
+            def build_spread_fee_points(points: float):
+                return lambda timestamp, price: points * self.symbol_data.PointSize
+
+            def build_spread_fee_pips(pips: float):
+                return lambda timestamp, price: pips * self.symbol_data.PipSize
+
+            def build_spread_fee_percent(percent: float):
+                return lambda timestamp, price: (percent / 100.0) * price
+
             match self._spread_type:
                 case SpreadType.Points:
-                    self.spread_fee = lambda timestamp, price: self._spread_value * self.symbol_data.PointSize
+                    self.spread_fee = build_spread_fee_points(self._spread_value)
                 case SpreadType.Pips:
-                    self.spread_fee = lambda timestamp, price: self._spread_value * self.symbol_data.PipSize
+                    self.spread_fee = build_spread_fee_pips(self._spread_value)
                 case SpreadType.Percentage:
-                    self.spread_fee = lambda timestamp, price: (self._spread_value / 100) * price
+                    self.spread_fee = build_spread_fee_percent(self._spread_value)
                 case SpreadType.Accurate:
                     raise NotImplementedError
 
