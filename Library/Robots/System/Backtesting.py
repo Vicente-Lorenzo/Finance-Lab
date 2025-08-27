@@ -402,7 +402,7 @@ class BacktestingSystemAPI(SystemAPI):
     def _next_tid(self):
         return next(self._tids)
 
-    def _calculate_statistics(self, entry_timestamp: datetime, exit_timestamp: datetime, trade_type: TradeType, volume: float, price_delta: float, tick: Tick) -> tuple[float, float, float, float, float, float, float, float]:
+    def _calculate_statistics(self, entry_timestamp: datetime, exit_timestamp: datetime, trade_type: TradeType, volume: float, price_delta: float, tick: Tick) -> tuple[float, float, float, float, float, float, float]:
         quantity = volume / self.symbol_data.LotSize
         points = price_delta / self.symbol_data.PointSize
         pips = price_delta / self.symbol_data.PipSize
@@ -425,14 +425,13 @@ class BacktestingSystemAPI(SystemAPI):
                     volume=volume,
                     spread=tick.Spread
                 )
-        net_pnl = gross_pnl + commission_pnl + swap_pnl
         used_margin = 0.0
-        return quantity, points, pips, gross_pnl, commission_pnl, swap_pnl, net_pnl, used_margin
+        return quantity, points, pips, gross_pnl, commission_pnl, swap_pnl, used_margin
 
     def _open_position(self, position_type: PositionType, trade_type: TradeType, volume: float, entry_price: float, sl_price: float | None, tp_price: float | None, price_delta: float, tick: Tick) -> Position:
         pid = self._next_pid()
         entry_timestamp = tick.Timestamp
-        quantity, points, pips, gross_pnl, commission_pnl, swap_pnl, net_pnl, used_margin = self._calculate_statistics(
+        quantity, points, pips, gross_pnl, commission_pnl, swap_pnl, used_margin = self._calculate_statistics(
             entry_timestamp=entry_timestamp,
             exit_timestamp=entry_timestamp,
             trade_type=trade_type,
@@ -440,6 +439,7 @@ class BacktestingSystemAPI(SystemAPI):
             price_delta=price_delta,
             tick=tick
         )
+        net_pnl = gross_pnl + commission_pnl + swap_pnl
         return Position(
             PositionID=pid,
             PositionType=position_type,
@@ -478,7 +478,7 @@ class BacktestingSystemAPI(SystemAPI):
         trade_type = position.TradeType
         entry_timestamp = position.EntryTimestamp
         exit_timestamp = tick.Timestamp
-        quantity, points, pips, gross_pnl, commission_pnl, swap_pnl, net_pnl, used_margin = self._calculate_statistics(
+        quantity, points, pips, gross_pnl, commission_pnl, swap_pnl, used_margin = self._calculate_statistics(
             entry_timestamp=entry_timestamp,
             exit_timestamp=exit_timestamp,
             trade_type=trade_type,
@@ -486,6 +486,9 @@ class BacktestingSystemAPI(SystemAPI):
             price_delta=price_delta,
             tick=tick
         )
+        commission_pnl += position.CommissionPnL
+        swap_pnl += position.SwapPnL
+        net_pnl = gross_pnl + commission_pnl + swap_pnl
         return Trade(
             PositionID=position.PositionID,
             TradeID=tid,
@@ -500,7 +503,7 @@ class BacktestingSystemAPI(SystemAPI):
             Points=points,
             Pips=pips,
             GrossPnL=gross_pnl,
-            CommissionPnL=position.CommissionPnL+commission_pnl,
+            CommissionPnL=commission_pnl,
             SwapPnL=swap_pnl,
             NetPnL=net_pnl
         )
