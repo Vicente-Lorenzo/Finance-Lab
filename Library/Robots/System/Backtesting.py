@@ -217,11 +217,11 @@ class BacktestingSystemAPI(SystemAPI):
 
             match self._spread_type:
                 case SpreadType.Points:
-                    self.spread_fee = build_spread_fee_points(self._spread_value)
+                    self.spread_fee = build_spread_fee_points(points=self._spread_value)
                 case SpreadType.Pips:
-                    self.spread_fee = build_spread_fee_pips(self._spread_value)
+                    self.spread_fee = build_spread_fee_pips(pips=self._spread_value)
                 case SpreadType.Percentage:
-                    self.spread_fee = build_spread_fee_percent(self._spread_value)
+                    self.spread_fee = build_spread_fee_percent(percent=self._spread_value)
                 case SpreadType.Accurate:
                     raise NotImplementedError
 
