@@ -247,11 +247,9 @@ class BacktestingSystemAPI(SystemAPI):
                     to_timestamp = at_timestamp + period
                     to_isdst = isdst(to_timestamp)
                     if at_isdst and not to_isdst:
-                        self._log.warning(lambda: f"Detected change from Summer to Winter Time")
                         to_timestamp = to_timestamp.replace(hour=self.symbol_data.SwapWinterTime)
                         return to_timestamp, to_isdst
                     if not at_isdst and to_isdst:
-                        self._log.warning(lambda: f"Detected change from Winter to Summer Time")
                         to_timestamp = to_timestamp.replace(hour=self.symbol_data.SwapSummerTime)
                         return to_timestamp, to_isdst
                     return to_timestamp, to_isdst
@@ -260,8 +258,6 @@ class BacktestingSystemAPI(SystemAPI):
                     return 0
 
                 rollover_isdst = isdst(entry_timestamp)
-                self._log.warning(lambda: f"Detected Entry at {"Summer" if rollover_isdst else "Winter"} Time")
-
                 rollover_timestamp = datetime(
                     year=entry_timestamp.year,
                     month=entry_timestamp.month,
@@ -273,7 +269,6 @@ class BacktestingSystemAPI(SystemAPI):
                     rollover_timestamp, rollover_isdst = rollover(rollover_timestamp, rollover_isdst)
 
                 overnights = 0
-                self._log.warning(lambda: f"Started at {rollover_timestamp}")
                 while rollover_timestamp < exit_timestamp:
                     match rollover_timestamp.weekday():
                         case self.symbol_data.SwapExtraDay.value:
@@ -282,11 +277,8 @@ class BacktestingSystemAPI(SystemAPI):
                             mul = 0
                         case _:
                             mul = 1
-                    self._log.warning(lambda: f"Detected multiplier = {mul} at {DayOfWeek(rollover_timestamp.weekday())}")
                     overnights += mul
                     rollover_timestamp, rollover_isdst = rollover(rollover_timestamp, rollover_isdst)
-                    self._log.warning(lambda: f"Rolled to {rollover_timestamp}")
-                self._log.warning(lambda: f"{entry_timestamp} -> {exit_timestamp} = {overnights} overnights")
                 return overnights
 
             def build_swap_fee_points(nightly_points: float):
