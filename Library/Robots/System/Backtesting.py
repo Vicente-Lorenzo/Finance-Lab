@@ -226,25 +226,54 @@ class BacktestingSystemAPI(SystemAPI):
                     raise NotImplementedError
 
         if self.commission_fee is None:
+
+            def build_commission_fee_points(points: float):
+                def fn(timestamp, volume, spread):
+                    total_quote = volume * (-points * self.symbol_data.PointSize)
+                    return total_quote * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
+                return fn
+
+            def build_commission_fee_pips(pips: float):
+                def fn(timestamp, volume, spread):
+                    total_quote = volume * (-pips * self.symbol_data.PipSize)
+                    return total_quote * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
+                return fn
+
+            def build_commission_fee_percent(percent: float):
+                def fn(timestamp, volume, spread):
+                    notional_quote = volume * symbol_rate(timestamp)
+                    total_quote = (-percent / 100.0) * notional_quote
+                    return total_quote * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
+                return fn
+
+            def build_commission_fee_amount(amount: float):
+                return lambda timestamp, volume, spread: -amount
+
+            def build_commission_fee_ratio(ratio: float, size: float, conversion_rate: Callable):
+                def fn(timestamp, volume, spread):
+                    total = volume * (-ratio / size)
+                    return total * conversion_rate(timestamp=timestamp, spread=spread)
+                return fn
+
             match self._commission_type:
                 case CommissionType.Points:
-                    self.commission_fee = lambda timestamp, volume, spread: volume * (-self._commission_value * self.symbol_data.PointSize) * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
+                    self.commission_fee = build_commission_fee_points(points=self._commission_value)
                 case CommissionType.Pips:
-                    self.commission_fee = lambda timestamp, volume, spread: volume * (-self._commission_value * self.symbol_data.PipSize) * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
+                    self.commission_fee = build_commission_fee_pips(pips=self._commission_value)
                 case CommissionType.Percentage:
-                    self.commission_fee = lambda timestamp, volume, spread: volume * (-self._commission_value / 100.0) * symbol_rate(timestamp) * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
+                    self.commission_fee = build_commission_fee_percent(percent=self._commission_value)
                 case CommissionType.Amount:
-                    self.commission_fee = lambda timestamp, volume, spread: -self._commission_value
+                    self.commission_fee = build_commission_fee_amount(amount=self._commission_value)
                 case CommissionType.Accurate:
                     match self.symbol_data.CommissionMode:
                         case CommissionMode.BaseAssetPerMillionVolume:
-                            self.commission_fee = lambda timestamp, volume, spread: volume * (-self.symbol_data.Commission / 1_000_000) * self.base_conversion_rate(timestamp=timestamp, spread=spread)
+                            self.commission_fee = build_commission_fee_ratio(ratio=self.symbol_data.Commission, size=1_000_000, conversion_rate=self.base_conversion_rate)
                         case CommissionMode.BaseAssetPerOneLot:
-                            self.commission_fee = lambda timestamp, volume, spread: volume * (-self.symbol_data.Commission / self.symbol_data.LotSize) * self.base_conversion_rate(timestamp=timestamp, spread=spread)
+                            self.commission_fee = build_commission_fee_ratio(ratio=self.symbol_data.Commission, size=self.symbol_data.LotSize, conversion_rate=self.base_conversion_rate)
                         case CommissionMode.PercentageOfVolume:
-                            self.commission_fee = lambda timestamp, volume, spread: volume * (-self.symbol_data.Commission / 100.0) * symbol_rate(timestamp) * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
+                            self.commission_fee = build_commission_fee_percent(percent=self.symbol_data.Commission)
                         case CommissionMode.QuoteAssetPerOneLot:
-                            self.commission_fee = lambda timestamp, volume, spread: volume * (-self.symbol_data.Commission / self.symbol_data.LotSize) * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
+                            self.commission_fee = build_commission_fee_ratio(ratio=self.symbol_data.Commission, size=self.symbol_data.LotSize, conversion_rate=self.quote_conversion_rate)
 
         if self.swap_buy_fee is None or self.swap_sell_fee is None:
 
