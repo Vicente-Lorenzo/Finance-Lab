@@ -1,7 +1,8 @@
 import copy
 import polars as pl
 
-from datetime import date, datetime
+from time import localtime
+from datetime import date, datetime, timedelta
 from itertools import count
 from queue import Queue
 from typing import Type, Iterator, Callable
@@ -44,8 +45,8 @@ class BacktestingSystemAPI(SystemAPI):
 
     spread_fee: Callable[[datetime, float], float] | None = None
     commission_fee: Callable[[datetime, float, float], float] | None = None
-    swap_buy_fee: Callable[[datetime, float], float] | None = None
-    swap_sell_fee: Callable[[datetime, float], float] | None = None
+    swap_buy_fee: Callable[[datetime, datetime, datetime, float, float], float] | None = None
+    swap_sell_fee: Callable[[datetime, datetime, datetime, float, float], float] | None = None
 
     window: int | None = None
     offset: int | None = None
@@ -217,36 +218,123 @@ class BacktestingSystemAPI(SystemAPI):
         if self.commission_fee is None:
             match self._commission_type:
                 case CommissionType.Points:
-                    self.commission_fee = lambda timestamp, volume, spread: volume * (-self._commission_value * self.symbol_data.PointSize) * self.quote_conversion_rate(timestamp, spread)
+                    self.commission_fee = lambda timestamp, volume, spread: volume * (-self._commission_value * self.symbol_data.PointSize) * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
                 case CommissionType.Pips:
-                    self.commission_fee = lambda timestamp, volume, spread: volume * (-self._commission_value * self.symbol_data.PipSize) * self.quote_conversion_rate(timestamp, spread)
+                    self.commission_fee = lambda timestamp, volume, spread: volume * (-self._commission_value * self.symbol_data.PipSize) * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
                 case CommissionType.Percentage:
-                    self.commission_fee = lambda timestamp, volume, spread: volume * (-self._commission_value / 100.0) * symbol_rate(timestamp) * self.quote_conversion_rate(timestamp, spread)
+                    self.commission_fee = lambda timestamp, volume, spread: volume * (-self._commission_value / 100.0) * symbol_rate(timestamp) * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
                 case CommissionType.Amount:
                     self.commission_fee = lambda timestamp, volume, spread: -self._commission_value
                 case CommissionType.Accurate:
                     match self.symbol_data.CommissionMode:
                         case CommissionMode.BaseAssetPerMillionVolume:
-                            self.commission_fee = lambda timestamp, volume, spread: volume * (-self.symbol_data.Commission / 1_000_000) * self.base_conversion_rate(timestamp, spread)
+                            self.commission_fee = lambda timestamp, volume, spread: volume * (-self.symbol_data.Commission / 1_000_000) * self.base_conversion_rate(timestamp=timestamp, spread=spread)
                         case CommissionMode.BaseAssetPerOneLot:
-                            self.commission_fee = lambda timestamp, volume, spread: volume * (-self.symbol_data.Commission / self.symbol_data.LotSize) * self.base_conversion_rate(timestamp, spread)
+                            self.commission_fee = lambda timestamp, volume, spread: volume * (-self.symbol_data.Commission / self.symbol_data.LotSize) * self.base_conversion_rate(timestamp=timestamp, spread=spread)
                         case CommissionMode.PercentageOfVolume:
-                            self.commission_fee = lambda timestamp, volume, spread: volume * (-self.symbol_data.Commission / 100.0) * symbol_rate(timestamp) * self.quote_conversion_rate(timestamp, spread)
+                            self.commission_fee = lambda timestamp, volume, spread: volume * (-self.symbol_data.Commission / 100.0) * symbol_rate(timestamp) * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
                         case CommissionMode.QuoteAssetPerOneLot:
-                            self.commission_fee = lambda timestamp, volume, spread: volume * (-self.symbol_data.Commission / self.symbol_data.LotSize) * self.quote_conversion_rate(timestamp, spread)
+                            self.commission_fee = lambda timestamp, volume, spread: volume * (-self.symbol_data.Commission / self.symbol_data.LotSize) * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
 
         if self.swap_buy_fee is None or self.swap_sell_fee is None:
+
+            def calculate_overnights(entry_timestamp, exit_timestamp) -> int:
+
+                def isdst(timestamp):
+                    return bool(localtime(timestamp.timestamp()).tm_isdst)
+
+                def rollover(at_timestamp: datetime, at_isdst, period=timedelta(hours=self.symbol_data.SwapPeriod)):
+                    to_timestamp = at_timestamp + period
+                    to_isdst = isdst(to_timestamp)
+                    if at_isdst and not to_isdst:
+                        self._log.warning(lambda: f"Detected change from Summer to Winter Time")
+                        to_timestamp = to_timestamp.replace(hour=self.symbol_data.SwapWinterTime)
+                        return to_timestamp, to_isdst
+                    if not at_isdst and to_isdst:
+                        self._log.warning(lambda: f"Detected change from Winter to Summer Time")
+                        to_timestamp = to_timestamp.replace(hour=self.symbol_data.SwapSummerTime)
+                        return to_timestamp, to_isdst
+                    return to_timestamp, to_isdst
+
+                if exit_timestamp <= entry_timestamp:
+                    return 0
+
+                rollover_isdst = isdst(entry_timestamp)
+                self._log.warning(lambda: f"Detected Entry at {"Summer" if rollover_isdst else "Winter"} Time")
+
+                rollover_timestamp = datetime(
+                    year=entry_timestamp.year,
+                    month=entry_timestamp.month,
+                    day=entry_timestamp.day,
+                    hour=self.symbol_data.SwapSummerTime if rollover_isdst else self.symbol_data.SwapWinterTime,
+                )
+
+                while rollover_timestamp < entry_timestamp:
+                    rollover_timestamp, rollover_isdst = rollover(rollover_timestamp, rollover_isdst)
+
+                overnights = 0
+                self._log.warning(lambda: f"Started at {rollover_timestamp}")
+                while rollover_timestamp < exit_timestamp:
+                    match rollover_timestamp.weekday():
+                        case self.symbol_data.SwapExtraDay.value:
+                            mul = 3
+                        case DayOfWeek.Saturday.value | DayOfWeek.Sunday.value:
+                            mul = 0
+                        case _:
+                            mul = 1
+                    self._log.warning(lambda: f"Detected multiplier = {mul} at {DayOfWeek(rollover_timestamp.weekday())}")
+                    overnights += mul
+                    rollover_timestamp, rollover_isdst = rollover(rollover_timestamp, rollover_isdst)
+                    self._log.warning(lambda: f"Rolled to {rollover_timestamp}")
+                self._log.warning(lambda: f"{entry_timestamp} -> {exit_timestamp} = {overnights} overnights")
+                return overnights
+
+            def build_swap_fee_points(nightly_points: float):
+                def fn(timestamp, entry_timestamp, exit_timestamp, volume, spread):
+                    w = calculate_overnights(entry_timestamp, exit_timestamp)
+                    total_quote = volume * nightly_points * self.symbol_data.PointSize * w
+                    return total_quote * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
+                return fn
+
+            def build_swap_fee_pips(nightly_pips: float):
+                def fn(timestamp, entry_timestamp, exit_timestamp, volume, spread):
+                    w = calculate_overnights(entry_timestamp, exit_timestamp)
+                    total_quote = volume * nightly_pips * self.symbol_data.PipSize * w
+                    return total_quote * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
+                return fn
+
+            def build_swap_fee_percent(nightly_percent: float, day_count: int = 365):
+                def fn(timestamp, entry_timestamp, exit_timestamp, volume, spread):
+                    w = calculate_overnights(entry_timestamp, exit_timestamp)
+                    notional_quote = volume * symbol_rate(timestamp)
+                    total_quote = notional_quote * (nightly_percent / 100.0) * (w / day_count)
+                    return total_quote * self.quote_conversion_rate(timestamp=timestamp, spread=spread)
+                return fn
+
+            def build_swap_fee_amount(nightly_amount: float):
+                return lambda timestamp, entry_timestamp, exit_timestamp, volume, spread: nightly_amount
+
             match self._swap_type:
                 case SwapType.Points:
-                    raise NotImplementedError
+                    self.swap_buy_fee = build_swap_fee_points(self._swap_buy)
+                    self.swap_sell_fee = build_swap_fee_points(self._swap_sell)
                 case SwapType.Pips:
-                    raise NotImplementedError
+                    self.swap_buy_fee = build_swap_fee_pips(self._swap_buy)
+                    self.swap_sell_fee = build_swap_fee_pips(self._swap_sell)
                 case SwapType.Percentage:
-                    raise NotImplementedError
+                    self.swap_buy_fee = build_swap_fee_percent(self._swap_buy)
+                    self.swap_sell_fee = build_swap_fee_percent(self._swap_sell)
                 case SwapType.Amount:
-                    raise NotImplementedError
+                    self.swap_buy_fee = build_swap_fee_amount(self._swap_buy)
+                    self.swap_sell_fee = build_swap_fee_amount(self._swap_buy)
                 case SwapType.Accurate:
-                    raise NotImplementedError
+                    match self.symbol_data.SwapMode:
+                        case SwapMode.Pips:
+                            self.swap_buy_fee = build_swap_fee_pips(self.symbol_data.SwapLong)
+                            self.swap_sell_fee = build_swap_fee_pips(self.symbol_data.SwapShort)
+                        case SwapMode.Percentage:
+                            self.swap_buy_fee = build_swap_fee_percent(self.symbol_data.SwapLong)
+                            self.swap_sell_fee = build_swap_fee_percent(self.symbol_data.SwapShort)
 
         self._update_id_queue = Queue()
         self._update_args_queue = Queue()
@@ -283,26 +371,49 @@ class BacktestingSystemAPI(SystemAPI):
     def _next_tid(self):
         return next(self._tids)
 
-    def _calculate_metrics(self, volume: float, price_delta: float, tick: Tick) -> tuple[float, float, float, float, float, float, float, float]:
+    def _calculate_statistics(self, entry_timestamp: datetime, exit_timestamp: datetime, trade_type: TradeType, volume: float, price_delta: float, tick: Tick) -> tuple[float, float, float, float, float, float, float, float]:
         quantity = volume / self.symbol_data.LotSize
         points = price_delta / self.symbol_data.PointSize
         pips = price_delta / self.symbol_data.PipSize
-        gross_pnl = price_delta * volume * self.quote_conversion_rate(tick.Timestamp, tick.Spread)
+        gross_pnl = price_delta * volume * self.quote_conversion_rate(timestamp=tick.Timestamp, spread=tick.Spread)
         commission_pnl = self.commission_fee(timestamp=tick.Timestamp, volume=volume, spread=tick.Spread)
-        swap_pnl = 0.0
+        match trade_type:
+            case TradeType.Buy:
+                swap_pnl = self.swap_buy_fee(
+                    timestamp=tick.Timestamp,
+                    entry_timestamp=entry_timestamp,
+                    exit_timestamp=exit_timestamp,
+                    volume=volume,
+                    spread=tick.Spread
+                )
+            case TradeType.Sell:
+                swap_pnl = self.swap_sell_fee(
+                    timestamp=tick.Timestamp,
+                    entry_timestamp=entry_timestamp,
+                    exit_timestamp=exit_timestamp,
+                    volume=volume,
+                    spread=tick.Spread
+                )
         net_pnl = gross_pnl + commission_pnl + swap_pnl
         used_margin = 0.0
         return quantity, points, pips, gross_pnl, commission_pnl, swap_pnl, net_pnl, used_margin
 
     def _open_position(self, position_type: PositionType, trade_type: TradeType, volume: float, entry_price: float, sl_price: float | None, tp_price: float | None, price_delta: float, tick: Tick) -> Position:
         pid = self._next_pid()
-        entry_time = tick.Timestamp
-        quantity, points, pips, gross_pnl, commission_pnl, swap_pnl, net_pnl, used_margin = self._calculate_metrics(volume, price_delta, tick)
+        entry_timestamp = tick.Timestamp
+        quantity, points, pips, gross_pnl, commission_pnl, swap_pnl, net_pnl, used_margin = self._calculate_statistics(
+            entry_timestamp=entry_timestamp,
+            exit_timestamp=entry_timestamp,
+            trade_type=trade_type,
+            volume=volume,
+            price_delta=price_delta,
+            tick=tick
+        )
         return Position(
             PositionID=pid,
             PositionType=position_type,
             TradeType=trade_type,
-            EntryTimestamp=entry_time,
+            EntryTimestamp=entry_timestamp,
             EntryPrice=entry_price,
             Volume=volume,
             Quantity=quantity,
@@ -333,15 +444,24 @@ class BacktestingSystemAPI(SystemAPI):
 
     def _close_position(self, position: Position, exit_price: float, price_delta: float, tick: Tick) -> Trade:
         tid = self._next_tid()
-        exit_time = tick.Timestamp
-        quantity, points, pips, gross_pnl, commission_pnl, swap_pnl, net_pnl, used_margin = self._calculate_metrics(position.Volume, price_delta, tick)
+        trade_type = position.TradeType
+        entry_timestamp = position.EntryTimestamp
+        exit_timestamp = tick.Timestamp
+        quantity, points, pips, gross_pnl, commission_pnl, swap_pnl, net_pnl, used_margin = self._calculate_statistics(
+            entry_timestamp=entry_timestamp,
+            exit_timestamp=exit_timestamp,
+            trade_type=trade_type,
+            volume=position.Volume,
+            price_delta=price_delta,
+            tick=tick
+        )
         return Trade(
             PositionID=position.PositionID,
             TradeID=tid,
             PositionType=position.PositionType,
-            TradeType=position.TradeType,
-            EntryTimestamp=position.EntryTimestamp,
-            ExitTimestamp=exit_time,
+            TradeType=trade_type,
+            EntryTimestamp=entry_timestamp,
+            ExitTimestamp=exit_timestamp,
             EntryPrice=position.EntryPrice,
             ExitPrice=exit_price,
             Volume=position.Volume,
@@ -417,28 +537,32 @@ class BacktestingSystemAPI(SystemAPI):
 
         update_id: UpdateID | None = None
         trade: Trade | None = None
+
         initial_volume: float = position.Volume
         initial_commission: float = position.CommissionPnL
+
+        position.Volume = initial_volume - action.Volume
+        closing_volume_ratio = position.Volume / initial_volume
+        remaining_volume_ratio = action.Volume / initial_volume
+        position.CommissionPnL = initial_commission * closing_volume_ratio
+
         match action.ActionID:
             case ActionID.ModifyBuyVolume:
                 if equals(action.Volume, 0.0):
                     self._log.warning(lambda: f"Action Modify Volume: Closing Buy position as Volume is zero")
                     return self.send_action_close(CloseBuyAction(action.PositionID))
                 update_id = UpdateID.ModifiedBuyVolume
-                position.Volume = initial_volume - action.Volume
-                position.CommissionPnL = initial_commission * (position.Volume / initial_volume)
                 trade = self._close_buy_position(position, self._tick_open_next)
             case ActionID.ModifySellVolume:
                 if equals(action.Volume, 0.0):
                     self._log.warning(lambda: f"Action Modify Volume: Closing Sell position as Volume is zero")
                     return self.send_action_close(CloseSellAction(action.PositionID))
                 update_id = UpdateID.ModifiedSellVolume
-                position.Volume = initial_volume - action.Volume
-                position.CommissionPnL = initial_commission * (position.Volume / initial_volume)
                 trade = self._close_sell_position(position, self._tick_open_next)
 
         position.Volume = action.Volume
-        position.CommissionPnL = initial_commission * (action.Volume / initial_volume)
+        position.CommissionPnL = initial_commission * remaining_volume_ratio
+
         self._account_data.Balance += trade.NetPnL
         self._account_data.Equity += trade.NetPnL
         self._update_position(position.PositionID, position)
@@ -455,9 +579,6 @@ class BacktestingSystemAPI(SystemAPI):
             return self._log.error(lambda: "Action Modify Stop Loss: Position not found")
         if equals(action.StopLoss, position.StopLoss):
             return self._log.error(lambda: f"Action Modify Stop Loss: Invalid new Stop Loss equal to old Stop Loss ({action.StopLoss})")
-        # Investigate why I did this
-        # if action.StopLoss:
-        #     action.StopLoss = action.StopLoss
 
         update_id: UpdateID | None = None
         match action.ActionID:
@@ -484,9 +605,6 @@ class BacktestingSystemAPI(SystemAPI):
             return self._log.error(lambda: "Action Modify Take Profit: Position not found")
         if equals(action.TakeProfit, position.TakeProfit):
             return self._log.error(lambda: f"Action Modify Take Profit: Invalid new Take Profit equal to old Take Profit ({action.TakeProfit})")
-        # Investigate why I did this
-        # if action.TakeProfit:
-        #     action.TakeProfit = action.TakeProfit
 
         update_id: UpdateID | None = None
         match action.ActionID:
