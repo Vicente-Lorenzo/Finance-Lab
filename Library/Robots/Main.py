@@ -1,3 +1,4 @@
+import os
 import polars as pl
 from typing import Type
 from pathlib import Path
@@ -53,6 +54,7 @@ parser.add_argument("--training", type=int, required=False)
 parser.add_argument("--validation", type=int, required=False)
 parser.add_argument("--testing", type=int, required=False)
 parser.add_argument("--fitness", type=str, required=False, choices=StatisticsAPI.Metrics)
+parser.add_argument("--threads", type=int, required=False, default=os.cpu_count())
 
 parser.add_argument("--episodes", type=int, required=False)
 
@@ -148,10 +150,26 @@ def main():
                 parser.error("--start is required for Optimisation System")
             if args.stop is None:
                 parser.error("--stop is required for Optimisation System")
-            if args.balance is None:
-                parser.error("--balance is required for Optimisation System")
-            if args.spread is None:
-                parser.error("--spread is required for Optimisation System")
+            if args.account_asset is None:
+                parser.error("--account-asset is required for Optimisation System")
+            if args.account_balance is None:
+                parser.error("--account-balance is required for Optimisation System")
+            if args.account_leverage is None:
+                parser.error("--account-leverage is required for Optimisation System")
+            if args.spread_type is None:
+                parser.error("--spread-type is required for Optimisation System")
+            if args.spread_type != SpreadType.Accurate.name and args.spread_value is None:
+                parser.error("--spread-value is required for Optimisation System")
+            if args.commission_type is None:
+                parser.error("--commission-type is required for Optimisation System")
+            if args.commission_type != CommissionType.Accurate.name and args.commission_value is None:
+                parser.error("--commission-value is required for Optimisation System")
+            if args.swap_type is None:
+                parser.error("--swap-type is required for Optimisation System")
+            if args.swap_type != SwapType.Accurate.name and args.swap_buy is None:
+                parser.error("--swap-buy is required for Optimisation System")
+            if args.swap_type != SwapType.Accurate.name and args.swap_sell is None:
+                parser.error("--swap-sell is required for Optimisation System")
             if args.training is None:
                 parser.error("--training is required for Optimisation System")
             if args.validation is None:
@@ -172,12 +190,15 @@ def main():
                 configuration=config,
                 start=args.start,
                 stop=args.stop,
+                account=(AssetType(AssetType[args.account_asset]), args.account_balance, args.account_leverage),
+                spread=(SpreadType(SpreadType[args.spread_type]), args.spread_value),
+                commission=(CommissionType(CommissionType[args.commission_type]), args.commission_value),
+                swap=(SwapType(SwapType[args.swap_type]), args.swap_buy, args.swap_sell),
                 training=args.training,
                 validation=args.validation,
                 testing=args.testing,
-                balance=args.balance,
-                spread=args.spread,
-                fitness=args.fitness
+                fitness=args.fitness,
+                threads=args.threads
             )
         case SystemType.Learning.name:
             if args.start is None:

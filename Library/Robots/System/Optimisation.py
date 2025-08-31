@@ -1,4 +1,3 @@
-import os
 import copy
 import itertools
 import threading
@@ -13,7 +12,7 @@ from concurrent.futures import as_completed, ThreadPoolExecutor
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
-from Library.Classes import VerboseType, TechnicalType, Technical
+from Library.Classes import *
 from Library.Parameters import Parameters
 from Library.Utils import timer, image, gantt
 
@@ -31,7 +30,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
     WFVALSTOP = "Validation Stop"
     WFOPTFITNESS = "{0} (Optimisation)"
     WFVALFITNESS = "{0} (Validation)"
-    
+
     DOFSTAGEID = "Degrees-of-Freedom ID"
     CTFSTAGEID = "Coarse-to-Fine ID"
     BACKTESTSTAGEID = "Backtest ID"
@@ -44,16 +43,32 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
                  strategy: Type[StrategyAPI],
                  parameters: Parameters,
                  configuration: Parameters,
-                 start: str,
-                 stop: str,
+                 start: str | date,
+                 stop: str | date,
+                 account: tuple[AssetType, float, float],
+                 spread: tuple[SpreadType, float],
+                 commission: tuple[CommissionType, float],
+                 swap: tuple[SwapType, float, float],
                  training: int,
                  validation: int,
                  testing: int,
-                 balance: float,
-                 spread: float,
-                 fitness: str) -> None:
-        
-        super().__init__(broker=broker, group=group, symbol=symbol, timeframe=timeframe, strategy=strategy, parameters=parameters, start=start, stop=stop, balance=balance, spread=spread)
+                 fitness: str,
+                 threads: int | None) -> None:
+
+        super().__init__(
+            broker=broker,
+            group=group,
+            symbol=symbol,
+            timeframe=timeframe,
+            strategy=strategy,
+            parameters=parameters,
+            start=start,
+            stop=stop,
+            account=account,
+            spread=spread,
+            commission=commission,
+            swap=swap
+        )
 
         self._configuration: Parameters = configuration
         self._training: int = training
@@ -62,24 +77,27 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
         self._fitness: str = fitness
 
         self._wf_stages = self.unpack_walk_forward_stages(self._start_date, self._stop_date, self._training, self._validation, self._testing)
-        
+
         self._dof_stages = self.unpack_degrees_of_freedom_stages(self._configuration.MoneyManagement,
                                                                  self._configuration.RiskManagement,
                                                                  self._configuration.SignalManagement,
                                                                  self._configuration.AnalystManagement,
                                                                  self._configuration.ManagerManagement)
-        
+
         self.window: int = self.unpack_degrees_of_freedom_window(self._dof_stages)
-        
+
         self._btid_lock = threading.Lock()
         self._btid: int = -1
+
+        self.threads = threads
+        self._log.debug(lambda: f"Working with {threads} threads")
 
     @staticmethod
     def unpack_walk_forward_stages(start: date, stop: date, training: int, validation: int, testing: int) -> list[tuple[tuple[date, date] | None, tuple[date, date] | None]]:
         walk_forward = []
         current_start: date = start
         step: int = min(training, validation) if training > 0 and validation > 0 else training or validation
-    
+
         if validation > 0:
             while True:
                 train_start: date = current_start
@@ -99,7 +117,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
         final_training_start: date = max(start, stop - relativedelta(months=training)).replace(day=1) if training > 0 else None
         final_training: tuple[date, date] | None = (final_training_start, stop) if final_training_start else None
         final_testing: tuple[date, date] | None = (test_start, test_stop) if test_start else None
-    
+
         walk_forward.append((final_training, final_testing))
 
         return walk_forward
@@ -114,7 +132,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
                 except AttributeError:
                     stage_stop = int(stage_range)
                 stage_count = max(stage_count, stage_stop)
-            
+
             parameters_range = [None] * stage_count
             for stage_range, parameters in engine_parameters.items():
                 try:
@@ -125,20 +143,20 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
                 for stage in range(stage_start, stage_stop + 1):
                     parameters_range[stage - 1] = parameters
             return parameters_range
-        
+
         return [{"MoneyManagement": money_parameters, "RiskManagement": risk_parameters, "SignalManagement": signal_parameters, "AnalystManagement": analyst_parameters, "ManagerManagement": manager_parameters}
                 for money_parameters, risk_parameters, signal_parameters, analyst_parameters, manager_parameters in zip(unpack_engine(money_parameters), unpack_engine(risk_parameters), unpack_engine(signal_parameters), unpack_engine(analyst_parameters), unpack_engine(manager_parameters))]
-    
+
     @staticmethod
     def unpack_degrees_of_freedom_window(dof_stages: list[dict]) -> int:
         def unpack_engine(engine_parameters: dict) -> int:
-            
+
             def unpack_literal_window(candidate: list) -> int:
                 tparams = candidate[1:]
                 if not tparams:
                     return AnalystAPI.MARGIN
                 return max(tparams) + AnalystAPI.MARGIN
-            
+
             def unpack_technical_window(candidate: Technical) -> int:
                 tparams = candidate.Parameters
                 window = AnalystAPI.MARGIN
@@ -234,7 +252,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
                     parameters[parameter_name] = parameter_value
 
             return tune, parameters
-        
+
         _, money_engine = unpack_engine("MoneyManagement", dof_stage["MoneyManagement"])
         _, risk_engine = unpack_engine("RiskManagement", dof_stage["RiskManagement"])
         _, signal_engine = unpack_engine("SignalManagement", dof_stage["SignalManagement"])
@@ -245,7 +263,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
                 "SignalManagement": signal_engine,
                 "AnalystManagement": analyst_engine,
                 "ManagerManagement": manager_engine} if analyst_tune else None
-    
+
     @staticmethod
     def pack_coarse_to_fine_parameters(dof_stage: dict, ctf_params: Parameters) -> dict:
         engine_parameters = dof_stage[(engine_name := "AnalystManagement")]
@@ -271,7 +289,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
                     backtest[engine_name][parameter_name] = parameter_value
                 backtests.append(backtest)
             return backtests
-        
+
         template = copy.deepcopy(ctf_stage)
         return unpack_parameters({**unpack_selected("MoneyManagement", ctf_stage["MoneyManagement"]),
                                   **unpack_selected("RiskManagement", ctf_stage["RiskManagement"]),
@@ -294,19 +312,29 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
             parameters=parameters,
             start=start,
             stop=stop,
-            balance=self._balance,
-            spread=self._spread_pips)
+            account=self.account,
+            spread=self.spread,
+            commission=self.commission,
+            swap=self.swap
+        )
 
         thread.strategy = self._strategy(money_management=parameters.MoneyManagement, risk_management=parameters.RiskManagement, signal_management=parameters.SignalManagement)
         thread.analyst = AnalystAPI(analyst_management=parameters.AnalystManagement)
         thread.manager = ManagerAPI(manager_management=parameters.ManagerManagement)
 
-        thread.window = self.window
         thread.tick_df = self.tick_df
         thread.bar_df = self.bar_df
         thread.symbol_data = self.symbol_data
+        thread.base_conversion_df = self.base_conversion_df
+        thread.base_conversion_rate = self.base_conversion_rate
         thread.quote_conversion_df = self.quote_conversion_df
         thread.quote_conversion_rate = self.quote_conversion_rate
+        thread.spread_fee = self.spread_fee
+        thread.commission_fee = self.commission_fee
+        thread.swap_buy_fee = self.swap_buy_fee
+        thread.swap_sell_fee = self.swap_sell_fee
+        thread.window = self.window
+        thread.offset = self.offset
 
         with thread:
             thread.start()
@@ -326,7 +354,7 @@ class OptimisationSystemAPI(BacktestingSystemAPI):
 
         self._log.level(VerboseType.Exception)
 
-        with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+        with ThreadPoolExecutor(max_workers=self.threads) as executor:
 
             futures = [executor.submit(self.run_backtest_stage, Parameters(data=params, path=self.parameters.path), start, stop) for params in parameters]
 

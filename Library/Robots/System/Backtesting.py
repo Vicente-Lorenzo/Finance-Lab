@@ -25,6 +25,7 @@ class BacktestingSystemAPI(SystemAPI):
     TICK = watchlist.Timeframes[0]
     SYMBOLS = [symbol for group in watchlist.Symbols.values() for symbol in group]
 
+    account: tuple[AssetType, float, float] | None = None
     account_data: Account | None = None
 
     tick_db: DatabaseAPI | None = None
@@ -43,8 +44,13 @@ class BacktestingSystemAPI(SystemAPI):
     quote_conversion_df: pl.DataFrame | None = None
     quote_conversion_rate: Callable[[datetime, float], float] | None = None
 
+    spread: tuple[SpreadType, float] | None = None
     spread_fee: Callable[[datetime, float], float] | None = None
+
+    commission: tuple[CommissionType, float] | None = None
     commission_fee: Callable[[datetime, float, float], float] | None = None
+
+    swap: tuple[SwapType, float, float] | None = None
     swap_buy_fee: Callable[[datetime, datetime, datetime, float, float], float] | None = None
     swap_sell_fee: Callable[[datetime, datetime, datetime, float, float], float] | None = None
 
@@ -76,11 +82,15 @@ class BacktestingSystemAPI(SystemAPI):
         self._start_str, self._start_date = parse_date(start)
         self._stop_str, self._stop_date = parse_date(stop)
 
+        self.account = account
         self._account_asset, self._account_balance, self._account_leverage = account
         self._account_data: Account | None = None
 
+        self.spread = spread
         self._spread_type, self._spread_value = spread
+        self.commission = commission
         self._commission_type, self._commission_value = commission
+        self.swap = swap
         self._swap_type, self._swap_buy, self._swap_sell  = swap
 
         self._tick_df_iterator: Iterator | None = None
@@ -309,6 +319,7 @@ class BacktestingSystemAPI(SystemAPI):
 
                 overnights = 0
                 while rollover_timestamp < exit_timestamp:
+                    mul = 0
                     match rollover_timestamp.weekday():
                         case self.symbol_data.SwapExtraDay.value:
                             mul = 3
@@ -408,6 +419,7 @@ class BacktestingSystemAPI(SystemAPI):
         pips = price_delta / self.symbol_data.PipSize
         gross_pnl = price_delta * volume * self.quote_conversion_rate(timestamp=tick.Timestamp, spread=tick.Spread)
         commission_pnl = self.commission_fee(timestamp=tick.Timestamp, volume=volume, spread=tick.Spread)
+        swap_pnl = 0.0
         match trade_type:
             case TradeType.Buy:
                 swap_pnl = self.swap_buy_fee(
