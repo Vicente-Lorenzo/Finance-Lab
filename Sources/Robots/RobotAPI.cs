@@ -96,7 +96,7 @@ public abstract class RobotAPI
 
         var baseDirectory = new DirectoryInfo(Environment.CurrentDirectory).Parent?.Parent?.Parent?.FullName;
         var scriptName = GetType().Name;
-        var scriptArgs = $"--console \"{console}\" --telegram \"{telegram}\" --file \"{file}\" --system \"Realtime\" --strategy \"{scriptName}\" --broker \"{broker}\" --group \"{group}\" --symbol \"{symbol}\" --timeframe \"{timeframe}\" --iid \"{_robot.InstanceId}\"";
+        var scriptArgs = $"\"Realtime\" --console \"{console}\" --telegram \"{telegram}\" --file \"{file}\" --strategy \"{scriptName}\" --broker \"{broker}\" --group \"{group}\" --symbol \"{symbol}\" --timeframe \"{timeframe}\" --iid \"{_robot.InstanceId}\"";
         var psi = new ProcessStartInfo
         {
             FileName = "cmd.exe",

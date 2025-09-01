@@ -23,40 +23,52 @@ execution = Path(__file__).parent.name
 
 parameterise: ParametersAPI = ParametersAPI()
 
-parser: ArgumentParser = ArgumentParser()
-parser.add_argument("--console", type=str, required=True, choices=[_.name for _ in VerboseType])
-parser.add_argument("--telegram", type=str, required=True, choices=[_.name for _ in VerboseType])
-parser.add_argument("--file", type=str, required=True, choices=[_.name for _ in VerboseType])
+base_parser = ArgumentParser(add_help=False)
+base_parser.add_argument("--console", type=str, required=True, choices=[_.name for _ in VerboseType])
+base_parser.add_argument("--telegram", type=str, required=True, choices=[_.name for _ in VerboseType])
+base_parser.add_argument("--file", type=str, required=True, choices=[_.name for _ in VerboseType])
+base_parser.add_argument("--strategy", type=str, required=True, choices=[_.name for _ in StrategyType])
+base_parser.add_argument("--broker", type=str, required=True, choices=parameterise.Watchlist.Brokers)
+base_parser.add_argument("--group", type=str, required=True, choices=parameterise.Watchlist.Symbols.keys())
+base_parser.add_argument("--symbol", type=str, required=True, choices=[s for g in parameterise.Watchlist.Symbols.values() for s in g])
+base_parser.add_argument("--timeframe", type=str, required=True, choices=parameterise.Watchlist.Timeframes)
 
-parser.add_argument("--system", type=str, required=True, choices=[_.name for _ in SystemType])
-parser.add_argument("--strategy", type=str, required=True, choices=[_.name for _ in StrategyType])
-parser.add_argument("--broker", type=str, required=True, choices=parameterise.Watchlist.Brokers)
-parser.add_argument("--group", type=str, required=True, choices=parameterise.Watchlist.Symbols.keys())
-parser.add_argument("--symbol", type=str, required=True, choices=[symbol for group in parameterise.Watchlist.Symbols.values() for symbol in group])
-parser.add_argument("--timeframe", type=str, required=True, choices=parameterise.Watchlist.Timeframes)
+period_parser = ArgumentParser(add_help=False)
+period_parser.add_argument("--start", type=str, required=True)
+period_parser.add_argument("--stop", type=str, required=True)
 
-parser.add_argument("--iid", type=str, required=False)
+account_parser = ArgumentParser(add_help=False)
+account_parser.add_argument("--account-asset", type=str, required=True, choices=[_.name for _ in AssetType])
+account_parser.add_argument("--account-balance", type=float, required=True)
+account_parser.add_argument("--account-leverage", type=float, required=True)
 
-parser.add_argument("--start", type=str, required=False)
-parser.add_argument("--stop", type=str, required=False)
-parser.add_argument("--account-asset", type=str, required=False, choices=[_.name for _ in AssetType])
-parser.add_argument("--account-balance", type=float, required=False)
-parser.add_argument("--account-leverage", type=float, required=False)
-parser.add_argument("--spread-type", type=str, required=False, choices=[_.name for _ in SpreadType])
-parser.add_argument("--spread-value", type=float, required=False)
-parser.add_argument("--commission-type", type=str, required=False, choices=[_.name for _ in CommissionType])
-parser.add_argument("--commission-value", type=float, required=False)
-parser.add_argument("--swap-type", type=str, required=False, choices=[_.name for _ in SwapType])
-parser.add_argument("--swap-buy", type=float, required=False)
-parser.add_argument("--swap-sell", type=float, required=False)
+fee_parser = ArgumentParser(add_help=False)
+fee_parser.add_argument("--spread-type", type=str, required=True, choices=[_.name for _ in SpreadType])
+fee_parser.add_argument("--spread-value", type=float, required=False, default=None)
+fee_parser.add_argument("--commission-type", type=str, required=True, choices=[_.name for _ in CommissionType])
+fee_parser.add_argument("--commission-value", type=float, required=False, default=None)
+fee_parser.add_argument("--swap-type", type=str, required=True, choices=[_.name for _ in SwapType])
+fee_parser.add_argument("--swap-buy", type=float, required=False, default=None)
+fee_parser.add_argument("--swap-sell", type=float, required=False, default=None)
 
-parser.add_argument("--training", type=int, required=False)
-parser.add_argument("--validation", type=int, required=False)
-parser.add_argument("--testing", type=int, required=False)
-parser.add_argument("--fitness", type=str, required=False, choices=StatisticsAPI.Metrics)
-parser.add_argument("--threads", type=int, required=False, default=os.cpu_count())
+parser = ArgumentParser()
+system_parser = parser.add_subparsers(dest="system", required=True)
 
-parser.add_argument("--episodes", type=int, required=False)
+realtime_parser = system_parser.add_parser(SystemType.Realtime.name, parents=[base_parser])
+realtime_parser.add_argument("--iid", type=str, required=True)
+
+backtesting_parser = system_parser.add_parser(SystemType.Backtesting.name, parents=[base_parser, period_parser, account_parser, fee_parser])
+
+optimisation_parser = system_parser.add_parser(SystemType.Optimisation.name, parents=[base_parser, period_parser, account_parser, fee_parser])
+optimisation_parser.add_argument("--training", type=int, required=True)
+optimisation_parser.add_argument("--validation", type=int, required=True)
+optimisation_parser.add_argument("--testing", type=int, required=True)
+optimisation_parser.add_argument("--fitness", type=str, required=True, choices=StatisticsAPI.Metrics)
+optimisation_parser.add_argument("--threads", type=int, required=False, default=os.cpu_count())
+
+learning_parser = system_parser.add_parser(SystemType.Learning.name, parents=[base_parser, period_parser, account_parser, fee_parser])
+learning_parser.add_argument("--reward", type=str, required=True, choices=StatisticsAPI.Metrics)
+learning_parser.add_argument("--episodes", type=int, required=True)
 
 args = parser.parse_args()
 
@@ -93,8 +105,6 @@ def main():
     system: SystemAPI | None = None
     match args.system:
         case SystemType.Realtime.name:
-            if args.iid is None:
-                parser.error("--iid is required for Realtime System")
             params: Parameters = parameters.Realtime[args.strategy]
             system = RealtimeSystemAPI(
                 broker=args.broker,
@@ -106,30 +116,6 @@ def main():
                 iid=args.iid
             )
         case SystemType.Backtesting.name:
-            if args.start is None:
-                parser.error("--start is required for Backtesting System")
-            if args.stop is None:
-                parser.error("--stop is required for Backtesting System")
-            if args.account_asset is None:
-                parser.error("--account-asset is required for Backtesting System")
-            if args.account_balance is None:
-                parser.error("--account-balance is required for Backtesting System")
-            if args.account_leverage is None:
-                parser.error("--account-leverage is required for Backtesting System")
-            if args.spread_type is None:
-                parser.error("--spread-type is required for Backtesting System")
-            if args.spread_type != SpreadType.Accurate.name and args.spread_value is None:
-                parser.error("--spread-value is required for Backtesting System")
-            if args.commission_type is None:
-                parser.error("--commission-type is required for Backtesting System")
-            if args.commission_type != CommissionType.Accurate.name and args.commission_value is None:
-                parser.error("--commission-value is required for Backtesting System")
-            if args.swap_type is None:
-                parser.error("--swap-type is required for Backtesting System")
-            if args.swap_type != SwapType.Accurate.name and args.swap_buy is None:
-                parser.error("--swap-buy is required for Backtesting System")
-            if args.swap_type != SwapType.Accurate.name and args.swap_sell is None:
-                parser.error("--swap-sell is required for Backtesting System")
             params: Parameters = parameters.Backtesting[args.strategy]
             system = BacktestingSystemAPI(
                 broker=args.broker,
@@ -146,38 +132,6 @@ def main():
                 swap=(SwapType(SwapType[args.swap_type]), args.swap_buy, args.swap_sell)
             )
         case SystemType.Optimisation.name:
-            if args.start is None:
-                parser.error("--start is required for Optimisation System")
-            if args.stop is None:
-                parser.error("--stop is required for Optimisation System")
-            if args.account_asset is None:
-                parser.error("--account-asset is required for Optimisation System")
-            if args.account_balance is None:
-                parser.error("--account-balance is required for Optimisation System")
-            if args.account_leverage is None:
-                parser.error("--account-leverage is required for Optimisation System")
-            if args.spread_type is None:
-                parser.error("--spread-type is required for Optimisation System")
-            if args.spread_type != SpreadType.Accurate.name and args.spread_value is None:
-                parser.error("--spread-value is required for Optimisation System")
-            if args.commission_type is None:
-                parser.error("--commission-type is required for Optimisation System")
-            if args.commission_type != CommissionType.Accurate.name and args.commission_value is None:
-                parser.error("--commission-value is required for Optimisation System")
-            if args.swap_type is None:
-                parser.error("--swap-type is required for Optimisation System")
-            if args.swap_type != SwapType.Accurate.name and args.swap_buy is None:
-                parser.error("--swap-buy is required for Optimisation System")
-            if args.swap_type != SwapType.Accurate.name and args.swap_sell is None:
-                parser.error("--swap-sell is required for Optimisation System")
-            if args.training is None:
-                parser.error("--training is required for Optimisation System")
-            if args.validation is None:
-                parser.error("--validation is required for Optimisation System")
-            if args.testing is None:
-                parser.error("--testing is required for Optimisation System")
-            if args.fitness is None:
-                parser.error("--fitness is required for Optimisation System")
             params: Parameters = parameters.Backtesting[args.strategy]
             config: Parameters = parameters.Optimisation[args.strategy]
             system = OptimisationSystemAPI(
@@ -201,18 +155,6 @@ def main():
                 threads=args.threads
             )
         case SystemType.Learning.name:
-            if args.start is None:
-                parser.error("--start is required for Learning System")
-            if args.stop is None:
-                parser.error("--stop is required for Learning System")
-            if args.balance is None:
-                parser.error("--balance is required for Learning System")
-            if args.spread is None:
-                parser.error("--spread is required for Learning System")
-            if args.episodes is None:
-                parser.error("--episodes is required for Learning System")
-            if args.fitness is None:
-                parser.error("--fitness is required for Learning System")
             params: Parameters = parameters.Learning[args.strategy]
             system = LearningSystemAPI(
                 broker=args.broker,
