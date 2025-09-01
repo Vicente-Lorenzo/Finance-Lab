@@ -69,7 +69,7 @@ class BacktestingSystemAPI(SystemAPI):
                  account: tuple[AssetType, float, float],
                  spread: tuple[SpreadType, float],
                  commission: tuple[CommissionType, float],
-                 swap: tuple[SwapType, float, float]):
+                 swap: tuple[SwapType, float, float]) -> None:
 
         super().__init__(broker=broker, group=group, symbol=symbol, timeframe=timeframe, strategy=strategy, parameters=parameters)
 

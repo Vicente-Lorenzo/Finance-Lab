@@ -22,7 +22,7 @@ class SystemAPI(Thread, ABC):
                  symbol: str,
                  timeframe: str,
                  strategy: Type[StrategyAPI],
-                 parameters: Parameters):
+                 parameters: Parameters) -> None:
         
         super().__init__(daemon=True)
 
