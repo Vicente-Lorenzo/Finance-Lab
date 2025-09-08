@@ -112,3 +112,8 @@ class TechnicalMode(Enum):
     Off = 0
     Filter = 1
     Signal = 2
+
+class RewardType(Enum):
+    Return = 0
+    Risk = 1
+    ReturnRisk = 2

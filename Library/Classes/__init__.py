@@ -16,7 +16,8 @@ from Library.Classes.Enums import (
     SystemType,
     ManagerMode,
     TechnicalType,
-    TechnicalMode
+    TechnicalMode,
+    RewardType
 )
 from Library.Classes.Classes import (
     Account,
@@ -49,6 +50,7 @@ __all__ = [
     "ManagerMode",
     "TechnicalType",
     "TechnicalMode",
+    "RewardType",
     "Account",
     "Symbol",
     "Position",
