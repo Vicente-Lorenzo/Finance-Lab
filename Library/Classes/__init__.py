@@ -20,6 +20,8 @@ from Library.Classes.Enums import (
     RewardType
 )
 from Library.Classes.Classes import (
+    Meta,
+    Class,
     Account,
     Symbol,
     Position,
@@ -27,8 +29,7 @@ from Library.Classes.Classes import (
     Bar,
     Tick,
     Technical,
-    Telegram,
-    astuple
+    Telegram
 )
 
 __all__ = [
@@ -51,6 +52,8 @@ __all__ = [
     "TechnicalType",
     "TechnicalMode",
     "RewardType",
+    "Meta",
+    "Class",
     "Account",
     "Symbol",
     "Position",
@@ -58,6 +61,5 @@ __all__ = [
     "Bar",
     "Tick",
     "Technical",
-    "Telegram",
-    "astuple"
+    "Telegram"
 ]

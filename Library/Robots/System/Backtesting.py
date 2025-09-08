@@ -156,7 +156,8 @@ class BacktestingSystemAPI(SystemAPI):
             self.tick_db.__enter__()
             self.tick_df = self.tick_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=None)
         self._tick_df_iterator = self.tick_df.iter_rows()
-        self._tick_data_next = Bar(*next(self._tick_df_iterator))
+        tick_data_next_row = next(self._tick_df_iterator)
+        self._tick_data_next = Bar(tick_data_next_row[0], tick_data_next_row[1], tick_data_next_row[2], tick_data_next_row[3], tick_data_next_row[4], tick_data_next_row[5])
         self._tick_open_next = None
 
         if self.bar_df is None:
@@ -165,22 +166,26 @@ class BacktestingSystemAPI(SystemAPI):
             self.bar_df = self.bar_db.pull_market_data(start=self._start_str, stop=self._stop_str, window=self.window)
             self.offset = self.bar_df.height - self.window + 1
         self._offset = self.offset
-        self._bar_df_iterator = self.bar_df.filter((pl.col(DatabaseAPI.MARKET_TIMESTAMP) >= self._start_date) & (pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= self._stop_date)).iter_rows()
-        start_bar_data_index = Bar(*self.bar_df.row(self.window))
-        self._bar_data_at = Bar(*next(self._bar_df_iterator))
-        self._bar_data_next = Bar(*next(self._bar_df_iterator))
+        self._bar_df_iterator = self.bar_df.filter((pl.col(str(Bar.Timestamp)) >= self._start_date) & (pl.col(str(Bar.Timestamp)) <= self._stop_date)).iter_rows()
+        start_bar_data_row = self.bar_df.row(self.window)
+        start_bar_data_index = Bar(start_bar_data_row[0], start_bar_data_row[1], start_bar_data_row[2], start_bar_data_row[3], start_bar_data_row[4], start_bar_data_row[5])
+        bar_data_at_row = next(self._bar_df_iterator)
+        self._bar_data_at = Bar(bar_data_at_row[0], bar_data_at_row[1], bar_data_at_row[2], bar_data_at_row[3], bar_data_at_row[4], bar_data_at_row[5])
+        bar_data_next_row = next(self._bar_df_iterator)
+        self._bar_data_next = Bar(bar_data_next_row[0], bar_data_next_row[1], bar_data_next_row[2], bar_data_next_row[3], bar_data_next_row[4], bar_data_next_row[5])
         while self._bar_data_at.Timestamp < start_bar_data_index.Timestamp:
             self._bar_data_at = self._bar_data_next
-            self._bar_data_next = Bar(*next(self._bar_df_iterator))
+            bar_data_next_row = next(self._bar_df_iterator)
+            self._bar_data_next = Bar(bar_data_next_row[0], bar_data_next_row[1], bar_data_next_row[2], bar_data_next_row[3], bar_data_next_row[4], bar_data_next_row[5])
         self._bar_data_at_last = Bar(self._bar_data_at.Timestamp, self._bar_data_at.OpenPrice, self._bar_data_at.OpenPrice, self._bar_data_at.OpenPrice, self._bar_data_at.OpenPrice, 0.0)
 
         if self.symbol_data is None:
             self.symbol_data: Symbol = self.bar_db.pull_symbol_data()
 
         if self.base_conversion_df is None or self.base_conversion_rate is None or self.quote_conversion_df is None or self.quote_conversion_rate is None:
-            symbol_rate = lambda timestamp: self.tick_df.filter(pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= timestamp).tail(1).select(DatabaseAPI.MARKET_OPENPRICE).item()
-            base_rate = lambda timestamp: self.base_conversion_df.filter(pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= timestamp).tail(1).select(DatabaseAPI.MARKET_OPENPRICE).item()
-            quote_rate = lambda timestamp: self.quote_conversion_df.filter(pl.col(DatabaseAPI.MARKET_TIMESTAMP) <= timestamp).tail(1).select(DatabaseAPI.MARKET_OPENPRICE).item()
+            symbol_rate = lambda timestamp: self.tick_df.filter(pl.col(str(Bar.Timestamp)) <= timestamp).tail(1).select(Bar.OpenPrice).item()
+            base_rate = lambda timestamp: self.base_conversion_df.filter(pl.col(str(Bar.Timestamp)) <= timestamp).tail(1).select(Bar.OpenPrice).item()
+            quote_rate = lambda timestamp: self.quote_conversion_df.filter(pl.col(str(Bar.Timestamp)) <= timestamp).tail(1).select(Bar.OpenPrice).item()
 
             self.base_conversion_db = self.tick_db
             self.base_conversion_df = self.tick_df
@@ -424,8 +429,9 @@ class BacktestingSystemAPI(SystemAPI):
         quantity = volume / self.symbol_data.LotSize
         points = price_delta / self.symbol_data.PointSize
         pips = price_delta / self.symbol_data.PipSize
-        gross_pnl = price_delta * volume * self.quote_conversion_rate(timestamp=tick.Timestamp, spread=tick.Spread)
-        commission_pnl = self.commission_fee(timestamp=tick.Timestamp, volume=volume, spread=tick.Spread)
+        spread = tick.Spread
+        gross_pnl = price_delta * volume * self.quote_conversion_rate(timestamp=tick.Timestamp, spread=spread)
+        commission_pnl = self.commission_fee(timestamp=tick.Timestamp, volume=volume, spread=spread)
         swap_pnl = 0.0
         match trade_type:
             case TradeType.Buy:
@@ -434,7 +440,7 @@ class BacktestingSystemAPI(SystemAPI):
                     entry_timestamp=entry_timestamp,
                     exit_timestamp=exit_timestamp,
                     volume=volume,
-                    spread=tick.Spread
+                    spread=spread
                 )
             case TradeType.Sell:
                 swap_pnl = self.swap_sell_fee(
@@ -442,7 +448,7 @@ class BacktestingSystemAPI(SystemAPI):
                     entry_timestamp=entry_timestamp,
                     exit_timestamp=exit_timestamp,
                     volume=volume,
-                    spread=tick.Spread
+                    spread=spread
                 )
         used_margin = 0.0
         return quantity, points, pips, gross_pnl, commission_pnl, swap_pnl, used_margin
@@ -732,7 +738,8 @@ class BacktestingSystemAPI(SystemAPI):
                 self._bar_data_at_last.OpenPrice = self._bar_data_at_last.HighPrice = self._bar_data_at_last.LowPrice = self._bar_data_at_last.ClosePrice = self._bar_data_at.OpenPrice
                 self._bar_data_at_last.TickVolume = 0.0
                 try:
-                    self._bar_data_next = Bar(*next(self._bar_df_iterator))
+                    bar_data_next_row = next(self._bar_df_iterator)
+                    self._bar_data_next = Bar(bar_data_next_row[0], bar_data_next_row[1], bar_data_next_row[2], bar_data_next_row[3], bar_data_next_row[4], bar_data_next_row[5])
                 except StopIteration:
                     self._bar_data_next = None
                 continue
@@ -748,7 +755,8 @@ class BacktestingSystemAPI(SystemAPI):
                 self._bar_data_at_last.TickVolume += self._tick_data_next.TickVolume
 
                 try:
-                    self._tick_data_next = Bar(*next(self._tick_df_iterator))
+                    tick_data_next_row = next(self._tick_df_iterator)
+                    self._tick_data_next = Bar(tick_data_next_row[0], tick_data_next_row[1], tick_data_next_row[2], tick_data_next_row[3], tick_data_next_row[4], tick_data_next_row[5])
                     self._tick_open_next = Tick(self._tick_data_next.Timestamp, *self._calculate_ask_bid(self._tick_data_next.Timestamp, self._tick_data_next.OpenPrice))
                 except StopIteration:
                     self._tick_data_next = None

@@ -1,7 +1,7 @@
 import hashlib
 from pathlib import Path
 
-from Library.Database import DatabaseAPI
+from Library.Classes import *
 from Library.Parameters import ParametersAPI
 
 def main():
@@ -111,24 +111,24 @@ WHERE NOT EXISTS (
 
             # Symbol table
             create_script.append(create_table_if_not_exists(symbol, "Symbol"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_BASEASSET,      "VARCHAR"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_QUOTEASSET,      "VARCHAR"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_DIGITS,            "INT"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_POINTSIZE, "DOUBLE PRECISION"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_PIPSIZE,           "DOUBLE PRECISION"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_LOTSIZE,           "DOUBLE PRECISION"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_VOLUMEINUNITSMIN,  "DOUBLE PRECISION"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_VOLUMEINUNITSMAX,  "DOUBLE PRECISION"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_VOLUMEINUNITSSTEP, "DOUBLE PRECISION"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_COMMISSION,        "DOUBLE PRECISION"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_COMMISSIONMODE, "VARCHAR"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAPLONG,          "DOUBLE PRECISION"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAPSHORT,         "DOUBLE PRECISION"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAPMODE, "VARCHAR"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAPEXTRADAY, "VARCHAR"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAPSUMMERTIME, "INT"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAPWINTERTIME, "INT"))
-            create_script.append(add_column_if_not_exists(symbol, "Symbol", DatabaseAPI.SYMBOL_SWAPPERIOD, "INT"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.BaseAssetType), "VARCHAR"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.QuoteAssetType), "VARCHAR"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.Digits), "INT"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.PointSize), "DOUBLE PRECISION"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.PipSize), "DOUBLE PRECISION"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.LotSize), "DOUBLE PRECISION"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.VolumeInUnitsMin), "DOUBLE PRECISION"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.VolumeInUnitsMax), "DOUBLE PRECISION"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.VolumeInUnitsStep), "DOUBLE PRECISION"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.Commission), "DOUBLE PRECISION"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.CommissionMode), "VARCHAR"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.SwapLong), "DOUBLE PRECISION"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.SwapShort), "DOUBLE PRECISION"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.SwapMode), "VARCHAR"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.SwapExtraDay), "VARCHAR"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.SwapSummerTime), "INT"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.SwapWinterTime), "INT"))
+            create_script.append(add_column_if_not_exists(symbol, "Symbol", str(Symbol.SwapPeriod), "INT"))
 
             # Insert default row if table is empty
             create_script.append(
@@ -148,17 +148,23 @@ WHERE NOT EXISTS (
                 create_script.append(create_role_if_not_exists(timeframe_user, timeframe_user_pass))
 
                 create_script.append(create_table_if_not_exists(symbol, timeframe))
-                create_script.append(add_column_if_not_exists(symbol, timeframe, DatabaseAPI.MARKET_TIMESTAMP,  "TIMESTAMP"))
-                create_script.append(add_column_if_not_exists(symbol, timeframe, DatabaseAPI.MARKET_OPENPRICE,  "DOUBLE PRECISION"))
-                create_script.append(add_column_if_not_exists(symbol, timeframe, DatabaseAPI.MARKET_HIGHPRICE,  "DOUBLE PRECISION"))
-                create_script.append(add_column_if_not_exists(symbol, timeframe, DatabaseAPI.MARKET_LOWPRICE,   "DOUBLE PRECISION"))
-                create_script.append(add_column_if_not_exists(symbol, timeframe, DatabaseAPI.MARKET_CLOSEPRICE, "DOUBLE PRECISION"))
-                create_script.append(add_column_if_not_exists(symbol, timeframe, DatabaseAPI.MARKET_TICKVOLUME, "INT"))
+                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.Timestamp),  "TIMESTAMP"))
+                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.OpenPrice),  "DOUBLE PRECISION"))
+                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.HighPrice),  "DOUBLE PRECISION"))
+                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.LowPrice),   "DOUBLE PRECISION"))
+                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.ClosePrice), "DOUBLE PRECISION"))
+                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.TickVolume), "DOUBLE PRECISION"))
+                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.HighReturn), "DOUBLE PRECISION"))
+                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.HighLogReturn), "DOUBLE PRECISION"))
+                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.LowReturn), "DOUBLE PRECISION"))
+                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.LowLogReturn), "DOUBLE PRECISION"))
+                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.CloseReturn), "DOUBLE PRECISION"))
+                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.CloseLogReturn), "DOUBLE PRECISION"))
 
                 # Primary key if not exists
                 pk_name = f"{timeframe}_pkey"
                 create_script.append(
-                    add_primary_key_if_not_exists(symbol, timeframe, pk_name, DatabaseAPI.MARKET_TIMESTAMP)
+                    add_primary_key_if_not_exists(symbol, timeframe, pk_name, str(Bar.Timestamp))
                 )
 
                 # Change table owner

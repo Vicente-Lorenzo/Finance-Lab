@@ -177,46 +177,46 @@ class StatisticsAPI:
 
     @staticmethod
     def sort_trades(trades_df: pl.DataFrame) -> pl.DataFrame:
-        return trades_df.sort(by=DatabaseAPI.TRADE_EXITTIMESTAMP, descending=False)
+        return trades_df.sort(by=Trade.ExitTimestamp, descending=False)
 
     @staticmethod
     def aggregate_trades(trades_df: pl.DataFrame) -> pl.DataFrame:
-        return trades_df.group_by(DatabaseAPI.TRADE_POSITIONID).agg([
-            pl.col(DatabaseAPI.TRADE_TRADEID),
-            pl.col(DatabaseAPI.TRADE_POSITIONTYPE).first().alias(DatabaseAPI.TRADE_POSITIONTYPE),
-            pl.col(DatabaseAPI.TRADE_TRADETYPE).first().alias(DatabaseAPI.TRADE_TRADETYPE),
-            pl.col(DatabaseAPI.TRADE_ENTRYTIMESTAMP).min().alias(DatabaseAPI.TRADE_ENTRYTIMESTAMP),
-            pl.col(DatabaseAPI.TRADE_EXITTIMESTAMP).max().alias(DatabaseAPI.TRADE_EXITTIMESTAMP),
-            pl.col(DatabaseAPI.TRADE_ENTRYPRICE).first().alias(DatabaseAPI.TRADE_ENTRYPRICE),
-            pl.col(DatabaseAPI.TRADE_EXITPRICE).last().alias(DatabaseAPI.TRADE_EXITPRICE),
-            pl.col(DatabaseAPI.TRADE_VOLUME).sum().alias(DatabaseAPI.TRADE_VOLUME),
-            pl.col(DatabaseAPI.TRADE_POINTS).sum().alias(DatabaseAPI.TRADE_POINTS),
-            pl.col(DatabaseAPI.TRADE_PIPS).sum().alias(DatabaseAPI.TRADE_PIPS),
-            pl.col(DatabaseAPI.TRADE_GROSSPNL).sum().alias(DatabaseAPI.TRADE_GROSSPNL),
-            pl.col(DatabaseAPI.TRADE_COMMISSIONPNL).sum().alias(DatabaseAPI.TRADE_COMMISSIONPNL),
-            pl.col(DatabaseAPI.TRADE_SWAPPNL).sum().alias(DatabaseAPI.TRADE_SWAPPNL),
-            pl.col(DatabaseAPI.TRADE_NETPNL).sum().alias(DatabaseAPI.TRADE_NETPNL),
-            pl.col(DatabaseAPI.TRADE_DRAWDOWNPOINTS).min().alias(DatabaseAPI.TRADE_DRAWDOWNPOINTS),
-            pl.col(DatabaseAPI.TRADE_DRAWDOWNPIPS).min().alias(DatabaseAPI.TRADE_DRAWDOWNPIPS),
-            pl.col(DatabaseAPI.TRADE_DRAWDOWNPNL).min().alias(DatabaseAPI.TRADE_DRAWDOWNPNL),
-            pl.col(DatabaseAPI.TRADE_DRAWDOWNRETURN).min().alias(DatabaseAPI.TRADE_DRAWDOWNRETURN),
-            pl.col(DatabaseAPI.TRADE_NETRETURN).sum().alias(DatabaseAPI.TRADE_NETRETURN),
-            pl.col(DatabaseAPI.TRADE_NETLOGRETURN).sum().alias(DatabaseAPI.TRADE_NETLOGRETURN),
-            pl.col(DatabaseAPI.TRADE_NETRETURNDRAWDOWN).sum().alias(DatabaseAPI.TRADE_NETRETURNDRAWDOWN),
-            pl.col(DatabaseAPI.TRADE_BASEBALANCE).first().alias(DatabaseAPI.TRADE_BASEBALANCE),
-            pl.col(DatabaseAPI.TRADE_ENTRYBALANCE).first().alias(DatabaseAPI.TRADE_ENTRYBALANCE),
-            pl.col(DatabaseAPI.TRADE_EXITBALANCE).last().alias(DatabaseAPI.TRADE_EXITBALANCE),
+        return trades_df.group_by(Trade.PositionID).agg([
+            pl.col(str(Trade.TradeID)),
+            pl.col(str(Trade.PositionType)).first().alias(Trade.PositionType),
+            pl.col(str(Trade.TradeType)).first().alias(Trade.TradeType),
+            pl.col(str(Trade.EntryTimestamp)).min().alias(Trade.EntryTimestamp),
+            pl.col(str(Trade.ExitTimestamp)).max().alias(Trade.ExitTimestamp),
+            pl.col(str(Trade.EntryPrice)).first().alias(Trade.EntryPrice),
+            pl.col(str(Trade.ExitPrice)).last().alias(Trade.ExitPrice),
+            pl.col(str(Trade.Volume)).sum().alias(Trade.Volume),
+            pl.col(str(Trade.Points)).sum().alias(Trade.Points),
+            pl.col(str(Trade.Pips)).sum().alias(Trade.Pips),
+            pl.col(str(Trade.GrossPnL)).sum().alias(Trade.GrossPnL),
+            pl.col(str(Trade.CommissionPnL)).sum().alias(Trade.CommissionPnL),
+            pl.col(str(Trade.SwapPnL)).sum().alias(Trade.SwapPnL),
+            pl.col(str(Trade.NetPnL)).sum().alias(Trade.NetPnL),
+            pl.col(str(Trade.DrawdownPoints)).min().alias(Trade.DrawdownPoints),
+            pl.col(str(Trade.DrawdownPips)).min().alias(Trade.DrawdownPips),
+            pl.col(str(Trade.DrawdownPnL)).min().alias(Trade.DrawdownPnL),
+            pl.col(str(Trade.DrawdownReturn)).min().alias(Trade.DrawdownReturn),
+            pl.col(str(Trade.NetReturn)).sum().alias(Trade.NetReturn),
+            pl.col(str(Trade.NetLogReturn)).sum().alias(Trade.NetLogReturn),
+            pl.col(str(Trade.NetReturnDrawdown)).sum().alias(Trade.NetReturnDrawdown),
+            pl.col(str(Trade.BaseBalance)).first().alias(Trade.BaseBalance),
+            pl.col(str(Trade.EntryBalance)).first().alias(Trade.EntryBalance),
+            pl.col(str(Trade.ExitBalance)).last().alias(Trade.ExitBalance),
         ])
 
     @staticmethod
     def split_buy_sell_trades(trades_df: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
-        return (trades_df.filter(pl.col(DatabaseAPI.TRADE_TRADETYPE) == TradeType.Buy.name),
-                trades_df.filter(pl.col(DatabaseAPI.TRADE_TRADETYPE) == TradeType.Sell.name))
+        return (trades_df.filter(pl.col(str(Trade.TradeType)) == TradeType.Buy.name),
+                trades_df.filter(pl.col(str(Trade.TradeType)) == TradeType.Sell.name))
     
     @staticmethod
     def split_winning_losing_trades(trades_df: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
-        return (trades_df.filter(pl.col(DatabaseAPI.TRADE_NETPNL) > 0),
-                trades_df.filter(pl.col(DatabaseAPI.TRADE_NETPNL) <= 0))
+        return (trades_df.filter(pl.col(str(Trade.NetPnL)) > 0),
+                trades_df.filter(pl.col(str(Trade.NetPnL)) <= 0))
 
     @staticmethod
     def calculate_total_trades(trades_df: pl.DataFrame) -> int:
@@ -249,9 +249,9 @@ class StatisticsAPI:
 
     @staticmethod
     def calculate_return_and_volatility_perc(trades_df: pl.DataFrame) -> tuple[float, float, float]:
-        expected_log_return = trades_df[DatabaseAPI.TRADE_NETLOGRETURN].mean()
-        total_log_return = trades_df[DatabaseAPI.TRADE_NETLOGRETURN].sum()
-        log_return_volatility = trades_df[DatabaseAPI.TRADE_NETLOGRETURN].std()
+        expected_log_return = trades_df[str(Trade.NetLogReturn)].mean()
+        total_log_return = trades_df[str(Trade.NetLogReturn)].sum()
+        log_return_volatility = trades_df[str(Trade.NetLogReturn)].std()
         expected_return_perc = (math.exp(expected_log_return) - 1) * 100 if expected_log_return else 0.0
         total_return_perc = (math.exp(total_log_return) - 1) * 100 if total_log_return else 0.0
         return_volatility_perc = math.sqrt(math.exp(log_return_volatility**2) - 1) * 100 if log_return_volatility else 0.0
@@ -284,7 +284,7 @@ class StatisticsAPI:
         if trades_df.is_empty():
             return 0.0, 0.0, 0.0, 0.0
         initial_balance = initial_account.Balance
-        cumulative_balance = trades_df[DatabaseAPI.TRADE_NETPNL].cum_sum() + pl.Series([initial_balance])
+        cumulative_balance = trades_df[str(Trade.NetPnL)].cum_sum() + pl.Series([initial_balance])
         running_max = cumulative_balance.cum_max()
         drawdown = running_max - cumulative_balance
         max_drawdown_value = drawdown.max()
@@ -298,7 +298,7 @@ class StatisticsAPI:
     def calculate_holding_times(trades_df: pl.DataFrame) -> tuple[float, float, float]:
         if trades_df.is_empty():
             return 0.0, 0.0, 0.0
-        holding_times: pl.Series = trades_df[DatabaseAPI.TRADE_EXITTIMESTAMP] - trades_df[DatabaseAPI.TRADE_ENTRYTIMESTAMP]
+        holding_times: pl.Series = trades_df[str(Trade.ExitTimestamp)] - trades_df[str(Trade.EntryTimestamp)]
         def format_timedelta(td: timedelta):
             days = td.days
             hours = td.seconds // 3600
@@ -331,28 +331,28 @@ class StatisticsAPI:
     def calculate_independent_metrics(self, initial_account: Account, start_timestamp: date, stop_timestamp: date, total_trades_df: pl.DataFrame) -> dict:
         winning_trades_df, losing_trades_df = self.split_winning_losing_trades(total_trades_df)
         total_nr_trades = self.calculate_total_trades(total_trades_df)
-        total_points_value = self.calculate_sum(total_trades_df, DatabaseAPI.TRADE_POINTS)
-        total_pips_value = self.calculate_sum(total_trades_df, DatabaseAPI.TRADE_PIPS)
+        total_points_value = self.calculate_sum(total_trades_df, str(Trade.Points))
+        total_pips_value = self.calculate_sum(total_trades_df, str(Trade.Pips))
         winning_nr_trades = self.calculate_total_trades(winning_trades_df)
-        winning_points_value = self.calculate_sum(winning_trades_df, DatabaseAPI.TRADE_POINTS)
-        winning_pips_value = self.calculate_sum(winning_trades_df, DatabaseAPI.TRADE_PIPS)
+        winning_points_value = self.calculate_sum(winning_trades_df, str(Trade.Points))
+        winning_pips_value = self.calculate_sum(winning_trades_df, str(Trade.Pips))
         losing_nr_trades = self.calculate_total_trades(losing_trades_df)
-        losing_points_value = self.calculate_sum(losing_trades_df, DatabaseAPI.TRADE_POINTS)
-        losing_pips_value = self.calculate_sum(losing_trades_df, DatabaseAPI.TRADE_PIPS)
+        losing_points_value = self.calculate_sum(losing_trades_df, str(Trade.Points))
+        losing_pips_value = self.calculate_sum(losing_trades_df, str(Trade.Pips))
         winning_rate_perc = self.calculate_rate_perc(winning_nr_trades, total_nr_trades)
         losing_rate_perc = self.calculate_rate_perc(losing_nr_trades, total_nr_trades)
-        winning_max_trade, winning_avg_trade, winning_min_trade = self.calculate_min_avg_max(winning_nr_trades, winning_trades_df, DatabaseAPI.TRADE_NETPNL)
-        losing_min_trade, losing_avg_trade, losing_max_trade = self.calculate_min_avg_max(losing_nr_trades, losing_trades_df, DatabaseAPI.TRADE_NETPNL)
-        winning_max_points, winning_avg_points, winning_min_points = self.calculate_min_avg_max(winning_nr_trades, winning_trades_df, DatabaseAPI.TRADE_POINTS)
-        losing_min_points, losing_avg_points, losing_max_points = self.calculate_min_avg_max(losing_nr_trades, losing_trades_df, DatabaseAPI.TRADE_POINTS)
-        winning_max_pips, winning_avg_pips, winning_min_pips = self.calculate_min_avg_max(winning_nr_trades, winning_trades_df, DatabaseAPI.TRADE_PIPS)
-        losing_min_pips, losing_avg_pips, losing_max_pips = self.calculate_min_avg_max(losing_nr_trades, losing_trades_df, DatabaseAPI.TRADE_PIPS)
-        gross_pnl_value = self.calculate_sum(total_trades_df, DatabaseAPI.TRADE_GROSSPNL)
-        commissions_value = self.calculate_sum(total_trades_df, DatabaseAPI.TRADE_COMMISSIONPNL)
-        swaps_value = self.calculate_sum(total_trades_df, DatabaseAPI.TRADE_SWAPPNL)
-        winning_pnl_value = self.calculate_sum(winning_trades_df, DatabaseAPI.TRADE_NETPNL)
-        losing_pnl_value = self.calculate_sum(losing_trades_df, DatabaseAPI.TRADE_NETPNL)
-        total_pnl_value = self.calculate_sum(total_trades_df, DatabaseAPI.TRADE_NETPNL)
+        winning_max_trade, winning_avg_trade, winning_min_trade = self.calculate_min_avg_max(winning_nr_trades, winning_trades_df, str(Trade.NetPnL))
+        losing_min_trade, losing_avg_trade, losing_max_trade = self.calculate_min_avg_max(losing_nr_trades, losing_trades_df, str(Trade.NetPnL))
+        winning_max_points, winning_avg_points, winning_min_points = self.calculate_min_avg_max(winning_nr_trades, winning_trades_df, str(Trade.Points))
+        losing_min_points, losing_avg_points, losing_max_points = self.calculate_min_avg_max(losing_nr_trades, losing_trades_df, str(Trade.Points))
+        winning_max_pips, winning_avg_pips, winning_min_pips = self.calculate_min_avg_max(winning_nr_trades, winning_trades_df, str(Trade.Pips))
+        losing_min_pips, losing_avg_pips, losing_max_pips = self.calculate_min_avg_max(losing_nr_trades, losing_trades_df, str(Trade.Pips))
+        gross_pnl_value = self.calculate_sum(total_trades_df, str(Trade.GrossPnL))
+        commissions_value = self.calculate_sum(total_trades_df, str(Trade.CommissionPnL))
+        swaps_value = self.calculate_sum(total_trades_df, str(Trade.SwapPnL))
+        winning_pnl_value = self.calculate_sum(winning_trades_df, str(Trade.NetPnL))
+        losing_pnl_value = self.calculate_sum(losing_trades_df, str(Trade.NetPnL))
+        total_pnl_value = self.calculate_sum(total_trades_df, str(Trade.NetPnL))
         
         expected_winning_return_perc, winning_return_perc, winning_volatility_perc = self.calculate_return_and_volatility_perc(winning_trades_df)
         expected_losing_return_perc, losing_return_perc, losing_volatility_perc = self.calculate_return_and_volatility_perc(losing_trades_df)
@@ -468,7 +468,7 @@ class StatisticsAPI:
         max_winning_streak_index = max_losing_streak_index = 0
 
         for idx, trade in enumerate(total_trades_df.iter_rows(named=True)):
-            if trade[DatabaseAPI.TRADE_NETPNL] > 0:
+            if trade[str(Trade.NetPnL)] > 0:
                 current_winning_streak += 1
                 current_losing_streak = 0
             else:

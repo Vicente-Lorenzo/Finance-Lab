@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Union
 from dataclasses import dataclass
 
-from Library.Classes import Account, Symbol, Position, Trade, Bar, Tick
+from Library.Classes import *
 
 class UpdateID(Enum):
     Complete = 0
@@ -26,14 +26,14 @@ class UpdateID(Enum):
     Shutdown = 18
 
 @dataclass(slots=True)
-class CompleteUpdate:
+class CompleteUpdate(Class):
     from Library.Robots.Analyst import AnalystAPI
     from Library.Robots.Manager import ManagerAPI
     Analyst: AnalystAPI
     Manager: ManagerAPI
 
 @dataclass(slots=True)
-class AccountUpdate:
+class AccountUpdate(Class):
     from Library.Robots.Analyst import AnalystAPI
     from Library.Robots.Manager import ManagerAPI
     Analyst: AnalystAPI
@@ -41,7 +41,7 @@ class AccountUpdate:
     Account: Account
 
 @dataclass(slots=True)
-class SymbolUpdate:
+class SymbolUpdate(Class):
     from Library.Robots.Analyst import AnalystAPI
     from Library.Robots.Manager import ManagerAPI
     Analyst: AnalystAPI
@@ -49,7 +49,7 @@ class SymbolUpdate:
     Symbol: Symbol
 
 @dataclass(slots=True)
-class PositionUpdate:
+class PositionUpdate(Class):
     from Library.Robots.Analyst import AnalystAPI
     from Library.Robots.Manager import ManagerAPI
     Analyst: AnalystAPI
@@ -59,7 +59,7 @@ class PositionUpdate:
     Position: Position
 
 @dataclass(slots=True)
-class TradeUpdate:
+class TradeUpdate(Class):
     from Library.Robots.Analyst import AnalystAPI
     from Library.Robots.Manager import ManagerAPI
     Analyst: AnalystAPI
@@ -69,7 +69,7 @@ class TradeUpdate:
     Trade: Trade
 
 @dataclass(slots=True)
-class PositionTradeUpdate:
+class PositionTradeUpdate(Class):
     from Library.Robots.Analyst import AnalystAPI
     from Library.Robots.Manager import ManagerAPI
     Analyst: AnalystAPI
@@ -80,7 +80,7 @@ class PositionTradeUpdate:
     Trade: Trade
 
 @dataclass(slots=True)
-class BarUpdate:
+class BarUpdate(Class):
     from Library.Robots.Analyst import AnalystAPI
     from Library.Robots.Manager import ManagerAPI
     Analyst: AnalystAPI
@@ -88,7 +88,7 @@ class BarUpdate:
     Bar: Bar
 
 @dataclass(slots=True)
-class TickUpdate:
+class TickUpdate(Class):
     from Library.Robots.Analyst import AnalystAPI
     from Library.Robots.Manager import ManagerAPI
     Analyst: AnalystAPI
