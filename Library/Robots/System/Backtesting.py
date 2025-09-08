@@ -71,7 +71,14 @@ class BacktestingSystemAPI(SystemAPI):
                  commission: tuple[CommissionType, float],
                  swap: tuple[SwapType, float, float]) -> None:
 
-        super().__init__(broker=broker, group=group, symbol=symbol, timeframe=timeframe, strategy=strategy, parameters=parameters)
+        super().__init__(
+            broker=broker,
+            group=group,
+            symbol=symbol,
+            timeframe=timeframe,
+            strategy=strategy,
+            parameters=parameters
+        )
 
         def parse_date(x: str | date) -> tuple[str | date, str | date]:
             if isinstance(x, str):

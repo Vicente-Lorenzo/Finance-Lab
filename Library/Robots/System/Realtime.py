@@ -27,9 +27,16 @@ class RealtimeSystemAPI(SystemAPI):
                  timeframe: str,
                  strategy: Type[StrategyAPI],
                  parameters: Parameters,
-                 iid: str):
+                 iid: str) -> None:
         
-        super().__init__(broker=broker, group=group, symbol=symbol, timeframe=timeframe, strategy=strategy, parameters=parameters)
+        super().__init__(
+            broker=broker,
+            group=group,
+            symbol=symbol,
+            timeframe=timeframe,
+            strategy=strategy,
+            parameters=parameters
+        )
         
         self._iid: str = iid
         self._pipe = None
