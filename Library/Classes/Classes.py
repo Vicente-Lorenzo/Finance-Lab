@@ -1,4 +1,6 @@
+import math
 from enum import Enum
+from abc import ABC
 from datetime import datetime
 from typing import Callable
 from dataclasses import dataclass, field, fields
@@ -6,7 +8,20 @@ from dataclasses import dataclass, field, fields
 from Library.Classes import *
 
 @dataclass(slots=True)
-class Account:
+class Class(ABC):
+    def repr(self, hidden: bool = False):
+        for f in fields(self):
+            if hidden or f.repr:
+                yield f
+    def tuple(self, hidden: bool = False) -> tuple:
+        return tuple([getattr(self, f.name) for f in self.repr(hidden=hidden)])
+    def list(self, hidden: bool = False) -> list:
+        return list([getattr(self, f.name) for f in self.repr(hidden=hidden)])
+    def dict(self, hidden: bool = False) -> dict:
+        return {f.name: getattr(self, f.name) for f in self.repr(hidden=hidden)}
+
+@dataclass(slots=True)
+class Account(Class):
     AccountType: AccountType
     AssetType: AssetType
     Balance: float
@@ -25,7 +40,7 @@ class Account:
         self.MarginMode = MarginMode(self.MarginMode)
 
 @dataclass(slots=True)
-class Symbol:
+class Symbol(Class):
     BaseAssetType: AssetType
     QuoteAssetType: AssetType
     Digits: int
@@ -53,7 +68,7 @@ class Symbol:
         self.SwapExtraDay = DayOfWeek(self.SwapExtraDay)
 
 @dataclass(slots=True)
-class Position:
+class Position(Class):
     PositionID: int
     PositionType: PositionType
     TradeType: TradeType
@@ -87,7 +102,7 @@ class Position:
         self.TakeProfit = None if self.TakeProfit is None else float(self.TakeProfit)
 
 @dataclass(slots=True)
-class Trade:
+class Trade(Class):
     PositionID: int
     TradeID: int
     PositionType: PositionType
@@ -120,16 +135,40 @@ class Trade:
         self.TradeType = TradeType(self.TradeType)
 
 @dataclass(slots=True)
-class Bar:
-    Timestamp: datetime
-    OpenPrice: float
-    HighPrice: float
-    LowPrice: float
-    ClosePrice: float
-    TickVolume: float
+class Bar(Class):
+    Timestamp: datetime = field(init=True, repr=True)
+    OpenPrice: float = field(init=True, repr=True)
+    HighPrice: float = field(init=True, repr=True)
+    LowPrice: float = field(init=True, repr=True)
+    ClosePrice: float = field(init=True, repr=True)
+    TickVolume: float = field(init=True, repr=True)
+
+    @property
+    def HighReturn(self) -> float:
+        return (self.HighPrice / self.OpenPrice) - 1.0
+
+    @property
+    def HighLogReturn(self) -> float:
+        return math.log1p(self.HighReturn)
+
+    @property
+    def LowReturn(self) -> float:
+        return (self.LowPrice / self.OpenPrice) - 1.0
+
+    @property
+    def LowLogReturn(self) -> float:
+        return math.log1p(self.LowReturn)
+
+    @property
+    def CloseReturn(self) -> float:
+        return (self.ClosePrice / self.OpenPrice) - 1.0
+
+    @property
+    def CloseLogReturn(self) -> float:
+        return math.log1p(self.CloseReturn)
 
 @dataclass(slots=True)
-class Tick:
+class Tick(Class):
     Timestamp: datetime
     Ask: float
     Bid: float
@@ -139,7 +178,7 @@ class Tick:
         self.Spread = self.Ask - self.Bid
 
 @dataclass(slots=True)
-class Technical:
+class Technical(Class):
     Name: str
     TechnicalType: TechnicalType
     Input: Callable
@@ -155,11 +194,7 @@ class Technical:
     def __post_init__(self):
         self.TechnicalType = TechnicalType(self.TechnicalType)
 
-@dataclass(slots=True, frozen=True)
-class Telegram:
+@dataclass(slots=True)
+class Telegram(Class):
     Token: str
     ChatID: str
-
-def astuple(instance) -> tuple:
-    def parse_enum(attr): return attr.name if isinstance(attr, Enum) else attr
-    return tuple(parse_enum(getattr(instance, f.name)) for f in fields(instance.__class__))
