@@ -24,25 +24,28 @@ class Meta(type):
 class Class(metaclass=Meta):
     def parse(self, name):
         return f.name if isinstance(f := getattr(self, name), Enum) else f
-    def data(self):
-        for f in fields(self):
-            yield f.name, self.parse(f.name)
-        p_seen = set()
-        for cls in reversed(type(self).mro()):
-            if cls is object:
-                continue
-            for p_name, p in cls.__dict__.items():
-                if p_name in p_seen:
+    def data(self, include_fields, include_hidden_fields, include_properties):
+        if include_fields:
+            for f in fields(self):
+                if include_hidden_fields or f.repr:
+                    yield f.name, self.parse(f.name)
+        if include_properties:
+            p_seen = set()
+            for cls in reversed(type(self).mro()):
+                if cls is object:
                     continue
-                if isinstance(p, property):
-                    p_seen.add(p_name)
-                    yield p_name, self.parse(p_name)
-    def tuple(self):
-        return tuple([v for _, v in self.data()])
-    def list(self):
-        return list([v for _, v in self.data()])
-    def dict(self):
-        return dict({k: v for k, v in self.data()})
+                for p_name, p in cls.__dict__.items():
+                    if p_name in p_seen:
+                        continue
+                    if isinstance(p, property):
+                        p_seen.add(p_name)
+                        yield p_name, self.parse(p_name)
+    def tuple(self, include_fields=True, include_hidden_fields=True, include_properties=False):
+        return tuple([v for _, v in self.data(include_fields=include_fields, include_hidden_fields=include_hidden_fields, include_properties=include_properties)])
+    def list(self, include_fields=True, include_hidden_fields=True, include_properties=False):
+        return list([v for _, v in self.data(include_fields=include_fields, include_hidden_fields=include_hidden_fields, include_properties=include_properties)])
+    def dict(self, include_fields=True, include_hidden_fields=True, include_properties=False):
+        return dict({k: v for k, v in self.data(include_fields=include_fields, include_hidden_fields=include_hidden_fields, include_properties=include_properties)})
 
 @dataclass(slots=True)
 class Account(Class):

@@ -154,12 +154,6 @@ WHERE NOT EXISTS (
                 create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.LowPrice),   "DOUBLE PRECISION"))
                 create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.ClosePrice), "DOUBLE PRECISION"))
                 create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.TickVolume), "DOUBLE PRECISION"))
-                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.HighReturn), "DOUBLE PRECISION"))
-                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.HighLogReturn), "DOUBLE PRECISION"))
-                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.LowReturn), "DOUBLE PRECISION"))
-                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.LowLogReturn), "DOUBLE PRECISION"))
-                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.CloseReturn), "DOUBLE PRECISION"))
-                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.CloseLogReturn), "DOUBLE PRECISION"))
 
                 # Primary key if not exists
                 pk_name = f"{timeframe}_pkey"
@@ -174,6 +168,9 @@ WHERE NOT EXISTS (
                 create_script.append(grant_usage_on_schema(symbol, timeframe_user))
                 create_script.append(grant_privileges_on_table(symbol, "Symbol", timeframe_user, ["SELECT","INSERT","UPDATE"]))
                 create_script.append(grant_privileges_on_table(symbol, timeframe, timeframe_user, ["SELECT","INSERT","UPDATE"]))
+
+    # Reconnect to postgres
+    create_script.append('\\connect postgres\n')
 
     # Write the CREATE/UPDATE script
     create_path = Path.cwd() / "QueryCreateOrUpdate.sql"
@@ -223,6 +220,9 @@ WHERE NOT EXISTS (
 
         # 6) Finally drop the broker role
         delete_script.append(f'DROP ROLE IF EXISTS \"{broker_owner}\";\n\n')
+
+        # 7) reconnect to postgres
+        delete_script.append('\\connect postgres\n')
 
     # Write the DELETE script
     delete_path = Path.cwd() / "QueryDelete.sql"

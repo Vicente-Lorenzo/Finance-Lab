@@ -20,13 +20,7 @@ class DatabaseAPI:
         Bar.HighPrice: pl.Float32(),
         Bar.LowPrice: pl.Float32(),
         Bar.ClosePrice: pl.Float32(),
-        Bar.TickVolume: pl.Float32(),
-        Bar.HighReturn: pl.Float32(),
-        Bar.HighLogReturn: pl.Float32(),
-        Bar.LowReturn: pl.Float32(),
-        Bar.LowLogReturn: pl.Float32(),
-        Bar.CloseReturn: pl.Float32(),
-        Bar.CloseLogReturn: pl.Float32()
+        Bar.TickVolume: pl.Float32()
     }
 
     SCHEMA_SYMBOL: dict = {
@@ -182,20 +176,14 @@ class DatabaseAPI:
                 records = [tuple(row) for row in data.rows()]
 
                 query = f"""
-                INSERT INTO "{self._symbol}"."{self._timeframe}" ("{Bar.Timestamp}", "{Bar.OpenPrice}", "{Bar.HighPrice}", "{Bar.LowPrice}", "{Bar.ClosePrice}", "{Bar.TickVolume}", "{Bar.HighReturn}", "{Bar.HighLogReturn}", "{Bar.LowReturn}", "{Bar.LowLogReturn}", "{Bar.CloseReturn}", "{Bar.CloseLogReturn}")
+                INSERT INTO "{self._symbol}"."{self._timeframe}" ("{Bar.Timestamp}", "{Bar.OpenPrice}", "{Bar.HighPrice}", "{Bar.LowPrice}", "{Bar.ClosePrice}", "{Bar.TickVolume}")
                 VALUES %s
                 ON CONFLICT ("{Bar.Timestamp}") DO UPDATE SET
                     "{Bar.OpenPrice}" = EXCLUDED."{Bar.OpenPrice}",
                     "{Bar.HighPrice}" = EXCLUDED."{Bar.HighPrice}",
                     "{Bar.LowPrice}" = EXCLUDED."{Bar.LowPrice}",
                     "{Bar.ClosePrice}" = EXCLUDED."{Bar.ClosePrice}",
-                    "{Bar.TickVolume}" = EXCLUDED."{Bar.TickVolume}",
-                    "{Bar.HighReturn}" = EXCLUDED."{Bar.HighReturn}",
-                    "{Bar.HighLogReturn}" = EXCLUDED."{Bar.HighLogReturn}",
-                    "{Bar.LowReturn}" = EXCLUDED."{Bar.LowReturn}",
-                    "{Bar.LowLogReturn}" = EXCLUDED."{Bar.LowLogReturn}",
-                    "{Bar.CloseReturn}" = EXCLUDED."{Bar.CloseReturn}",
-                    "{Bar.CloseLogReturn}" = EXCLUDED."{Bar.CloseLogReturn}";
+                    "{Bar.TickVolume}" = EXCLUDED."{Bar.TickVolume}"
                 """
 
                 pge.execute_values(cursor, query, records)
