@@ -171,8 +171,8 @@ class Position(Class):
     NetPnL: float = field(init=True, repr=True)
 
     UsedMargin: float = field(default=None, init=True, repr=True)
-    StopLoss: float = field(default=None, init=True, repr=True)
-    TakeProfit: float = field(default=None, init=True, repr=True)
+    StopLoss: Union[Price, float] = field(default=None, init=True, repr=True)
+    TakeProfit: Union[Price, float] = field(default=None, init=True, repr=True)
 
     DrawdownPoints: float = field(default=0.0, init=False, repr=True)
     DrawdownPips: float = field(default=0.0, init=False, repr=True)
@@ -190,7 +190,9 @@ class Position(Class):
         self.EntryTimestamp = Timestamp(Timestamp=self.EntryTimestamp)
         self.EntryPrice = Price(Price=self.EntryPrice)
         self.StopLoss = None if self.StopLoss is None else float(self.StopLoss)
+        self.StopLoss = Price(Price=self.StopLoss, Reference=self.EntryPrice)
         self.TakeProfit = None if self.TakeProfit is None else float(self.TakeProfit)
+        self.TakeProfit = Price(Price=self.TakeProfit, Reference=self.EntryPrice)
 
 @dataclass(slots=True, kw_only=True)
 class Trade(Position):
