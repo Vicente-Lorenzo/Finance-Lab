@@ -1,7 +1,7 @@
 import math
 from enum import Enum
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Union
 from dataclasses import dataclass, field, fields
 
 from Library.Classes import *
@@ -23,7 +23,11 @@ class Meta(type):
 @dataclass(slots=True)
 class Class(metaclass=Meta):
     def parse(self, name):
-        return f.name if isinstance(f := getattr(self, name), Enum) else f
+        f = getattr(self, name)
+        if isinstance(f, Enum): return f.name
+        if isinstance(f, Timestamp): return f.Timestamp
+        if isinstance(f, Price): return f.Price
+        return f
     def data(self, include_fields, include_hidden_fields, include_properties):
         if include_fields:
             for f in fields(self):
@@ -46,6 +50,62 @@ class Class(metaclass=Meta):
         return list([v for _, v in self.data(include_fields=include_fields, include_hidden_fields=include_hidden_fields, include_properties=include_properties)])
     def dict(self, include_fields=True, include_hidden_fields=True, include_properties=False):
         return dict({k: v for k, v in self.data(include_fields=include_fields, include_hidden_fields=include_hidden_fields, include_properties=include_properties)})
+
+@dataclass(slots=True, kw_only=True)
+class Cycle(Class):
+    Value: float = field(init=True, repr=True)
+    Period: int = field(default=None, init=True, repr=True)
+
+    @property
+    def Radian(self) -> float:
+        return 2 * math.pi * self.Value / self.Period
+    @property
+    def Sin(self):
+        return math.sin(self.Radian)
+    @property
+    def Cos(self):
+        return math.cos(self.Radian)
+
+@dataclass(slots=True, kw_only=True)
+class Timestamp(Class):
+    Timestamp: datetime = field(init=True, repr=True)
+
+    @property
+    def Year(self) -> Cycle:
+        return Cycle(Value=self.Timestamp.year)
+    @property
+    def Month(self) -> Cycle:
+        return Cycle(Value=self.Timestamp.month, Period=12)
+    @property
+    def Day(self) -> Cycle:
+        return Cycle(Value=self.Timestamp.day, Period=31)
+    @property
+    def Hour(self) -> Cycle:
+        return Cycle(Value=self.Timestamp.hour, Period=24)
+    @property
+    def Minute(self) -> Cycle:
+        return Cycle(Value=self.Timestamp.minute, Period=60)
+    @property
+    def Second(self) -> Cycle:
+        return Cycle(Value=self.Timestamp.second, Period=60)
+    @property
+    def Millisecond(self) -> Cycle:
+        return Cycle(Value=self.Timestamp.microsecond, Period=1000)
+
+@dataclass(slots=True, kw_only=True)
+class Price(Class):
+    Price: float = field(init=True, repr=True)
+    Reference: Union[Price, float] = field(default=None, init=True, repr=True)
+
+    @property
+    def Percentage(self):
+        return (self.Price / self.Reference) - 1.0
+    @property
+    def LogPercentage(self) -> float:
+        return math.log1p(self.Percentage)
+
+    def __post_init__(self):
+        self.Reference = self.Reference.Price if isinstance(self.Reference, Price) else self.Reference
 
 @dataclass(slots=True, kw_only=True)
 class Account(Class):
@@ -99,8 +159,8 @@ class Position(Class):
     PositionID: int = field(init=True, repr=True)
     PositionType: PositionType = field(init=True, repr=True)
     TradeType: TradeType = field(init=True, repr=True)
-    EntryTimestamp: datetime = field(init=True, repr=True)
-    EntryPrice: float = field(init=True, repr=True)
+    EntryTimestamp: Union[Timestamp, datetime] = field(init=True, repr=True)
+    EntryPrice: Union[Price, float] = field(init=True, repr=True)
     Volume: float = field(init=True, repr=True)
     Quantity: float = field(init=True, repr=True)
     Points: float = field(init=True, repr=True)
@@ -127,67 +187,54 @@ class Position(Class):
     def __post_init__(self):
         self.PositionType = PositionType(self.PositionType)
         self.TradeType = TradeType(self.TradeType)
+        self.EntryTimestamp = Timestamp(Timestamp=self.EntryTimestamp)
+        self.EntryPrice = Price(Price=self.EntryPrice)
         self.StopLoss = None if self.StopLoss is None else float(self.StopLoss)
         self.TakeProfit = None if self.TakeProfit is None else float(self.TakeProfit)
 
 @dataclass(slots=True, kw_only=True)
 class Trade(Position):
     TradeID: int = field(init=True, repr=True)
-    ExitTimestamp: datetime = field(init=True, repr=True)
-    ExitPrice: float = field(init=True, repr=True)
+    ExitTimestamp: Union[Timestamp, datetime] = field(init=True, repr=True)
+    ExitPrice: Union[Price, float] = field(init=True, repr=True)
 
     ExitBalance: float = field(default=None, init=False, repr=True)
 
     def __post_init__(self):
-        self.PositionType = PositionType(self.PositionType)
-        self.TradeType = TradeType(self.TradeType)
-
-@dataclass(slots=True)
-class Timestamp(Class):
-    Timestamp: datetime = field(init=True, repr=True)
+        super().__post_init__()
+        self.ExitTimestamp = Timestamp(Timestamp=self.ExitTimestamp)
+        self.ExitPrice = Price(Price=self.ExitPrice, Reference=self.EntryPrice)
 
 @dataclass(slots=True)
 class Bar(Class):
-    Timestamp: datetime = field(init=True, repr=True)
-    OpenPrice: float = field(init=True, repr=True)
-    HighPrice: float = field(init=True, repr=True)
-    LowPrice: float = field(init=True, repr=True)
-    ClosePrice: float = field(init=True, repr=True)
-    TickVolume: float = field(init=True, repr=True)
+    Timestamp: Union[Timestamp, datetime] = field(init=True, repr=True)
+    OpenPrice: Union[Price, float] = field(default=None, init=True, repr=True)
+    HighPrice: Union[Price, float] = field(default=None, init=True, repr=True)
+    LowPrice: Union[Price, float] = field(default=None, init=True, repr=True)
+    ClosePrice: Union[Price, float] = field(default=None, init=True, repr=True)
+    TickVolume: Union[Price, float] = field(default=None, init=True, repr=True)
 
-    @property
-    def HighDistance(self) -> float:
-        return (self.HighPrice / self.OpenPrice) - 1.0
-
-    @property
-    def HighLogDistance(self) -> float:
-        return math.log1p(self.HighDistance)
-
-    @property
-    def LowDistance(self) -> float:
-        return (self.LowPrice / self.OpenPrice) - 1.0
-
-    @property
-    def LowLogDistance(self) -> float:
-        return math.log1p(self.LowDistance)
-
-    @property
-    def CloseDistance(self) -> float:
-        return (self.ClosePrice / self.OpenPrice) - 1.0
-
-    @property
-    def CloseLogDistance(self) -> float:
-        return math.log1p(self.CloseDistance)
+    def __post_init__(self):
+        self.Timestamp = Timestamp(Timestamp=self.Timestamp)
+        self.OpenPrice = Price(Price=self.OpenPrice)
+        self.HighPrice = Price(Price=self.HighPrice, Reference=self.OpenPrice)
+        self.LowPrice = Price(Price=self.LowPrice, Reference=self.OpenPrice)
+        self.ClosePrice = Price(Price=self.ClosePrice, Reference=self.OpenPrice)
 
 @dataclass(slots=True)
 class Tick(Class):
-    Timestamp: datetime = field(init=True, repr=True)
-    Ask: float = field(init=True, repr=True)
-    Bid: float = field(init=True, repr=True)
+    Timestamp: Union[Timestamp, datetime] = field(init=True, repr=True)
+    Ask: Union[Price, float] = field(default=None, init=True, repr=True)
+    Bid: Union[Price, float] = field(default=None, init=True, repr=True)
 
     @property
     def Spread(self) -> float:
         return self.Ask - self.Bid
+
+    def __post_init__(self):
+        self.Timestamp = Timestamp(Timestamp=self.Timestamp)
+        self.Ask = Price(Price=self.Ask, Reference=self.Bid)
+        self.Bid = Price(Price=self.Bid, Reference=self.Ask)
 
 @dataclass(slots=True, kw_only=True)
 class Technical(Class):

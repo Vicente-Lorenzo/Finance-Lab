@@ -197,10 +197,10 @@ class RealtimeSystemAPI(SystemAPI):
         commission_pnl = content[10]
         swap_pnl = content[11]
         net_pnl = content[12]
-        sl = content[13]
-        tp = content[14]
-        sl = sl if sl is not self.SENTINEL else None
-        tp = tp if tp is not self.SENTINEL else None
+        sl_price = content[13]
+        tp_price = content[14]
+        sl_price = sl_price if sl_price is not self.SENTINEL else None
+        tp_price = tp_price if tp_price is not self.SENTINEL else None
         used_margin = content[15]
         return Position(
             PositionID=position_id,
@@ -216,9 +216,9 @@ class RealtimeSystemAPI(SystemAPI):
             CommissionPnL=commission_pnl,
             SwapPnL=swap_pnl,
             NetPnL=net_pnl,
-            StopLoss=sl,
-            TakeProfit=tp,
-            UsedMargin=used_margin
+            UsedMargin=used_margin,
+            StopLoss=sl_price,
+            TakeProfit=tp_price
         )
 
     def receive_update_trade(self) -> Trade:
