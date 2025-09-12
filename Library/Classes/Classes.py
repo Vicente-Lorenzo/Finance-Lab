@@ -47,7 +47,7 @@ class Class(metaclass=Meta):
     def dict(self, include_fields=True, include_hidden_fields=True, include_properties=False):
         return dict({k: v for k, v in self.data(include_fields=include_fields, include_hidden_fields=include_hidden_fields, include_properties=include_properties)})
 
-@dataclass(slots=True)
+@dataclass(slots=True, kw_only=True)
 class Account(Class):
     AccountType: AccountType = field(init=True, repr=True)
     AssetType: AssetType = field(init=True, repr=True)
@@ -66,7 +66,7 @@ class Account(Class):
         self.AssetType = AssetType(self.AssetType)
         self.MarginMode = MarginMode(self.MarginMode)
 
-@dataclass(slots=True)
+@dataclass(slots=True, kw_only=True)
 class Symbol(Class):
     BaseAssetType: AssetType = field(init=True, repr=True)
     QuoteAssetType: AssetType = field(init=True, repr=True)
@@ -83,9 +83,9 @@ class Symbol(Class):
     SwapShort: float = field(init=True, repr=True)
     SwapMode: SwapMode = field(init=True, repr=True)
     SwapExtraDay: DayOfWeek = field(init=True, repr=True)
-    SwapSummerTime: int = field(init=True, default=22, repr=True)
-    SwapWinterTime: int = field(init=True, default=21, repr=True)
-    SwapPeriod: int = field(init=True, default=24, repr=True)
+    SwapSummerTime: int = field(default=22, init=True, repr=True)
+    SwapWinterTime: int = field(default=21, init=True, repr=True)
+    SwapPeriod: int = field(default=24, init=True, repr=True)
 
     def __post_init__(self):
         self.BaseAssetType = AssetType(self.BaseAssetType)
@@ -94,7 +94,7 @@ class Symbol(Class):
         self.SwapMode = SwapMode(self.SwapMode)
         self.SwapExtraDay = DayOfWeek(self.SwapExtraDay)
 
-@dataclass(slots=True)
+@dataclass(slots=True, kw_only=True)
 class Position(Class):
     PositionID: int = field(init=True, repr=True)
     PositionType: PositionType = field(init=True, repr=True)
@@ -109,19 +109,20 @@ class Position(Class):
     CommissionPnL: float = field(init=True, repr=True)
     SwapPnL: float = field(init=True, repr=True)
     NetPnL: float = field(init=True, repr=True)
-    StopLoss: float | None = field(init=True, repr=True)
-    TakeProfit: float | None = field(init=True, repr=True)
-    UsedMargin: float = field(init=True, repr=True)
 
-    DrawdownPoints: float = field(default=0.0, init=False)
-    DrawdownPips: float = field(default=0.0, init=False)
-    DrawdownPnL: float = field(default=None, init=False)
-    DrawdownReturn: float = field(default=None, init=False)
-    NetReturn: float = field(default=None, init=False)
-    NetLogReturn: float = field(default=None, init=False)
-    NetReturnDrawdown: float = field(default=None, init=False)
-    BaseBalance: float = field(default=None, init=False)
-    EntryBalance: float = field(default=None, init=False)
+    UsedMargin: float = field(default=None, init=True, repr=True)
+    StopLoss: float = field(default=None, init=True, repr=True)
+    TakeProfit: float = field(default=None, init=True, repr=True)
+
+    DrawdownPoints: float = field(default=0.0, init=False, repr=True)
+    DrawdownPips: float = field(default=0.0, init=False, repr=True)
+    DrawdownPnL: float = field(default=None, init=False, repr=True)
+    DrawdownReturn: float = field(default=None, init=False, repr=True)
+    NetReturn: float = field(default=None, init=False, repr=True)
+    NetLogReturn: float = field(default=None, init=False, repr=True)
+    NetReturnDrawdown: float = field(default=None, init=False, repr=True)
+    BaseBalance: float = field(default=None, init=False, repr=True)
+    EntryBalance: float = field(default=None, init=False, repr=True)
 
     def __post_init__(self):
         self.PositionType = PositionType(self.PositionType)
@@ -129,39 +130,21 @@ class Position(Class):
         self.StopLoss = None if self.StopLoss is None else float(self.StopLoss)
         self.TakeProfit = None if self.TakeProfit is None else float(self.TakeProfit)
 
-@dataclass(slots=True)
-class Trade(Class):
-    PositionID: int = field(init=True, repr=True)
+@dataclass(slots=True, kw_only=True)
+class Trade(Position):
     TradeID: int = field(init=True, repr=True)
-    PositionType: PositionType = field(init=True, repr=True)
-    TradeType: TradeType = field(init=True, repr=True)
-    EntryTimestamp: datetime = field(init=True, repr=True)
     ExitTimestamp: datetime = field(init=True, repr=True)
-    EntryPrice: float = field(init=True, repr=True)
     ExitPrice: float = field(init=True, repr=True)
-    Volume: float = field(init=True, repr=True)
-    Quantity: float = field(init=True, repr=True)
-    Points: float = field(init=True, repr=True)
-    Pips: float = field(init=True, repr=True)
-    GrossPnL: float = field(init=True, repr=True)
-    CommissionPnL: float = field(init=True, repr=True)
-    SwapPnL: float = field(init=True, repr=True)
-    NetPnL: float = field(init=True, repr=True)
 
-    DrawdownPoints: float = field(default=0.0, init=False)
-    DrawdownPips: float = field(default=0.0, init=False)
-    DrawdownPnL: float = field(default=None, init=False)
-    DrawdownReturn: float = field(default=None, init=False)
-    NetReturn: float = field(default=None, init=False)
-    NetLogReturn: float = field(default=None, init=False)
-    NetReturnDrawdown: float = field(default=None, init=False)
-    BaseBalance: float = field(default=None, init=False)
-    EntryBalance: float = field(default=None, init=False)
-    ExitBalance: float = field(default=None, init=False)
+    ExitBalance: float = field(default=None, init=False, repr=True)
 
     def __post_init__(self):
         self.PositionType = PositionType(self.PositionType)
         self.TradeType = TradeType(self.TradeType)
+
+@dataclass(slots=True)
+class Timestamp(Class):
+    Timestamp: datetime = field(init=True, repr=True)
 
 @dataclass(slots=True)
 class Bar(Class):
@@ -173,28 +156,28 @@ class Bar(Class):
     TickVolume: float = field(init=True, repr=True)
 
     @property
-    def HighReturn(self) -> float:
+    def HighDistance(self) -> float:
         return (self.HighPrice / self.OpenPrice) - 1.0
 
     @property
-    def HighLogReturn(self) -> float:
-        return math.log1p(self.HighReturn)
+    def HighLogDistance(self) -> float:
+        return math.log1p(self.HighDistance)
 
     @property
-    def LowReturn(self) -> float:
+    def LowDistance(self) -> float:
         return (self.LowPrice / self.OpenPrice) - 1.0
 
     @property
-    def LowLogReturn(self) -> float:
-        return math.log1p(self.LowReturn)
+    def LowLogDistance(self) -> float:
+        return math.log1p(self.LowDistance)
 
     @property
-    def CloseReturn(self) -> float:
+    def CloseDistance(self) -> float:
         return (self.ClosePrice / self.OpenPrice) - 1.0
 
     @property
-    def CloseLogReturn(self) -> float:
-        return math.log1p(self.CloseReturn)
+    def CloseLogDistance(self) -> float:
+        return math.log1p(self.CloseDistance)
 
 @dataclass(slots=True)
 class Tick(Class):
@@ -206,7 +189,7 @@ class Tick(Class):
     def Spread(self) -> float:
         return self.Ask - self.Bid
 
-@dataclass(slots=True)
+@dataclass(slots=True, kw_only=True)
 class Technical(Class):
     Name: str = field(init=True, repr=True)
     TechnicalType: TechnicalType = field(init=True, repr=True)
@@ -223,7 +206,7 @@ class Technical(Class):
     def __post_init__(self):
         self.TechnicalType = TechnicalType(self.TechnicalType)
 
-@dataclass(slots=True)
+@dataclass(slots=True, kw_only=True)
 class Telegram(Class):
     Token: str = field(init=True, repr=True)
     ChatID: str = field(init=True, repr=True)
