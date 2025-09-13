@@ -1,3 +1,6 @@
+import polars as pl
+
+from Library.Database import DatabaseAPI
 from Library.Classes import AssetType, CommissionMode, SwapMode, DayOfWeek, Symbol, Bar
 
 class SymbolAPI:
@@ -21,9 +24,11 @@ class SymbolAPI:
         self.SwapSummerTime: int | None = None
         self.SwapWinterTime: int | None = None
         self.SwapPeriod: int | None = None
-        
+
         self.PointValue: float | None = None
         self.PipValue: float | None = None
+
+        self._data: pl.DataFrame | None = None
 
     def init_symbol(self, symbol: Symbol) -> None:
         self.BaseAsset = symbol.BaseAssetType
@@ -45,31 +50,14 @@ class SymbolAPI:
         self.SwapWinterTime = symbol.SwapWinterTime
         self.SwapPeriod = symbol.SwapPeriod
 
-    def update_symbol(self, bar: Bar) -> None:
-        self.PointValue = self.PointSize * self.LotSize / bar.ClosePrice
-        self.PipValue = self.PipSize * self.LotSize / bar.ClosePrice
+        self._data = DatabaseAPI.format_symbol_data(symbol)
 
-    def data(self) -> Symbol:
-        return Symbol(
-            BaseAssetType=self.BaseAsset,
-            QuoteAssetType=self.QuoteAsset,
-            Digits=self.Digits,
-            PointSize=self.PointSize,
-            PipSize=self.PipSize,
-            LotSize=self.LotSize,
-            VolumeInUnitsMin=self.VolumeInUnitsMin,
-            VolumeInUnitsMax=self.VolumeInUnitsMax,
-            VolumeInUnitsStep=self.VolumeInUnitsStep,
-            Commission=self.Commission,
-            CommissionMode=self.CommissionMode,
-            SwapLong=self.SwapLong,
-            SwapShort=self.SwapShort,
-            SwapMode=self.SwapMode,
-            SwapExtraDay=self.SwapExtraDay,
-            SwapSummerTime=self.SwapSummerTime,
-            SwapWinterTime=self.SwapWinterTime,
-            SwapPeriod=self.SwapPeriod,
-        )
+    def update_symbol(self, bar: Bar) -> None:
+        self.PointValue = self.PointSize * self.LotSize / bar.ClosePrice.Price
+        self.PipValue = self.PipSize * self.LotSize / bar.ClosePrice.Price
+
+    def data(self) -> pl.DataFrame:
+        return self._data if self._data is not None else pl.DataFrame()
 
     def __repr__(self):
         return repr(self.data())
