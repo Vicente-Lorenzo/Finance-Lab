@@ -27,6 +27,13 @@ class AnalystAPI:
             technical_max = max(technical_parameters) if technical_parameters else 0
             self.Window = math.ceil(max(self.Window, technical_max + AnalystAPI.MARGIN))
 
+    def data(self) -> pl.DataFrame:
+        result = pl.DataFrame()
+        result = result.hstack(self.Market.data())
+        for technical in self._technicals:
+            result = result.hstack(technical.data())
+        return result
+
     def head(self, n: int | None = None) -> pl.DataFrame:
         return self.data().head(n)
 
@@ -49,13 +56,6 @@ class AnalystAPI:
         self.Market.update_offset(offset)
         for technical in self._technicals:
             technical.update_offset(offset)
-
-    def data(self) -> pl.DataFrame:
-        result = pl.DataFrame()
-        result = result.hstack(self.Market.data())
-        for technical in self._technicals:
-            result = result.hstack(technical.data())
-        return result
 
     def __repr__(self):
         return repr(self.data())
