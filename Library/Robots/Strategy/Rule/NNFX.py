@@ -71,11 +71,11 @@ class NNFXStrategyAPI(StrategyAPI):
 
     def define_so_buy_action(self, update: PositionUpdate):
         self._last_position_id = update.Position.PositionID
-        return [BidAboveTargetAction(update.Position.EntryPrice + self._scaling_out_scale * self._last_position_atr)]
+        return [BidAboveTargetAction(update.Position.EntryPrice.Price + self._scaling_out_scale * self._last_position_atr)]
 
     def define_so_sell_action(self, update: PositionUpdate):
         self._last_position_id = update.Position.PositionID
-        return [AskBelowTargetAction(update.Position.EntryPrice - self._scaling_out_scale * self._last_position_atr)]
+        return [AskBelowTargetAction(update.Position.EntryPrice.Price - self._scaling_out_scale * self._last_position_atr)]
 
     def close_buy_partially_action(self, update: TickUpdate):
         position = update.Manager.Positions.Buys[self._last_position_id]
@@ -90,22 +90,22 @@ class NNFXStrategyAPI(StrategyAPI):
         return [ModifySellVolumeAction(self._last_position_id, volume)]
 
     def breakeven_buy_action(self, update: PositionTradeUpdate):
-        return [ModifyBuyStopLossAction(self._last_position_id, update.Position.EntryPrice)]
+        return [ModifyBuyStopLossAction(self._last_position_id, update.Position.EntryPrice.Price)]
 
     def breakeven_sell_action(self, update: PositionTradeUpdate):
-        return [ModifySellStopLossAction(self._last_position_id, update.Position.EntryPrice)]
+        return [ModifySellStopLossAction(self._last_position_id, update.Position.EntryPrice.Price)]
 
     def define_tsl_buy_action(self, update: PositionUpdate):
-        return [BidAboveTargetAction(update.Position.StopLoss + self._trailing_stop_loss_scale * self._last_position_atr + update.Manager.Symbol.PointSize)]
+        return [BidAboveTargetAction(update.Position.StopLoss.Price + self._trailing_stop_loss_scale * self._last_position_atr + update.Manager.Symbol.PointSize)]
 
     def define_tsl_sell_action(self, update: PositionUpdate):
-        return [AskBelowTargetAction(update.Position.StopLoss - self._trailing_stop_loss_scale * self._last_position_atr - update.Manager.Symbol.PointSize)]
+        return [AskBelowTargetAction(update.Position.StopLoss.Price - self._trailing_stop_loss_scale * self._last_position_atr - update.Manager.Symbol.PointSize)]
 
     def detected_tsl_buy_action(self, update: TickUpdate):
-        return [ModifyBuyStopLossAction(self._last_position_id, update.Tick.Bid - self._trailing_stop_loss_scale * self._last_position_atr)]
+        return [ModifyBuyStopLossAction(self._last_position_id, update.Tick.Bid.Price - self._trailing_stop_loss_scale * self._last_position_atr)]
 
     def detected_tsl_sell_action(self, update: TickUpdate):
-        return [ModifySellStopLossAction(self._last_position_id, update.Tick.Ask + self._trailing_stop_loss_scale * self._last_position_atr)]
+        return [ModifySellStopLossAction(self._last_position_id, update.Tick.Ask.Price + self._trailing_stop_loss_scale * self._last_position_atr)]
 
     @staticmethod
     def undefine_tsl_buy_action(_: TradeUpdate):

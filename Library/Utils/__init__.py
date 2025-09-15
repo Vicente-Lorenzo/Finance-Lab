@@ -3,6 +3,9 @@ from Library.Utils.Image import image
 from Library.Utils.Math import (
     equals
 )
+from Library.Utils.Typing import (
+    cast
+)
 from Library.Utils.DateTime import (
     datetime_to_string,
     string_to_datetime,
@@ -20,6 +23,7 @@ from Library.Utils.Performance import (
 __all__ = [
     "gantt",
     "image",
+    "cast",
     "equals",
     "datetime_to_string",
     "string_to_datetime",

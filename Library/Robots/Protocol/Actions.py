@@ -1,7 +1,9 @@
 from enum import Enum
 from typing import Union
 from dataclasses import dataclass, field
+
 from Library.Classes import PositionType, Class
+from Library.Utils import cast
 
 class ActionID(Enum):
     Complete = 0
@@ -34,8 +36,8 @@ class OpenBuyAction(Class):
 
     def __post_init__(self):
         self.PositionType = PositionType(self.PositionType)
-        self.StopLoss = None if self.StopLoss is None else float(self.StopLoss)
-        self.TakeProfit = None if self.TakeProfit is None else float(self.TakeProfit)
+        self.StopLoss = cast(self.StopLoss, float, None)
+        self.TakeProfit = cast(self.TakeProfit, float, None)
 
 @dataclass(slots=True)
 class OpenSellAction(Class):
@@ -47,8 +49,8 @@ class OpenSellAction(Class):
 
     def __post_init__(self):
         self.PositionType = PositionType(self.PositionType)
-        self.StopLoss = None if self.StopLoss is None else float(self.StopLoss)
-        self.TakeProfit = None if self.TakeProfit is None else float(self.TakeProfit)
+        self.StopLoss = cast(self.StopLoss, float, None)
+        self.TakeProfit = cast(self.TakeProfit, float, None)
 
 @dataclass(slots=True)
 class ModifyBuyVolumeAction(Class):
@@ -102,7 +104,7 @@ class AskAboveTargetAction(Class):
     Ask: float | None
 
     def __post_init__(self):
-        self.Ask = None if self.Ask is None else float(self.Ask)
+        self.Ask = cast(self.Ask, float, None)
 
 @dataclass(slots=True)
 class AskBelowTargetAction(Class):
@@ -110,7 +112,7 @@ class AskBelowTargetAction(Class):
     Ask: float | None
 
     def __post_init__(self):
-        self.Ask = None if self.Ask is None else float(self.Ask)
+        self.Ask = cast(self.Ask, float, None)
 
 @dataclass(slots=True)
 class BidAboveTargetAction(Class):
@@ -118,7 +120,7 @@ class BidAboveTargetAction(Class):
     Bid: float | None
 
     def __post_init__(self):
-        self.Bid = None if self.Bid is None else float(self.Bid)
+        self.Bid = cast(self.Bid, float, None)
 
 @dataclass(slots=True)
 class BidBelowTargetAction(Class):
@@ -126,7 +128,7 @@ class BidBelowTargetAction(Class):
     Bid: float | None
 
     def __post_init__(self):
-        self.Bid = None if self.Bid is None else float(self.Bid)
+        self.Bid = cast(self.Bid, float, None)
 
 Action = Union[
     CompleteAction,

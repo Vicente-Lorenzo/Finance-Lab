@@ -298,16 +298,16 @@ class RealtimeSystemAPI(SystemAPI):
             self._sync_buffer.append(update.Bar)
     
         def init_market(update: CompleteUpdate):
-            self._initial_account = update.Manager.Account.data()
-            self._start_timestamp = self._sync_buffer[-1].Timestamp
+            self._initial_account = update.Manager.Account
+            self._start_timestamp = self._sync_buffer[-1].Timestamp.Timestamp
             update.Analyst.init_market_data(self._sync_buffer)
 
         def update_market(update: BarUpdate):
-            self._stop_timestamp = update.Bar.Timestamp
+            self._stop_timestamp = update.Bar.Timestamp.Timestamp
             update.Analyst.update_market_data(update.Bar)
     
         def update_database(update: CompleteUpdate):
-            self._bar_db.push_symbol_data(update.Manager.Symbol.data())
+            self._bar_db.push_symbol_data(update.Manager.Symbol)
             self._bar_db.push_market_data(update.Analyst.Market.data())
             self.individual_trades, self.aggregated_trades, self.statistics = update.Manager.Statistics.data(self._initial_account, self._start_timestamp, self._stop_timestamp)
             self._log.warning(lambda: str(self.individual_trades))

@@ -173,7 +173,7 @@ class BacktestingSystemAPI(SystemAPI):
         self._bar_data_at = Bar(*bar_data_at_row)
         bar_data_next_row = next(self._bar_df_iterator)
         self._bar_data_next = Bar(*bar_data_next_row)
-        while self._bar_data_at.Timestamp < start_bar_data_index.Timestamp:
+        while self._bar_data_at.Timestamp.Timestamp < start_bar_data_index.Timestamp.Timestamp:
             self._bar_data_at = self._bar_data_next
             bar_data_next_row = next(self._bar_df_iterator)
             self._bar_data_next = Bar(*bar_data_next_row)
@@ -190,9 +190,9 @@ class BacktestingSystemAPI(SystemAPI):
             self.symbol_data: Symbol = self.bar_db.pull_symbol_data()
 
         if self.base_conversion_df is None or self.base_conversion_rate is None or self.quote_conversion_df is None or self.quote_conversion_rate is None:
-            symbol_rate = lambda timestamp: self.tick_df.filter(pl.col(str(Bar.Timestamp)) <= timestamp).tail(1).select(Bar.OpenPrice).item()
-            base_rate = lambda timestamp: self.base_conversion_df.filter(pl.col(str(Bar.Timestamp)) <= timestamp).tail(1).select(Bar.OpenPrice).item()
-            quote_rate = lambda timestamp: self.quote_conversion_df.filter(pl.col(str(Bar.Timestamp)) <= timestamp).tail(1).select(Bar.OpenPrice).item()
+            symbol_rate = lambda timestamp: self.tick_df.filter(pl.col(str(Bar.Timestamp)) <= timestamp.Timestamp).tail(1).select(str(Bar.OpenPrice)).item()
+            base_rate = lambda timestamp: self.base_conversion_df.filter(pl.col(str(Bar.Timestamp)) <= timestamp.Timestamp).tail(1).select(str(Bar.OpenPrice)).item()
+            quote_rate = lambda timestamp: self.quote_conversion_df.filter(pl.col(str(Bar.Timestamp)) <= timestamp.Timestamp).tail(1).select(str(Bar.OpenPrice)).item()
 
             self.base_conversion_db = self.tick_db
             self.base_conversion_df = self.tick_df
@@ -308,6 +308,9 @@ class BacktestingSystemAPI(SystemAPI):
 
             def calculate_overnights(entry_timestamp, exit_timestamp) -> int:
 
+                entry_timestamp = entry_timestamp.Timestamp
+                exit_timestamp = exit_timestamp.Timestamp
+
                 def isdst(timestamp):
                     return bool(localtime(timestamp.timestamp()).tm_isdst)
 
@@ -413,8 +416,8 @@ class BacktestingSystemAPI(SystemAPI):
             self.quote_conversion_db.__exit__(None, None, None)
         return super().__exit__(exc_type, exc_value, exc_traceback)
 
-    def _calculate_ask_bid(self, timestamp: datetime, price: float) -> tuple[float, float]:
-        return price + self.spread_fee(timestamp=timestamp, price=price), price
+    def _calculate_ask_bid(self, timestamp: Timestamp, price: Price) -> tuple[float, float]:
+        return price.Price + self.spread_fee(timestamp=timestamp, price=price), price.Price
 
     def _update_position(self, pid: int, position: Position) -> None:
         self._positions[pid] = position
@@ -436,7 +439,7 @@ class BacktestingSystemAPI(SystemAPI):
         quantity = volume / self.symbol_data.LotSize
         points = price_delta / self.symbol_data.PointSize
         pips = price_delta / self.symbol_data.PipSize
-        spread = tick.Spread
+        spread = tick.Spread.Price
         gross_pnl = price_delta * volume * self.quote_conversion_rate(timestamp=tick.Timestamp, spread=spread)
         commission_pnl = self.commission_fee(timestamp=tick.Timestamp, volume=volume, spread=spread)
         swap_pnl = 0.0
@@ -492,17 +495,17 @@ class BacktestingSystemAPI(SystemAPI):
         )
 
     def _open_buy_position(self, position_type: PositionType, volume: float, sl_price_delta: float | None, tp_price_delta: float | None, tick: Tick) -> Position:
-        entry_price = tick.Ask
+        entry_price = tick.Ask.Price
         sl_price = None if sl_price_delta is None else entry_price - sl_price_delta
         tp_price = None if tp_price_delta is None else entry_price + tp_price_delta
-        price_delta = tick.Bid - entry_price
+        price_delta = tick.Bid.Price - entry_price
         return self._open_position(position_type, TradeType.Buy, volume, entry_price, sl_price, tp_price, price_delta, tick)
 
     def _open_sell_position(self, position_type: PositionType, volume: float, sl_price_delta: float | None, tp_price_delta: float | None, tick: Tick) -> Position:
-        entry_price = tick.Bid
+        entry_price = tick.Bid.Price
         sl_price = None if sl_price_delta is None else entry_price + sl_price_delta
         tp_price = None if tp_price_delta is None else entry_price - tp_price_delta
-        price_delta = entry_price - tick.Ask
+        price_delta = entry_price - tick.Ask.Price
         return self._open_position(position_type, TradeType.Sell, volume, entry_price, sl_price, tp_price, price_delta, tick)
 
     def _close_position(self, position: Position, exit_price: float, price_delta: float, tick: Tick) -> Trade:
@@ -541,13 +544,13 @@ class BacktestingSystemAPI(SystemAPI):
         )
 
     def _close_buy_position(self, position: Position, tick: Tick) -> Trade:
-        exit_price = tick.Bid
-        price_delta = exit_price - position.EntryPrice
+        exit_price = tick.Bid.Price
+        price_delta = exit_price - position.EntryPrice.Price
         return self._close_position(position, exit_price, price_delta, tick)
 
     def _close_sell_position(self, position: Position, tick: Tick) -> Trade:
-        exit_price = tick.Ask
-        price_delta = position.EntryPrice - exit_price
+        exit_price = tick.Ask.Price
+        price_delta = position.EntryPrice.Price - exit_price
         return self._close_position(position, exit_price, price_delta, tick)
 
     def send_action_complete(self, action: CompleteAction) -> None:
@@ -643,17 +646,17 @@ class BacktestingSystemAPI(SystemAPI):
         position: Position = self._find_position(action.PositionID)
         if not position:
             return self._log.error(lambda: "Action Modify Stop Loss: Position not found")
-        if equals(action.StopLoss, position.StopLoss):
+        if equals(action.StopLoss, position.StopLoss.Price):
             return self._log.error(lambda: f"Action Modify Stop Loss: Invalid new Stop Loss equal to old Stop Loss ({action.StopLoss})")
 
         update_id: UpdateID | None = None
         match action.ActionID:
             case ActionID.ModifyBuyStopLoss:
-                if action.StopLoss > self._tick_open_next.Bid:
+                if action.StopLoss > self._tick_open_next.Bid.Price:
                     return self._log.error(lambda: f"Action Modify Stop Loss: Invalid Buy Stop Loss above to the Bid Price ({action.StopLoss})")
                 update_id = UpdateID.ModifiedBuyStopLoss
             case ActionID.ModifySellStopLoss:
-                if action.StopLoss < self._tick_open_next.Ask:
+                if action.StopLoss < self._tick_open_next.Ask.Price:
                     return self._log.error(lambda: f"Action Modify Stop Loss: Invalid Sell Stop Loss below the Ask Price ({action.StopLoss})")
                 update_id = UpdateID.ModifiedSellStopLoss
 
@@ -669,17 +672,17 @@ class BacktestingSystemAPI(SystemAPI):
         position: Position = self._find_position(action.PositionID)
         if not position:
             return self._log.error(lambda: "Action Modify Take Profit: Position not found")
-        if equals(action.TakeProfit, position.TakeProfit):
+        if equals(action.TakeProfit, position.TakeProfit.Price):
             return self._log.error(lambda: f"Action Modify Take Profit: Invalid new Take Profit equal to old Take Profit ({action.TakeProfit})")
 
         update_id: UpdateID | None = None
         match action.ActionID:
             case ActionID.ModifyBuyTakeProfit:
-                if action.TakeProfit < self._tick_open_next.Bid:
+                if action.TakeProfit < self._tick_open_next.Bid.Price:
                     return self._log.error(lambda: f"Action Modify Take Profit: Invalid Buy Take Profit below the Bid Price ({action.TakeProfit})")
                 update_id = UpdateID.ModifiedBuyTakeProfit
             case ActionID.ModifySellTakeProfit:
-                if action.TakeProfit > self._tick_open_next.Ask:
+                if action.TakeProfit > self._tick_open_next.Ask.Price:
                     return self._log.error(lambda: f"Action Modify Take Profit: Invalid Sell Take Profit above the Entry Price ({action.TakeProfit})")
                 update_id = UpdateID.ModifiedSellTakeProfit
 
@@ -734,16 +737,21 @@ class BacktestingSystemAPI(SystemAPI):
             if not self._update_id_queue.empty():
                 return self._update_id_queue.get()
 
-            if self._bar_data_next and (not self._tick_data_next or self._tick_data_next.Timestamp >= self._bar_data_next.Timestamp):
+            if self._bar_data_next and (not self._tick_data_next or self._tick_data_next.Timestamp.Timestamp >= self._bar_data_next.Timestamp.Timestamp):
 
                 self._update_id_queue.put(UpdateID.BarClosed)
                 self._update_args_queue.put(self._bar_data_at)
                 self._update_id_queue.put(UpdateID.Complete)
 
                 self._bar_data_at = self._bar_data_next
-                self._bar_data_at_last.Timestamp = self._bar_data_at.Timestamp
-                self._bar_data_at_last.OpenPrice = self._bar_data_at_last.HighPrice = self._bar_data_at_last.LowPrice = self._bar_data_at_last.ClosePrice = self._bar_data_at.OpenPrice
-                self._bar_data_at_last.TickVolume = 0.0
+                self._bar_data_at_last = Bar(
+                    Timestamp=self._bar_data_at.Timestamp,
+                    OpenPrice=self._bar_data_at.OpenPrice,
+                    HighPrice=self._bar_data_at.OpenPrice,
+                    LowPrice=self._bar_data_at.OpenPrice,
+                    ClosePrice=self._bar_data_at.OpenPrice,
+                    TickVolume=0.0,
+                )
                 try:
                     bar_data_next_row = next(self._bar_df_iterator)
                     self._bar_data_next = Bar(*bar_data_next_row)
@@ -753,70 +761,70 @@ class BacktestingSystemAPI(SystemAPI):
 
             if self._tick_data_next:
 
-                high_ask_at, high_bid_at = self._calculate_ask_bid(self._tick_data_next.Timestamp,self._tick_data_next.HighPrice)
-                low_ask_at, low_bid_at = self._calculate_ask_bid(self._tick_data_next.Timestamp, self._tick_data_next.LowPrice)
+                high_ask_at, high_bid_at = self._calculate_ask_bid(timestamp=self._tick_data_next.Timestamp, price=self._tick_data_next.HighPrice)
+                low_ask_at, low_bid_at = self._calculate_ask_bid(timestamp=self._tick_data_next.Timestamp, price=self._tick_data_next.LowPrice)
 
-                self._bar_data_at_last.HighPrice = max(self._bar_data_at_last.HighPrice, self._tick_data_next.HighPrice)
-                self._bar_data_at_last.LowPrice = min(self._bar_data_at_last.LowPrice, self._tick_data_next.LowPrice)
+                self._bar_data_at_last.HighPrice = max(self._bar_data_at_last.HighPrice.Price, self._tick_data_next.HighPrice.Price)
+                self._bar_data_at_last.LowPrice = min(self._bar_data_at_last.LowPrice.Price, self._tick_data_next.LowPrice.Price)
                 self._bar_data_at_last.ClosePrice = self._tick_data_next.ClosePrice
                 self._bar_data_at_last.TickVolume += self._tick_data_next.TickVolume
 
                 try:
                     tick_data_next_row = next(self._tick_df_iterator)
                     self._tick_data_next = Bar(*tick_data_next_row)
-                    self._tick_open_next = Tick(self._tick_data_next.Timestamp, *self._calculate_ask_bid(self._tick_data_next.Timestamp, self._tick_data_next.OpenPrice))
+                    self._tick_open_next = Tick(self._tick_data_next.Timestamp, *self._calculate_ask_bid(timestamp=self._tick_data_next.Timestamp, price=self._tick_data_next.OpenPrice))
                 except StopIteration:
                     self._tick_data_next = None
 
                 for position_id, position in list(self._positions.items()):
                     match position.TradeType:
                         case TradeType.Buy:
-                            if position.StopLoss is not None:
-                                if low_bid_at <= position.StopLoss:
+                            if position.StopLoss.Price is not None:
+                                if low_bid_at <= position.StopLoss.Price:
                                     self.send_action_close(CloseBuyAction(position_id), Tick(self._tick_open_next.Timestamp, low_ask_at, low_bid_at))
                                     continue
-                                if self._tick_open_next.Bid <= position.StopLoss:
+                                if self._tick_open_next.Bid.Price <= position.StopLoss.Price:
                                     self.send_action_close(CloseBuyAction(position_id))
                                     continue
-                            if position.TakeProfit is not None:
-                                if high_bid_at >= position.TakeProfit:
+                            if position.TakeProfit.Price is not None:
+                                if high_bid_at >= position.TakeProfit.Price:
                                     self.send_action_close(CloseBuyAction(position_id), Tick(self._tick_open_next.Timestamp, high_ask_at, high_bid_at))
                                     continue
-                                if self._tick_open_next.Bid >= position.TakeProfit:
+                                if self._tick_open_next.Bid.Price >= position.TakeProfit.Price:
                                     self.send_action_close(CloseBuyAction(position_id))
                                     continue
                         case TradeType.Sell:
-                            if position.StopLoss is not None:
-                                if high_ask_at >= position.StopLoss:
+                            if position.StopLoss.Price is not None:
+                                if high_ask_at >= position.StopLoss.Price:
                                     self.send_action_close(CloseSellAction(position_id), Tick(self._tick_open_next.Timestamp, high_ask_at, high_bid_at))
                                     continue
-                                if self._tick_open_next.Ask >= position.StopLoss:
+                                if self._tick_open_next.Ask.Price >= position.StopLoss.Price:
                                     self.send_action_close(CloseSellAction(position_id))
                                     continue
-                            if position.TakeProfit is not None:
-                                if low_ask_at <= position.TakeProfit:
+                            if position.TakeProfit.Price is not None:
+                                if low_ask_at <= position.TakeProfit.Price:
                                     self.send_action_close(CloseSellAction(position_id), Tick(self._tick_open_next.Timestamp, low_ask_at, low_bid_at))
                                     continue
-                                if self._tick_open_next.Ask <= position.TakeProfit:
+                                if self._tick_open_next.Ask.Price <= position.TakeProfit.Price:
                                     self.send_action_close(CloseSellAction(position_id))
                                     continue
 
-                if self._ask_above_target is not None and self._tick_open_next.Ask >= self._ask_above_target:
+                if self._ask_above_target is not None and self._tick_open_next.Ask.Price >= self._ask_above_target:
                     self._update_id_queue.put(UpdateID.AskAboveTarget)
                     self._update_args_queue.put(self._tick_open_next)
                     self._update_id_queue.put(UpdateID.Complete)
 
-                if self._ask_below_target is not None and self._tick_open_next.Ask <= self._ask_below_target:
+                if self._ask_below_target is not None and self._tick_open_next.Ask.Price <= self._ask_below_target:
                     self._update_id_queue.put(UpdateID.AskBelowTarget)
                     self._update_args_queue.put(self._tick_open_next)
                     self._update_id_queue.put(UpdateID.Complete)
 
-                if self._bid_above_target is not None and self._tick_open_next.Bid >= self._bid_above_target:
+                if self._bid_above_target is not None and self._tick_open_next.Bid.Price >= self._bid_above_target:
                     self._update_id_queue.put(UpdateID.BidAboveTarget)
                     self._update_args_queue.put(self._tick_open_next)
                     self._update_id_queue.put(UpdateID.Complete)
 
-                if self._bid_below_target is not None and self._tick_open_next.Bid <= self._bid_below_target:
+                if self._bid_below_target is not None and self._tick_open_next.Bid.Price <= self._bid_below_target:
                     self._update_id_queue.put(UpdateID.BidBelowTarget)
                     self._update_args_queue.put(self._tick_open_next)
                     self._update_id_queue.put(UpdateID.Complete)

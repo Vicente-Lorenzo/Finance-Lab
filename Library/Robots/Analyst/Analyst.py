@@ -5,16 +5,13 @@ from Library.Database import DatabaseAPI
 from Library.Classes import Bar
 from Library.Parameters import Parameters
 
-from Library.Robots.Analyst import MarketAPI
-from Library.Robots.Analyst import TechnicalAPI
+from Library.Robots.Analyst import MARGIN, MarketAPI, TechnicalAPI
 
 class AnalystAPI:
 
-    MARGIN = 200
-
     def __init__(self, analyst_management: Parameters):
         self.AnalystManagement: Parameters = analyst_management
-        self.Window: int = AnalystAPI.MARGIN
+        self.Window: int = MARGIN
         self.Market: MarketAPI = MarketAPI()
 
         self._technicals: list[TechnicalAPI] = []
@@ -25,7 +22,7 @@ class AnalystAPI:
             setattr(self, technical_name, technical)
             self._technicals.append(technical)
             technical_max = max(technical_parameters) if technical_parameters else 0
-            self.Window = math.ceil(max(self.Window, technical_max + AnalystAPI.MARGIN))
+            self.Window = math.ceil(max(self.Window, technical_max + MARGIN))
 
     def data(self) -> pl.DataFrame:
         result = pl.DataFrame()

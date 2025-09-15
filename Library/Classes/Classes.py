@@ -5,6 +5,7 @@ from typing import Callable, Union
 from dataclasses import dataclass, field, fields, InitVar
 
 from Library.Classes import *
+from Library.Utils import cast
 
 def dynamic(func):
     func._dynamic = True
@@ -99,19 +100,6 @@ class Timestamp(Class):
     def __post_init__(self):
         self.Timestamp = self.Timestamp.Timestamp if isinstance(self.Timestamp, Timestamp) else self.Timestamp
 
-    def __eq__(self, other) -> bool:
-        return self.Timestamp == other.Timestamp if isinstance(other, Timestamp) else self.Timestamp == other
-    def __ne__(self, other) -> bool:
-        return self.Timestamp != other.Timestamp if isinstance(other, Timestamp) else self.Timestamp != other
-    def __lt__(self, other) -> bool:
-        return self.Timestamp < other.Timestamp if isinstance(other, Timestamp) else self.Timestamp < other
-    def __le__(self, other) -> bool:
-        return self.Timestamp <= other.Timestamp if isinstance(other, Timestamp) else self.Timestamp <= other
-    def __gt__(self, other) -> bool:
-        return self.Timestamp > other.Timestamp if isinstance(other, Timestamp) else self.Timestamp > other
-    def __ge__(self, other) -> bool:
-        return self.Timestamp >= other.Timestamp if isinstance(other, Timestamp) else self.Timestamp >= other
-
 @dataclass(slots=True, kw_only=True)
 class Price(Class):
     Price: Union[Price, float] = field(init=True, repr=True)
@@ -127,19 +115,6 @@ class Price(Class):
     def __post_init__(self):
         self.Price = self.Price.Price if isinstance(self.Price, Price) else self.Price
         self.Reference = self.Reference.Price if isinstance(self.Reference, Price) else self.Reference
-
-    def __eq__(self, other) -> bool:
-        return self.Price == other.Price if isinstance(other, Price) else self.Price == other
-    def __ne__(self, other) -> bool:
-        return self.Price != other.Price if isinstance(other, Price) else self.Price != other
-    def __lt__(self, other) -> bool:
-        return self.Price < other.Price if isinstance(other, Price) else self.Price < other
-    def __le__(self, other) -> bool:
-        return self.Price <= other.Price if isinstance(other, Price) else self.Price <= other
-    def __gt__(self, other) -> bool:
-        return self.Price > other.Price if isinstance(other, Price) else self.Price > other
-    def __ge__(self, other) -> bool:
-        return self.Price >= other.Price if isinstance(other, Price) else self.Price >= other
 
 @dataclass(slots=True, kw_only=True)
 class Account(Class):
@@ -181,12 +156,27 @@ class Symbol(Class):
     SwapWinterTime: int = field(default=21, init=True, repr=True)
     SwapPeriod: int = field(default=24, init=True, repr=True)
 
+    _SpotPrice: Union[Price, float] = field(default=None, init=False, repr=False)
+
     def __post_init__(self):
         self.BaseAssetType = AssetType(self.BaseAssetType)
         self.QuoteAssetType = AssetType(self.QuoteAssetType)
         self.CommissionMode = CommissionMode(self.CommissionMode)
         self.SwapMode = SwapMode(self.SwapMode)
         self.SwapExtraDay = DayOfWeek(self.SwapExtraDay)
+
+    @property
+    def SpotPrice(self) -> Price:
+        return self._SpotPrice
+    @SpotPrice.setter
+    def SpotPrice(self, spot_price: Price):
+        self._SpotPrice = Price(Price=spot_price)
+    @property
+    def PointValue(self) -> float:
+        return self.PointSize * self.LotSize / self.SpotPrice.Price
+    @property
+    def PipValue(self) -> float:
+        return self.PipSize * self.LotSize / self.SpotPrice.Price
 
 @dataclass(slots=True, kw_only=True)
 class Position(Class):
@@ -227,34 +217,32 @@ class Position(Class):
         self.TradeType = TradeType(self.TradeType)
         self.EntryTimestamp = Timestamp(Timestamp=self.EntryTimestamp)
         self._EntryPrice = Price(Price=entry_price)
-        stop_loss = None if stop_loss is None else float(stop_loss)
-        self._StopLoss = Price(Price=stop_loss, Reference=entry_price)
-        take_profit = None if take_profit is None else float(take_profit)
-        self._TakeProfit = Price(Price=take_profit, Reference=entry_price)
+        self._StopLoss = Price(Price=cast(stop_loss, float, None), Reference=entry_price)
+        self._TakeProfit = Price(Price=cast(take_profit, float, None), Reference=entry_price)
 
     @property
     @dynamic
-    def EntryPrice(self):
+    def EntryPrice(self) -> Price:
         return self._EntryPrice
     @EntryPrice.setter
-    def EntryPrice(self, entry_price: Union[Price, float]):
+    def EntryPrice(self, entry_price: Union[Price, float]) -> None:
         self._EntryPrice = Price(Price=entry_price)
-        self._StopLoss = Price(Price=self._StopLoss, Reference=entry_price)
-        self._TakeProfit = Price(Price=self._TakeProfit, Reference=entry_price)
+        self.StopLoss = self._StopLoss
+        self.TakeProfit = self._TakeProfit
     @property
     @dynamic
-    def StopLoss(self):
+    def StopLoss(self) -> Price:
         return self._StopLoss
     @StopLoss.setter
-    def StopLoss(self, stop_loss: Union[Price, float]):
-        self._StopLoss = Price(Price=stop_loss, Reference=self._EntryPrice)
+    def StopLoss(self, stop_loss: Union[Price, float]) -> None:
+        self._StopLoss = Price(Price=cast(stop_loss, float, None), Reference=self._EntryPrice)
     @property
     @dynamic
-    def TakeProfit(self):
+    def TakeProfit(self) -> Price:
         return self._TakeProfit
     @TakeProfit.setter
-    def TakeProfit(self, take_profit: Union[Price, float]):
-        self._TakeProfit = Price(Price=take_profit, Reference=self._EntryPrice)
+    def TakeProfit(self, take_profit: Union[Price, float]) -> None:
+        self._TakeProfit = Price(Price=cast(take_profit, float, None), Reference=self._EntryPrice)
 
 @dataclass(slots=True, kw_only=True)
 class Trade(Position):
@@ -267,26 +255,26 @@ class Trade(Position):
     _ExitPrice: Union[Price, float] = field(default=None, init=False, repr=False)
 
     def __post_init__(self, entry_price: Union[Price, float], stop_loss: Union[Price, float], take_profit: Union[Price, float], exit_price: Union[Price, float]):
-        super().__post_init__(entry_price=entry_price, stop_loss=stop_loss, take_profit=take_profit)
+        super(Trade, self).__post_init__(entry_price=entry_price, stop_loss=stop_loss, take_profit=take_profit)
         self.ExitTimestamp = Timestamp(Timestamp=self.ExitTimestamp)
         self._ExitPrice = Price(Price=exit_price, Reference=entry_price)
 
     @property
     @dynamic
-    def EntryPrice(self):
+    def EntryPrice(self) -> Price:
         return self._EntryPrice
     @EntryPrice.setter
-    def EntryPrice(self, entry_price: Union[Price, float]):
+    def EntryPrice(self, entry_price: Union[Price, float]) -> None:
         self._EntryPrice = Price(Price=entry_price)
-        self._StopLoss = Price(Price=self._StopLoss, Reference=entry_price)
-        self._TakeProfit = Price(Price=self._TakeProfit, Reference=entry_price)
-        self._ExitPrice = Price(Price=self._ExitPrice, Reference=entry_price)
+        self.StopLoss = self._StopLoss
+        self.TakeProfit = self._TakeProfit
+        self.ExitPrice = self._ExitPrice
     @property
     @dynamic
-    def ExitPrice(self):
+    def ExitPrice(self) -> Price:
         return self._ExitPrice
     @ExitPrice.setter
-    def ExitPrice(self, exit_price: Union[Price, float]):
+    def ExitPrice(self, exit_price: Union[Price, float]) -> None:
         self._ExitPrice = Price(Price=exit_price, Reference=self._EntryPrice)
 
 @dataclass(slots=True)
@@ -296,7 +284,7 @@ class Bar(Class):
     HighPrice: InitVar[Union[Price, float]] = field(default=None, init=True, repr=True)
     LowPrice: InitVar[Union[Price, float]] = field(default=None, init=True, repr=True)
     ClosePrice: InitVar[Union[Price, float]] = field(default=None, init=True, repr=True)
-    TickVolume: Union[Price, float] = field(default=None, init=True, repr=True)
+    TickVolume: float = field(default=None, init=True, repr=True)
 
     _OpenPrice: Union[Price, float] = field(default=None, init=False, repr=False)
     _HighPrice: Union[Price, float] = field(default=None, init=False, repr=False)
@@ -312,34 +300,34 @@ class Bar(Class):
 
     @property
     @dynamic
-    def OpenPrice(self):
+    def OpenPrice(self) -> Price:
         return self._OpenPrice
     @OpenPrice.setter
-    def OpenPrice(self, open_price: Union[Price, float]):
+    def OpenPrice(self, open_price: Union[Price, float]) -> None:
         self._OpenPrice = Price(Price=open_price)
-        self._HighPrice = Price(Price=self._HighPrice, Reference=open_price)
-        self._LowPrice = Price(Price=self._LowPrice, Reference=open_price)
-        self._ClosePrice = Price(Price=self._ClosePrice, Reference=open_price)
+        self.HighPrice = self._HighPrice
+        self.LowPrice = self._LowPrice
+        self.ClosePrice = self._ClosePrice
     @property
     @dynamic
-    def HighPrice(self):
+    def HighPrice(self) -> Price:
         return self._HighPrice
     @HighPrice.setter
-    def HighPrice(self, high_price: Union[Price, float]):
+    def HighPrice(self, high_price: Union[Price, float]) -> None:
         self._HighPrice = Price(Price=high_price, Reference=self._OpenPrice)
     @property
     @dynamic
-    def LowPrice(self):
+    def LowPrice(self) -> Price:
         return self._LowPrice
     @LowPrice.setter
-    def LowPrice(self, low_price: Union[Price, float]):
+    def LowPrice(self, low_price: Union[Price, float]) -> None:
         self._LowPrice = Price(Price=low_price, Reference=self._OpenPrice)
     @property
     @dynamic
-    def ClosePrice(self):
+    def ClosePrice(self) -> Price:
         return self._ClosePrice
     @ClosePrice.setter
-    def ClosePrice(self, close_price: Union[Price, float]):
+    def ClosePrice(self, close_price: Union[Price, float]) -> None:
         self._ClosePrice = Price(Price=close_price, Reference=self._OpenPrice)
 
 @dataclass(slots=True)
@@ -358,22 +346,22 @@ class Tick(Class):
 
     @property
     @dynamic
-    def Ask(self):
+    def Ask(self) -> Price:
         return self._Ask
     @Ask.setter
-    def Ask(self, ask: Union[Price, float]):
+    def Ask(self, ask: Union[Price, float]) -> None:
         self._Ask = Price(Price=ask, Reference=self._Bid)
     @property
     @dynamic
-    def Bid(self):
+    def Bid(self) -> Price:
         return self._Bid
     @Bid.setter
-    def Bid(self, bid: Union[Price, float]):
+    def Bid(self, bid: Union[Price, float]) -> None:
         self._Bid = Price(Price=bid, Reference=self._Ask)
 
     @property
-    def Spread(self) -> float:
-        return self.Ask.Price - self.Bid.Price
+    def Spread(self) -> Price:
+        return Price(Price=self.Ask.Price - self.Bid.Price, Reference=self._Ask)
 
 @dataclass(slots=True, kw_only=True)
 class Technical(Class):

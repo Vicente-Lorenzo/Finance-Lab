@@ -195,15 +195,13 @@ class DatabaseAPI:
             raise e
 
     @timer
-    def push_symbol_data(self, data: pl.DataFrame) -> None:
+    def push_symbol_data(self, symbol: Symbol) -> None:
         if not self._connection:
             self._log.error(lambda: "Connection is not established")
             raise
 
         try:
             with self._connection.cursor() as cursor:
-                records = [tuple(row) for row in data.rows()]
-
                 query = f"""
                 UPDATE "{self._symbol}"."Symbol" SET 
                     "{Symbol.BaseAssetType}" = %s,
@@ -226,7 +224,7 @@ class DatabaseAPI:
                     "{Symbol.SwapPeriod}" = %s;
                 """
 
-                pge.execute_values(cursor, query, records)
+                cursor.execute(query, symbol.tuple())
                 self._connection.commit()
                 self._log.debug(lambda: f"Saved symbol data points")
         except Exception as e:

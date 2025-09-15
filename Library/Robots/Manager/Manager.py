@@ -2,16 +2,26 @@ from math import floor
 
 from Library.Parameters import Parameters
 
-from Library.Robots.Manager import AccountAPI, SymbolAPI, PositionAPI, StatisticsAPI
+from Library.Classes import *
+from Library.Robots.Manager import PositionAPI, StatisticsAPI
 
 class ManagerAPI:
 
     def __init__(self, manager_management: Parameters):
         self.ManagerManagement = manager_management
-        self.Account: AccountAPI = AccountAPI()
-        self.Symbol: SymbolAPI = SymbolAPI()
+        self.Account: Account | None = None
+        self.Symbol: Symbol | None = None
         self.Positions: PositionAPI = PositionAPI()
         self.Statistics: StatisticsAPI = StatisticsAPI()
+
+    def init_symbol(self, symbol: Symbol):
+        self.Symbol = symbol
+
+    def update_account(self, account: Account):
+        self.Account = account
+
+    def update_symbol(self, bar: Bar):
+        self.Symbol.SpotPrice = bar.ClosePrice
 
     def normalize_volume(self, volume: float, apply=floor) -> float:
         normalized = apply(volume / self.Symbol.VolumeInUnitsStep) * self.Symbol.VolumeInUnitsStep
