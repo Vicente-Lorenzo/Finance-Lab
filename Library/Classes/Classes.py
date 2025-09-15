@@ -159,7 +159,7 @@ class Symbol(Class):
     SwapWinterTime: int = field(default=21, init=True, repr=True)
     SwapPeriod: int = field(default=24, init=True, repr=True)
 
-    _SpotPrice: Union[Price, float] = field(default=None, init=False, repr=False)
+    _SpotPrice: Price = field(default=None, init=False, repr=False)
 
     def __post_init__(self):
         self.BaseAssetType = AssetType(self.BaseAssetType)
@@ -172,11 +172,13 @@ class Symbol(Class):
     def SpotPrice(self) -> Price:
         return self._SpotPrice
     @SpotPrice.setter
-    def SpotPrice(self, spot_price: Price):
+    def SpotPrice(self, spot_price: Union[Price, float]):
         self._SpotPrice = Price(Price=spot_price)
+
     @property
     def PointValue(self) -> float:
         return self.PointSize * self.LotSize / self.SpotPrice.Price
+
     @property
     def PipValue(self) -> float:
         return self.PipSize * self.LotSize / self.SpotPrice.Price
@@ -211,9 +213,9 @@ class Position(Class):
     BaseBalance: float = field(default=None, init=False, repr=True)
     EntryBalance: float = field(default=None, init=False, repr=True)
 
-    _EntryPrice: Union[Price, float] = field(default=None, init=False, repr=False)
-    _StopLoss: Union[Price, float] = field(default=None, init=False, repr=False)
-    _TakeProfit: Union[Price, float] = field(default=None, init=False, repr=False)
+    _EntryPrice: Price = field(default=None, init=False, repr=False)
+    _StopLoss: Price = field(default=None, init=False, repr=False)
+    _TakeProfit: Price = field(default=None, init=False, repr=False)
 
     def __post_init__(self, entry_price: Union[Price, float], stop_loss: Union[Price, float], take_profit: Union[Price, float]):
         self.PositionType = PositionType(self.PositionType)
@@ -232,6 +234,7 @@ class Position(Class):
         self._EntryPrice = Price(Price=entry_price)
         self.StopLoss = self._StopLoss
         self.TakeProfit = self._TakeProfit
+
     @property
     @dynamic
     def StopLoss(self) -> Price:
@@ -239,6 +242,7 @@ class Position(Class):
     @StopLoss.setter
     def StopLoss(self, stop_loss: Union[Price, float]) -> None:
         self._StopLoss = Price(Price=cast(stop_loss, float, None), Reference=self._EntryPrice)
+
     @property
     @dynamic
     def TakeProfit(self) -> Price:
@@ -255,7 +259,7 @@ class Trade(Position):
 
     ExitBalance: float = field(default=None, init=False, repr=True)
 
-    _ExitPrice: Union[Price, float] = field(default=None, init=False, repr=False)
+    _ExitPrice: Price = field(default=None, init=False, repr=False)
 
     def __post_init__(self, entry_price: Union[Price, float], stop_loss: Union[Price, float], take_profit: Union[Price, float], exit_price: Union[Price, float]):
         super(Trade, self).__post_init__(entry_price=entry_price, stop_loss=stop_loss, take_profit=take_profit)
@@ -272,6 +276,7 @@ class Trade(Position):
         self.StopLoss = self._StopLoss
         self.TakeProfit = self._TakeProfit
         self.ExitPrice = self._ExitPrice
+
     @property
     @dynamic
     def ExitPrice(self) -> Price:
@@ -290,11 +295,11 @@ class Bar(Class):
     ClosePrice: InitVar[Union[Price, float]] = field(default=None, init=True, repr=True)
     TickVolume: float = field(default=None, init=True, repr=True)
 
-    _GapPrice: Union[Price, float] = field(default=None, init=False, repr=False)
-    _OpenPrice: Union[Price, float] = field(default=None, init=False, repr=False)
-    _HighPrice: Union[Price, float] = field(default=None, init=False, repr=False)
-    _LowPrice: Union[Price, float] = field(default=None, init=False, repr=False)
-    _ClosePrice: Union[Price, float] = field(default=None, init=False, repr=False)
+    _GapPrice: Price = field(default=None, init=False, repr=False)
+    _OpenPrice: Price = field(default=None, init=False, repr=False)
+    _HighPrice: Price = field(default=None, init=False, repr=False)
+    _LowPrice: Price = field(default=None, init=False, repr=False)
+    _ClosePrice: Price = field(default=None, init=False, repr=False)
 
     def __post_init__(self, gap_price: Union[Price, float], open_price: Union[Price, float], high_price: Union[Price, float], low_price: Union[Price, float], close_price: Union[Price, float]):
         self.Timestamp = Timestamp(Timestamp=self.Timestamp)
@@ -312,6 +317,7 @@ class Bar(Class):
     def GapPrice(self, gap_price: Union[Price, float]) -> None:
         self._GapPrice = Price(Price=gap_price)
         self.OpenPrice = self._OpenPrice
+
     @property
     @dynamic
     def OpenPrice(self) -> Price:
@@ -322,6 +328,7 @@ class Bar(Class):
         self.HighPrice = self._HighPrice
         self.LowPrice = self._LowPrice
         self.ClosePrice = self._ClosePrice
+
     @property
     @dynamic
     def HighPrice(self) -> Price:
@@ -329,6 +336,7 @@ class Bar(Class):
     @HighPrice.setter
     def HighPrice(self, high_price: Union[Price, float]) -> None:
         self._HighPrice = Price(Price=high_price, Reference=self._OpenPrice)
+
     @property
     @dynamic
     def LowPrice(self) -> Price:
@@ -336,6 +344,7 @@ class Bar(Class):
     @LowPrice.setter
     def LowPrice(self, low_price: Union[Price, float]) -> None:
         self._LowPrice = Price(Price=low_price, Reference=self._OpenPrice)
+
     @property
     @dynamic
     def ClosePrice(self) -> Price:
@@ -343,6 +352,10 @@ class Bar(Class):
     @ClosePrice.setter
     def ClosePrice(self, close_price: Union[Price, float]) -> None:
         self._ClosePrice = Price(Price=close_price, Reference=self._OpenPrice)
+
+    @property
+    def RangePrice(self) -> Price:
+        return Price(Price=self._HighPrice.Price - self._LowPrice.Price, Reference=self._OpenPrice)
 
 @dataclass(slots=True)
 class Tick(Class):
@@ -365,6 +378,7 @@ class Tick(Class):
     @Ask.setter
     def Ask(self, ask: Union[Price, float]) -> None:
         self._Ask = Price(Price=ask, Reference=self._Bid)
+
     @property
     @dynamic
     def Bid(self) -> Price:
@@ -375,7 +389,7 @@ class Tick(Class):
 
     @property
     def Spread(self) -> Price:
-        return Price(Price=self.Ask.Price - self.Bid.Price, Reference=self._Ask)
+        return Price(Price=self._Ask.Price - self._Bid.Price, Reference=self._Ask)
 
 @dataclass(slots=True, kw_only=True)
 class Technical(Class):
