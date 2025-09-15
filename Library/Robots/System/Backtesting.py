@@ -179,6 +179,7 @@ class BacktestingSystemAPI(SystemAPI):
             self._bar_data_next = Bar(*bar_data_next_row)
         self._bar_data_at_last = Bar(
             Timestamp=self._bar_data_at.Timestamp,
+            GapPrice=self._bar_data_at.GapPrice,
             OpenPrice=self._bar_data_at.OpenPrice,
             HighPrice=self._bar_data_at.OpenPrice,
             LowPrice=self._bar_data_at.OpenPrice,
@@ -743,15 +744,16 @@ class BacktestingSystemAPI(SystemAPI):
                 self._update_args_queue.put(self._bar_data_at)
                 self._update_id_queue.put(UpdateID.Complete)
 
-                self._bar_data_at = self._bar_data_next
                 self._bar_data_at_last = Bar(
-                    Timestamp=self._bar_data_at.Timestamp,
-                    OpenPrice=self._bar_data_at.OpenPrice,
-                    HighPrice=self._bar_data_at.OpenPrice,
-                    LowPrice=self._bar_data_at.OpenPrice,
-                    ClosePrice=self._bar_data_at.OpenPrice,
+                    Timestamp=self._bar_data_next.Timestamp,
+                    GapPrice=self._bar_data_at.ClosePrice,
+                    OpenPrice=self._bar_data_next.OpenPrice,
+                    HighPrice=self._bar_data_next.OpenPrice,
+                    LowPrice=self._bar_data_next.OpenPrice,
+                    ClosePrice=self._bar_data_next.OpenPrice,
                     TickVolume=0.0,
                 )
+                self._bar_data_at = self._bar_data_next
                 try:
                     bar_data_next_row = next(self._bar_df_iterator)
                     self._bar_data_next = Bar(*bar_data_next_row)

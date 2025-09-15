@@ -259,15 +259,17 @@ class RealtimeSystemAPI(SystemAPI):
         )
 
     def receive_update_bar(self) -> Bar:
-        content = self._receive_update(size="<1q4d1q")
+        content = self._receive_update(size="<1q5d1q")
         timestamp = timestamp_to_datetime(content[0], milliseconds=True)
-        open_price = content[1]
-        high_price = content[2]
-        low_price = content[3]
-        close_price = content[4]
-        volume = content[5]
+        gap_price = content[1]
+        open_price = content[2]
+        high_price = content[3]
+        low_price = content[4]
+        close_price = content[5]
+        volume = content[6]
         return Bar(
             Timestamp=timestamp,
+            GapPrice=gap_price,
             OpenPrice=open_price,
             HighPrice=high_price,
             LowPrice=low_price,

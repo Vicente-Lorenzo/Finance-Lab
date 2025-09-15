@@ -149,6 +149,7 @@ WHERE NOT EXISTS (
 
                 create_script.append(create_table_if_not_exists(symbol, timeframe))
                 create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.Timestamp), "TIMESTAMP"))
+                create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.GapPrice), "DOUBLE PRECISION"))
                 create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.OpenPrice), "DOUBLE PRECISION"))
                 create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.HighPrice), "DOUBLE PRECISION"))
                 create_script.append(add_column_if_not_exists(symbol, timeframe, str(Bar.LowPrice), "DOUBLE PRECISION"))

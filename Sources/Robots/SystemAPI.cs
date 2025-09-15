@@ -143,9 +143,10 @@ public class SystemAPI
         writer.Write(trade.NetProfit);
     }
 
-    private static void BuildUpdateBar(BinaryWriter writer, Bar bar)
+    private static void BuildUpdateBar(BinaryWriter writer, Bar gap, Bar bar)
     {
         writer.Write(((DateTimeOffset)bar.OpenTime).ToUnixTimeMilliseconds());
+        writer.Write(gap.Close);
         writer.Write(bar.Open);
         writer.Write(bar.High);
         writer.Write(bar.Low);
@@ -192,57 +193,57 @@ public class SystemAPI
         SendUpdate(memoryStream.ToArray());
     }
 
-    private void SendUpdatePosition(RobotAPI.UpdateID updateID, Bar bar, IAccount account, Symbol symbol, Position position)
+    private void SendUpdatePosition(RobotAPI.UpdateID updateID, Bar gap, Bar bar, IAccount account, Symbol symbol, Position position)
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
         BuildUpdateID(writer, updateID);
-        BuildUpdateBar(writer, bar);
+        BuildUpdateBar(writer, gap, bar);
         BuildUpdateAccount(writer, account);
         BuildUpdatePosition(writer, symbol, position);
         SendUpdate(memoryStream.ToArray());
     }
 
-    private void SendUpdateTrade(RobotAPI.UpdateID updateID, Bar bar, IAccount account, Symbol symbol, HistoricalTrade trade)
+    private void SendUpdateTrade(RobotAPI.UpdateID updateID, Bar gap, Bar bar, IAccount account, Symbol symbol, HistoricalTrade trade)
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
         BuildUpdateID(writer, updateID);
-        BuildUpdateBar(writer, bar);
+        BuildUpdateBar(writer, gap, bar);
         BuildUpdateAccount(writer, account);
         BuildUpdateTrade(writer, symbol, trade);
         SendUpdate(memoryStream.ToArray());
     }
 
-    private void SendUpdatePositionTrade(RobotAPI.UpdateID updateID, Bar bar, IAccount account, Symbol symbol, Position position, HistoricalTrade trade)
+    private void SendUpdatePositionTrade(RobotAPI.UpdateID updateID, Bar gap, Bar bar, IAccount account, Symbol symbol, Position position, HistoricalTrade trade)
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
         BuildUpdateID(writer, updateID);
-        BuildUpdateBar(writer, bar);
+        BuildUpdateBar(writer, gap, bar);
         BuildUpdateAccount(writer, account);
         BuildUpdatePosition(writer, symbol, position);
         BuildUpdateTrade(writer, symbol, trade);
         SendUpdate(memoryStream.ToArray());
     }
 
-    public void SendUpdateOpenedBuy(Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.OpenedBuy, bar, account, symbol, position); }
-    public void SendUpdateOpenedSell(Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.OpenedSell, bar, account, symbol, position); }
-    public void SendUpdateModifiedBuyVolume(Bar bar, IAccount account, Symbol symbol, Position position, HistoricalTrade trade) { SendUpdatePositionTrade(RobotAPI.UpdateID.ModifiedBuyVolume, bar, account, symbol, position, trade); }
-    public void SendUpdateModifiedBuyStopLoss(Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedBuyStopLoss, bar, account, symbol, position); }
-    public void SendUpdateModifiedBuyTakeProfit(Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedBuyTakeProfit, bar, account, symbol, position); }
-    public void SendUpdateModifiedSellVolume(Bar bar, IAccount account, Symbol symbol, Position position, HistoricalTrade trade) { SendUpdatePositionTrade(RobotAPI.UpdateID.ModifiedSellVolume, bar, account, symbol, position, trade); }
-    public void SendUpdateModifiedSellStopLoss(Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedSellStopLoss, bar, account, symbol, position); }
-    public void SendUpdateModifiedSellTakeProfit(Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedSellTakeProfit, bar, account, symbol, position); }
-    public void SendUpdateClosedBuy(Bar bar, IAccount account, Symbol symbol, HistoricalTrade trade) { SendUpdateTrade(RobotAPI.UpdateID.ClosedBuy, bar, account, symbol, trade); }
-    public void SendUpdateClosedSell(Bar bar, IAccount account, Symbol symbol, HistoricalTrade trade) { SendUpdateTrade(RobotAPI.UpdateID.ClosedSell, bar, account, symbol, trade); }
+    public void SendUpdateOpenedBuy(Bar gap, Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.OpenedBuy, gap, bar, account, symbol, position); }
+    public void SendUpdateOpenedSell(Bar gap, Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.OpenedSell, gap, bar, account, symbol, position); }
+    public void SendUpdateModifiedBuyVolume(Bar gap, Bar bar, IAccount account, Symbol symbol, Position position, HistoricalTrade trade) { SendUpdatePositionTrade(RobotAPI.UpdateID.ModifiedBuyVolume, gap, bar, account, symbol, position, trade); }
+    public void SendUpdateModifiedBuyStopLoss(Bar gap, Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedBuyStopLoss, gap, bar, account, symbol, position); }
+    public void SendUpdateModifiedBuyTakeProfit(Bar gap, Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedBuyTakeProfit, gap, bar, account, symbol, position); }
+    public void SendUpdateModifiedSellVolume(Bar gap, Bar bar, IAccount account, Symbol symbol, Position position, HistoricalTrade trade) { SendUpdatePositionTrade(RobotAPI.UpdateID.ModifiedSellVolume, gap, bar, account, symbol, position, trade); }
+    public void SendUpdateModifiedSellStopLoss(Bar gap, Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedSellStopLoss, gap, bar, account, symbol, position); }
+    public void SendUpdateModifiedSellTakeProfit(Bar gap, Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedSellTakeProfit, gap, bar, account, symbol, position); }
+    public void SendUpdateClosedBuy(Bar gap, Bar bar, IAccount account, Symbol symbol, HistoricalTrade trade) { SendUpdateTrade(RobotAPI.UpdateID.ClosedBuy, gap, bar, account, symbol, trade); }
+    public void SendUpdateClosedSell(Bar gap, Bar bar, IAccount account, Symbol symbol, HistoricalTrade trade) { SendUpdateTrade(RobotAPI.UpdateID.ClosedSell, gap, bar, account, symbol, trade); }
 
-    public void SendUpdateBarClosed(Bar bar)
+    public void SendUpdateBarClosed(Bar gap, Bar bar)
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
         BuildUpdateID(writer, RobotAPI.UpdateID.BarClosed);
-        BuildUpdateBar(writer, bar);
+        BuildUpdateBar(writer, gap, bar);
         SendUpdate(memoryStream.ToArray());
     }
 

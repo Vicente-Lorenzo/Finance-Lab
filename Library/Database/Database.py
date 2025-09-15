@@ -16,6 +16,7 @@ class DatabaseAPI:
 
     SCHEMA_MARKET: dict = {
         Bar.Timestamp: pl.Datetime(),
+        Bar.GapPrice: pl.Float32(),
         Bar.OpenPrice: pl.Float32(),
         Bar.HighPrice: pl.Float32(),
         Bar.LowPrice: pl.Float32(),
@@ -176,9 +177,10 @@ class DatabaseAPI:
                 records = [tuple(row) for row in data.rows()]
 
                 query = f"""
-                INSERT INTO "{self._symbol}"."{self._timeframe}" ("{Bar.Timestamp}", "{Bar.OpenPrice}", "{Bar.HighPrice}", "{Bar.LowPrice}", "{Bar.ClosePrice}", "{Bar.TickVolume}")
+                INSERT INTO "{self._symbol}"."{self._timeframe}" ("{Bar.Timestamp}", "{Bar.GapPrice}", "{Bar.OpenPrice}", "{Bar.HighPrice}", "{Bar.LowPrice}", "{Bar.ClosePrice}", "{Bar.TickVolume}")
                 VALUES %s
                 ON CONFLICT ("{Bar.Timestamp}") DO UPDATE SET
+                    "{Bar.GapPrice}" = EXCLUDED."{Bar.GapPrice}",
                     "{Bar.OpenPrice}" = EXCLUDED."{Bar.OpenPrice}",
                     "{Bar.HighPrice}" = EXCLUDED."{Bar.HighPrice}",
                     "{Bar.LowPrice}" = EXCLUDED."{Bar.LowPrice}",
@@ -284,11 +286,12 @@ class DatabaseAPI:
                 results = cursor.fetchall()
                 bars = [Bar(
                     Timestamp=result[0],
-                    OpenPrice=result[1],
-                    HighPrice=result[2],
-                    LowPrice=result[3],
-                    ClosePrice=result[4],
-                    TickVolume=result[5]) for result in results]
+                    GapPrice=result[1],
+                    OpenPrice=result[2],
+                    HighPrice=result[3],
+                    LowPrice=result[4],
+                    ClosePrice=result[5],
+                    TickVolume=result[6]) for result in results]
                 data = self.format_market_data(bars)
                 self._log.debug(lambda: f"Loaded {len(data)} data points")
                 return data

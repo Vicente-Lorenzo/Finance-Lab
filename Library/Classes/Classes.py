@@ -283,31 +283,42 @@ class Trade(Position):
 @dataclass(slots=True)
 class Bar(Class):
     Timestamp: Union[Timestamp, datetime] = field(default=None, init=True, repr=True)
+    GapPrice: InitVar[Union[Price, float]] = field(default=None, init=True, repr=True)
     OpenPrice: InitVar[Union[Price, float]] = field(default=None, init=True, repr=True)
     HighPrice: InitVar[Union[Price, float]] = field(default=None, init=True, repr=True)
     LowPrice: InitVar[Union[Price, float]] = field(default=None, init=True, repr=True)
     ClosePrice: InitVar[Union[Price, float]] = field(default=None, init=True, repr=True)
     TickVolume: float = field(default=None, init=True, repr=True)
 
+    _GapPrice: Union[Price, float] = field(default=None, init=False, repr=False)
     _OpenPrice: Union[Price, float] = field(default=None, init=False, repr=False)
     _HighPrice: Union[Price, float] = field(default=None, init=False, repr=False)
     _LowPrice: Union[Price, float] = field(default=None, init=False, repr=False)
     _ClosePrice: Union[Price, float] = field(default=None, init=False, repr=False)
 
-    def __post_init__(self, open_price: Union[Price, float], high_price: Union[Price, float], low_price: Union[Price, float], close_price: Union[Price, float]):
+    def __post_init__(self, gap_price: Union[Price, float], open_price: Union[Price, float], high_price: Union[Price, float], low_price: Union[Price, float], close_price: Union[Price, float]):
         self.Timestamp = Timestamp(Timestamp=self.Timestamp)
-        self._OpenPrice = Price(Price=open_price)
+        self._GapPrice = Price(Price=gap_price)
+        self._OpenPrice = Price(Price=open_price, Reference=gap_price)
         self._HighPrice = Price(Price=high_price, Reference=open_price)
         self._LowPrice = Price(Price=low_price, Reference=open_price)
         self._ClosePrice = Price(Price=close_price, Reference=open_price)
 
     @property
     @dynamic
+    def GapPrice(self) -> Price:
+        return self._GapPrice
+    @GapPrice.setter
+    def GapPrice(self, gap_price: Union[Price, float]) -> None:
+        self._GapPrice = Price(Price=gap_price)
+        self.OpenPrice = self._OpenPrice
+    @property
+    @dynamic
     def OpenPrice(self) -> Price:
         return self._OpenPrice
     @OpenPrice.setter
     def OpenPrice(self, open_price: Union[Price, float]) -> None:
-        self._OpenPrice = Price(Price=open_price)
+        self._OpenPrice = Price(Price=open_price, Reference=self._GapPrice)
         self.HighPrice = self._HighPrice
         self.LowPrice = self._LowPrice
         self.ClosePrice = self._ClosePrice
