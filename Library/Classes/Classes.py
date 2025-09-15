@@ -82,6 +82,9 @@ class Timestamp(Class):
     def Month(self) -> Cycle:
         return Cycle(Value=self.Timestamp.month, Period=12)
     @property
+    def Weekday(self) -> Cycle:
+        return Cycle(Value=self.Timestamp.weekday(), Period=7)
+    @property
     def Day(self) -> Cycle:
         return Cycle(Value=self.Timestamp.day, Period=31)
     @property
