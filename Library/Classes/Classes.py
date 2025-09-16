@@ -73,7 +73,7 @@ class Cycle(Class):
 
 @dataclass(slots=True, kw_only=True)
 class Timestamp(Class):
-    Timestamp: Union[Timestamp, datetime] = field(init=True, repr=True)
+    Timestamp: datetime = field(init=True, repr=True)
 
     @property
     def Year(self) -> Cycle:
@@ -105,8 +105,8 @@ class Timestamp(Class):
 
 @dataclass(slots=True, kw_only=True)
 class Price(Class):
-    Price: Union[Price, float] = field(init=True, repr=True)
-    Reference: Union[Price, float] = field(default=None, init=True, repr=True)
+    Price: float = field(init=True, repr=True)
+    Reference: float = field(default=None, init=True, repr=True)
 
     @property
     def Percentage(self):
@@ -118,6 +118,10 @@ class Price(Class):
     def __post_init__(self):
         self.Price = self.Price.Price if isinstance(self.Price, Price) else self.Price
         self.Reference = self.Reference.Price if isinstance(self.Reference, Price) else self.Reference
+
+@dataclass(slots=True, kw_only=True)
+class Return(Class):
+    PnL: Union[Price, float] = field(init=True, repr=True)
 
 @dataclass(slots=True, kw_only=True)
 class Account(Class):
@@ -241,7 +245,7 @@ class Position(Class):
         return self._StopLoss
     @StopLoss.setter
     def StopLoss(self, stop_loss: Union[Price, float]) -> None:
-        self._StopLoss = Price(Price=cast(stop_loss, float, None), Reference=self._EntryPrice)
+        self._StopLoss = Price(Price=cast(stop_loss, float, None), Reference=self._EntryPrice.Price)
 
     @property
     @dynamic
@@ -249,7 +253,7 @@ class Position(Class):
         return self._TakeProfit
     @TakeProfit.setter
     def TakeProfit(self, take_profit: Union[Price, float]) -> None:
-        self._TakeProfit = Price(Price=cast(take_profit, float, None), Reference=self._EntryPrice)
+        self._TakeProfit = Price(Price=cast(take_profit, float, None), Reference=self._EntryPrice.Price)
 
 @dataclass(slots=True, kw_only=True)
 class Trade(Position):
@@ -283,7 +287,7 @@ class Trade(Position):
         return self._ExitPrice
     @ExitPrice.setter
     def ExitPrice(self, exit_price: Union[Price, float]) -> None:
-        self._ExitPrice = Price(Price=exit_price, Reference=self._EntryPrice)
+        self._ExitPrice = Price(Price=exit_price, Reference=self._EntryPrice.Price)
 
 @dataclass(slots=True)
 class Bar(Class):
@@ -324,7 +328,7 @@ class Bar(Class):
         return self._OpenPrice
     @OpenPrice.setter
     def OpenPrice(self, open_price: Union[Price, float]) -> None:
-        self._OpenPrice = Price(Price=open_price, Reference=self._GapPrice)
+        self._OpenPrice = Price(Price=open_price, Reference=self._GapPrice.Price)
         self.HighPrice = self._HighPrice
         self.LowPrice = self._LowPrice
         self.ClosePrice = self._ClosePrice
@@ -335,7 +339,7 @@ class Bar(Class):
         return self._HighPrice
     @HighPrice.setter
     def HighPrice(self, high_price: Union[Price, float]) -> None:
-        self._HighPrice = Price(Price=high_price, Reference=self._OpenPrice)
+        self._HighPrice = Price(Price=high_price, Reference=self._OpenPrice.Price)
 
     @property
     @dynamic
@@ -343,7 +347,7 @@ class Bar(Class):
         return self._LowPrice
     @LowPrice.setter
     def LowPrice(self, low_price: Union[Price, float]) -> None:
-        self._LowPrice = Price(Price=low_price, Reference=self._OpenPrice)
+        self._LowPrice = Price(Price=low_price, Reference=self._OpenPrice.Price)
 
     @property
     @dynamic
@@ -351,11 +355,11 @@ class Bar(Class):
         return self._ClosePrice
     @ClosePrice.setter
     def ClosePrice(self, close_price: Union[Price, float]) -> None:
-        self._ClosePrice = Price(Price=close_price, Reference=self._OpenPrice)
+        self._ClosePrice = Price(Price=close_price, Reference=self._OpenPrice.Price)
 
     @property
     def RangePrice(self) -> Price:
-        return Price(Price=self._HighPrice.Price - self._LowPrice.Price, Reference=self._OpenPrice)
+        return Price(Price=self._HighPrice.Price - self._LowPrice.Price, Reference=self._OpenPrice.Price)
 
 @dataclass(slots=True)
 class Tick(Class):
