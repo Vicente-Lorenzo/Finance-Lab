@@ -69,6 +69,12 @@ public class SystemAPI
         writer.Write((byte)updateID);
     }
 
+    private static void BuildUpdateRuntime(BinaryWriter writer, RunningMode runningMode, RobotAPI.TickMode tickMode)
+    {
+        writer.Write((byte)runningMode);
+        writer.Write((byte)tickMode);
+    }
+
     private static void BuildUpdateAccount(BinaryWriter writer, IAccount account)
     {
         writer.Write((byte)account.AccountType);
@@ -103,62 +109,61 @@ public class SystemAPI
         writer.Write((sbyte?)symbol.Swap3DaysRollover ?? (sbyte)Sentinel);
     }
 
-    private static void BuildUpdatePosition(BinaryWriter writer, Symbol symbol, Position position)
+    private static void BuildUpdatePosition(BinaryWriter writer, Position position)
     {
         writer.Write(position.Id);
         writer.Write((byte)Enum.Parse<RobotAPI.PositionType>(position.Comment));
         writer.Write((byte)position.TradeType);
-        writer.Write(((DateTimeOffset)position.EntryTime).ToUnixTimeMilliseconds());
-        writer.Write(position.EntryPrice);
         writer.Write(position.VolumeInUnits);
         writer.Write(position.Quantity);
-        writer.Write(position.Pips * symbol.PipSize / symbol.TickSize);
-        writer.Write(position.Pips);
+        writer.Write(((DateTimeOffset)position.EntryTime).ToUnixTimeMilliseconds());
+        writer.Write(position.EntryPrice);
+        writer.Write(position.StopLoss ?? Sentinel);
+        writer.Write(position.TakeProfit ?? Sentinel);
+        writer.Write(position.CurrentPrice);
         writer.Write(position.GrossProfit);
         writer.Write(position.Commissions);
         writer.Write(position.Swap);
         writer.Write(position.NetProfit);
-        writer.Write(position.StopLoss ?? Sentinel);
-        writer.Write(position.TakeProfit ?? Sentinel);
         writer.Write(position.Margin);
     }
 
-    private static void BuildUpdateTrade(BinaryWriter writer, Symbol symbol, HistoricalTrade trade)
+    private static void BuildUpdateTrade(BinaryWriter writer, HistoricalTrade trade)
     {
         writer.Write(trade.PositionId);
         writer.Write(trade.ClosingDealId);
         writer.Write((byte)Enum.Parse<RobotAPI.PositionType>(trade.Comment));
         writer.Write((byte)trade.TradeType);
+        writer.Write(trade.VolumeInUnits);
+        writer.Write(trade.Quantity);
         writer.Write(((DateTimeOffset)trade.EntryTime).ToUnixTimeMilliseconds());
         writer.Write(((DateTimeOffset)trade.ClosingTime).ToUnixTimeMilliseconds());
         writer.Write(trade.EntryPrice);
         writer.Write(trade.ClosingPrice);
-        writer.Write(trade.VolumeInUnits);
-        writer.Write(trade.Quantity);
-        writer.Write(trade.Pips * symbol.PipSize / symbol.TickSize);
-        writer.Write(trade.Pips);
         writer.Write(trade.GrossProfit);
         writer.Write(trade.Commissions);
         writer.Write(trade.Swap);
         writer.Write(trade.NetProfit);
     }
 
-    private static void BuildUpdateBar(BinaryWriter writer, Bar gap, Bar bar)
+    private static void BuildUpdateTick(BinaryWriter writer, RobotAPI.xTick tick)
     {
-        writer.Write(((DateTimeOffset)bar.OpenTime).ToUnixTimeMilliseconds());
-        writer.Write(gap.Close);
-        writer.Write(bar.Open);
-        writer.Write(bar.High);
-        writer.Write(bar.Low);
-        writer.Write(bar.Close);
-        writer.Write(bar.TickVolume);
+        writer.Write(((DateTimeOffset)tick.Timestamp).ToUnixTimeMilliseconds());
+        writer.Write(tick.Ask);
+        writer.Write(tick.Bid);
+        writer.Write(tick.BaseConversionRate);
+        writer.Write(tick.QuoteConversionRate);
     }
 
-    private static void BuildUpdateTick(BinaryWriter writer, DateTime tickTime, double ask, double bid)
+    private static void BuildUpdateBar(BinaryWriter writer, RobotAPI.xBar bar)
     {
-        writer.Write(((DateTimeOffset)tickTime).ToUnixTimeMilliseconds());
-        writer.Write(ask);
-        writer.Write(bid);
+        writer.Write(((DateTimeOffset)bar.Timestamp).ToUnixTimeMilliseconds());
+        BuildUpdateTick(writer, bar.GapTick);
+        BuildUpdateTick(writer, bar.OpenTick);
+        BuildUpdateTick(writer, bar.HighTick);
+        BuildUpdateTick(writer, bar.LowTick);
+        BuildUpdateTick(writer, bar.CloseTick);
+        writer.Write(bar.TickVolume);
     }
 
     private void SendUpdate(byte[] message)
@@ -172,6 +177,15 @@ public class SystemAPI
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
         BuildUpdateID(writer, RobotAPI.UpdateID.Complete);
+        SendUpdate(memoryStream.ToArray());
+    }
+
+    public void SendUpdateRuntime(RunningMode runningMode, RobotAPI.TickMode tickMode)
+    {
+        using var memoryStream = new MemoryStream();
+        using var writer = new BinaryWriter(memoryStream);
+        BuildUpdateID(writer, RobotAPI.UpdateID.Runtime);
+        BuildUpdateRuntime(writer, runningMode, tickMode);
         SendUpdate(memoryStream.ToArray());
     }
 
@@ -193,73 +207,74 @@ public class SystemAPI
         SendUpdate(memoryStream.ToArray());
     }
 
-    private void SendUpdatePosition(RobotAPI.UpdateID updateID, Bar gap, Bar bar, IAccount account, Symbol symbol, Position position)
+    private void SendUpdatePosition(RobotAPI.UpdateID updateID, RobotAPI.xBar bar, IAccount account, Position position)
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
         BuildUpdateID(writer, updateID);
-        BuildUpdateBar(writer, gap, bar);
+        BuildUpdateBar(writer, bar);
         BuildUpdateAccount(writer, account);
-        BuildUpdatePosition(writer, symbol, position);
+        BuildUpdatePosition(writer, position);
         SendUpdate(memoryStream.ToArray());
     }
 
-    private void SendUpdateTrade(RobotAPI.UpdateID updateID, Bar gap, Bar bar, IAccount account, Symbol symbol, HistoricalTrade trade)
+    private void SendUpdateTrade(RobotAPI.UpdateID updateID, RobotAPI.xBar bar, IAccount account, HistoricalTrade trade)
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
         BuildUpdateID(writer, updateID);
-        BuildUpdateBar(writer, gap, bar);
+        BuildUpdateBar(writer, bar);
         BuildUpdateAccount(writer, account);
-        BuildUpdateTrade(writer, symbol, trade);
+        BuildUpdateTrade(writer, trade);
         SendUpdate(memoryStream.ToArray());
     }
 
-    private void SendUpdatePositionTrade(RobotAPI.UpdateID updateID, Bar gap, Bar bar, IAccount account, Symbol symbol, Position position, HistoricalTrade trade)
+    private void SendUpdatePositionTrade(RobotAPI.UpdateID updateID, RobotAPI.xBar bar, IAccount account, Position position, HistoricalTrade trade)
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
         BuildUpdateID(writer, updateID);
-        BuildUpdateBar(writer, gap, bar);
+        BuildUpdateBar(writer, bar);
         BuildUpdateAccount(writer, account);
-        BuildUpdatePosition(writer, symbol, position);
-        BuildUpdateTrade(writer, symbol, trade);
+        BuildUpdatePosition(writer, position);
+        BuildUpdateTrade(writer, trade);
         SendUpdate(memoryStream.ToArray());
     }
 
-    public void SendUpdateOpenedBuy(Bar gap, Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.OpenedBuy, gap, bar, account, symbol, position); }
-    public void SendUpdateOpenedSell(Bar gap, Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.OpenedSell, gap, bar, account, symbol, position); }
-    public void SendUpdateModifiedBuyVolume(Bar gap, Bar bar, IAccount account, Symbol symbol, Position position, HistoricalTrade trade) { SendUpdatePositionTrade(RobotAPI.UpdateID.ModifiedBuyVolume, gap, bar, account, symbol, position, trade); }
-    public void SendUpdateModifiedBuyStopLoss(Bar gap, Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedBuyStopLoss, gap, bar, account, symbol, position); }
-    public void SendUpdateModifiedBuyTakeProfit(Bar gap, Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedBuyTakeProfit, gap, bar, account, symbol, position); }
-    public void SendUpdateModifiedSellVolume(Bar gap, Bar bar, IAccount account, Symbol symbol, Position position, HistoricalTrade trade) { SendUpdatePositionTrade(RobotAPI.UpdateID.ModifiedSellVolume, gap, bar, account, symbol, position, trade); }
-    public void SendUpdateModifiedSellStopLoss(Bar gap, Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedSellStopLoss, gap, bar, account, symbol, position); }
-    public void SendUpdateModifiedSellTakeProfit(Bar gap, Bar bar, IAccount account, Symbol symbol, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedSellTakeProfit, gap, bar, account, symbol, position); }
-    public void SendUpdateClosedBuy(Bar gap, Bar bar, IAccount account, Symbol symbol, HistoricalTrade trade) { SendUpdateTrade(RobotAPI.UpdateID.ClosedBuy, gap, bar, account, symbol, trade); }
-    public void SendUpdateClosedSell(Bar gap, Bar bar, IAccount account, Symbol symbol, HistoricalTrade trade) { SendUpdateTrade(RobotAPI.UpdateID.ClosedSell, gap, bar, account, symbol, trade); }
+    public void SendUpdateOpenedBuy(RobotAPI.xBar bar, IAccount account, Position position) { SendUpdatePosition(RobotAPI.UpdateID.OpenedBuy, bar, account, position); }
+    public void SendUpdateOpenedSell(RobotAPI.xBar bar, IAccount account, Position position) { SendUpdatePosition(RobotAPI.UpdateID.OpenedSell, bar, account, position); }
+    public void SendUpdateModifiedBuyVolume(RobotAPI.xBar bar, IAccount account, Position position, HistoricalTrade trade) { SendUpdatePositionTrade(RobotAPI.UpdateID.ModifiedBuyVolume, bar, account, position, trade); }
+    public void SendUpdateModifiedSellVolume(RobotAPI.xBar bar, IAccount account, Position position, HistoricalTrade trade) { SendUpdatePositionTrade(RobotAPI.UpdateID.ModifiedSellVolume, bar, account, position, trade); }
+    public void SendUpdateModifiedBuyStopLoss(RobotAPI.xBar bar, IAccount account, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedBuyStopLoss, bar, account, position); }
+    public void SendUpdateModifiedSellStopLoss(RobotAPI.xBar bar, IAccount account, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedSellStopLoss, bar, account, position); }
+    public void SendUpdateModifiedBuyTakeProfit(RobotAPI.xBar bar, IAccount account, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedBuyTakeProfit, bar, account, position); }
+    public void SendUpdateModifiedSellTakeProfit(RobotAPI.xBar bar, IAccount account, Position position) { SendUpdatePosition(RobotAPI.UpdateID.ModifiedSellTakeProfit, bar, account, position); }
+    public void SendUpdateClosedBuy(RobotAPI.xBar bar, IAccount account, HistoricalTrade trade) { SendUpdateTrade(RobotAPI.UpdateID.ClosedBuy, bar, account, trade); }
+    public void SendUpdateClosedSell(RobotAPI.xBar bar, IAccount account, HistoricalTrade trade) { SendUpdateTrade(RobotAPI.UpdateID.ClosedSell, bar, account, trade); }
 
-    public void SendUpdateBarClosed(Bar gap, Bar bar)
+    public void SendUpdateBarClosed(RobotAPI.xBar bar)
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
         BuildUpdateID(writer, RobotAPI.UpdateID.BarClosed);
-        BuildUpdateBar(writer, gap, bar);
+        BuildUpdateBar(writer, bar);
         SendUpdate(memoryStream.ToArray());
     }
 
-    private void SendUpdateTarget(DateTime timestamp, RobotAPI.UpdateID targetType, double ask, double bid)
+    private void SendUpdateTickClosed(RobotAPI.UpdateID updateId, RobotAPI.xTick tick)
     {
         using var memoryStream = new MemoryStream();
         using var writer = new BinaryWriter(memoryStream);
-        BuildUpdateID(writer, targetType);
-        BuildUpdateTick(writer, timestamp, ask, bid);
+        BuildUpdateID(writer, updateId);
+        BuildUpdateTick(writer, tick);
         SendUpdate(memoryStream.ToArray());
     }
 
-    public void SendUpdateAskAboveTarget(DateTime timestamp, double ask, double bid) { SendUpdateTarget(timestamp, RobotAPI.UpdateID.AskAboveTarget, ask, bid); }
-    public void SendUpdateAskBelowTarget(DateTime timestamp, double ask, double bid) { SendUpdateTarget(timestamp, RobotAPI.UpdateID.AskBelowTarget, ask, bid); }
-    public void SendUpdateBidAboveTarget(DateTime timestamp, double ask, double bid) { SendUpdateTarget(timestamp, RobotAPI.UpdateID.BidAboveTarget, ask, bid); }
-    public void SendUpdateBidBelowTarget(DateTime timestamp, double ask, double bid) { SendUpdateTarget(timestamp, RobotAPI.UpdateID.BidBelowTarget, ask, bid); }
+    public void SendUpdateTickClosed(RobotAPI.xTick tick) { SendUpdateTickClosed(RobotAPI.UpdateID.TickClosed, tick); }
+    public void SendUpdateAskAboveTarget(RobotAPI.xTick tick) { SendUpdateTickClosed(RobotAPI.UpdateID.AskAboveTarget, tick); }
+    public void SendUpdateAskBelowTarget(RobotAPI.xTick tick) { SendUpdateTickClosed(RobotAPI.UpdateID.AskBelowTarget, tick); }
+    public void SendUpdateBidAboveTarget(RobotAPI.xTick tick) { SendUpdateTickClosed(RobotAPI.UpdateID.BidAboveTarget, tick); }
+    public void SendUpdateBidBelowTarget(RobotAPI.xTick tick) { SendUpdateTickClosed(RobotAPI.UpdateID.BidBelowTarget, tick); }
 
     public void SendUpdateShutdown()
     {
