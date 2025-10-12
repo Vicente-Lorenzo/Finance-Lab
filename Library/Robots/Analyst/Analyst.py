@@ -2,10 +2,10 @@ import math
 import polars as pl
 
 from Library.Database import DatabaseAPI
-from Library.Classes import Bar
+from Library.Dataclass import BarAPI
 from Library.Parameters import Parameters
 
-from Library.Robots.Analyst import MARGIN, MarketAPI, TechnicalAPI
+from Library.Robots.Analyst import MARGIN, MarketAPI, IndicatorAPI
 
 class AnalystAPI:
 
@@ -14,21 +14,21 @@ class AnalystAPI:
         self.Window: int = MARGIN
         self.Market: MarketAPI = MarketAPI()
 
-        self._technicals: list[TechnicalAPI] = []
+        self._indicators: list[IndicatorAPI] = []
         analyst_management = analyst_management if analyst_management else {}
-        for technical_name, technical_configuration in analyst_management.items() or {}:
-            technical_function, *technical_parameters = technical_configuration
-            technical = TechnicalAPI(technical=technical_function, parameters=technical_parameters)
-            setattr(self, technical_name, technical)
-            self._technicals.append(technical)
-            technical_max = max(technical_parameters) if technical_parameters else 0
-            self.Window = math.ceil(max(self.Window, technical_max + MARGIN))
+        for indicator_name, indicator_configuration in analyst_management.items() or {}:
+            indicator_function, *indicator_parameters = indicator_configuration
+            indicator = IndicatorAPI(indicator=indicator_function, parameters=indicator_parameters)
+            setattr(self, indicator_name, indicator)
+            self._indicators.append(indicator)
+            indicator_max = max(indicator_parameters) if indicator_parameters else 0
+            self.Window = math.ceil(max(self.Window, indicator_max + MARGIN))
 
     def data(self) -> pl.DataFrame:
         result = pl.DataFrame()
         result = result.hstack(self.Market.data())
-        for technical in self._technicals:
-            result = result.hstack(technical.data())
+        for indicator in self._indicators:
+            result = result.hstack(indicator.data())
         return result
 
     def head(self, n: int | None = None) -> pl.DataFrame:
@@ -37,22 +37,22 @@ class AnalystAPI:
     def tail(self, n: int | None = None) -> pl.DataFrame:
         return self.data().tail(n)
 
-    def init_market_data(self, data: pl.DataFrame | list[Bar]) -> None:
+    def init_market_data(self, data: pl.DataFrame | list[BarAPI]) -> None:
         data_df = DatabaseAPI.format_market_data(data)
         self.Market.init_data(data_df)
-        for technical in self._technicals:
-            technical.init_data(self.Market)
+        for indicator in self._indicators:
+            indicator.init_data(self.Market)
 
-    def update_market_data(self, data: Bar) -> None:
+    def update_market_data(self, data: BarAPI) -> None:
         data_df = DatabaseAPI.format_market_data(data)
         self.Market.update_data(data_df)
-        for technical in self._technicals:
-            technical.update_data(self.Market, self.Window)
+        for indicator in self._indicators:
+            indicator.update_data(self.Market, self.Window)
 
     def update_market_offset(self, offset: int) -> None:
         self.Market.update_offset(offset)
-        for technical in self._technicals:
-            technical.update_offset(offset)
+        for indicator in self._indicators:
+            indicator.update_offset(offset)
 
     def __repr__(self):
         return repr(self.data())

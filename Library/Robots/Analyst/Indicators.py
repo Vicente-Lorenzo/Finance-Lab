@@ -1,283 +1,283 @@
 import math
 import talib
 
-from Library.Classes import TechnicalType, Technical
+from Library.Dataclass import IndicatorType, IndicatorConfigurationAPI
 
-class TechnicalsAPI:
+class IndicatorsAPI:
 
     @classmethod
-    def find(cls, technical_type: TechnicalType) -> dict[str, Technical]:
-        return {technical_id: technical for technical_id, technical in cls.__dict__.items() if isinstance(technical, Technical) and technical.TechnicalType == technical_type}
+    def find(cls, indicator_type: IndicatorType) -> dict[str, IndicatorConfigurationAPI]:
+        return {indicator_id: indicator for indicator_id, indicator in cls.__dict__.items() if isinstance(indicator, IndicatorConfigurationAPI) and indicator.IndicatorType == indicator_type}
 
     # ==================== BASELINES ====================
-    SMA = Technical(
+    SMA = IndicatorConfigurationAPI(
         Name="Simple Moving Average (Short-Term)",
-        TechnicalType=TechnicalType.Baseline,
+        IndicatorType=IndicatorType.Baseline,
         Input=lambda market: [market.ClosePrice],
         Parameters={"window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda window: window >= 5,
         Function=lambda series, window: talib.SMA(*series, timeperiod=window),
         Output=["Result"],
-        FilterBuy=lambda market, technical, shift: market.ClosePrice.over(technical.Result, shift),
-        FilterSell=lambda market, technical, shift: market.ClosePrice.under(technical.Result, shift),
-        SignalBuy=lambda market, technical, shift: market.ClosePrice.crossover(technical.Result, shift),
-        SignalSell=lambda market, technical, shift: market.ClosePrice.crossunder(technical.Result, shift))
+        FilterBuy=lambda market, indicator, shift: market.ClosePrice.over(indicator.Result, shift),
+        FilterSell=lambda market, indicator, shift: market.ClosePrice.under(indicator.Result, shift),
+        SignalBuy=lambda market, indicator, shift: market.ClosePrice.crossover(indicator.Result, shift),
+        SignalSell=lambda market, indicator, shift: market.ClosePrice.crossunder(indicator.Result, shift))
 
-    EMA = Technical(
+    EMA = IndicatorConfigurationAPI(
         Name="Exponential Moving Average",
-        TechnicalType=TechnicalType.Baseline,
+        IndicatorType=IndicatorType.Baseline,
         Input=lambda market: [market.ClosePrice],
         Parameters={"window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda window: window >= 5,
         Function=lambda series, window: talib.EMA(*series, timeperiod=window),
         Output=["Result"],
-        FilterBuy=lambda market, technical, shift: market.ClosePrice.over(technical.Result, shift),
-        FilterSell=lambda market, technical, shift: market.ClosePrice.under(technical.Result, shift),
-        SignalBuy=lambda market, technical, shift: market.ClosePrice.crossover(technical.Result, shift),
-        SignalSell=lambda market, technical, shift: market.ClosePrice.crossunder(technical.Result, shift))
+        FilterBuy=lambda market, indicator, shift: market.ClosePrice.over(indicator.Result, shift),
+        FilterSell=lambda market, indicator, shift: market.ClosePrice.under(indicator.Result, shift),
+        SignalBuy=lambda market, indicator, shift: market.ClosePrice.crossover(indicator.Result, shift),
+        SignalSell=lambda market, indicator, shift: market.ClosePrice.crossunder(indicator.Result, shift))
 
-    WMA = Technical(
+    WMA = IndicatorConfigurationAPI(
         Name="Weighted Moving Average",
-        TechnicalType=TechnicalType.Baseline,
+        IndicatorType=IndicatorType.Baseline,
         Input=lambda market: [market.ClosePrice],
         Parameters={"window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda window: window >= 5,
         Function=lambda series, window: talib.WMA(*series, timeperiod=window),
         Output=["Result"],
-        FilterBuy=lambda market, technical, shift: market.ClosePrice.over(technical.Result, shift),
-        FilterSell=lambda market, technical, shift: market.ClosePrice.under(technical.Result, shift),
-        SignalBuy=lambda market, technical, shift: market.ClosePrice.crossover(technical.Result, shift),
-        SignalSell=lambda market, technical, shift: market.ClosePrice.crossunder(technical.Result, shift))
+        FilterBuy=lambda market, indicator, shift: market.ClosePrice.over(indicator.Result, shift),
+        FilterSell=lambda market, indicator, shift: market.ClosePrice.under(indicator.Result, shift),
+        SignalBuy=lambda market, indicator, shift: market.ClosePrice.crossover(indicator.Result, shift),
+        SignalSell=lambda market, indicator, shift: market.ClosePrice.crossunder(indicator.Result, shift))
 
     @staticmethod
     def custom_HMA(series, window):
         return talib.WMA(2 * talib.WMA(*series, timeperiod=math.floor(window / 2)) - talib.WMA(*series, timeperiod=window), timeperiod=math.floor(math.sqrt(window)))
 
 
-    HMA = Technical(
+    HMA = IndicatorConfigurationAPI(
         Name="Hull Moving Average",
-        TechnicalType=TechnicalType.Baseline,
+        IndicatorType=IndicatorType.Baseline,
         Input=lambda market: [market.ClosePrice],
         Parameters={"window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda window: window >= 5,
-        Function=lambda series, window: TechnicalsAPI.custom_HMA(series, window),
+        Function=lambda series, window: IndicatorsAPI.custom_HMA(series, window),
         Output=["Result"],
-        FilterBuy=lambda market, technical, shift: market.ClosePrice.over(technical.Result, shift),
-        FilterSell=lambda market, technical, shift: market.ClosePrice.under(technical.Result, shift),
-        SignalBuy=lambda market, technical, shift: market.ClosePrice.crossover(technical.Result, shift),
-        SignalSell=lambda market, technical, shift: market.ClosePrice.crossunder(technical.Result, shift))
+        FilterBuy=lambda market, indicator, shift: market.ClosePrice.over(indicator.Result, shift),
+        FilterSell=lambda market, indicator, shift: market.ClosePrice.under(indicator.Result, shift),
+        SignalBuy=lambda market, indicator, shift: market.ClosePrice.crossover(indicator.Result, shift),
+        SignalSell=lambda market, indicator, shift: market.ClosePrice.crossunder(indicator.Result, shift))
 
-    DEMA = Technical(
+    DEMA = IndicatorConfigurationAPI(
         Name="Double Exponential Moving Average",
-        TechnicalType=TechnicalType.Baseline,
+        IndicatorType=IndicatorType.Baseline,
         Input=lambda market: [market.ClosePrice],
         Parameters={"window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda window: window >= 5,
         Function=lambda series, window: talib.DEMA(*series, timeperiod=window),
         Output=["Result"],
-        FilterBuy=lambda market, technical, shift: market.ClosePrice.over(technical.Result, shift),
-        FilterSell=lambda market, technical, shift: market.ClosePrice.under(technical.Result, shift),
-        SignalBuy=lambda market, technical, shift: market.ClosePrice.crossover(technical.Result, shift),
-        SignalSell=lambda market, technical, shift: market.ClosePrice.crossunder(technical.Result, shift))
+        FilterBuy=lambda market, indicator, shift: market.ClosePrice.over(indicator.Result, shift),
+        FilterSell=lambda market, indicator, shift: market.ClosePrice.under(indicator.Result, shift),
+        SignalBuy=lambda market, indicator, shift: market.ClosePrice.crossover(indicator.Result, shift),
+        SignalSell=lambda market, indicator, shift: market.ClosePrice.crossunder(indicator.Result, shift))
 
-    TEMA = Technical(
+    TEMA = IndicatorConfigurationAPI(
         Name="Triple Exponential Moving Average",
-        TechnicalType=TechnicalType.Baseline,
+        IndicatorType=IndicatorType.Baseline,
         Input=lambda market: [market.ClosePrice],
         Parameters={"window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda window: window >= 5,
         Function=lambda series, window: talib.TEMA(*series, timeperiod=window),
         Output=["Result"],
-        FilterBuy=lambda market, technical, shift: market.ClosePrice.over(technical.Result, shift),
-        FilterSell=lambda market, technical, shift: market.ClosePrice.under(technical.Result, shift),
-        SignalBuy=lambda market, technical, shift: market.ClosePrice.crossover(technical.Result, shift),
-        SignalSell=lambda market, technical, shift: market.ClosePrice.crossunder(technical.Result, shift))
+        FilterBuy=lambda market, indicator, shift: market.ClosePrice.over(indicator.Result, shift),
+        FilterSell=lambda market, indicator, shift: market.ClosePrice.under(indicator.Result, shift),
+        SignalBuy=lambda market, indicator, shift: market.ClosePrice.crossover(indicator.Result, shift),
+        SignalSell=lambda market, indicator, shift: market.ClosePrice.crossunder(indicator.Result, shift))
     
-    TRIMA = Technical(
+    TRIMA = IndicatorConfigurationAPI(
         Name="Triangular Moving Average",
-        TechnicalType=TechnicalType.Baseline,
+        IndicatorType=IndicatorType.Baseline,
         Input=lambda market: [market.ClosePrice],
         Parameters={"window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda window: window >= 5,
         Function=lambda series, window: talib.TRIMA(*series, timeperiod=window),
         Output=["Result"],
-        FilterBuy=lambda market, technical, shift: market.ClosePrice.over(technical.Result, shift),
-        FilterSell=lambda market, technical, shift: market.ClosePrice.under(technical.Result, shift),
-        SignalBuy=lambda market, technical, shift: market.ClosePrice.crossover(technical.Result, shift),
-        SignalSell=lambda market, technical, shift: market.ClosePrice.crossunder(technical.Result, shift))
+        FilterBuy=lambda market, indicator, shift: market.ClosePrice.over(indicator.Result, shift),
+        FilterSell=lambda market, indicator, shift: market.ClosePrice.under(indicator.Result, shift),
+        SignalBuy=lambda market, indicator, shift: market.ClosePrice.crossover(indicator.Result, shift),
+        SignalSell=lambda market, indicator, shift: market.ClosePrice.crossunder(indicator.Result, shift))
 
-    KAMA = Technical(
+    KAMA = IndicatorConfigurationAPI(
         Name="Kaufman Adaptive Moving Average",
-        TechnicalType=TechnicalType.Baseline,
+        IndicatorType=IndicatorType.Baseline,
         Input=lambda market: [market.ClosePrice],
         Parameters={"window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda window: window >= 5,
         Function=lambda series, window: talib.KAMA(*series, timeperiod=window),
         Output=["Result"],
-        FilterBuy=lambda market, technical, shift: market.ClosePrice.over(technical.Result, shift),
-        FilterSell=lambda market, technical, shift: market.ClosePrice.under(technical.Result, shift),
-        SignalBuy=lambda market, technical, shift: market.ClosePrice.crossover(technical.Result, shift),
-        SignalSell=lambda market, technical, shift: market.ClosePrice.crossunder(technical.Result, shift))
+        FilterBuy=lambda market, indicator, shift: market.ClosePrice.over(indicator.Result, shift),
+        FilterSell=lambda market, indicator, shift: market.ClosePrice.under(indicator.Result, shift),
+        SignalBuy=lambda market, indicator, shift: market.ClosePrice.crossover(indicator.Result, shift),
+        SignalSell=lambda market, indicator, shift: market.ClosePrice.crossunder(indicator.Result, shift))
 
     # ==================== OVERLAP ====================
-    SMAC = Technical(
+    SMAC = IndicatorConfigurationAPI(
         Name="Simple Moving Average Cross",
-        TechnicalType=TechnicalType.Overlap,
+        IndicatorType=IndicatorType.Overlap,
         Input=lambda market: [market.ClosePrice],
         Parameters={"fast_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]], "slow_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda fast_window, slow_window: 5 <= fast_window < slow_window,
         Function=lambda series, fast_window, slow_window: (talib.SMA(*series, timeperiod=fast_window), talib.SMA(*series, timeperiod=slow_window)),
         Output=["Fast", "Slow"],
-        FilterBuy=lambda _, technical, shift: technical.Fast.over(technical.Slow),
-        FilterSell=lambda _, technical, shift: technical.Fast.under(technical.Slow),
-        SignalBuy=lambda _, technical, shift: technical.Fast.crossover(technical.Slow),
-        SignalSell=lambda _, technical, shift: technical.Fast.crossunder(technical.Slow))
+        FilterBuy=lambda _, indicator, shift: indicator.Fast.over(indicator.Slow),
+        FilterSell=lambda _, indicator, shift: indicator.Fast.under(indicator.Slow),
+        SignalBuy=lambda _, indicator, shift: indicator.Fast.crossover(indicator.Slow),
+        SignalSell=lambda _, indicator, shift: indicator.Fast.crossunder(indicator.Slow))
 
 
-    EMAC = Technical(
+    EMAC = IndicatorConfigurationAPI(
         Name="Exponential Moving Average Cross",
-        TechnicalType=TechnicalType.Overlap,
+        IndicatorType=IndicatorType.Overlap,
         Input=lambda market: [market.ClosePrice],
         Parameters={"fast_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]], "slow_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda fast_window, slow_window: 5 <= fast_window < slow_window,
         Function=lambda series, fast_window, slow_window: (talib.EMA(*series, timeperiod=fast_window), talib.EMA(*series, timeperiod=slow_window)),
         Output=["Fast", "Slow"],
-        FilterBuy=lambda _, technical, shift: technical.Fast.over(technical.Slow),
-        FilterSell=lambda _, technical, shift: technical.Fast.under(technical.Slow),
-        SignalBuy=lambda _, technical, shift: technical.Fast.crossover(technical.Slow),
-        SignalSell=lambda _, technical, shift: technical.Fast.crossunder(technical.Slow))
+        FilterBuy=lambda _, indicator, shift: indicator.Fast.over(indicator.Slow),
+        FilterSell=lambda _, indicator, shift: indicator.Fast.under(indicator.Slow),
+        SignalBuy=lambda _, indicator, shift: indicator.Fast.crossover(indicator.Slow),
+        SignalSell=lambda _, indicator, shift: indicator.Fast.crossunder(indicator.Slow))
 
-    WMAC = Technical(
+    WMAC = IndicatorConfigurationAPI(
         Name="Weighted Moving Average Cross",
-        TechnicalType=TechnicalType.Overlap,
+        IndicatorType=IndicatorType.Overlap,
         Input=lambda market: [market.ClosePrice],
         Parameters={"fast_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]], "slow_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda fast_window, slow_window: 5 <= fast_window < slow_window,
         Function=lambda series, fast_window, slow_window: (talib.WMA(*series, timeperiod=fast_window), talib.WMA(*series, timeperiod=slow_window)),
         Output=["Fast", "Slow"],
-        FilterBuy=lambda _, technical, shift: technical.Fast.over(technical.Slow),
-        FilterSell=lambda _, technical, shift: technical.Fast.under(technical.Slow),
-        SignalBuy=lambda _, technical, shift: technical.Fast.crossover(technical.Slow),
-        SignalSell=lambda _, technical, shift: technical.Fast.crossunder(technical.Slow))
+        FilterBuy=lambda _, indicator, shift: indicator.Fast.over(indicator.Slow),
+        FilterSell=lambda _, indicator, shift: indicator.Fast.under(indicator.Slow),
+        SignalBuy=lambda _, indicator, shift: indicator.Fast.crossover(indicator.Slow),
+        SignalSell=lambda _, indicator, shift: indicator.Fast.crossunder(indicator.Slow))
 
-    HMAC = Technical(
+    HMAC = IndicatorConfigurationAPI(
         Name="Hull Moving Average Cross",
-        TechnicalType=TechnicalType.Overlap,
+        IndicatorType=IndicatorType.Overlap,
         Input=lambda market: [market.ClosePrice],
         Parameters={"fast_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]], "slow_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda fast_window, slow_window: 5 <= fast_window < slow_window,
-        Function=lambda series, fast_window, slow_window: (TechnicalsAPI.custom_HMA(series, fast_window), TechnicalsAPI.custom_HMA(series, slow_window)),
+        Function=lambda series, fast_window, slow_window: (IndicatorsAPI.custom_HMA(series, fast_window), IndicatorsAPI.custom_HMA(series, slow_window)),
         Output=["Fast", "Slow"],
-        FilterBuy=lambda _, technical, shift: technical.Fast.over(technical.Slow),
-        FilterSell=lambda _, technical, shift: technical.Fast.under(technical.Slow),
-        SignalBuy=lambda _, technical, shift: technical.Fast.crossover(technical.Slow),
-        SignalSell=lambda _, technical, shift: technical.Fast.crossunder(technical.Slow))
+        FilterBuy=lambda _, indicator, shift: indicator.Fast.over(indicator.Slow),
+        FilterSell=lambda _, indicator, shift: indicator.Fast.under(indicator.Slow),
+        SignalBuy=lambda _, indicator, shift: indicator.Fast.crossover(indicator.Slow),
+        SignalSell=lambda _, indicator, shift: indicator.Fast.crossunder(indicator.Slow))
 
-    DEMAC = Technical(
+    DEMAC = IndicatorConfigurationAPI(
         Name="Double Exponential Moving Average Cross",
-        TechnicalType=TechnicalType.Overlap,
+        IndicatorType=IndicatorType.Overlap,
         Input=lambda market: [market.ClosePrice],
         Parameters={"fast_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]], "slow_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda fast_window, slow_window: 5 <= fast_window < slow_window,
         Function=lambda series, fast_window, slow_window: (talib.DEMA(*series, timeperiod=fast_window), talib.DEMA(*series, timeperiod=slow_window)),
         Output=["Fast", "Slow"],
-        FilterBuy=lambda _, technical, shift: technical.Fast.over(technical.Slow),
-        FilterSell=lambda _, technical, shift: technical.Fast.under(technical.Slow),
-        SignalBuy=lambda _, technical, shift: technical.Fast.crossover(technical.Slow),
-        SignalSell=lambda _, technical, shift: technical.Fast.crossunder(technical.Slow))
+        FilterBuy=lambda _, indicator, shift: indicator.Fast.over(indicator.Slow),
+        FilterSell=lambda _, indicator, shift: indicator.Fast.under(indicator.Slow),
+        SignalBuy=lambda _, indicator, shift: indicator.Fast.crossover(indicator.Slow),
+        SignalSell=lambda _, indicator, shift: indicator.Fast.crossunder(indicator.Slow))
 
-    TEMAC = Technical(
+    TEMAC = IndicatorConfigurationAPI(
         Name="Triple Exponential Moving Average Cross",
-        TechnicalType=TechnicalType.Overlap,
+        IndicatorType=IndicatorType.Overlap,
         Input=lambda market: [market.ClosePrice],
         Parameters={"fast_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]], "slow_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda fast_window, slow_window: 5 <= fast_window < slow_window,
         Function=lambda series, fast_window, slow_window: (talib.TEMA(*series, timeperiod=fast_window), talib.TEMA(*series, timeperiod=slow_window)),
         Output=["Fast", "Slow"],
-        FilterBuy=lambda _, technical, shift: technical.Fast.over(technical.Slow),
-        FilterSell=lambda _, technical, shift: technical.Fast.under(technical.Slow),
-        SignalBuy=lambda _, technical, shift: technical.Fast.crossover(technical.Slow),
-        SignalSell=lambda _, technical, shift: technical.Fast.crossunder(technical.Slow))
+        FilterBuy=lambda _, indicator, shift: indicator.Fast.over(indicator.Slow),
+        FilterSell=lambda _, indicator, shift: indicator.Fast.under(indicator.Slow),
+        SignalBuy=lambda _, indicator, shift: indicator.Fast.crossover(indicator.Slow),
+        SignalSell=lambda _, indicator, shift: indicator.Fast.crossunder(indicator.Slow))
 
-    TRIMAC = Technical(
+    TRIMAC = IndicatorConfigurationAPI(
         Name="Triangular Moving Average Cross",
-        TechnicalType=TechnicalType.Overlap,
+        IndicatorType=IndicatorType.Overlap,
         Input=lambda market: [market.ClosePrice],
         Parameters={"fast_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]], "slow_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda fast_window, slow_window: 5 <= fast_window < slow_window,
         Function=lambda series, fast_window, slow_window: (talib.TRIMA(*series, timeperiod=fast_window), talib.TRIMA(*series, timeperiod=slow_window)),
         Output=["Fast", "Slow"],
-        FilterBuy=lambda _, technical, shift: technical.Fast.over(technical.Slow),
-        FilterSell=lambda _, technical, shift: technical.Fast.under(technical.Slow),
-        SignalBuy=lambda _, technical, shift: technical.Fast.crossover(technical.Slow),
-        SignalSell=lambda _, technical, shift: technical.Fast.crossunder(technical.Slow))
+        FilterBuy=lambda _, indicator, shift: indicator.Fast.over(indicator.Slow),
+        FilterSell=lambda _, indicator, shift: indicator.Fast.under(indicator.Slow),
+        SignalBuy=lambda _, indicator, shift: indicator.Fast.crossover(indicator.Slow),
+        SignalSell=lambda _, indicator, shift: indicator.Fast.crossunder(indicator.Slow))
 
-    KAMAC = Technical(
+    KAMAC = IndicatorConfigurationAPI(
         Name="Kaufman Adaptive Moving Average Cross",
-        TechnicalType=TechnicalType.Overlap,
+        IndicatorType=IndicatorType.Overlap,
         Input=lambda market: [market.ClosePrice],
         Parameters={"fast_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]], "slow_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda fast_window, slow_window: 5 <= fast_window < slow_window,
         Function=lambda series, fast_window, slow_window: (talib.KAMA(*series, timeperiod=fast_window), talib.KAMA(*series, timeperiod=slow_window)),
         Output=["Fast", "Slow"],
-        FilterBuy=lambda _, technical, shift: technical.Fast.over(technical.Slow),
-        FilterSell=lambda _, technical, shift: technical.Fast.under(technical.Slow),
-        SignalBuy=lambda _, technical, shift: technical.Fast.crossover(technical.Slow),
-        SignalSell=lambda _, technical, shift: technical.Fast.crossunder(technical.Slow))
+        FilterBuy=lambda _, indicator, shift: indicator.Fast.over(indicator.Slow),
+        FilterSell=lambda _, indicator, shift: indicator.Fast.under(indicator.Slow),
+        SignalBuy=lambda _, indicator, shift: indicator.Fast.crossover(indicator.Slow),
+        SignalSell=lambda _, indicator, shift: indicator.Fast.crossunder(indicator.Slow))
 
     # ==================== Momentum ====================
 
-    AROON = Technical(
+    AROON = IndicatorConfigurationAPI(
         Name="Aroon Up and Down Indicator",
-        TechnicalType=TechnicalType.Momentum,
+        IndicatorType=IndicatorType.Momentum,
         Input=lambda market: [market.HighPrice, market.LowPrice],
         Parameters={"window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda window: window >= 5,
         Function=lambda series, window: talib.AROON(*series, timeperiod=window),
         Output=["Down", "Up"],
-        FilterBuy=lambda _, technical, shift: technical.Up.over(technical.Down),
-        FilterSell=lambda _, technical, shift: technical.Down.over(technical.Up),
-        SignalBuy=lambda _, technical, shift: technical.Up.crossover(technical.Down),
-        SignalSell=lambda _, technical, shift: technical.Down.crossunder(technical.Up))
+        FilterBuy=lambda _, indicator, shift: indicator.Up.over(indicator.Down),
+        FilterSell=lambda _, indicator, shift: indicator.Down.over(indicator.Up),
+        SignalBuy=lambda _, indicator, shift: indicator.Up.crossover(indicator.Down),
+        SignalSell=lambda _, indicator, shift: indicator.Down.crossunder(indicator.Up))
 
-    CCI = Technical(
+    CCI = IndicatorConfigurationAPI(
         Name="Commodity Channel Index",
-        TechnicalType=TechnicalType.Momentum,
+        IndicatorType=IndicatorType.Momentum,
         Input=lambda market: [market.HighPrice, market.LowPrice, market.ClosePrice],
         Parameters={"window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda window: window >= 5,
         Function=lambda series, window: talib.CCI(*series, timeperiod=window),
         Output=["Result"],
-        FilterBuy=lambda _, technical, shift: technical.Result.over(0, shift),
-        FilterSell=lambda _, technical, shift: technical.Result.under(0, shift),
-        SignalBuy=lambda _, technical, shift: technical.Result.crossover(0, shift),
-        SignalSell=lambda _, technical, shift: technical.Result.crossunder(0, shift))
+        FilterBuy=lambda _, indicator, shift: indicator.Result.over(0, shift),
+        FilterSell=lambda _, indicator, shift: indicator.Result.under(0, shift),
+        SignalBuy=lambda _, indicator, shift: indicator.Result.crossover(0, shift),
+        SignalSell=lambda _, indicator, shift: indicator.Result.crossunder(0, shift))
 
-    MACD = Technical(
+    MACD = IndicatorConfigurationAPI(
         Name="Moving Average Convergence Divergence",
-        TechnicalType=TechnicalType.Momentum,
+        IndicatorType=IndicatorType.Momentum,
         Input=lambda market: [market.ClosePrice],
         Parameters={"fast_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]], "slow_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]], "signal_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda fast_window, slow_window, signal_window: 5 <= signal_window < fast_window < slow_window,
         Function=lambda series, fast_window, slow_window, signal_window: talib.MACD(*series, fastperiod=fast_window, slowperiod=slow_window, signalperiod=signal_window),
         Output=["MACD", "Signal", "Histogram"],
-        FilterBuy=lambda _, technical, shift: technical.MACD.over(technical.Signal, shift),
-        FilterSell=lambda _, technical, shift: technical.MACD.under(technical.Signal, shift),
-        SignalBuy=lambda _, technical, shift: technical.MACD.crossover(technical.Signal, shift),
-        SignalSell=lambda _, technical, shift: technical.MACD.crossunder(technical.Signal, shift))
+        FilterBuy=lambda _, indicator, shift: indicator.MACD.over(indicator.Signal, shift),
+        FilterSell=lambda _, indicator, shift: indicator.MACD.under(indicator.Signal, shift),
+        SignalBuy=lambda _, indicator, shift: indicator.MACD.crossover(indicator.Signal, shift),
+        SignalSell=lambda _, indicator, shift: indicator.MACD.crossunder(indicator.Signal, shift))
 
-    PSAR = Technical(
+    PSAR = IndicatorConfigurationAPI(
         Name="Parabolic SAR",
-        TechnicalType=TechnicalType.Momentum,
+        IndicatorType=IndicatorType.Momentum,
         Input=lambda market: [market.HighPrice, market.LowPrice],
         Parameters={"acceleration": [[0.01, 0.2, 0.01], [-0.05, +0.05, 0.01], [-0.02, +0.02, 0.01]], "maximum": [[0.1, 0.5, 0.05], [-0.1, +0.1, 0.01], [-0.05, +0.05, 0.01]]},
         Constraints=lambda acceleration, maximum: 0.0 < acceleration < maximum,
         Function=lambda series, acceleration, maximum: talib.SAR(*series, acceleration=acceleration, maximum=maximum),
         Output=["PSAR"],
-        FilterBuy=lambda market, technical, shift: market.ClosePrice.over(technical.PSAR, shift),
-        FilterSell=lambda market, technical, shift: market.ClosePrice.under(technical.PSAR, shift),
-        SignalBuy=lambda market, technical, shift: market.ClosePrice.crossover(technical.PSAR, shift),
-        SignalSell=lambda market, technical, shift: market.ClosePrice.crossunder(technical.PSAR, shift))
+        FilterBuy=lambda market, indicator, shift: market.ClosePrice.over(indicator.PSAR, shift),
+        FilterSell=lambda market, indicator, shift: market.ClosePrice.under(indicator.PSAR, shift),
+        SignalBuy=lambda market, indicator, shift: market.ClosePrice.crossover(indicator.PSAR, shift),
+        SignalSell=lambda market, indicator, shift: market.ClosePrice.crossunder(indicator.PSAR, shift))
 
     # BBANDS = Technical(
     #     Name="Bollinger Bands",
@@ -287,10 +287,10 @@ class TechnicalsAPI:
     #     Constraints=lambda period, nbdevup, nbdevdn, matype: True,
     #     Function=talib.BBANDS,
     #     Output=["Upper", "Middle", "Lower"],
-    #     FilterBuy=lambda market, technical, shift: False,
-    #     FilterSell=lambda market, technical, shift: False,
-    #     SignalBuy=lambda market, technical, shift: False,
-    #     SignalSell=lambda market, technical, shift: False)
+    #     FilterBuy=lambda market, indicator, shift: False,
+    #     FilterSell=lambda market, indicator, shift: False,
+    #     SignalBuy=lambda market, indicator, shift: False,
+    #     SignalSell=lambda market, indicator, shift: False)
 
     # ==================== Volume ====================
     # AD = Technical(
@@ -301,23 +301,23 @@ class TechnicalsAPI:
     #     Constraints=lambda: True,
     #     Function=lambda series: (talib.AD(*series),),
     #     Output=["AD"],
-    #     FilterBuy=lambda _, technical, shift: technical.AD.rising(),
-    #     FilterSell=lambda _, technical, shift: technical.AD.falling(),
-    #     SignalBuy=lambda _, technical, shift: technical.AD.crossover(technical.AD.sma(10)),
-    #     SignalSell=lambda _, technical, shift: technical.AD.crossunder(technical.AD.sma(10)))
+    #     FilterBuy=lambda _, indicator, shift: indicator.AD.rising(),
+    #     FilterSell=lambda _, indicator, shift: indicator.AD.falling(),
+    #     SignalBuy=lambda _, indicator, shift: indicator.AD.crossover(indicator.AD.sma(10)),
+    #     SignalSell=lambda _, indicator, shift: indicator.AD.crossunder(indicator.AD.sma(10)))
 
-    ADOSC = Technical(
+    ADOSC = IndicatorConfigurationAPI(
         Name="Chaikin A/D Oscillator",
-        TechnicalType=TechnicalType.Volume,
+        IndicatorType=IndicatorType.Volume,
         Input=lambda market: [market.HighPrice, market.LowPrice, market.ClosePrice, market.TickVolume],
         Parameters={"fast_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]], "slow_window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda fast_window, slow_window: 5 <= fast_window < slow_window,
         Function=lambda series, fast_window, slow_window: (talib.ADOSC(*series, fastperiod=fast_window, slowperiod=slow_window),),
         Output=["ADOSC"],
-        FilterBuy=lambda _, technical, shift: technical.ADOSC.over(0.0, shift),
-        FilterSell=lambda _, technical, shift: technical.ADOSC.over(0.0, shift),
-        SignalBuy=lambda _, technical, shift: technical.ADOSC.crossover(0.0, shift),
-        SignalSell=lambda _, technical, shift: technical.ADOSC.crossover(0.0, shift))
+        FilterBuy=lambda _, indicator, shift: indicator.ADOSC.over(0.0, shift),
+        FilterSell=lambda _, indicator, shift: indicator.ADOSC.over(0.0, shift),
+        SignalBuy=lambda _, indicator, shift: indicator.ADOSC.crossover(0.0, shift),
+        SignalSell=lambda _, indicator, shift: indicator.ADOSC.crossover(0.0, shift))
 
     # OBV = Technical(
     #     Name="On Balance Volume",
@@ -327,29 +327,29 @@ class TechnicalsAPI:
     #     Constraints=lambda: True,
     #     Function=lambda series: (talib.OBV(*series),),
     #     Output=["OBV"],
-    #     FilterBuy=lambda _, technical, shift: technical.OBV.rising(),
-    #     FilterSell=lambda _, technical, shift: technical.OBV.falling(),
-    #     SignalBuy=lambda _, technical, shift: technical.OBV.crossover(technical.OBV.sma(10)),
-    #     SignalSell=lambda _, technical, shift: technical.OBV.crossunder(technical.OBV.sma(10)))
+    #     FilterBuy=lambda _, indicator, shift: indicator.OBV.rising(),
+    #     FilterSell=lambda _, indicator, shift: indicator.OBV.falling(),
+    #     SignalBuy=lambda _, indicator, shift: indicator.OBV.crossover(indicator.OBV.sma(10)),
+    #     SignalSell=lambda _, indicator, shift: indicator.OBV.crossunder(indicator.OBV.sma(10)))
 
     # ==================== Volatility ====================
-    ATR = Technical(
+    ATR = IndicatorConfigurationAPI(
         Name="Average True Range",
-        TechnicalType=TechnicalType.Volatility,
+        IndicatorType=IndicatorType.Volatility,
         Input=lambda market: [market.HighPrice, market.LowPrice, market.ClosePrice],
         Parameters={"window": [[5, 50, 5], [-20, +20, 2], [-10, +10, 1]]},
         Constraints=lambda window: window >= 5,
         Function=lambda series, window: talib.ATR(*series, timeperiod=window),
         Output=["Result"],
-        FilterBuy=lambda market, technical, shift: False,
-        FilterSell=lambda market, technical, shift: False,
-        SignalBuy=lambda market, technical, shift: False,
-        SignalSell=lambda market, technical, shift: False)
+        FilterBuy=lambda market, indicator, shift: False,
+        FilterSell=lambda market, indicator, shift: False,
+        SignalBuy=lambda market, indicator, shift: False,
+        SignalSell=lambda market, indicator, shift: False)
 
     # ==================== Other ====================
-    TT = Technical(
+    TT = IndicatorConfigurationAPI(
         Name="True Filter and True Signal",
-        TechnicalType=TechnicalType.Other,
+        IndicatorType=IndicatorType.Other,
         Input=lambda market: [market.ClosePrice],
         Parameters={},
         Constraints=lambda _: True,
@@ -360,9 +360,9 @@ class TechnicalsAPI:
         SignalBuy=lambda *_: True,
         SignalSell=lambda*_: True)
 
-    TF = Technical(
+    TF = IndicatorConfigurationAPI(
         Name="True Filter and False Signal",
-        TechnicalType=TechnicalType.Other,
+        IndicatorType=IndicatorType.Other,
         Input=lambda market: [market.ClosePrice],
         Parameters={},
         Constraints=lambda _: True,
@@ -373,9 +373,9 @@ class TechnicalsAPI:
         SignalBuy=lambda *_: False,
         SignalSell=lambda*_: False)
 
-    FT = Technical(
+    FT = IndicatorConfigurationAPI(
         Name="False Filter and True Signal",
-        TechnicalType=TechnicalType.Other,
+        IndicatorType=IndicatorType.Other,
         Input=lambda market: [market.ClosePrice],
         Parameters={},
         Constraints=lambda _: True,
@@ -386,9 +386,9 @@ class TechnicalsAPI:
         SignalBuy=lambda *_: True,
         SignalSell=lambda*_: True)
 
-    FF = Technical(
+    FF = IndicatorConfigurationAPI(
         Name="False Filter and False Signal",
-        TechnicalType=TechnicalType.Other,
+        IndicatorType=IndicatorType.Other,
         Input=lambda market: [market.ClosePrice],
         Parameters={},
         Constraints=lambda _: True,

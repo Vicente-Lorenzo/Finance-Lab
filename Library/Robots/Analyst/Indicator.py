@@ -1,17 +1,16 @@
 import polars as pl
 
-from Library.Classes import Technical
+from Library.Dataclass import IndicatorConfigurationAPI
+from Library.Robots.Analyst import SeriesAPI, MarketAPI, IndicatorsAPI
 
-from Library.Robots.Analyst import SeriesAPI, MarketAPI, TechnicalsAPI
+class IndicatorAPI:
 
-class TechnicalAPI:
-
-    def __init__(self, technical: str, parameters: list | None = None):
+    def __init__(self, indicator: str, parameters: list | None = None):
         self._offset: int = 1
 
-        self._technical: Technical = getattr(TechnicalsAPI, technical)
-        self._parameters: dict = dict(zip(self._technical.Parameters.keys(), parameters))
-        self._sids = [f"{technical}_{'_'.join(map(str, parameters)) + '_' if parameters else ''}{output}" for output in self._technical.Output]
+        self._indicator: IndicatorConfigurationAPI = getattr(IndicatorsAPI, indicator)
+        self._parameters: dict = dict(zip(self._indicator.Parameters.keys(), parameters))
+        self._sids = [f"{indicator}_{'_'.join(map(str, parameters)) + '_' if parameters else ''}{output}" for output in self._indicator.Output]
 
         self._series: list[SeriesAPI] | None = None
         self._data: pl.DataFrame | None = None
@@ -29,8 +28,8 @@ class TechnicalAPI:
         return self.data()[-(self._offset + shift)]
 
     def calculate(self, market: MarketAPI, window: int | None = None) -> pl.DataFrame:
-        input_series = [tseries.tail(window) if window else tseries.data() for tseries in self._technical.Input(market)]
-        df = pl.DataFrame(self._technical.Function(input_series, **self._parameters))
+        input_series = [tseries.tail(window) if window else tseries.data() for tseries in self._indicator.Input(market)]
+        df = pl.DataFrame(self._indicator.Function(input_series, **self._parameters))
         df.columns = self._sids
         return df
 
@@ -38,7 +37,7 @@ class TechnicalAPI:
         self._series = []
         self._data = pl.DataFrame()
         output_df = self.calculate(market)
-        for name, sid, series in zip(self._technical.Output, self._sids, output_df):
+        for name, sid, series in zip(self._indicator.Output, self._sids, output_df):
             series = series.fill_nan(None)
             tseries = SeriesAPI(sid)
             setattr(self, name, tseries)
@@ -57,16 +56,16 @@ class TechnicalAPI:
             tseries.update_offset(offset)
 
     def filter_buy(self, market: MarketAPI | None = None, shift: int = 0) -> bool:
-        return self._technical.FilterBuy(market, self, shift)
+        return self._indicator.FilterBuy(market, self, shift)
 
     def filter_sell(self, market: MarketAPI | None = None, shift: int = 0) -> bool:
-        return self._technical.FilterSell(market, self, shift)
+        return self._indicator.FilterSell(market, self, shift)
 
     def signal_buy(self, market: MarketAPI | None = None, shift: int = 0) -> bool:
-        return self._technical.SignalBuy(market, self, shift)
+        return self._indicator.SignalBuy(market, self, shift)
 
     def signal_sell(self, market: MarketAPI | None = None, shift: int = 0) -> bool:
-        return self._technical.SignalSell(market, self, shift)
+        return self._indicator.SignalSell(market, self, shift)
 
     def __repr__(self):
         return repr(self.data())
