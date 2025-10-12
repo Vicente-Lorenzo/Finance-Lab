@@ -70,8 +70,10 @@ public abstract class RobotAPI
         public DateTime Timestamp { get; init; }
         public double Ask { get; set; }
         public double Bid { get; set; }
-        public double BaseConversionRate { get; set; }
-        public double QuoteConversionRate { get; set; }
+        public double AskBaseConversionRate { get; set; }
+        public double BidBaseConversionRate { get; set; }
+        public double AskQuoteConversionRate { get; set; }
+        public double BidQuoteConversionRate { get; set; }
     }
 
     public class xBar
@@ -96,8 +98,10 @@ public abstract class RobotAPI
     private readonly Logging log;
     private readonly SystemAPI system;
 
-    private readonly Func<double> baseConversionRate;
-    private readonly Func<double> quoteConversionRate;
+    private readonly Func<double> askBaseConversionRate;
+    private readonly Func<double> bidBaseConversionRate;
+    private readonly Func<double> askQuoteConversionRate;
+    private readonly Func<double> bidQuoteConversionRate;
 
     private readonly xBar bar;
 
@@ -113,8 +117,8 @@ public abstract class RobotAPI
         robot = algo;
         log = new Logging(robot, "Strategy", console);
 
-        baseConversionRate = FindConversionRate(robot.Symbol.BaseAsset, robot.Account.Asset);
-        quoteConversionRate = FindConversionRate(robot.Symbol.QuoteAsset, robot.Account.Asset);
+        (askBaseConversionRate, bidBaseConversionRate) = FindConversionRates(robot.Symbol.BaseAsset, robot.Account.Asset);
+        (askQuoteConversionRate, bidQuoteConversionRate) = FindConversionRates(robot.Symbol.QuoteAsset, robot.Account.Asset);
 
         var tick = Tick();
         bar = new xBar
@@ -178,8 +182,10 @@ public abstract class RobotAPI
             Timestamp = robot.Server.Time,
             Ask = robot.Symbol.Ask,
             Bid = robot.Symbol.Bid,
-            BaseConversionRate = baseConversionRate(),
-            QuoteConversionRate = quoteConversionRate()
+            AskBaseConversionRate = askBaseConversionRate(),
+            BidBaseConversionRate = bidBaseConversionRate(),
+            AskQuoteConversionRate = askQuoteConversionRate(),
+            BidQuoteConversionRate = bidQuoteConversionRate()
         };
     }
 
@@ -209,10 +215,10 @@ public abstract class RobotAPI
         return robot.TimeFrame.Name.Replace(" ", "");
     }
 
-    private Func<double> FindConversionRate(Asset fromAsset, Asset toAsset)
+    private (Func<double> Ask, Func<double> Bid) FindConversionRates(Asset fromAsset, Asset toAsset)
     {
         if (fromAsset == toAsset)
-            return () => 1.0;
+            return (Ask: () => 1.0, Bid: () => 1.0);
         foreach (var symbolName in robot.Symbols)
         {
             try
@@ -222,14 +228,11 @@ public abstract class RobotAPI
                 if (symbol.BaseAsset == null || symbol.QuoteAsset == null)
                     continue;
                 if (symbol.BaseAsset == fromAsset && symbol.QuoteAsset == toAsset)
-                    return () => symbol.Bid;
+                    return (Ask: () => symbol.Ask, Bid: () => symbol.Bid);
                 if (symbol.QuoteAsset == fromAsset && symbol.BaseAsset == toAsset)
-                    return () => 1.0 / symbol.Ask;
+                    return (Ask: () => 1.0 / symbol.Bid, Bid: () => 1.0 / symbol.Ask);
             }
-            catch
-            {
-                // ignored
-            }
+            catch (Exception e) { log.Warning(e.Message); }
         }
         throw new Exception($"No conversion symbol found for {fromAsset} → {toAsset}");
     }
@@ -363,26 +366,34 @@ public abstract class RobotAPI
         if (args.Ask > bar.HighTick.Ask)
         {
             bar.HighTick.Ask = args.Ask;
-            bar.HighTick.BaseConversionRate = tick.BaseConversionRate;
-            bar.HighTick.QuoteConversionRate = tick.QuoteConversionRate;
+            bar.HighTick.AskBaseConversionRate = tick.AskBaseConversionRate;
+            bar.HighTick.BidBaseConversionRate = tick.BidBaseConversionRate;
+            bar.HighTick.AskQuoteConversionRate = tick.AskQuoteConversionRate;
+            bar.HighTick.BidQuoteConversionRate = tick.BidQuoteConversionRate;
         }
         if (args.Ask < bar.LowTick.Ask)
         {
             bar.LowTick.Ask = args.Ask;
-            bar.LowTick.BaseConversionRate = tick.BaseConversionRate;
-            bar.LowTick.QuoteConversionRate = tick.QuoteConversionRate;
+            bar.LowTick.AskBaseConversionRate = tick.AskBaseConversionRate;
+            bar.LowTick.BidBaseConversionRate = tick.BidBaseConversionRate;
+            bar.LowTick.AskQuoteConversionRate = tick.AskQuoteConversionRate;
+            bar.LowTick.BidQuoteConversionRate = tick.BidQuoteConversionRate;
         }
         if (args.Bid > bar.HighTick.Bid)
         {
             bar.HighTick.Bid = args.Bid;
-            bar.HighTick.BaseConversionRate = tick.BaseConversionRate;
-            bar.HighTick.QuoteConversionRate = tick.QuoteConversionRate;
+            bar.HighTick.AskBaseConversionRate = tick.AskBaseConversionRate;
+            bar.HighTick.BidBaseConversionRate = tick.BidBaseConversionRate;
+            bar.HighTick.AskQuoteConversionRate = tick.AskQuoteConversionRate;
+            bar.HighTick.BidQuoteConversionRate = tick.BidQuoteConversionRate;
         }
         if (args.Bid < bar.LowTick.Bid)
         {
             bar.LowTick.Bid = args.Bid;
-            bar.LowTick.BaseConversionRate = tick.BaseConversionRate;
-            bar.LowTick.QuoteConversionRate = tick.QuoteConversionRate;
+            bar.LowTick.AskBaseConversionRate = tick.AskBaseConversionRate;
+            bar.LowTick.BidBaseConversionRate = tick.BidBaseConversionRate;
+            bar.LowTick.AskQuoteConversionRate = tick.AskQuoteConversionRate;
+            bar.LowTick.BidQuoteConversionRate = tick.BidQuoteConversionRate;
         }
         bar.CloseTick = tick;
 

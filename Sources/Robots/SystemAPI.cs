@@ -151,8 +151,10 @@ public class SystemAPI
         writer.Write(((DateTimeOffset)tick.Timestamp).ToUnixTimeMilliseconds());
         writer.Write(tick.Ask);
         writer.Write(tick.Bid);
-        writer.Write(tick.BaseConversionRate);
-        writer.Write(tick.QuoteConversionRate);
+        writer.Write(tick.AskBaseConversionRate);
+        writer.Write(tick.BidBaseConversionRate);
+        writer.Write(tick.AskQuoteConversionRate);
+        writer.Write(tick.BidQuoteConversionRate);
     }
 
     private static void BuildUpdateBar(BinaryWriter writer, RobotAPI.xBar bar)
