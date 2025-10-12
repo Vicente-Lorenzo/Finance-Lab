@@ -222,9 +222,9 @@ public abstract class RobotAPI
                 if (symbol.BaseAsset == null || symbol.QuoteAsset == null)
                     continue;
                 if (symbol.BaseAsset == fromAsset && symbol.QuoteAsset == toAsset)
-                    return () => symbol.Ask;
+                    return () => symbol.Bid;
                 if (symbol.QuoteAsset == fromAsset && symbol.BaseAsset == toAsset)
-                    return () => 1.0 / symbol.Bid;
+                    return () => 1.0 / symbol.Ask;
             }
             catch
             {
