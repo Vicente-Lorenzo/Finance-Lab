@@ -67,7 +67,7 @@ public abstract class RobotAPI
 
     public class xTick
     {
-        public DateTime Timestamp { get; init; }
+        public DateTime Timestamp { get; set; }
         public double Ask { get; set; }
         public double Bid { get; set; }
         public double AskBaseConversionRate { get; set; }
@@ -363,33 +363,37 @@ public abstract class RobotAPI
     {
         var tick = Tick();
 
-        if (args.Ask > bar.HighTick.Ask)
+        if (tick.Ask > bar.HighTick.Ask)
         {
-            bar.HighTick.Ask = args.Ask;
+            bar.HighTick.Timestamp = tick.Timestamp;
+            bar.HighTick.Ask = tick.Ask;
             bar.HighTick.AskBaseConversionRate = tick.AskBaseConversionRate;
             bar.HighTick.BidBaseConversionRate = tick.BidBaseConversionRate;
             bar.HighTick.AskQuoteConversionRate = tick.AskQuoteConversionRate;
             bar.HighTick.BidQuoteConversionRate = tick.BidQuoteConversionRate;
         }
-        if (args.Ask < bar.LowTick.Ask)
+        if (tick.Ask < bar.LowTick.Ask)
         {
-            bar.LowTick.Ask = args.Ask;
+            bar.LowTick.Timestamp = tick.Timestamp;
+            bar.LowTick.Ask = tick.Ask;
             bar.LowTick.AskBaseConversionRate = tick.AskBaseConversionRate;
             bar.LowTick.BidBaseConversionRate = tick.BidBaseConversionRate;
             bar.LowTick.AskQuoteConversionRate = tick.AskQuoteConversionRate;
             bar.LowTick.BidQuoteConversionRate = tick.BidQuoteConversionRate;
         }
-        if (args.Bid > bar.HighTick.Bid)
+        if (tick.Bid > bar.HighTick.Bid)
         {
-            bar.HighTick.Bid = args.Bid;
+            bar.HighTick.Timestamp = tick.Timestamp;
+            bar.HighTick.Bid = tick.Bid;
             bar.HighTick.AskBaseConversionRate = tick.AskBaseConversionRate;
             bar.HighTick.BidBaseConversionRate = tick.BidBaseConversionRate;
             bar.HighTick.AskQuoteConversionRate = tick.AskQuoteConversionRate;
             bar.HighTick.BidQuoteConversionRate = tick.BidQuoteConversionRate;
         }
-        if (args.Bid < bar.LowTick.Bid)
+        if (tick.Bid < bar.LowTick.Bid)
         {
-            bar.LowTick.Bid = args.Bid;
+            bar.LowTick.Timestamp = tick.Timestamp;
+            bar.LowTick.Bid = tick.Bid;
             bar.LowTick.AskBaseConversionRate = tick.AskBaseConversionRate;
             bar.LowTick.BidBaseConversionRate = tick.BidBaseConversionRate;
             bar.LowTick.AskQuoteConversionRate = tick.AskQuoteConversionRate;
@@ -398,28 +402,28 @@ public abstract class RobotAPI
         bar.CloseTick = tick;
 
         var update = false;
-        if (askAboveTarget != null && args.Ask >= askAboveTarget)
+        if (askAboveTarget != null && tick.Ask >= askAboveTarget)
         {
             system.SendUpdateAskAboveTarget(tick);
             system.SendUpdateComplete();
             ReceiveAndProcessActions();
             update = true;
         }
-        if (askBelowTarget != null && args.Ask <= askBelowTarget)
+        if (askBelowTarget != null && tick.Ask <= askBelowTarget)
         {
             system.SendUpdateAskBelowTarget(tick);
             system.SendUpdateComplete();
             ReceiveAndProcessActions();
             update = true;
         }
-        if (bidAboveTarget != null && args.Bid >= bidAboveTarget)
+        if (bidAboveTarget != null && tick.Bid >= bidAboveTarget)
         {
             system.SendUpdateBidAboveTarget(tick);
             system.SendUpdateComplete();
             ReceiveAndProcessActions();
             update = true;
         }
-        if (bidBelowTarget != null && args.Bid <= bidBelowTarget)
+        if (bidBelowTarget != null && tick.Bid <= bidBelowTarget)
         {
             system.SendUpdateBidBelowTarget(tick);
             system.SendUpdateComplete();
