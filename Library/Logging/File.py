@@ -3,9 +3,8 @@ from typing import Callable
 from datetime import datetime
 from io import BytesIO, TextIOWrapper
 
-from Library.Classes import VerboseType
-from Library.Logging import LoggingAPI
-from Library.Utils import datetime_to_string
+from Library.Logging import VerboseType, LoggingAPI
+from Library.Utility import datetime_to_string
 
 class FileAPI(LoggingAPI):
 

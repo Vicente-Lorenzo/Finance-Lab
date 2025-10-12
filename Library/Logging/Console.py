@@ -1,8 +1,7 @@
 from io import BytesIO
 from typing import Callable
 
-from Library.Logging import LoggingAPI
-from Library.Classes import VerboseType
+from Library.Logging import VerboseType, LoggingAPI
 
 class ConsoleAPI(LoggingAPI):
 

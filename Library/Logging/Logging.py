@@ -1,11 +1,20 @@
 import datetime
+from enum import Enum
 from io import BytesIO
 from typing import Callable
 from abc import ABC, abstractmethod
 from threading import Lock
 
-from Library.Classes import VerboseType
-from Library.Utils.DateTime import datetime_to_string
+from Library.Utility import datetime_to_string
+
+class VerboseType(Enum):
+    Silent = 0
+    Exception = 1
+    Error = 2
+    Warning = 3
+    Alert = 4
+    Info = 5
+    Debug = 6
 
 class LoggingAPI(ABC):
 

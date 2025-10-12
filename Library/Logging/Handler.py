@@ -3,7 +3,6 @@ from io import BytesIO
 from typing import Callable
 from functools import wraps
 
-from Library.Classes import VerboseType
 from Library.Logging import *
 
 class HandlerAPI:

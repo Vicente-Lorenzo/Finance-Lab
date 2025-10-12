@@ -3,8 +3,8 @@ import requests
 from io import BytesIO
 from typing import Callable
 
-from Library.Logging import LoggingAPI
-from Library.Classes import VerboseType, Telegram
+from Library.Logging import VerboseType, LoggingAPI
+from Library.Dataclass import TelegramConfigurationAPI
 
 class TelegramAPI(LoggingAPI):
 
@@ -17,16 +17,16 @@ class TelegramAPI(LoggingAPI):
     
     _TIMESTAMP: str = "at {timestamp}"
 
-    _LOG: Telegram = Telegram(Token="8183617727:AAGBFcbS104QXYczyB06UKA9StjCkK2RmRE", ChatID="-1002607268309")
-    _LAB: Telegram = Telegram(Token="8032541880:AAFZEDPQPlVd6SVIcA7GohoiaK_-tNyW050", ChatID="-1002565200595")
+    _LOG: TelegramConfigurationAPI = TelegramConfigurationAPI(Token="8183617727:AAGBFcbS104QXYczyB06UKA9StjCkK2RmRE", ChatID="-1002607268309")
+    _LAB: TelegramConfigurationAPI = TelegramConfigurationAPI(Token="8032541880:AAFZEDPQPlVd6SVIcA7GohoiaK_-tNyW050", ChatID="-1002565200595")
     
     _GROUP: dict = {
-        "Forex (Majors)": Telegram(Token="7180406910:AAG_JtWcwrFOdU0vrFo3u3YE60xJouCbDj8", ChatID="-1002557774416"),
-        "Forex (Minors)": Telegram(Token="7858647408:AAH7M97_euohIMGX8X4gu3qtXbxKPBvHdHg", ChatID="-1002402990655"),
-        "Forex (Exotics)": Telegram(Token="8020370305:AAF_XqDHIrp-QYkMT94DDjDd047SJZnQkvI", ChatID="-1002678006774"),
-        "Stocks (US)": Telegram(Token="7621222262:AAHc1E-oQV7IFQhn8zecUU9awLhmYx72jc0", ChatID="-1002602965934"),
-        "Stocks (EU)": Telegram(Token="7779184958:AAHnTVhELss3Oxy9wz8xgjoWl5--sU5BXp4", ChatID="-1002677954902"),
-        "Metals": Telegram(Token="7955067039:AAFk26Be2Rip_IW26b-j0hpix1vJ3NWcAVM", ChatID="-1002683975427")}
+        "Forex (Majors)": TelegramConfigurationAPI(Token="7180406910:AAG_JtWcwrFOdU0vrFo3u3YE60xJouCbDj8", ChatID="-1002557774416"),
+        "Forex (Minors)": TelegramConfigurationAPI(Token="7858647408:AAH7M97_euohIMGX8X4gu3qtXbxKPBvHdHg", ChatID="-1002402990655"),
+        "Forex (Exotics)": TelegramConfigurationAPI(Token="8020370305:AAF_XqDHIrp-QYkMT94DDjDd047SJZnQkvI", ChatID="-1002678006774"),
+        "Stocks (US)": TelegramConfigurationAPI(Token="7621222262:AAHc1E-oQV7IFQhn8zecUU9awLhmYx72jc0", ChatID="-1002602965934"),
+        "Stocks (EU)": TelegramConfigurationAPI(Token="7779184958:AAHnTVhELss3Oxy9wz8xgjoWl5--sU5BXp4", ChatID="-1002677954902"),
+        "Metals": TelegramConfigurationAPI(Token="7955067039:AAFk26Be2Rip_IW26b-j0hpix1vJ3NWcAVM", ChatID="-1002683975427")}
     
     _MESSAGE_URL: str = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}"
     _DOCUMENT_URL: str = "https://api.telegram.org/bot{0}/sendDocument?chat_id={1}"
