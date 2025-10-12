@@ -51,6 +51,9 @@ class DatametaAPI:
             return iid
         raise AttributeError(f"'{self._cls.__name__}' object has no attribute '{item}'")
 
+    def __repr__(self) -> str:
+        return self._iid if self._iid else self._cls.__name__
+
 @dataclass(slots=True)
 class DataclassAPI:
 
