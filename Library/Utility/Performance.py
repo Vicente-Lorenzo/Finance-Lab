@@ -7,13 +7,13 @@ from functools import wraps
 from time import perf_counter
 from datetime import datetime
 
-from Library.Utils import datetime_to_string, seconds_to_string
+from Library.Utility import datetime_to_string, seconds_to_string
 
 def timer(func: Callable):
     @wraps(func)
     def wrapper(*args, **kwargs):
         from Library.Logging import HandlerAPI
-        log = HandlerAPI(Class="Utils", Subclass=f"Performance")
+        log = HandlerAPI(Class="Utility", Subclass=f"Performance")
         start_time = perf_counter()
         result = func(*args, **kwargs)
         stop_time = perf_counter()
@@ -26,7 +26,7 @@ def profiler(func: Callable):
     @wraps(func)
     def wrapper(*args, **kwargs):
         from Library.Logging import HandlerAPI
-        log = HandlerAPI(Class="Utils", Subclass=f"Performance")
+        log = HandlerAPI(Class="Utility", Subclass=f"Performance")
         timestamp = datetime_to_string(datetime.now(), "%Y%m%d-%H%M%S")
         with cProfile.Profile() as pr:
             result = func(*args, **kwargs)

@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from Library.Formulas import formula
-from Library.Utils import datetime_to_string
+from Library.Utility import datetime_to_string
 
 @formula
 def datetime_now():

@@ -1,12 +1,12 @@
-from Library.Utils.Chart import gantt
-from Library.Utils.Image import image
-from Library.Utils.Math import (
+from Library.Utility.Chart import gantt
+from Library.Utility.Image import image
+from Library.Utility.Math import (
     equals
 )
-from Library.Utils.Typing import (
+from Library.Utility.Typing import (
     cast
 )
-from Library.Utils.DateTime import (
+from Library.Utility.DateTime import (
     datetime_to_string,
     string_to_datetime,
     datetime_to_timestamp,
@@ -15,7 +15,7 @@ from Library.Utils.DateTime import (
     iso_to_datetime,
     seconds_to_string
 )
-from Library.Utils.Performance import (
+from Library.Utility.Performance import (
     timer,
     profiler
 )
