@@ -7,7 +7,7 @@ from Library.Utility import cast
 @dataclass(slots=True, kw_only=True)
 class TradeAPI(PositionAPI):
     TradeID: int = field(init=True, repr=True)
-    ExitTimestamp: InitVar[datetime] = field(init=True, repr=True)
+    ExitTimestamp: InitVar[datetime] = field(init=True, repr=False)
 
     ExitBalance: float = field(default=None, init=True, repr=True)
 

@@ -72,10 +72,12 @@ class DataclassAPI:
         if isinstance(f, PnLAPI): return f.PnL
         return f
 
-    def data(self, include_fields, include_hidden_fields, include_override_fields, include_properties):
+    def data(self, include_fields, include_initvar_fields, include_hidden_fields, include_override_fields, include_properties):
         attrs = self.__class__.__dict__
         if include_fields:
             for f_name, f in attrs["__dataclass_fields__"].items():
+                if include_initvar_fields and isinstance(f.type, InitVar):
+                    yield f_name, self.parse(f_name)
                 if include_hidden_fields or f.repr:
                     yield f_name, self.parse(f_name)
         if include_override_fields or include_properties:
@@ -90,25 +92,28 @@ class DataclassAPI:
                         if include_properties and not is_field:
                             yield attr_name, self.parse(attr_name)
 
-    def tuple(self, include_fields=True, include_hidden_fields=False, include_override_fields=True, include_properties=False):
+    def tuple(self, include_fields=True, include_initvar_fields=False, include_hidden_fields=False, include_override_fields=True, include_properties=False):
         return tuple([v for _, v in self.data(
             include_fields=include_fields,
+            include_initvar_fields=include_initvar_fields,
             include_hidden_fields=include_hidden_fields,
             include_override_fields=include_override_fields,
             include_properties=include_properties
         )])
 
-    def list(self, include_fields=True, include_hidden_fields=False, include_override_fields=True, include_properties=False):
+    def list(self, include_fields=True, include_initvar_fields=False, include_hidden_fields=False, include_override_fields=True, include_properties=False):
         return list([v for _, v in self.data(
             include_fields=include_fields,
+            include_initvar_fields=include_initvar_fields,
             include_hidden_fields=include_hidden_fields,
             include_override_fields=include_override_fields,
             include_properties=include_properties
         )])
 
-    def dict(self, include_fields=True, include_hidden_fields=False, include_override_fields=True, include_properties=False):
+    def dict(self, include_fields=True, include_initvar_fields=False, include_hidden_fields=False, include_override_fields=True, include_properties=False):
         return dict({k: v for k, v in self.data(
             include_fields=include_fields,
+            include_initvar_fields=include_initvar_fields,
             include_hidden_fields=include_hidden_fields,
             include_override_fields=include_override_fields,
             include_properties=include_properties

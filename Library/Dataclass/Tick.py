@@ -12,15 +12,15 @@ class TickMode(Enum):
 
 @dataclass(slots=True)
 class TickAPI(DataclassAPI):
-    Timestamp: InitVar[datetime] = field(default=None, init=True, repr=True)
-    Ask: InitVar[Union[float, PriceAPI]] = field(default=None, init=True, repr=True)
-    Bid: InitVar[Union[float, PriceAPI]] = field(default=None, init=True, repr=True)
+    Timestamp: InitVar[datetime] = field(default=None, init=True, repr=False)
+    Ask: InitVar[Union[float, PriceAPI]] = field(default=None, init=True, repr=False)
+    Bid: InitVar[Union[float, PriceAPI]] = field(default=None, init=True, repr=False)
     AskBaseConversion: float = field(default=None, init=True, repr=True)
     BidBaseConversion: float = field(default=None, init=True, repr=True)
     AskQuoteConversion: float = field(default=None, init=True, repr=True)
     BidQuoteConversion: float = field(default=None, init=True, repr=True)
 
-    Symbol: InitVar[SymbolAPI] = field(default=None, init=True, repr=True)
+    Symbol: InitVar[SymbolAPI] = field(default=None, init=True, repr=False)
 
     _Timestamp: TimestampAPI = field(default=None, init=False, repr=False)
     _Ask: PriceAPI = field(default=None, init=False, repr=False)
