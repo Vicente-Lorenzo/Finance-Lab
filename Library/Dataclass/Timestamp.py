@@ -21,29 +21,29 @@ class CycleAPI(DataclassAPI):
 
 @dataclass(slots=True, kw_only=True)
 class TimestampAPI(DataclassAPI):
-    Timestamp: datetime = field(init=True, repr=True)
+    DateTime: datetime = field(init=True, repr=True)
 
     @property
     def Year(self) -> CycleAPI:
-        return CycleAPI(Value=self.Timestamp.year)
+        return CycleAPI(Value=self.DateTime.year)
     @property
     def Month(self) -> CycleAPI:
-        return CycleAPI(Value=self.Timestamp.month, Period=12)
+        return CycleAPI(Value=self.DateTime.month, Period=12)
     @property
     def Weekday(self) -> CycleAPI:
-        return CycleAPI(Value=self.Timestamp.weekday(), Period=7)
+        return CycleAPI(Value=self.DateTime.weekday(), Period=7)
     @property
     def Day(self) -> CycleAPI:
-        return CycleAPI(Value=self.Timestamp.day, Period=31)
+        return CycleAPI(Value=self.DateTime.day, Period=31)
     @property
     def Hour(self) -> CycleAPI:
-        return CycleAPI(Value=self.Timestamp.hour, Period=24)
+        return CycleAPI(Value=self.DateTime.hour, Period=24)
     @property
     def Minute(self) -> CycleAPI:
-        return CycleAPI(Value=self.Timestamp.minute, Period=60)
+        return CycleAPI(Value=self.DateTime.minute, Period=60)
     @property
     def Second(self) -> CycleAPI:
-        return CycleAPI(Value=self.Timestamp.second, Period=60)
+        return CycleAPI(Value=self.DateTime.second, Period=60)
     @property
     def Millisecond(self) -> CycleAPI:
-        return CycleAPI(Value=self.Timestamp.microsecond, Period=1000)
+        return CycleAPI(Value=self.DateTime.microsecond, Period=1000)

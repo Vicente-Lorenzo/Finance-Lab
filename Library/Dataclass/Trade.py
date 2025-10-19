@@ -53,7 +53,7 @@ class TradeAPI(PositionAPI):
             symbol=symbol
         )
 
-        self._ExitTimestamp = TimestampAPI(Timestamp=cast(exit_timestamp, datetime, None))
+        self._ExitTimestamp = TimestampAPI(DateTime=cast(exit_timestamp, datetime, None))
 
     @property
     @overridefield
@@ -61,4 +61,4 @@ class TradeAPI(PositionAPI):
         return self._ExitTimestamp
     @ExitTimestamp.setter
     def ExitTimestamp(self, exit_timestamp: datetime) -> None:
-        self._ExitTimestamp.Timestamp = cast(exit_timestamp, datetime, None)
+        self._ExitTimestamp.DateTime = cast(exit_timestamp, datetime, None)

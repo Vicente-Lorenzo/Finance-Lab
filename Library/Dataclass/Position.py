@@ -92,7 +92,7 @@ class PositionAPI(DataclassAPI):
         self._Symbol = cast(symbol, SymbolAPI, None)
         self._EntryBalance = cast(entry_balance, float, None)
 
-        self._EntryTimestamp = TimestampAPI(Timestamp=cast(entry_timestamp, datetime, None))
+        self._EntryTimestamp = TimestampAPI(DateTime=cast(entry_timestamp, datetime, None))
 
         self._EntryPrice = PriceAPI(Price=(entry_price := cast(entry_price, float, None)), Reference=entry_price, Symbol=self._Symbol)
         self._StopLossPrice = PriceAPI(Price=cast(stop_loss_price, float, None), Reference=entry_price, Symbol=self._Symbol)
@@ -116,7 +116,7 @@ class PositionAPI(DataclassAPI):
         return self._EntryTimestamp
     @EntryTimestamp.setter
     def EntryTimestamp(self, entry_timestamp: datetime) -> None:
-        self._EntryTimestamp.Timestamp = cast(entry_timestamp, datetime, None)
+        self._EntryTimestamp.DateTime = cast(entry_timestamp, datetime, None)
 
     @property
     @overridefield

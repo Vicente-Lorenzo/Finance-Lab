@@ -35,7 +35,7 @@ class TickAPI(DataclassAPI):
                       symbol: SymbolAPI) -> None:
 
         self._Symbol = cast(symbol, SymbolAPI, None)
-        self._Timestamp = TimestampAPI(Timestamp=cast(timestamp, datetime, None))
+        self._Timestamp = TimestampAPI(DateTime=cast(timestamp, datetime, None))
 
         if isinstance(ask, PriceAPI) or isinstance(bid, PriceAPI):
             self._Ask = ask
@@ -52,7 +52,7 @@ class TickAPI(DataclassAPI):
         return self._Timestamp
     @Timestamp.setter
     def Timestamp(self, timestamp: datetime) -> None:
-        self._Timestamp.Timestamp = cast(timestamp, datetime, None)
+        self._Timestamp.DateTime = cast(timestamp, datetime, None)
 
     @property
     @overridefield

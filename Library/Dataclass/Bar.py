@@ -101,7 +101,7 @@ class BarAPI(DataclassAPI):
                       symbol: SymbolAPI) -> None:
 
         self._Symbol = cast(symbol, SymbolAPI, None)
-        self._Timestamp = TimestampAPI(Timestamp=cast(timestamp, datetime, None))
+        self._Timestamp = TimestampAPI(DateTime=cast(timestamp, datetime, None))
 
         self._GapTick = TickAPI(
             Timestamp=cast(gap_timestamp, datetime, None),
@@ -177,7 +177,7 @@ class BarAPI(DataclassAPI):
     @property
     def RangeTick(self) -> TickAPI:
         return TickAPI(
-            Timestamp=self._OpenTick.Timestamp.Timestamp,
+            Timestamp=self._OpenTick.Timestamp.DateTime,
             Ask=PriceAPI(self._HighTick.Ask.Price - self._LowTick.Ask.Price, Reference=self._OpenTick.Ask.Price, Symbol=self._Symbol),
             Bid=PriceAPI(self._HighTick.Bid.Price - self._LowTick.Bid.Price, Reference=self._OpenTick.Bid.Price, Symbol=self._Symbol),
             AskBaseConversion=self._OpenTick.AskBaseConversion,

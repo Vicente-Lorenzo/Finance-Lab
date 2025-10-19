@@ -65,7 +65,7 @@ class DataclassAPI:
         f = getattr(self, name)
         if isinstance(f, Enum): return f.name
         from Library.Dataclass.Timestamp import TimestampAPI
-        if isinstance(f, TimestampAPI): return f.Timestamp
+        if isinstance(f, TimestampAPI): return f.DateTime
         from Library.Dataclass.Price import PriceAPI
         if isinstance(f, PriceAPI): return f.Price
         from Library.Dataclass.PnL import PnLAPI
