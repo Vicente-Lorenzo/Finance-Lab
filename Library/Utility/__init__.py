@@ -19,6 +19,7 @@ from Library.Utility.Performance import (
     timer,
     profiler
 )
+from Library.Utility.Path import PathAPI
 
 __all__ = [
     "gantt",
@@ -34,4 +35,5 @@ __all__ = [
     "seconds_to_string",
     "timer",
     "profiler",
+    "PathAPI",
 ]

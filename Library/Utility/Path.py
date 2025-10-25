@@ -1,9 +1,11 @@
+from sys import _getframe
 from pathlib import Path
 
 class PathAPI:
 
-    def __init__(self, path: str):
-        self.module = Path(__file__).resolve().parent
+    def __init__(self, path: str, anchor: str = None):
+        anchor = anchor if anchor else _getframe(1).f_code.co_filename
+        self.module = Path(anchor).resolve().parent
         self.path = self.module / path
 
     def exists(self) -> bool:
