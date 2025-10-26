@@ -57,9 +57,9 @@ class DatabaseAPI(ABC):
 
     def disconnect(self):
         try:
-            if self._cursor:
+            if self.indexed():
                 self._cursor.close()
-            if self._connection:
+            if self.connected():
                 self._connection.close()
             self._log.info(lambda: f"Disconnected from {self._host}:{self._port}")
         except Exception as e:
@@ -75,11 +75,17 @@ class DatabaseAPI(ABC):
             self._log.exception(lambda: f"Traceback: {exception_traceback}")
         return self.disconnect()
 
+    def connected(self) -> bool:
+        return self._connection is not None
+
+    def indexed(self) -> bool:
+        return self._cursor is not None
+
     def _query_(self, query: QueryAPI, **kwargs) -> str:
         return query(database=self._database, schema=self._schema, table=self._table, **kwargs)
 
     def commit(self):
-        if self._connection:
+        if self.connected():
             timer = Timer()
             timer.start()
             self._connection.commit()
@@ -88,7 +94,7 @@ class DatabaseAPI(ABC):
         return self
 
     def rollback(self):
-        if self._connection:
+        if self.connected():
             timer = Timer()
             timer.start()
             self._connection.rollback()
@@ -97,6 +103,8 @@ class DatabaseAPI(ABC):
         return self
 
     def _execute_(self, execute) -> None:
+        if not self.connected():
+            self.connect()
         try:
             timer = Timer()
             timer.start()
@@ -117,11 +125,13 @@ class DatabaseAPI(ABC):
         return self
 
     def _fetch_(self, fetch) -> pl.DataFrame:
+        if not self.connected():
+            self.connect()
         try:
             timer = Timer()
             timer.start()
             rows = fetch()
-            columns = [desc[0] for desc in self._cursor.description]
+            columns = [desc[0] for desc in self._cursor.description] if self._cursor.description else []
             df = pl.DataFrame(rows, schema=columns, orient="row")
             timer.stop()
             self._log.debug(lambda: f"Fetched Query ({timer.result()}): {len(df)} data points")
@@ -139,3 +149,7 @@ class DatabaseAPI(ABC):
 
     def fetchall(self) -> pl.DataFrame:
         return self._fetch_(lambda: self._cursor.fetchall())
+
+    def __del__(self):
+        if self.connected():
+            self.disconnect()
