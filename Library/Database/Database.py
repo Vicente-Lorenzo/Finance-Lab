@@ -25,6 +25,7 @@ class DatabaseAPI(ABC):
         self._database = database
         self._schema = schema
         self._table = table
+        self._defaults = {"database": self._database, "schema": self._schema, "table": self._table}
 
         self._connection = None
         self._cursor = None
@@ -82,7 +83,7 @@ class DatabaseAPI(ABC):
         return self._cursor is not None
 
     def _query_(self, query: QueryAPI, **kwargs) -> str:
-        return query(database=self._database, schema=self._schema, table=self._table, **kwargs)
+        return query(**{**self._defaults, **kwargs})
 
     def commit(self):
         if self.connected():
