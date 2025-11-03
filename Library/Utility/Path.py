@@ -26,6 +26,7 @@ def traceback_module_path(frame: int) -> str:
     return inspect_module_path(traceback_file_path(frame))
 
 class PathAPI:
+
     def __init__(self, file: str):
         self.file = file
 
