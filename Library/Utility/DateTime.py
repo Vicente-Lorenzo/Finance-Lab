@@ -1,4 +1,5 @@
 from datetime import datetime, date, time
+from dateutil.relativedelta import relativedelta, weekday, MO, TU, WE, TH, FR, SA, SU
 
 def datetime_to_string(dt: datetime | date | time, fmt: str) -> str:
     return dt.strftime(fmt)
@@ -42,3 +43,28 @@ def seconds_to_string(seconds: float) -> str:
     if milliseconds:
         result.append(f"{round(milliseconds * 1000)} milliseconds")
     return " ".join(result)
+
+def weekday_shift_datetime(wd: weekday, shift: int, today: datetime = datetime.today()) -> datetime:
+    shift = shift - 1 if today.weekday() > wd.weekday else shift
+    return today + relativedelta(weekday=wd(shift))
+
+def monday_shift_datetime(shift: int, today: datetime = datetime.today()) -> datetime:
+    return weekday_shift_datetime(wd=MO, shift=shift, today=today)
+
+def tuesday_shift_datetime(shift: int, today: datetime = datetime.today()) -> datetime:
+    return weekday_shift_datetime(wd=TU, shift=shift, today=today)
+
+def wednesday_shift_datetime(shift: int, today: datetime = datetime.today()) -> datetime:
+    return weekday_shift_datetime(wd=WE, shift=shift, today=today)
+
+def thursday_shift_datetime(shift: int, today: datetime = datetime.today()) -> datetime:
+    return weekday_shift_datetime(wd=TH, shift=shift, today=today)
+
+def friday_shift_datetime(shift: int, today: datetime = datetime.today()) -> datetime:
+    return weekday_shift_datetime(wd=FR, shift=shift, today=today)
+
+def saturday_shift_datetime(shift: int, today: datetime = datetime.today()) -> datetime:
+    return weekday_shift_datetime(wd=SA, shift=shift, today=today)
+
+def sunday_shift_datetime(shift: int, today: datetime = datetime.today()) -> datetime:
+    return weekday_shift_datetime(wd=SU, shift=shift, today=today)
