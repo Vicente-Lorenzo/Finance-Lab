@@ -25,10 +25,10 @@ class PostgresAPI(DatabaseAPI):
 
     def _connect_(self):
         return psycopg2.connect(
-            host=self._host,
-            port=self._port,
-            user=self._user,
-            password=self._password,
-            dbname=self._database or None,
+            host=self.host,
+            port=self.port,
+            user=self.user,
+            password=self.password,
+            dbname=self.database or None,
             autocommit=False
         )

@@ -25,10 +25,10 @@ class MicrosoftAPI(DatabaseAPI):
 
     def _connect_(self):
         return pymssql.connect(
-            server=self._host,
-            port=self._port,
-            user=self._user,
-            password=self._password,
-            database=self._database or None,
+            server=self.host,
+            port=self.port,
+            user=self.user,
+            password=self.password,
+            database=self.database or None,
             autocommit=False
         )

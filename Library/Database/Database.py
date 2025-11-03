@@ -1,4 +1,9 @@
 import polars as pl
+pl.Config.set_tbl_cols(-1)
+pl.Config.set_tbl_rows(-1)
+pl.Config.set_tbl_width_chars(-1)
+pl.Config.set_fmt_str_lengths(1000)
+pl.Config.set_fmt_table_cell_list_len(-1)
 
 from abc import ABC, abstractmethod
 
@@ -17,18 +22,18 @@ class DatabaseAPI(ABC):
                  schema: str = None,
                  table: str = None):
 
-        self._host = host
-        self._port = port
-        self._user = user
-        self._password = password
+        self.host = host
+        self.port = port
+        self.user = user
+        self.password = password
 
-        self._database = database
-        self._schema = schema
-        self._table = table
-        self._defaults = {"database": self._database, "schema": self._schema, "table": self._table}
+        self.database = database
+        self.schema = schema
+        self.table = table
+        self.defaults = {"database": self.database, "schema": self.schema, "table": self.table}
 
-        self._connection = None
-        self._cursor = None
+        self.connection = None
+        self.cursor = None
 
         self._log = HandlerAPI(Class=self.__class__.__name__)
 
@@ -36,60 +41,17 @@ class DatabaseAPI(ABC):
     def _connect_(self):
         raise NotImplementedError
 
-    def connect(self):
-        try:
-            self._connection = self._connect_()
-            self._cursor = self._connection.cursor()
-            self._log.info(lambda: f"Connected to {self._host}:{self._port}")
-            if self._database:
-                self._log.debug(lambda: f"Database: {self._database}")
-            if self._schema:
-                self._log.debug(lambda: f"Schema: {self._schema}")
-            if self._table:
-                self._log.debug(lambda: f"Table: {self._table}")
-        except Exception as e:
-            self._log.error(lambda: f"Failed to Connect")
-            self._log.exception(lambda: str(e))
-            raise e
-        return self
-
-    def __enter__(self):
-        return self.connect()
-
-    def disconnect(self):
-        try:
-            if self.indexed():
-                self._cursor.close()
-            if self.connected():
-                self._connection.close()
-            self._log.info(lambda: f"Disconnected from {self._host}:{self._port}")
-        except Exception as e:
-            self._log.error(lambda: f"Failed to Disconnect")
-            self._log.exception(lambda: str(e))
-            raise e
-        return self
-
-    def __exit__(self, exception_type, exception_value, exception_traceback):
-        if exception_type or exception_value or exception_traceback:
-            self._log.exception(lambda: f"Exception type: {exception_type}")
-            self._log.exception(lambda: f"Exception value: {exception_value}")
-            self._log.exception(lambda: f"Traceback: {exception_traceback}")
-        return self.disconnect()
-
     def connected(self) -> bool:
-        return self._connection is not None
+        return self.connection is not None
 
-    def indexed(self) -> bool:
-        return self._cursor is not None
-
-    def _query_(self, query: QueryAPI, **kwargs) -> str:
-        return query(**{**self._defaults, **kwargs})
+    def cursored(self) -> bool:
+        return self.cursor is not None
 
     def commit(self):
         if self.connected():
             timer = Timer()
             timer.start()
-            self._connection.commit()
+            self.connection.commit()
             timer.stop()
             self._log.debug(lambda: f"Transaction commit ({timer.result()})")
         return self
@@ -98,41 +60,97 @@ class DatabaseAPI(ABC):
         if self.connected():
             timer = Timer()
             timer.start()
-            self._connection.rollback()
+            self.connection.rollback()
             timer.stop()
             self._log.debug(lambda: f"Transaction rollback ({timer.result()})")
         return self
 
-    def _execute_(self, execute) -> None:
-        if not self.connected():
-            self.connect()
+    def connect(self):
         try:
+            if self.connected() and self.cursored():
+                return self
+            if self.connected() or self.cursored():
+                self.disconnect()
+            timer = Timer()
+            timer.start()
+            self.connection = self._connect_()
+            self.cursor = self.connection.cursor()
+            if self.database:
+                self._log.debug(lambda: f"Database: {self.database}")
+            if self.schema:
+                self._log.debug(lambda: f"Schema: {self.schema}")
+            if self.table:
+                self._log.debug(lambda: f"Table: {self.table}")
+            timer.stop()
+            self._log.info(lambda: f"Connected to {self.host}:{self.port} ({timer.result()})")
+            return self
+        except Exception as e:
+            self._log.error(lambda: f"Failed to Connect")
+            self._log.exception(lambda: str(e))
+            raise e
+
+    def __enter__(self):
+        return self.connect()
+
+    def disconnect(self):
+        try:
+            if not self.connected() and not self.cursored():
+                return self
+            timer = Timer()
+            timer.start()
+            if self.cursored():
+                self.cursor.close()
+                self.cursor = None
+            self.commit()
+            if self.connected():
+                self.connection.close()
+                self.connection = None
+            timer.stop()
+            self._log.info(lambda: f"Disconnected from {self.host}:{self.port} ({timer.result()})")
+            return self
+        except Exception as e:
+            self._log.error(lambda: f"Failed to Disconnect")
+            self._log.exception(lambda: str(e))
+            raise e
+
+    def __exit__(self, exception_type, exception_value, exception_traceback):
+        if exception_type or exception_value or exception_traceback:
+            self._log.exception(lambda: f"Exception type: {exception_type}")
+            self._log.exception(lambda: f"Exception value: {exception_value}")
+            self._log.exception(lambda: f"Traceback: {exception_traceback}")
+        return self.disconnect()
+
+    def _query_(self, query: QueryAPI, **kwargs) -> str:
+        return query(**{**self.defaults, **kwargs})
+
+    def _execute_(self, execute):
+        try:
+            self.connect()
             timer = Timer()
             timer.start()
             execute()
             timer.stop()
             self._log.debug(lambda: f"Executed Query ({timer.result()})")
+            return self
         except Exception as e:
             self.rollback()
             self._log.error(lambda: "Failed to Execute Query")
             raise e
 
     def execute(self, query: QueryAPI, *args, **kwargs):
-        self._execute_(lambda: self._cursor.execute(self._query_(query, **kwargs), *args))
-        return self
+        return self._execute_(lambda: self.cursor.execute(self._query_(query, **kwargs), args if args else None))
 
     def executemany(self, query: QueryAPI, *args, **kwargs):
-        self._execute_(lambda: self._cursor.executemany(self._query_(query, **kwargs), *args))
-        return self
+        return self._execute_(lambda: self.cursor.executemany(self._query_(query, **kwargs), args if args else None))
 
     def _fetch_(self, fetch) -> pl.DataFrame:
-        if not self.connected():
-            self.connect()
         try:
+            self.connect()
             timer = Timer()
             timer.start()
             rows = fetch()
-            columns = [desc[0] for desc in self._cursor.description] if self._cursor.description else []
+            rows = rows if any(isinstance(row, tuple) for row in rows) else [rows] if rows else []
+            columns = [desc[0] for desc in self.cursor.description] if self.cursor.description else []
             df = pl.DataFrame(rows, schema=columns, orient="row")
             timer.stop()
             self._log.debug(lambda: f"Fetched Query ({timer.result()}): {len(df)} data points")
@@ -143,13 +161,13 @@ class DatabaseAPI(ABC):
             raise e
 
     def fetchone(self) -> pl.DataFrame:
-        return self._fetch_(lambda: self._cursor.fetchone())
+        return self._fetch_(lambda: self.cursor.fetchone())
 
     def fetchmany(self, n: int) -> pl.DataFrame:
-        return self._fetch_(lambda: self._cursor.fetchmany(n))
+        return self._fetch_(lambda: self.cursor.fetchmany(n))
 
     def fetchall(self) -> pl.DataFrame:
-        return self._fetch_(lambda: self._cursor.fetchall())
+        return self._fetch_(lambda: self.cursor.fetchall())
 
     def __del__(self):
         if self.connected():

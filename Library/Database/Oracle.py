@@ -25,13 +25,13 @@ class OracleAPI(DatabaseAPI):
 
     def _connect_(self):
         dsn = oracledb.makedsn(
-            host=self._host,
-            port=self._port,
-            service_name=self._database or None
+            host=self.host,
+            port=self.port,
+            service_name=self.database or None
         )
         return oracledb.connect(
-            user=self._user,
-            password=self._password,
+            user=self.user,
+            password=self.password,
             dsn=dsn,
             autocommit=False
         )
