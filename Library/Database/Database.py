@@ -35,7 +35,7 @@ class DatabaseAPI(ABC):
         self.connection = None
         self.cursor = None
 
-        self._log = HandlerAPI(Class=self.__class__.__name__)
+        self._log_ = HandlerAPI(Class=self.__class__.__name__)
 
     @abstractmethod
     def _connect_(self):
@@ -53,7 +53,7 @@ class DatabaseAPI(ABC):
             timer.start()
             self.connection.commit()
             timer.stop()
-            self._log.debug(lambda: f"Transaction commit ({timer.result()})")
+            self._log_.debug(lambda: f"Commit Operation ({timer.result()})")
         return self
 
     def rollback(self):
@@ -62,7 +62,7 @@ class DatabaseAPI(ABC):
             timer.start()
             self.connection.rollback()
             timer.stop()
-            self._log.debug(lambda: f"Transaction rollback ({timer.result()})")
+            self._log_.debug(lambda: f"Rollback Operation ({timer.result()})")
         return self
 
     def connect(self):
@@ -76,17 +76,17 @@ class DatabaseAPI(ABC):
             self.connection = self._connect_()
             self.cursor = self.connection.cursor()
             if self.database:
-                self._log.debug(lambda: f"Database: {self.database}")
+                self._log_.debug(lambda: f"Database: {self.database}")
             if self.schema:
-                self._log.debug(lambda: f"Schema: {self.schema}")
+                self._log_.debug(lambda: f"Schema: {self.schema}")
             if self.table:
-                self._log.debug(lambda: f"Table: {self.table}")
+                self._log_.debug(lambda: f"Table: {self.table}")
             timer.stop()
-            self._log.info(lambda: f"Connected to {self.host}:{self.port} ({timer.result()})")
+            self._log_.info(lambda: f"Connected to {self.host}:{self.port} ({timer.result()})")
             return self
         except Exception as e:
-            self._log.error(lambda: f"Failed to Connect")
-            self._log.exception(lambda: str(e))
+            self._log_.error(lambda: f"Failed at Connect Operation")
+            self._log_.exception(lambda: str(e))
             raise e
 
     def __enter__(self):
@@ -106,18 +106,18 @@ class DatabaseAPI(ABC):
                 self.connection.close()
                 self.connection = None
             timer.stop()
-            self._log.info(lambda: f"Disconnected from {self.host}:{self.port} ({timer.result()})")
+            self._log_.info(lambda: f"Disconnected from {self.host}:{self.port} ({timer.result()})")
             return self
         except Exception as e:
-            self._log.error(lambda: f"Failed to Disconnect")
-            self._log.exception(lambda: str(e))
+            self._log_.error(lambda: f"Failed at Disconnect Operation")
+            self._log_.exception(lambda: str(e))
             raise e
 
     def __exit__(self, exception_type, exception_value, exception_traceback):
         if exception_type or exception_value or exception_traceback:
-            self._log.exception(lambda: f"Exception type: {exception_type}")
-            self._log.exception(lambda: f"Exception value: {exception_value}")
-            self._log.exception(lambda: f"Traceback: {exception_traceback}")
+            self._log_.exception(lambda: f"Exception type: {exception_type}")
+            self._log_.exception(lambda: f"Exception value: {exception_value}")
+            self._log_.exception(lambda: f"Traceback: {exception_traceback}")
         return self.disconnect()
 
     def _query_(self, query: QueryAPI, **kwargs) -> str:
@@ -130,11 +130,11 @@ class DatabaseAPI(ABC):
             timer.start()
             execute()
             timer.stop()
-            self._log.debug(lambda: f"Executed Query ({timer.result()})")
+            self._log_.debug(lambda: f"Execute Operation ({timer.result()})")
             return self
         except Exception as e:
             self.rollback()
-            self._log.error(lambda: "Failed to Execute Query")
+            self._log_.error(lambda: "Failed at Execute Operation")
             raise e
 
     def execute(self, query: QueryAPI, *args, **kwargs):
@@ -153,11 +153,11 @@ class DatabaseAPI(ABC):
             columns = [desc[0] for desc in self.cursor.description] if self.cursor.description else []
             df = pl.DataFrame(rows, schema=columns, orient="row")
             timer.stop()
-            self._log.debug(lambda: f"Fetched Query ({timer.result()}): {len(df)} data points")
+            self._log_.debug(lambda: f"Fetch Operation ({timer.result()}): {len(df)} data points")
             return df
         except Exception as e:
             self.rollback()
-            self._log.error(lambda: "Failed to Fetch Query")
+            self._log_.error(lambda: "Failed at Fetch Operation")
             raise e
 
     def fetchone(self) -> pl.DataFrame:
