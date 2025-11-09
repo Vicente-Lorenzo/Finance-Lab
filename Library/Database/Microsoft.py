@@ -1,8 +1,9 @@
 # import pymssql
+from abc import ABC
 
 from Library.Database import DatabaseAPI
 
-class MicrosoftAPI(DatabaseAPI):
+class MicrosoftAPI(DatabaseAPI, ABC):
 
     def __init__(self,
                  host: str = "localhost",

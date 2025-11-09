@@ -1,8 +1,9 @@
 # import oracledb
+from abc import ABC
 
 from Library.Database import DatabaseAPI
 
-class OracleAPI(DatabaseAPI):
+class OracleAPI(DatabaseAPI, ABC):
 
     def __init__(self,
                  host: str = "localhost",

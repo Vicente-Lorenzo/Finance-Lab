@@ -1,8 +1,9 @@
 import psycopg2
+from abc import ABC
 
 from Library.Database import DatabaseAPI
 
-class PostgresAPI(DatabaseAPI):
+class PostgresAPI(DatabaseAPI, ABC):
 
     def __init__(self,
                  host: str = "localhost",

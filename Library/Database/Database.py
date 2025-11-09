@@ -123,6 +123,23 @@ class DatabaseAPI(ABC):
     def _query_(self, query: QueryAPI, **kwargs) -> str:
         return query(**{**self.defaults, **kwargs})
 
+    @abstractmethod
+    def _migration_(self):
+        raise NotImplementedError
+
+    def migration(self):
+        try:
+            timer = Timer()
+            timer.start()
+            self._migration_()
+            timer.stop()
+            self._log_.info(lambda: f"Migration Operation ({timer.result()})")
+            return self
+        except Exception as e:
+            self.rollback()
+            self._log_.error(lambda: "Failed at Migration Operation")
+            raise e
+
     def _execute_(self, execute):
         try:
             self.connect()
