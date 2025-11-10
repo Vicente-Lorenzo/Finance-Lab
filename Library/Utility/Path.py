@@ -1,43 +1,65 @@
-from sys import _getframe
 from pathlib import Path
+from os import sep, getcwd
+from sys import _getframe
 from dataclasses import dataclass, field
 
-from Library.Dataclass import DataclassAPI
+def inspect_file(file: str | Path, header: bool = False, resolve: bool = False, builder: type[Path] = Path) -> Path:
+    file = builder("/") / file if header else builder(file)
+    return file.resolve() if resolve else file
 
-def inspect_file(file: str | Path) -> Path:
-    return Path(file).resolve()
+def inspect_path(file: Path, footer: bool = False) -> str:
+    return f"{file}{sep}" if footer else f"{file}"
 
-def inspect_file_path(file: str | Path) -> str:
-    return str(inspect_file(file))
+def inspect_file_path(file: str | Path, header: bool = False, footer: bool = False, resolve: bool = False, builder: type[Path] = Path) -> str:
+    path = inspect_file(file=file, header=header, resolve=resolve, builder=builder)
+    return inspect_path(file=path, footer=footer)
 
-def inspect_module(file: str | Path) -> Path:
-    return inspect_file(file).parent
+def inspect_module(file: str | Path, header: bool = False, resolve: bool = False, builder: type[Path] = Path) -> Path:
+    path = inspect_file(file=file, header=header, resolve=resolve, builder=builder)
+    return path.parent if path.suffix else path
 
-def inspect_module_path(file: str | Path) -> str:
-    return inspect_file_path(inspect_module(file))
+def inspect_module_path(file: str | Path, header: bool = False, footer: bool = False, resolve: bool = False, builder: type[Path] = Path) -> str:
+    module = inspect_module(file=file, header=header, resolve=resolve, builder=builder)
+    return inspect_path(file=module, footer=footer)
 
-def traceback_file(frame: int = None) -> Path:
-    return inspect_file(traceback_file_path(frame))
+def traceback_depth(depth: int = 1) -> str:
+    return _getframe(depth).f_code.co_filename
 
-def traceback_file_path(frame: int = None) -> str:
-    return _getframe(frame if frame is not None else 3).f_code.co_filename
+def traceback_depth_file(header: bool = False, resolve: bool = False, builder: type[Path] = Path, depth: int = 2) -> Path:
+    traceback = traceback_depth(depth=depth)
+    return inspect_file(file=traceback, header=header, resolve=resolve, builder=builder)
 
-def traceback_module(frame: int = None) -> Path:
-    return inspect_module(traceback_file_path(frame))
+def traceback_depth_file_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[Path] = Path, depth: int = 2) -> str:
+    traceback = traceback_depth(depth=depth)
+    return inspect_file_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
-def traceback_module_path(frame: int = None) -> str:
-    return inspect_module_path(traceback_file_path(frame))
+def traceback_depth_module(header: bool = False, resolve: bool = False, builder: type[Path] = Path, depth: int = 2) -> Path:
+    traceback = traceback_depth(depth=depth)
+    return inspect_module(file=traceback, header=header, resolve=resolve, builder=builder)
+
+def traceback_depth_module_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[Path] = Path, depth: int = 2) -> str:
+    traceback = traceback_depth(depth=depth)
+    return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
+
+def traceback_working() -> str:
+    return getcwd()
+
+def traceback_working_module(header: bool = False, resolve: bool = False, builder: type[Path] = Path) -> Path:
+    traceback = traceback_working()
+    return inspect_module(file=traceback, header=header, resolve=resolve, builder=builder)
+
+def traceback_working_module_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[Path] = Path) -> str:
+    traceback = traceback_working()
+    return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
 @dataclass(slots=True)
-class PathAPI(DataclassAPI):
-
+class PathAPI:
     File: str = field(init=True, repr=True)
-    Anchor: str = field(default=None, init=True, repr=True)
-
-    Module: Path = field(init=False, repr=True)
-    Path: Path = field(init=False, repr=True)
+    Module: Path = field(default=None, init=True, repr=True)
 
     def __post_init__(self):
-        self.Anchor = self.Anchor if self.Anchor is not None else traceback_file_path()
-        self.Module = inspect_module(self.Anchor)
-        self.Path = self.Module / self.File
+        self.Module = self.Module or traceback_working_module()
+
+    @property
+    def Path(self) -> Path:
+        return self.Module / self.File
