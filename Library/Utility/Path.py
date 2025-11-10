@@ -52,6 +52,38 @@ def traceback_working_module_path(header: bool = False, footer: bool = False, re
     traceback: str = traceback_working()
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
+def traceback_calling(skip: int = 0) -> str:
+    depth: int = 0
+    calling: str | None = None
+    while True:
+        try:
+            calling = traceback_depth(depth=depth)
+            if __file__ != calling:
+                if skip > 0:
+                    skip -= 1
+                else:
+                    break
+            depth += 1
+        except ValueError:
+            break
+    return calling if calling else traceback_working()
+
+def traceback_calling_file(header: bool = False, resolve: bool = False, builder: type[Path] = Path, skip: int = 0) -> Path:
+    traceback: str = traceback_calling(skip=skip)
+    return inspect_file(file=traceback, header=header, resolve=resolve, builder=builder)
+
+def traceback_calling_file_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[Path] = Path, skip: int = 0) -> str:
+    traceback: str = traceback_calling(skip=skip)
+    return inspect_file_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
+
+def traceback_calling_module(header: bool = False, resolve: bool = False, builder: type[Path] = Path, skip: int = 0) -> Path:
+    traceback: str = traceback_calling(skip=skip)
+    return inspect_module(file=traceback, header=header, resolve=resolve, builder=builder)
+
+def traceback_calling_module_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[Path] = Path, skip: int = 0) -> str:
+    traceback: str = traceback_calling(skip=skip)
+    return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
+
 @dataclass(slots=True)
 class PathAPI:
     File: str = field(init=True, repr=True)
