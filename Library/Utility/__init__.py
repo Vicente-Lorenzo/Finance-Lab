@@ -25,7 +25,12 @@ from Library.Utility.Path import (
     traceback_working,
     traceback_working_module,
     traceback_working_module_path,
-    PathAPI,
+    traceback_calling,
+    traceback_calling_file,
+    traceback_calling_file_path,
+    traceback_calling_module,
+    traceback_calling_module_path,
+    PathAPI
 )
 
 __all__ = [
@@ -37,5 +42,6 @@ __all__ = [
     "inspect_file", "inspect_file_path", "inspect_module", "inspect_module_path",
     "traceback_depth", "traceback_depth_file", "traceback_depth_file_path", "traceback_depth_module", "traceback_depth_module_path",
     "traceback_working", "traceback_working_module", "traceback_working_module_path",
+    "traceback_calling", "traceback_calling_file", "traceback_calling_file_path", "traceback_calling_module", "traceback_calling_module_path",
     "PathAPI",
 ]
