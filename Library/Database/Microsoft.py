@@ -8,8 +8,8 @@ class MicrosoftAPI(DatabaseAPI, ABC):
     def __init__(self,
                  host: str = "localhost",
                  port: int = 1433,
-                 user: str = None,
-                 password: str = None,
+                 user: str = "master",
+                 password: str = "master",
                  database: str = None,
                  schema: str = None,
                  table: str = None):
@@ -24,12 +24,12 @@ class MicrosoftAPI(DatabaseAPI, ABC):
             table=table
         )
 
-    def _connect_(self):
+    def _connect_(self, admin: bool):
         return pymssql.connect(
             server=self.host,
             port=self.port,
             user=self.user,
             password=self.password,
-            database=self.database or None,
+            database="master" if admin else (self.database or None),
             autocommit=False
         )

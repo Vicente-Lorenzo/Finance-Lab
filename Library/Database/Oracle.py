@@ -8,8 +8,8 @@ class OracleAPI(DatabaseAPI, ABC):
     def __init__(self,
                  host: str = "localhost",
                  port: int = 1521,
-                 user: str = None,
-                 password: str = None,
+                 user: str = "ORCL",
+                 password: str = "ORCL",
                  database: str = None,
                  schema: str = None,
                  table: str = None):
@@ -24,11 +24,11 @@ class OracleAPI(DatabaseAPI, ABC):
             table=table
         )
 
-    def _connect_(self):
+    def _connect_(self, admin: bool):
         dsn = oracledb.makedsn(
             host=self.host,
             port=self.port,
-            service_name=self.database or None
+            service_name="ORCL" if admin else (self.database or None)
         )
         return oracledb.connect(
             user=self.user,
