@@ -38,7 +38,7 @@ class DatabaseAPI(ABC):
         self._log_ = HandlerAPI(Class=self.__class__.__name__)
 
     @abstractmethod
-    def _connect_(self):
+    def _connect_(self, admin: bool):
         raise NotImplementedError
 
     def connected(self) -> bool:
@@ -65,7 +65,7 @@ class DatabaseAPI(ABC):
             self._log_.debug(lambda: f"Rollback Operation ({timer.result()})")
         return self
 
-    def connect(self):
+    def connect(self, admin: bool = False):
         try:
             if self.connected() and self.cursored():
                 return self
@@ -73,14 +73,8 @@ class DatabaseAPI(ABC):
                 self.disconnect()
             timer = Timer()
             timer.start()
-            self.connection = self._connect_()
+            self.connection = self._connect_(admin=admin)
             self.cursor = self.connection.cursor()
-            if self.database:
-                self._log_.debug(lambda: f"Database: {self.database}")
-            if self.schema:
-                self._log_.debug(lambda: f"Schema: {self.schema}")
-            if self.table:
-                self._log_.debug(lambda: f"Table: {self.table}")
             timer.stop()
             self._log_.info(lambda: f"Connected to {self.host}:{self.port} ({timer.result()})")
             return self
@@ -90,7 +84,8 @@ class DatabaseAPI(ABC):
             raise e
 
     def __enter__(self):
-        return self.connect()
+        self.migration()
+        return self
 
     def disconnect(self):
         try:
@@ -101,7 +96,6 @@ class DatabaseAPI(ABC):
             if self.cursored():
                 self.cursor.close()
                 self.cursor = None
-            self.commit()
             if self.connected():
                 self.connection.close()
                 self.connection = None
@@ -118,20 +112,46 @@ class DatabaseAPI(ABC):
             self._log_.exception(lambda: f"Exception type: {exception_type}")
             self._log_.exception(lambda: f"Exception value: {exception_value}")
             self._log_.exception(lambda: f"Traceback: {exception_traceback}")
-        return self.disconnect()
+            self.rollback()
+            self.disconnect()
+            return False
+        else:
+            self.commit()
+            self.disconnect()
+            return True
 
     def _query_(self, query: QueryAPI, **kwargs) -> str:
         return query(**{**self.defaults, **kwargs})
 
     @abstractmethod
-    def _migration_(self):
+    def _database_(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _schema_(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _table_(self):
         raise NotImplementedError
 
     def migration(self):
         try:
             timer = Timer()
             timer.start()
-            self._migration_()
+            if self.database:
+                self._log_.debug(lambda: f"Database: {self.database}")
+                self.disconnect()
+                self.connect(admin=True)
+                self._database_()
+            self.disconnect()
+            self.connect(admin=False)
+            if self.schema:
+                self._log_.debug(lambda: f"Schema: {self.schema}")
+                self._schema_()
+            if self.table:
+                self._log_.debug(lambda: f"Table: {self.table}")
+                self._table_()
             timer.stop()
             self._log_.info(lambda: f"Migration Operation ({timer.result()})")
             return self
@@ -142,7 +162,7 @@ class DatabaseAPI(ABC):
 
     def _execute_(self, execute):
         try:
-            self.connect()
+            self.connect(admin=False)
             timer = Timer()
             timer.start()
             execute()
@@ -162,11 +182,11 @@ class DatabaseAPI(ABC):
 
     def _fetch_(self, fetch) -> pl.DataFrame:
         try:
-            self.connect()
+            self.connect(admin=False)
             timer = Timer()
             timer.start()
             rows = fetch()
-            rows = rows if any(isinstance(row, tuple) for row in rows) else [rows] if rows else []
+            rows = (rows if any(isinstance(row, tuple) for row in rows) else [rows]) if rows else []
             columns = [desc[0] for desc in self.cursor.description] if self.cursor.description else []
             df = pl.DataFrame(rows, schema=columns, orient="row")
             timer.stop()
@@ -187,5 +207,4 @@ class DatabaseAPI(ABC):
         return self._fetch_(lambda: self.cursor.fetchall())
 
     def __del__(self):
-        if self.connected():
-            self.disconnect()
+        self.__exit__(None, None, None)
