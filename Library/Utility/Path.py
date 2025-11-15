@@ -1,6 +1,7 @@
 from pathlib import Path
-from os import sep, getcwd
 from sys import _getframe
+from os import sep, getcwd
+from re import Pattern, compile, search
 from dataclasses import dataclass, field
 
 def inspect_file(file: str | Path, header: bool = False, resolve: bool = False, builder: type[Path] = Path) -> Path:
@@ -22,8 +23,19 @@ def inspect_module_path(file: str | Path, header: bool = False, footer: bool = F
     module: Path = inspect_module(file=file, header=header, resolve=resolve, builder=builder)
     return inspect_path(file=module, footer=footer)
 
+def traceback_working() -> str:
+    return getcwd()
+
+def traceback_working_module(header: bool = False, resolve: bool = False, builder: type[Path] = Path) -> Path:
+    traceback: str = traceback_working()
+    return inspect_module(file=traceback, header=header, resolve=resolve, builder=builder)
+
+def traceback_working_module_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[Path] = Path) -> str:
+    traceback: str = traceback_working()
+    return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
+
 def traceback_depth(depth: int = 1) -> str:
-    return _getframe(depth).f_code.co_filename
+    return str(_getframe(depth).f_code.co_filename)
 
 def traceback_depth_file(header: bool = False, resolve: bool = False, builder: type[Path] = Path, depth: int = 2) -> Path:
     traceback: str = traceback_depth(depth=depth)
@@ -41,56 +53,59 @@ def traceback_depth_module_path(header: bool = False, footer: bool = False, reso
     traceback: str = traceback_depth(depth=depth)
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
-def traceback_working() -> str:
-    return getcwd()
-
-def traceback_working_module(header: bool = False, resolve: bool = False, builder: type[Path] = Path) -> Path:
-    traceback: str = traceback_working()
-    return inspect_module(file=traceback, header=header, resolve=resolve, builder=builder)
-
-def traceback_working_module_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[Path] = Path) -> str:
-    traceback: str = traceback_working()
-    return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
-
-def traceback_calling(skip: int = 0) -> str:
+def traceback_calling() -> str:
     depth: int = 0
-    calling: str | None = None
-    while True:
-        try:
-            calling = traceback_depth(depth=depth)
-            if __file__ != calling:
-                if skip > 0:
-                    skip -= 1
-                else:
-                    break
-            depth += 1
-        except ValueError:
-            break
+    while (calling := traceback_depth(depth=depth)) == __file__:
+        depth += 1
     return calling if calling else traceback_working()
 
-def traceback_calling_file(header: bool = False, resolve: bool = False, builder: type[Path] = Path, skip: int = 0) -> Path:
-    traceback: str = traceback_calling(skip=skip)
+def traceback_calling_file(header: bool = False, resolve: bool = False, builder: type[Path] = Path) -> Path:
+    traceback: str = traceback_calling()
     return inspect_file(file=traceback, header=header, resolve=resolve, builder=builder)
 
-def traceback_calling_file_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[Path] = Path, skip: int = 0) -> str:
-    traceback: str = traceback_calling(skip=skip)
+def traceback_calling_file_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[Path] = Path) -> str:
+    traceback: str = traceback_calling()
     return inspect_file_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
-def traceback_calling_module(header: bool = False, resolve: bool = False, builder: type[Path] = Path, skip: int = 0) -> Path:
-    traceback: str = traceback_calling(skip=skip)
+def traceback_calling_module(header: bool = False, resolve: bool = False, builder: type[Path] = Path) -> Path:
+    traceback: str = traceback_calling()
     return inspect_module(file=traceback, header=header, resolve=resolve, builder=builder)
 
-def traceback_calling_module_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[Path] = Path, skip: int = 0) -> str:
-    traceback: str = traceback_calling(skip=skip)
+def traceback_calling_module_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[Path] = Path) -> str:
+    traceback: str = traceback_calling()
+    return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
+
+def traceback_regex(pattern: str) -> str:
+    depth: int = 0
+    pattern: Pattern = compile(pattern)
+    while not search(pattern, calling := traceback_depth(depth=depth)):
+        depth += 1
+    return calling if calling else traceback_working()
+
+def traceback_regex_file(pattern: str, header: bool = False, resolve: bool = False, builder: type[Path] = Path) -> Path:
+    traceback: str = traceback_regex(pattern=pattern)
+    return inspect_file(file=traceback, header=header, resolve=resolve, builder=builder)
+
+def traceback_regex_file_path(pattern: str, header: bool = False, footer: bool = False, resolve: bool = False, builder: type[Path] = Path) -> str:
+    traceback: str = traceback_regex(pattern=pattern)
+    return inspect_file_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
+
+def traceback_regex_module(pattern: str, header: bool = False, resolve: bool = False, builder: type[Path] = Path) -> Path:
+    traceback: str = traceback_regex(pattern=pattern)
+    return inspect_module(file=traceback, header=header, resolve=resolve, builder=builder)
+
+def traceback_regex_module_path(pattern: str, header: bool = False, footer: bool = False, resolve: bool = False, builder: type[Path] = Path) -> str:
+    traceback: str = traceback_regex(pattern=pattern)
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
 @dataclass(slots=True)
 class PathAPI:
+
     File: str = field(init=True, repr=True)
     Module: Path = field(default=None, init=True, repr=True)
 
     def __post_init__(self):
-        self.Module = self.Module or traceback_working_module()
+        self.Module = self.Module or traceback_calling_module()
 
     @property
     def Path(self) -> Path:
