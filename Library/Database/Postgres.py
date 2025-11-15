@@ -25,11 +25,41 @@ class PostgresAPI(DatabaseAPI, ABC):
         )
 
     def _connect_(self, admin: bool):
-        return psycopg2.connect(
+        database = "postgres" if admin else (self.database or None)
+        connection = psycopg2.connect(
             host=self.host,
             port=self.port,
             user=self.user,
             password=self.password,
-            dbname="postgres" if admin else (self.database or None),
-            autocommit=False
+            dbname=database
         )
+        connection.autocommit = admin
+        return connection
+
+class MarketDatabaseAPI(PostgresAPI):
+
+    def __init__(self,
+                 broker: str,
+                 group: str,
+                 symbol: str,
+                 timeframe: str):
+
+        super().__init__(
+            database=broker,
+            schema=symbol,
+            table=timeframe
+        )
+
+        self.broker = broker
+        self.group = group
+        self.symbol = symbol
+        self.timeframe = timeframe
+
+    def _database_(self):
+        pass
+
+    def _schema_(self):
+        pass
+
+    def _table_(self):
+        pass

@@ -25,11 +25,13 @@ class MicrosoftAPI(DatabaseAPI, ABC):
         )
 
     def _connect_(self, admin: bool):
-        return pymssql.connect(
+        database = "master" if admin else (self.database or None)
+        connection = pymssql.connect(
             server=self.host,
             port=self.port,
             user=self.user,
             password=self.password,
-            database="master" if admin else (self.database or None),
-            autocommit=False
+            database=database
         )
+        connection.autocommit(admin)
+        return connection
