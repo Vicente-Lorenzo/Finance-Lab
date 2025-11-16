@@ -132,6 +132,7 @@ class MarketDatabaseAPI(PostgresAPI):
     CHECK_DATABASE_QUERY = QueryAPI(PathAPI("Check/Database.sql"))
     CHECK_SCHEMA_QUERY = QueryAPI(PathAPI("Check/Schema.sql"))
     CHECK_TABLE_QUERY = QueryAPI(PathAPI("Check/Table.sql"))
+    CHECK_STRUCTURE_QUERY = QueryAPI(PathAPI("Check/Structure.sql"))
 
     CREATE_DATABASE_QUERY = QueryAPI(PathAPI("Create/Database.sql"))
     CREATE_SCHEMA_QUERY = QueryAPI(PathAPI("Create/Schema.sql"))
@@ -140,8 +141,6 @@ class MarketDatabaseAPI(PostgresAPI):
     DELETE_DATABASE_QUERY = QueryAPI(PathAPI("Delete/Database.sql"))
     DELETE_SCHEMA_QUERY = QueryAPI(PathAPI("Delete/Schema.sql"))
     DELETE_TABLE_QUERY = QueryAPI(PathAPI("Delete/Table.sql"))
-
-    STRUCTURE_TABLE_QUERY = QueryAPI(PathAPI("Structure/Table.sql"))
 
     def __init__(self,
                  broker: str,
@@ -182,8 +181,21 @@ class MarketDatabaseAPI(PostgresAPI):
         self.execute(self.CHECK_TABLE_QUERY)
         check = self.fetchall()
         self.commit()
-        if not result.is_empty(): return
-        self.execute(self.CREATE_TABLE_QUERY)
+        create = ", ".join(f'"{name}" {self.CREATE_DATATYPE[type(dtype)]}' for name, dtype in self.SYMBOL_SCHEMA.items())
+        if check.is_empty():
+            self.execute(self.CREATE_TABLE_QUERY, definitions=create)
+            self.commit()
+            self._log_.info(lambda: f"Created {self.table} table")
+            return
+        structure = ", ".join(f"('{name}', '{self.CHECK_DATATYPE[type(dtype)]}')"for name, dtype in self.SYMBOL_SCHEMA.items())
+        self.execute(self.CHECK_STRUCTURE_QUERY, definitions=structure)
+        diff = self.fetchall()
+        self.commit()
+        if diff.is_empty():
+            return
+        self.execute(self.DELETE_TABLE_QUERY)
+        self.commit()
+        self.execute(self.CREATE_TABLE_QUERY, definitions=create)
         self.commit()
 
     @staticmethod
