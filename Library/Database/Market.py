@@ -141,6 +141,8 @@ class MarketDatabaseAPI(PostgresAPI):
     DELETE_SCHEMA_QUERY = QueryAPI(PathAPI("Delete/Schema.sql"))
     DELETE_TABLE_QUERY = QueryAPI(PathAPI("Delete/Table.sql"))
 
+    STRUCTURE_TABLE_QUERY = QueryAPI(PathAPI("Structure/Table.sql"))
+
     def __init__(self,
                  broker: str,
                  group: str,
@@ -160,25 +162,25 @@ class MarketDatabaseAPI(PostgresAPI):
 
     def _database_(self):
         self.execute(self.CHECK_DATABASE_QUERY)
-        result = self.fetchall()
+        check = self.fetchall()
         self.commit()
-        if not result.is_empty(): return
+        if not check.is_empty(): return
         self.execute(self.CREATE_DATABASE_QUERY)
         self.commit()
         self._log_.info(lambda: f"Created {self.database} database")
 
     def _schema_(self):
         self.execute(self.CHECK_SCHEMA_QUERY)
-        result = self.fetchall()
+        check = self.fetchall()
         self.commit()
-        if not result.is_empty(): return
+        if not check.is_empty(): return
         self.execute(self.CREATE_SCHEMA_QUERY)
         self.commit()
         self._log_.info(lambda: f"Created {self.schema} schema")
 
     def _table_(self):
         self.execute(self.CHECK_TABLE_QUERY)
-        result = self.fetchall()
+        check = self.fetchall()
         self.commit()
         if not result.is_empty(): return
         self.execute(self.CREATE_TABLE_QUERY)
