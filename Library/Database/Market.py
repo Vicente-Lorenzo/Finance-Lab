@@ -34,6 +34,7 @@ class MarketDatabaseAPI(PostgresAPI):
         query = QueryAPI(PathAPI("Check/Schema.sql"))
         self.execute(query)
         result = self.fetchall()
+        self.commit()
         if not result.is_empty(): return
         query = QueryAPI(PathAPI("Create/Schema.sql"))
         self.execute(query)
