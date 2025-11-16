@@ -35,7 +35,12 @@ class DatabaseAPI(ABC):
         self.connection = None
         self.cursor = None
 
-        self._log_ = HandlerAPI(Class=self.__class__.__name__)
+        self._log_ = HandlerAPI(
+            Database=self.database,
+            Schema=self.schema,
+            Table=self.table,
+            Class=self.__class__.__name__
+        )
 
     @abstractmethod
     def _connect_(self, admin: bool):
