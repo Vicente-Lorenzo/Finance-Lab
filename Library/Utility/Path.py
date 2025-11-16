@@ -35,7 +35,8 @@ def traceback_working_module_path(header: bool = False, footer: bool = False, re
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
 def traceback_depth(depth: int = 1) -> str:
-    return str(_getframe(depth).f_code.co_filename)
+    f = _getframe(depth).f_code.co_filename
+    return f if f not in ("<string>", "<stdin>", "<exec>") else None
 
 def traceback_depth_file(header: bool = False, resolve: bool = False, builder: type[Path] = Path, depth: int = 2) -> Path:
     traceback: str = traceback_depth(depth=depth)
@@ -55,7 +56,7 @@ def traceback_depth_module_path(header: bool = False, footer: bool = False, reso
 
 def traceback_calling() -> str:
     depth: int = 0
-    while (calling := traceback_depth(depth=depth)) == __file__:
+    while (calling := traceback_depth(depth=depth)) is None or calling == __file__:
         depth += 1
     return calling if calling else traceback_working()
 
@@ -105,7 +106,7 @@ class PathAPI:
     Module: Path = field(default=None, init=True, repr=True)
 
     def __post_init__(self):
-        self.Module = self.Module or traceback_calling_module()
+        self.Module = self.Module or traceback_calling_module(resolve=True)
 
     @property
     def Path(self) -> Path:
