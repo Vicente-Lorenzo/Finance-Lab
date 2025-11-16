@@ -1,7 +1,8 @@
 import psycopg2
 from abc import ABC
 
-from Library.Database import DatabaseAPI
+from Library.Database import DatabaseAPI, QueryAPI
+from Library.Utility import PathAPI
 
 class PostgresAPI(DatabaseAPI, ABC):
 
@@ -56,7 +57,12 @@ class MarketDatabaseAPI(PostgresAPI):
         self.timeframe = timeframe
 
     def _database_(self):
-        pass
+        query = QueryAPI(PathAPI("Check/Database.sql"))
+        self.execute(query)
+        result = self.fetchall()
+        if not result.is_empty(): return
+        query = QueryAPI(PathAPI("Create/Database.sql"))
+        self.execute(query)
 
     def _schema_(self):
         pass
