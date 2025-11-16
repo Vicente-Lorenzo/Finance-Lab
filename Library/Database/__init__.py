@@ -2,12 +2,14 @@ from Library.Database.Query import QueryAPI
 from Library.Database.Database import DatabaseAPI
 from Library.Database.Oracle import OracleAPI
 from Library.Database.Microsoft import MicrosoftAPI
-from Library.Database.Postgres import PostgresAPI, MarketDatabaseAPI
+from Library.Database.Postgres import PostgresAPI
+from Library.Database.Market import MarketDatabaseAPI
 
 __all__ = [
     "QueryAPI",
     "DatabaseAPI",
     "OracleAPI",
     "MicrosoftAPI",
-    "PostgresAPI", "MarketDatabaseAPI"
+    "PostgresAPI",
+    "MarketDatabaseAPI"
 ]

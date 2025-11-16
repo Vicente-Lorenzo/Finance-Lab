@@ -1,8 +1,7 @@
 import psycopg2
 from abc import ABC
 
-from Library.Database import DatabaseAPI, QueryAPI
-from Library.Utility import PathAPI
+from Library.Database import DatabaseAPI
 
 class PostgresAPI(DatabaseAPI, ABC):
 
@@ -36,36 +35,3 @@ class PostgresAPI(DatabaseAPI, ABC):
         )
         connection.autocommit = admin
         return connection
-
-class MarketDatabaseAPI(PostgresAPI):
-
-    def __init__(self,
-                 broker: str,
-                 group: str,
-                 symbol: str,
-                 timeframe: str):
-
-        super().__init__(
-            database=broker,
-            schema=symbol,
-            table=timeframe
-        )
-
-        self.broker = broker
-        self.group = group
-        self.symbol = symbol
-        self.timeframe = timeframe
-
-    def _database_(self):
-        query = QueryAPI(PathAPI("Check/Database.sql"))
-        self.execute(query)
-        result = self.fetchall()
-        if not result.is_empty(): return
-        query = QueryAPI(PathAPI("Create/Database.sql"))
-        self.execute(query)
-
-    def _schema_(self):
-        pass
-
-    def _table_(self):
-        pass

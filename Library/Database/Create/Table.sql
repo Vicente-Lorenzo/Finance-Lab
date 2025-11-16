@@ -1,1 +1,1 @@
-CREATE TABLE IF NOT EXISTS "{symbol}"."{timeframe}" ({definitions});
+CREATE TABLE IF NOT EXISTS "{schema}"."{table}" ({definitions});

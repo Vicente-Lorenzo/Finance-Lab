@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS "{symbol}"."{timeframe}" CASCADE;
+DROP TABLE IF EXISTS "{schema}"."{table}" CASCADE;
