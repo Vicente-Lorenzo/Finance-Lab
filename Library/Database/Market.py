@@ -6,18 +6,18 @@ from Library.Utility import PathAPI
 
 class MarketDatabaseAPI(PostgresAPI):
 
-    CREATE_DATATYPE = {
-        pl.Datetime: "TIMESTAMP",
-        pl.Enum: "VARCHAR",
-        pl.Int32: "INTEGER",
-        pl.Float64: "DOUBLE PRECISION"
-    }
-
     CHECK_DATATYPE = {
         pl.Datetime: "timestamp without time zone",
         pl.Enum: "character varying",
         pl.Int32: "integer",
         pl.Float64: "double precision"
+    }
+
+    CREATE_DATATYPE = {
+        pl.Datetime: "TIMESTAMP",
+        pl.Enum: "VARCHAR",
+        pl.Int32: "INTEGER",
+        pl.Float64: "DOUBLE PRECISION"
     }
 
     SYMBOL_SCHEMA: dict = {
@@ -165,6 +165,7 @@ class MarketDatabaseAPI(PostgresAPI):
         if not result.is_empty(): return
         self.execute(self.CREATE_DATABASE_QUERY)
         self.commit()
+        self._log_.info(lambda: f"Created {self.database} database")
 
     def _schema_(self):
         self.execute(self.CHECK_SCHEMA_QUERY)
@@ -173,6 +174,7 @@ class MarketDatabaseAPI(PostgresAPI):
         if not result.is_empty(): return
         self.execute(self.CREATE_SCHEMA_QUERY)
         self.commit()
+        self._log_.info(lambda: f"Created {self.schema} schema")
 
     def _table_(self):
         self.execute(self.CHECK_TABLE_QUERY)
