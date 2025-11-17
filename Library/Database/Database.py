@@ -4,7 +4,6 @@ pl.Config.set_tbl_rows(-1)
 pl.Config.set_tbl_width_chars(-1)
 pl.Config.set_fmt_str_lengths(1000)
 pl.Config.set_fmt_table_cell_list_len(-1)
-
 from abc import ABC, abstractmethod
 
 from Library.Logging import HandlerAPI
@@ -44,8 +43,6 @@ class DatabaseAPI(ABC):
     DELETE_SCHEMA_QUERY = QueryAPI(PathAPI("Delete/Schema.sql"))
     DELETE_TABLE_QUERY = QueryAPI(PathAPI("Delete/Table.sql"))
 
-    STRUCTURE: dict = None
-
     def __init__(self,
                  host: str = None,
                  port: int = None,
@@ -74,6 +71,11 @@ class DatabaseAPI(ABC):
             Table=self.table,
             Class=self.__class__.__name__
         )
+
+    @staticmethod
+    @abstractmethod
+    def _structure_() -> dict:
+        raise NotImplementedError
 
     @abstractmethod
     def _connect_(self, admin: bool):
@@ -159,7 +161,8 @@ class DatabaseAPI(ABC):
             return True
 
     def format(self, data) -> pl.DataFrame:
-        if isinstance(data, pl.DataFrame) and data.schema == self.STRUCTURE:
+        structure = self._structure_()
+        if isinstance(data, pl.DataFrame) and data.schema == structure:
             return data
         if isinstance(data, list):
             data = [symbol.dict() for symbol in data]
@@ -167,7 +170,7 @@ class DatabaseAPI(ABC):
             data = [data.dict()]
         else:
             data = None
-        return pl.DataFrame(data=data, schema=self.STRUCTURE, orient="row")
+        return pl.DataFrame(data=data, schema=structure, orient="row")
 
     def _query_(self, query: QueryAPI, **kwargs) -> str:
         return query(**{**self.defaults, **kwargs})
@@ -196,9 +199,10 @@ class DatabaseAPI(ABC):
         self._log_.debug(lambda: f"Checking Table: {self.table}")
         check = self.execute(self.CHECK_TABLE_QUERY).fetchall()
         self.commit()
+        structure = self._structure_()
         if not check.is_empty():
             self._log_.debug(lambda: f"Checking Structure: {self.table}")
-            structure = ", ".join(f"('{name}', '{self.CHECK_DATATYPE_MAPPING[type(dtype)]}')" for name, dtype in self.STRUCTURE.items())
+            structure = ", ".join(f"('{name}', '{self.CHECK_DATATYPE_MAPPING[type(dtype)]}')" for name, dtype in structure.items())
             diff = self.execute(self.CHECK_STRUCTURE_QUERY, definitions=structure).fetchall()
             self.commit()
             if diff.is_empty(): return
@@ -207,7 +211,7 @@ class DatabaseAPI(ABC):
             self.commit()
             self._log_.info(lambda: f"Deleted Table: {self.table}")
         self._log_.warning(lambda: f"Missing Table: {self.table}")
-        create = ", ".join(f'"{name}" {self.CREATE_DATATYPE_MAPPING[type(dtype)]}' for name, dtype in self.STRUCTURE.items())
+        create = ", ".join(f'"{name}" {self.CREATE_DATATYPE_MAPPING[type(dtype)]}' for name, dtype in structure.items())
         self.execute(self.CREATE_TABLE_QUERY, definitions=create)
         self.commit()
         self._log_.info(lambda: f"Created Table: {self.table}")
