@@ -8,10 +8,41 @@ pl.Config.set_fmt_table_cell_list_len(-1)
 from abc import ABC, abstractmethod
 
 from Library.Logging import HandlerAPI
+from Library.Dataclass import DataclassAPI
 from Library.Database import QueryAPI
+from Library.Utility import PathAPI
 from Library.Statistics import Timer
 
 class DatabaseAPI(ABC):
+
+    CHECK_DATATYPE_MAPPING = {
+        pl.Datetime: "timestamp without time zone",
+        pl.Enum: "character varying",
+        pl.Int32: "integer",
+        pl.Float64: "double precision"
+    }
+
+    CREATE_DATATYPE_MAPPING = {
+        pl.Datetime: "TIMESTAMP",
+        pl.Enum: "VARCHAR",
+        pl.Int32: "INTEGER",
+        pl.Float64: "DOUBLE PRECISION"
+    }
+
+    CHECK_DATABASE_QUERY = QueryAPI(PathAPI("Check/Database.sql"))
+    CHECK_SCHEMA_QUERY = QueryAPI(PathAPI("Check/Schema.sql"))
+    CHECK_TABLE_QUERY = QueryAPI(PathAPI("Check/Table.sql"))
+    CHECK_STRUCTURE_QUERY = QueryAPI(PathAPI("Check/Structure.sql"))
+
+    CREATE_DATABASE_QUERY = QueryAPI(PathAPI("Create/Database.sql"))
+    CREATE_SCHEMA_QUERY = QueryAPI(PathAPI("Create/Schema.sql"))
+    CREATE_TABLE_QUERY = QueryAPI(PathAPI("Create/Table.sql"))
+
+    DELETE_DATABASE_QUERY = QueryAPI(PathAPI("Delete/Database.sql"))
+    DELETE_SCHEMA_QUERY = QueryAPI(PathAPI("Delete/Schema.sql"))
+    DELETE_TABLE_QUERY = QueryAPI(PathAPI("Delete/Table.sql"))
+
+    STRUCTURE: dict = None
 
     def __init__(self,
                  host: str = None,
@@ -125,20 +156,63 @@ class DatabaseAPI(ABC):
             self.disconnect()
             return True
 
+    def format(self, data) -> pl.DataFrame:
+        if isinstance(data, pl.DataFrame) and data.schema == self.STRUCTURE:
+            return data
+        if isinstance(data, list):
+            data = [symbol.dict() for symbol in data]
+        elif isinstance(data, DataclassAPI):
+            data = [data.dict()]
+        else:
+            data = None
+        return pl.DataFrame(data=data, schema=self.STRUCTURE, orient="row")
+
     def _query_(self, query: QueryAPI, **kwargs) -> str:
         return query(**{**self.defaults, **kwargs})
 
-    @abstractmethod
     def _database_(self):
-        raise NotImplementedError
+        self._log_.debug(lambda: f"Checking Database: {self.database}")
+        self.execute(self.CHECK_DATABASE_QUERY)
+        check = self.fetchall()
+        self.commit()
+        if not check.is_empty(): return
+        self._log_.warning(lambda: f"Missing Database: {self.database}")
+        self.execute(self.CREATE_DATABASE_QUERY)
+        self.commit()
+        self._log_.info(lambda: f"Created Database: {self.database}")
 
-    @abstractmethod
     def _schema_(self):
-        raise NotImplementedError
+        self._log_.debug(lambda: f"Checking Schema: {self.schema}")
+        self.execute(self.CHECK_SCHEMA_QUERY)
+        check = self.fetchall()
+        self.commit()
+        if not check.is_empty(): return
+        self._log_.warning(lambda: f"Missing Schema: {self.schema}")
+        self.execute(self.CREATE_SCHEMA_QUERY)
+        self.commit()
+        self._log_.info(lambda: f"Created Schema: {self.schema}")
 
-    @abstractmethod
     def _table_(self):
-        raise NotImplementedError
+        self._log_.debug(lambda: f"Checking Table: {self.table}")
+        self.execute(self.CHECK_TABLE_QUERY)
+        check = self.fetchall()
+        self.commit()
+        if not check.is_empty():
+            self._log_.debug(lambda: f"Checking Structure: {self.table}")
+            structure = ", ".join(f"('{name}', '{self.CHECK_DATATYPE_MAPPING[type(dtype)]}')" for name, dtype in self.STRUCTURE.items())
+            self.execute(self.CHECK_STRUCTURE_QUERY, definitions=structure)
+            diff = self.fetchall()
+            self.commit()
+            if diff.is_empty(): return
+            self._log_.warning(lambda: f"Mismatched Structure: {self.table}")
+            self.execute(self.DELETE_TABLE_QUERY)
+            self.commit()
+            self._log_.info(lambda: f"Deleted Table: {self.table}")
+        self._log_.warning(lambda: f"Missing Table: {self.table}")
+        create = ", ".join(f'"{name}" {self.CREATE_DATATYPE_MAPPING[type(dtype)]}' for name, dtype in self.STRUCTURE.items())
+        self.execute(self.CREATE_TABLE_QUERY, definitions=create)
+        self.commit()
+        self._log_.info(lambda: f"Created Table: {self.table}")
 
     def migration(self):
         try:
@@ -147,7 +221,6 @@ class DatabaseAPI(ABC):
             if self.database:
                 subtimer = Timer()
                 subtimer.start()
-                self._log_.debug(lambda: f"Database: {self.database}")
                 self.disconnect()
                 self.connect(admin=True)
                 self._database_()
@@ -158,14 +231,12 @@ class DatabaseAPI(ABC):
             if self.schema:
                 subtimer = Timer()
                 subtimer.start()
-                self._log_.debug(lambda: f"Schema: {self.schema}")
                 self._schema_()
                 subtimer.stop()
                 self._log_.info(lambda: f"Schema Migration ({subtimer.result()})")
             if self.table:
                 subtimer = Timer()
                 subtimer.start()
-                self._log_.debug(lambda: f"Table: {self.table}")
                 self._table_()
                 subtimer.stop()
                 self._log_.info(lambda: f"Table Migration ({subtimer.result()})")
