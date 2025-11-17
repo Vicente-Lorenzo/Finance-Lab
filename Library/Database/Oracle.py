@@ -1,5 +1,5 @@
 # import oracledb
-import polars as pl
+# import polars as pl
 from abc import ABC
 
 from Library.Database import DatabaseAPI
