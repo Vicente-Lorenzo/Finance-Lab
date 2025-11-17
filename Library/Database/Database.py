@@ -48,6 +48,7 @@ class DatabaseAPI(ABC):
                  port: int = None,
                  user: str = None,
                  password: str = None,
+                 admin: bool = False,
                  database: str = None,
                  schema: str = None,
                  table: str = None):
@@ -56,6 +57,7 @@ class DatabaseAPI(ABC):
         self.port = port
         self.user = user
         self.password = password
+        self.admin = admin
 
         self.database = database
         self.schema = schema
@@ -113,7 +115,7 @@ class DatabaseAPI(ABC):
                 self.disconnect()
             timer = Timer()
             timer.start()
-            self.connection = self._connect_(admin=admin)
+            self.connection = self._connect_(admin=admin or self.admin)
             self.cursor = self.connection.cursor()
             timer.stop()
             self._log_.info(lambda: f"Connected to {self.host}:{self.port} ({timer.result()})")
@@ -229,7 +231,7 @@ class DatabaseAPI(ABC):
                 subtimer.stop()
                 self._log_.info(lambda: f"Database Migration ({subtimer.result()})")
             self.disconnect()
-            self.connect(admin=False)
+            self.connect()
             if self.schema:
                 subtimer = Timer()
                 subtimer.start()
@@ -252,7 +254,7 @@ class DatabaseAPI(ABC):
 
     def _execute_(self, execute):
         try:
-            self.connect(admin=False)
+            self.connect()
             timer = Timer()
             timer.start()
             execute()
@@ -272,7 +274,7 @@ class DatabaseAPI(ABC):
 
     def _fetch_(self, fetch) -> pl.DataFrame:
         try:
-            self.connect(admin=False)
+            self.connect()
             timer = Timer()
             timer.start()
             rows = fetch()
