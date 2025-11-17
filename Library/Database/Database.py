@@ -172,8 +172,7 @@ class DatabaseAPI(ABC):
 
     def _database_(self):
         self._log_.debug(lambda: f"Checking Database: {self.database}")
-        self.execute(self.CHECK_DATABASE_QUERY)
-        check = self.fetchall()
+        check = self.execute(self.CHECK_DATABASE_QUERY).fetchall()
         self.commit()
         if not check.is_empty(): return
         self._log_.warning(lambda: f"Missing Database: {self.database}")
@@ -183,8 +182,7 @@ class DatabaseAPI(ABC):
 
     def _schema_(self):
         self._log_.debug(lambda: f"Checking Schema: {self.schema}")
-        self.execute(self.CHECK_SCHEMA_QUERY)
-        check = self.fetchall()
+        check = self.execute(self.CHECK_SCHEMA_QUERY).fetchall()
         self.commit()
         if not check.is_empty(): return
         self._log_.warning(lambda: f"Missing Schema: {self.schema}")
@@ -194,14 +192,12 @@ class DatabaseAPI(ABC):
 
     def _table_(self):
         self._log_.debug(lambda: f"Checking Table: {self.table}")
-        self.execute(self.CHECK_TABLE_QUERY)
-        check = self.fetchall()
+        check = self.execute(self.CHECK_TABLE_QUERY).fetchall()
         self.commit()
         if not check.is_empty():
             self._log_.debug(lambda: f"Checking Structure: {self.table}")
             structure = ", ".join(f"('{name}', '{self.CHECK_DATATYPE_MAPPING[type(dtype)]}')" for name, dtype in self.STRUCTURE.items())
-            self.execute(self.CHECK_STRUCTURE_QUERY, definitions=structure)
-            diff = self.fetchall()
+            diff = self.execute(self.CHECK_STRUCTURE_QUERY, definitions=structure).fetchall()
             self.commit()
             if diff.is_empty(): return
             self._log_.warning(lambda: f"Mismatched Structure: {self.table}")
@@ -276,7 +272,8 @@ class DatabaseAPI(ABC):
             rows = fetch()
             rows = (rows if any(isinstance(row, tuple) for row in rows) else [rows]) if rows else []
             columns = [desc[0] for desc in self.cursor.description] if self.cursor.description else []
-            df = pl.DataFrame(rows, schema=columns, orient="row")
+            schema = self.STRUCTURE if self.STRUCTURE and set(columns) == set(self.STRUCTURE.keys()) else columns
+            df = pl.DataFrame(rows, schema=schema, orient="row")
             timer.stop()
             self._log_.debug(lambda: f"Fetch Operation ({timer.result()}): {len(df)} data points")
             return df
