@@ -5,6 +5,16 @@ from Library.Database import DatabaseAPI
 
 class OracleAPI(DatabaseAPI, ABC):
 
+    DESCRIPTION_DATATYPE_MAPPING = {
+        oracledb.DB_TYPE_NUMBER: pl.Float64,
+        oracledb.DB_TYPE_VARCHAR: pl.Utf8,
+        oracledb.DB_TYPE_CHAR: pl.Utf8,
+        oracledb.DB_TYPE_NVARCHAR: pl.Utf8,
+        oracledb.DB_TYPE_NCHAR: pl.Utf8,
+        oracledb.DB_TYPE_DATE: pl.Datetime,
+        oracledb.DB_TYPE_TIMESTAMP: pl.Datetime,
+    }
+
     def __init__(self,
                  host: str = "localhost",
                  port: int = 1521,

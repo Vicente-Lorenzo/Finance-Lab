@@ -29,6 +29,8 @@ class DatabaseAPI(ABC):
         pl.Float64: "DOUBLE PRECISION"
     }
 
+    DESCRIPTION_DATATYPE_MAPPING: dict = None
+
     CHECK_DATABASE_QUERY = QueryAPI(PathAPI("Check/Database.sql"))
     CHECK_SCHEMA_QUERY = QueryAPI(PathAPI("Check/Schema.sql"))
     CHECK_TABLE_QUERY = QueryAPI(PathAPI("Check/Table.sql"))
@@ -271,8 +273,7 @@ class DatabaseAPI(ABC):
             timer.start()
             rows = fetch()
             rows = (rows if any(isinstance(row, tuple) for row in rows) else [rows]) if rows else []
-            columns = [desc[0] for desc in self.cursor.description] if self.cursor.description else []
-            schema = self.STRUCTURE if self.STRUCTURE and set(columns) == set(self.STRUCTURE.keys()) else columns
+            schema = {desc[0]: self.DESCRIPTION_DATATYPE_MAPPING.get(desc[1]) for desc in self.cursor.description} if self.cursor.description else {}
             df = pl.DataFrame(rows, schema=schema, orient="row")
             timer.stop()
             self._log_.debug(lambda: f"Fetch Operation ({timer.result()}): {len(df)} data points")

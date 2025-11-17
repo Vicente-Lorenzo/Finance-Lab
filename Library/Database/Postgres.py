@@ -1,9 +1,25 @@
 import psycopg2
+import polars as pl
 from abc import ABC
 
 from Library.Database import DatabaseAPI
 
 class PostgresAPI(DatabaseAPI, ABC):
+
+    DESCRIPTION_DATATYPE_MAPPING = {
+        16: pl.Boolean,
+        20: pl.Int64,
+        21: pl.Int16,
+        23: pl.Int32,
+        700: pl.Float32,
+        701: pl.Float64,
+        1700: pl.Float64,
+        25: pl.Utf8,
+        1043: pl.Utf8,
+        1082: pl.Date,
+        1114: pl.Datetime,
+        1184: pl.Datetime
+    }
 
     def __init__(self,
                  host: str = "localhost",

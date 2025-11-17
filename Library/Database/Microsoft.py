@@ -1,9 +1,22 @@
 # import pymssql
+import polars as pl
 from abc import ABC
+from datetime import date, datetime
+from decimal import Decimal
 
 from Library.Database import DatabaseAPI
 
 class MicrosoftAPI(DatabaseAPI, ABC):
+
+    DESCRIPTION_DATATYPE_MAPPING = {
+        int: pl.Int64,
+        float: pl.Float64,
+        bool: pl.Boolean,
+        str: pl.Utf8,
+        date: pl.Date,
+        datetime: pl.Datetime,
+        Decimal: pl.Float64
+    }
 
     def __init__(self,
                  host: str = "localhost",
