@@ -5,8 +5,8 @@ class MarketWarehouseAPI:
 
     def __init__(self,
                  broker: str,
-                 symbol: str | list[str],
-                 timeframe: str | list[str]):
+                 symbol: str,
+                 timeframe: str):
 
         self.broker = broker
         self.symbol = symbol
