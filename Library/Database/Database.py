@@ -170,17 +170,19 @@ class DatabaseAPI(ABC):
             self.disconnect()
             return True
 
-    def format(self, data) -> pl.DataFrame:
-        structure = self.STRUCTURE
-        if isinstance(data, pl.DataFrame) and data.schema == structure:
-            return data
-        if isinstance(data, list):
-            data = [symbol.dict() for symbol in data]
+    def format(self, data, schema: dict = None) -> pl.DataFrame:
+        if isinstance(data, pl.DataFrame):
+            data = data
+        elif isinstance(data, (tuple, list)):
+            if any(isinstance(row, DataclassAPI) for row in data):
+                data = [row.dict() for row in data]
+            else:
+                data = data
         elif isinstance(data, DataclassAPI):
             data = [data.dict()]
         else:
             data = None
-        return pl.DataFrame(data=data, schema=structure, orient="row")
+        return pl.DataFrame(data=data, schema=schema or self.STRUCTURE, orient="row")
 
     def _query_(self, query: QueryAPI, **kwargs) -> str:
         return query(**{**self.defaults, **kwargs})
@@ -287,7 +289,7 @@ class DatabaseAPI(ABC):
             rows = fetch()
             rows = (rows if any(isinstance(row, tuple) for row in rows) else [rows]) if rows else []
             schema = {desc[0]: self.DESCRIPTION_DATATYPE_MAPPING.get(desc[1]) for desc in self.cursor.description} if self.cursor.description else {}
-            df = pl.DataFrame(rows, schema=schema, orient="row")
+            df = self.format(data=rows, schema=schema)
             timer.stop()
             self._log_.debug(lambda: f"Fetch Operation ({timer.result()}): {len(df)} data points")
             return df
