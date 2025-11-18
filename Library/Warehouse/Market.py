@@ -22,25 +22,29 @@ class MarketWarehouseAPI:
         self.Symbol = SymbolDatabaseAPI(
             database=broker,
             schema=symbol,
-            table="Symbol"
+            table="Symbol",
+            migrate=True
         )
 
         self.Tick = TickDatabaseAPI(
             database=broker,
             schema=symbol,
-            table="Tick"
+            table="Tick",
+            migrate=True
         )
 
         self.Bar = BarDatabaseAPI(
             database=broker,
             schema=symbol,
-            table=timeframe
+            table=timeframe,
+            migrate=True
         )
 
         self.Trade = TradeDatabaseAPI(
             database=broker,
             schema=symbol,
-            table="Trade"
+            table="Trade",
+            migrate=True
         )
 
     def __enter__(self):
