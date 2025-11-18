@@ -68,7 +68,6 @@ class DatabaseAPI(ABC):
         if self.schemed(): self.defaults["schema"] = schema
         self.table = table
         if self.tabled(): self.defaults["table"] = table
-        print(self.defaults)
 
         self.connection = None
         self.cursor = None
