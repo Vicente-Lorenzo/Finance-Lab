@@ -28,7 +28,8 @@ class PostgresAPI(DatabaseAPI):
                  admin: bool = False,
                  database: str = None,
                  schema: str = None,
-                 table: str = None):
+                 table: str = None,
+                 migrate: bool = False):
 
         super().__init__(
             host=host,
@@ -38,7 +39,8 @@ class PostgresAPI(DatabaseAPI):
             password=password,
             database=database,
             schema=schema,
-            table=table
+            table=table,
+            migrate=migrate
         )
 
     def _connect_(self, admin: bool):
