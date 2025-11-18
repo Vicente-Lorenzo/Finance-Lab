@@ -46,11 +46,11 @@ class DatabaseAPI(ABC):
     STRUCTURE: dict = None
 
     def __init__(self,
-                 host: str = None,
-                 port: int = None,
-                 user: str = None,
-                 password: str = None,
-                 admin: bool = False,
+                 host: str,
+                 port: int,
+                 user: str,
+                 password: str,
+                 admin: bool,
                  database: str = None,
                  schema: str = None,
                  table: str = None):

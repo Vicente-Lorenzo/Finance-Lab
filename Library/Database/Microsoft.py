@@ -1,12 +1,11 @@
 # import pymssql
 import polars as pl
-from abc import ABC
 from datetime import date, datetime
 from decimal import Decimal
 
 from Library.Database import DatabaseAPI
 
-class MicrosoftAPI(DatabaseAPI, ABC):
+class MicrosoftAPI(DatabaseAPI):
 
     DESCRIPTION_DATATYPE_MAPPING = {
         int: pl.Int64,

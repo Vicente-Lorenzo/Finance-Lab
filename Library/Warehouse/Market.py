@@ -31,7 +31,7 @@ class MarketWarehouseAPI:
             table="Tick"
         )
 
-        self.Bar = SymbolDatabaseAPI(
+        self.Bar = BarDatabaseAPI(
             database=broker,
             schema=symbol,
             table=timeframe

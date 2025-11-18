@@ -1,10 +1,9 @@
 import psycopg2
 import polars as pl
-from abc import ABC
 
 from Library.Database import DatabaseAPI
 
-class PostgresAPI(DatabaseAPI, ABC):
+class PostgresAPI(DatabaseAPI):
 
     DESCRIPTION_DATATYPE_MAPPING = {
         16: pl.Boolean,

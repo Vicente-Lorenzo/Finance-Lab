@@ -1,10 +1,9 @@
 # import oracledb
 # import polars as pl
-from abc import ABC
 
 from Library.Database import DatabaseAPI
 
-class OracleAPI(DatabaseAPI, ABC):
+class OracleAPI(DatabaseAPI):
 
     DESCRIPTION_DATATYPE_MAPPING = {
         # oracledb.DB_TYPE_NUMBER: pl.Float64,
