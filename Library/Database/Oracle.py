@@ -21,6 +21,7 @@ class OracleAPI(DatabaseAPI, ABC):
                  port: int = 1521,
                  user: str = "ORCL",
                  password: str = "ORCL",
+                 admin: bool = False,
                  database: str = None,
                  schema: str = None,
                  table: str = None):
@@ -30,6 +31,7 @@ class OracleAPI(DatabaseAPI, ABC):
             port=port,
             user=user,
             password=password,
+            admin=admin,
             database=database,
             schema=schema,
             table=table

@@ -23,6 +23,7 @@ class MicrosoftAPI(DatabaseAPI, ABC):
                  port: int = 1433,
                  user: str = "master",
                  password: str = "master",
+                 admin: bool = False,
                  database: str = None,
                  schema: str = None,
                  table: str = None):
@@ -32,6 +33,7 @@ class MicrosoftAPI(DatabaseAPI, ABC):
             port=port,
             user=user,
             password=password,
+            admin=admin,
             database=database,
             schema=schema,
             table=table

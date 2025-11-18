@@ -26,6 +26,7 @@ class PostgresAPI(DatabaseAPI, ABC):
                  port: int = 5432,
                  user: str = "postgres",
                  password: str = "postgres",
+                 admin: bool = False,
                  database: str = None,
                  schema: str = None,
                  table: str = None):
@@ -34,6 +35,7 @@ class PostgresAPI(DatabaseAPI, ABC):
             host=host,
             port=port,
             user=user,
+            admin=admin,
             password=password,
             database=database,
             schema=schema,
