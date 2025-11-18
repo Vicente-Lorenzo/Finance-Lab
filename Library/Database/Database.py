@@ -51,15 +51,17 @@ class DatabaseAPI(ABC):
                  user: str,
                  password: str,
                  admin: bool,
-                 database: str = None,
-                 schema: str = None,
-                 table: str = None):
+                 database: str,
+                 schema: str,
+                 table: str,
+                 migrate: bool):
 
         self.host = host
         self.port = port
         self.user = user
         self.password = password
         self.admin = admin
+        self.migrate = migrate
 
         self.defaults = {}
         self.database = database
@@ -133,8 +135,7 @@ class DatabaseAPI(ABC):
             raise e
 
     def __enter__(self):
-        self.migration()
-        return self
+        return self.migration() if self.migrate else self.connect()
 
     def disconnect(self):
         try:
@@ -208,10 +209,9 @@ class DatabaseAPI(ABC):
         self._log_.debug(lambda: f"Checking Table: {self.table}")
         check = self.execute(self.CHECK_TABLE_QUERY).fetchall()
         self.commit()
-        structure = self.STRUCTURE
         if not check.is_empty():
             self._log_.debug(lambda: f"Checking Structure: {self.table}")
-            structure = ", ".join(f"('{name}', '{self.CHECK_DATATYPE_MAPPING[type(dtype)]}')" for name, dtype in structure.items())
+            structure = ", ".join(f"('{name}', '{self.CHECK_DATATYPE_MAPPING[type(dtype)]}')" for name, dtype in self.STRUCTURE.items())
             diff = self.execute(self.CHECK_STRUCTURE_QUERY, definitions=structure).fetchall()
             self.commit()
             if diff.is_empty(): return
@@ -220,7 +220,7 @@ class DatabaseAPI(ABC):
             self.commit()
             self._log_.info(lambda: f"Deleted Table: {self.table}")
         self._log_.warning(lambda: f"Missing Table: {self.table}")
-        create = ", ".join(f'"{name}" {self.CREATE_DATATYPE_MAPPING[type(dtype)]}' for name, dtype in structure.items())
+        create = ", ".join(f'"{name}" {self.CREATE_DATATYPE_MAPPING[type(dtype)]}' for name, dtype in self.STRUCTURE.items())
         self.execute(self.CREATE_TABLE_QUERY, definitions=create)
         self.commit()
         self._log_.info(lambda: f"Created Table: {self.table}")
