@@ -43,6 +43,8 @@ class DatabaseAPI(ABC):
     DELETE_SCHEMA_QUERY = QueryAPI(PathAPI("Delete/Schema.sql"))
     DELETE_TABLE_QUERY = QueryAPI(PathAPI("Delete/Table.sql"))
 
+    STRUCTURE: dict = None
+
     def __init__(self,
                  host: str = None,
                  port: int = None,
@@ -59,25 +61,22 @@ class DatabaseAPI(ABC):
         self.password = password
         self.admin = admin
 
+        self.defaults = {}
         self.database = database
+        if self.databased(): self.defaults["database"] = database
         self.schema = schema
+        if self.schemed(): self.defaults["schema"] = schema
         self.table = table
-        self.defaults = {"database": self.database, "schema": self.schema, "table": self.table}
+        if self.tabled(): self.defaults["table"] = table
+        print(self.defaults)
 
         self.connection = None
         self.cursor = None
 
         self._log_ = HandlerAPI(
-            Database=self.database,
-            Schema=self.schema,
-            Table=self.table,
+            **self.defaults,
             Class=self.__class__.__name__
         )
-
-    @staticmethod
-    @abstractmethod
-    def _structure_() -> dict:
-        raise NotImplementedError
 
     @abstractmethod
     def _connect_(self, admin: bool):
@@ -88,6 +87,15 @@ class DatabaseAPI(ABC):
 
     def cursored(self) -> bool:
         return self.cursor is not None
+
+    def databased(self) -> bool:
+        return self.database is not None
+
+    def schemed(self) -> bool:
+        return self.schema is not None
+
+    def tabled(self) -> bool:
+        return self.table is not None and self.STRUCTURE is not None
 
     def commit(self):
         if self.connected():
@@ -163,7 +171,7 @@ class DatabaseAPI(ABC):
             return True
 
     def format(self, data) -> pl.DataFrame:
-        structure = self._structure_()
+        structure = self.STRUCTURE
         if isinstance(data, pl.DataFrame) and data.schema == structure:
             return data
         if isinstance(data, list):
@@ -201,7 +209,7 @@ class DatabaseAPI(ABC):
         self._log_.debug(lambda: f"Checking Table: {self.table}")
         check = self.execute(self.CHECK_TABLE_QUERY).fetchall()
         self.commit()
-        structure = self._structure_()
+        structure = self.STRUCTURE
         if not check.is_empty():
             self._log_.debug(lambda: f"Checking Structure: {self.table}")
             structure = ", ".join(f"('{name}', '{self.CHECK_DATATYPE_MAPPING[type(dtype)]}')" for name, dtype in structure.items())
@@ -222,7 +230,7 @@ class DatabaseAPI(ABC):
         try:
             timer = Timer()
             timer.start()
-            if self.database:
+            if self.databased():
                 subtimer = Timer()
                 subtimer.start()
                 self.disconnect()
@@ -232,13 +240,13 @@ class DatabaseAPI(ABC):
                 self._log_.info(lambda: f"Database Migration ({subtimer.result()})")
             self.disconnect()
             self.connect()
-            if self.schema:
+            if self.schemed():
                 subtimer = Timer()
                 subtimer.start()
                 self._schema_()
                 subtimer.stop()
                 self._log_.info(lambda: f"Schema Migration ({subtimer.result()})")
-            if self.table:
+            if self.tabled():
                 subtimer = Timer()
                 subtimer.start()
                 self._table_()
