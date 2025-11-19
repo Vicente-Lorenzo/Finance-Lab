@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 import dash
 from dash import html, dcc, page_container
 from dash.exceptions import PreventUpdate
-from dash import bootstrap_components as dbc
+import dash_bootstrap_components as dbc
 
 from Library.Logging import HandlerAPI
 from Library.Utility import inspect_file, inspect_file_path, traceback_regex_module
@@ -32,9 +32,8 @@ class AppAPI(ABC):
     Title: str = field(init=True, default="<Insert Title>")
     Name: str = field(init=True, default="<Insert Name>")
     Team: str = field(init=True, default="<Insert Team>")
-    Description: str = field(init=True, default="<Insert Description>")
+    Description: str = field(init=True, default=None)
     Contact: str = field(init=True, default="<Insert Contact>")
-    Pages: bool = field(init=True, default=False)
 
     Port: int = field(init=True, default=8050)
     Debug: bool = field(init=True, default=False)
@@ -53,7 +52,7 @@ class AppAPI(ABC):
             self._log_.debug(lambda: "Configuring for Remove Prod")
             api = os.environ.get("JUPYTERHUB_USER").replace("-team", "")
             self._log_.debug(lambda: f"Defined Profile API: {api}")
-            directory = inspect_file_path(traceback_regex_module(pattern=r"^team/team-api/[^/]+/__init__\.py$").name)
+            directory = inspect_file_path(traceback_regex_module(pattern=r"^/team/team-api/[^/]+/__init__\.py$").name)
             self._log_.debug(lambda: f"Defined Directory: {directory}")
             endpoint = f"/services/{api}/{directory}/"
             self._log_.debug(lambda: f"Defined Endpoint: {endpoint}")
@@ -61,11 +60,11 @@ class AppAPI(ABC):
             self.Anchor = inspect_file_path(endpoint, header=True, footer=True)
         elif jhub.is_jupyterhub():
             self._log_.debug(lambda: "Configuring for Remote Dev")
-            user = os.environ.get('JUPYTERHUB_USER')
-            server = os.environ.get('JUPYTERHUB_SERVER_NAME')
+            user = os.environ.get("JUPYTERHUB_USER")
             self._log_.debug(lambda: f"Defined User: {user}")
+            server = os.environ.get("JUPYTERHUB_SERVER_NAME")
             self._log_.debug(lambda: f"Defined Server: {server}")
-            endpoint = f"/user/{user}/server/{server}/proxy/{self.Port}/"
+            endpoint = f"/user/{user}/{server}/proxy/{self.Port}/"
             self._log_.debug(lambda: f"Defined Endpoint: {endpoint}")
             self.Module = inspect_file(endpoint, header=True)
             self.Anchor = inspect_file_path(endpoint, header=True, footer=True)
@@ -79,20 +78,20 @@ class AppAPI(ABC):
         self._log_.debug(lambda: f"Defined Module: {self.Module}")
         self._log_.debug(lambda: f"Defined Anchor: {self.Anchor}")
 
-        self._init_app()
+        self._init_app_()
         self._log_.debug(lambda: "Initialized App")
 
-        self._init_layout()
+        self._init_layout_()
         self._log_.debug(lambda: "Initialized Layout")
 
-        self._init_callbacks()
+        self._init_callbacks_()
         self._log_.debug(lambda: "Initialized Callbacks")
 
-    def _init_app(self):
+    def _init_app_(self):
         self.App = dash.Dash(
             name=__name__,
             title=self.Title,
-            use_pages=self.Pages,
+            use_pages=True,
             pages_folder="",
             requests_pathname_prefix=self.Anchor,
             external_stylesheets=[dbc.themes.BOOTSTRAP],
@@ -101,14 +100,14 @@ class AppAPI(ABC):
             prevent_initial_callbacks=True
         )
 
-    def _init_layout(self):
+    def _init_layout_(self):
 
         self.layout()
         self._registry_()
 
         header = html.Div(id=AppAPI.HEADER_ID, children=[
             html.Div(children=[
-                html.Div(children=html.Img(src="./assets/logo.png", className="image"), className="logo"),
+                html.Div(children=[html.Img(src="./assets/logo.png", className="image")], className="logo"),
                 html.Div(children=[
                     html.H1(
                         children=self.Name,
@@ -119,7 +118,7 @@ class AppAPI(ABC):
                             "font-size": "32px",
                             "font-weight": "bold",
                             "margin": "0px 0px 0px 0px"
-                        },
+                        }
                     ),
                     html.H4(
                         children=self.Team,
@@ -130,7 +129,7 @@ class AppAPI(ABC):
                             "font-size": "18px",
                             "font-weight": "normal",
                             "margin": "0px 0px 0px 0px"
-                        },
+                        }
                     )
                 ], style={
                     "display": "flex",
@@ -145,7 +144,7 @@ class AppAPI(ABC):
                     "justify-content": "flex-start",
                     "font-size": "24px",
                     "font-weight": "normal",
-                    "border-left": "10px solid black",
+                    "border-left": "1px solid black",
                     "padding": "0px 0px 0px 15px",
                     "margin": "auto auto auto auto"
                 })
@@ -172,7 +171,7 @@ class AppAPI(ABC):
         footer = html.Div(id=AppAPI.FOOTER_ID, children=[
             html.A(children=f"Contact: {self.Contact}", href=f"mailto:{self.Contact}", style={
                 "font-weight": "normal"
-            }),
+            })
         ], style={
             "right": "0",
             "bottom": "0",
@@ -180,7 +179,7 @@ class AppAPI(ABC):
             "border-top": "2px solid black",
             "border-left": "2px solid black",
             "margin": "auto auto auto auto",
-            "padding": "5px 5px 5px 5px",
+            "padding": "5px 5px 5px 5px"
         })
 
         hidden = html.Div(children=[
@@ -195,14 +194,14 @@ class AppAPI(ABC):
             style={"font-family": "BNPP Sans"}
         )
 
-    def _init_callbacks(self):
+    def _init_callbacks_(self):
 
         @self.App.callback(
             dash.Output(AppAPI.SELECTED_ID, "children", allow_duplicate=True),
             dash.Input(AppAPI.LOCATION_ID, "pathname"),
             prevent_initial_call=True)
-        def update_description_callback(path: str) -> str | None:
-            if not self.Pages: raise PreventUpdate
+        def _update_description_callback_(path: str) -> str | None:
+            if self.Description: raise PreventUpdate
             endpoint = inspect_file_path(path, header=True)
             return self._page_(endpoint)["description"]
 
@@ -213,10 +212,10 @@ class AppAPI(ABC):
         endpoint = inspect_file_path(self.Module / module, header=True)
         order = self._order_()
         dash.register_page(
-            module,
+            endpoint,
             path=path,
             endpoint=endpoint,
-            name=button,
+            button=button,
             order=order,
             description=description,
             title=self.Title,
