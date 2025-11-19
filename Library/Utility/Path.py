@@ -9,7 +9,8 @@ def inspect_file(file: str | Path, header: bool = False, resolve: bool = False, 
     return file.resolve() if resolve else file
 
 def inspect_path(file: Path, footer: bool = False) -> str:
-    return f"{file}{sep}" if footer else f"{file}"
+    file = str(file)
+    return file + sep if (footer and set(file) != set(sep)) else file
 
 def inspect_file_path(file: str | Path, header: bool = False, footer: bool = False, resolve: bool = False, builder: type[Path] = Path) -> str:
     path: Path = inspect_file(file=file, header=header, resolve=resolve, builder=builder)
