@@ -1,0 +1,33 @@
+.image {
+    height: 50px;
+    width: 50px;
+}
+
+.logo {
+    padding: 0 0 0 5px;
+    margin: auto 10px auto auto;
+}
+
+.selection {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    color: black;
+    cursor: pointer;
+    font-size: 24px;
+    font-weight: normal;
+    text-decoration: none;
+    padding: 0 10px 0 0;
+    margin: auto auto auto 20px;
+}
+
+.selection:hover {
+    text-decoration: underline;
+}
+
+.selector {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+}
