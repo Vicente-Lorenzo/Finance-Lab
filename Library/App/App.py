@@ -83,6 +83,7 @@ class AppAPI(ABC):
             html.Img(src=self.app.get_asset_url("404.png"), className="status-layout-image", alt="Resource Not Found"),
             html.H2("Resource Not Found", className="status-layout-title"),
             html.P("Unable to find the resource you are looking for.", className="status-layout-text"),
+            html.P("Please check the url path.", className="status-layout-text"),
         ], className="status-layout status-layout-404")
 
         self.LOADING_LAYOUT = html.Div([
@@ -100,7 +101,7 @@ class AppAPI(ABC):
 
         self.DEVELOPMENT_LAYOUT = html.Div([
             html.Img(src=self.app.get_asset_url("development.png"), className="status-layout-image", alt="Work in Progress"),
-            html.H2("Work in progress", className="status-layout-title"),
+            html.H2("Resource Under Development", className="status-layout-title"),
             html.P("This resource is currently under development.", className="status-layout-text"),
             html.P("Please try again later.", className="status-layout-text"),
         ], className="status-layout status-layout-development")
