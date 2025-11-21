@@ -19,8 +19,6 @@ class AppAPI(ABC):
     INTERVAL_ID = {"type": "interval", "index": "interval"}
     SESSION_ID = {"type": "storage", "index": "session"}
 
-    NOT_FOUND_LAYOUT = html.Div("Error 404: Resource Not Found")
-
     def __init__(self,
                  name: str = "<Insert App Name>",
                  title: str = "<Insert App Title>",
@@ -32,6 +30,7 @@ class AppAPI(ABC):
                  debug: bool = False):
 
         self._log_: HandlerAPI = HandlerAPI()
+        self._links_: dict[str, dict] = {}
 
         self.name: str = name
         self._log_.debug(lambda: f"Defined Name = {self.name}")
@@ -78,14 +77,40 @@ class AppAPI(ABC):
             prevent_initial_callbacks=True
         )
 
-    def _init_layout_(self):
+    def _init_status_(self) -> None:
 
-        self._links_: dict[str, dict] = {}
-        self.layout()
+        self.NOT_FOUND_LAYOUT = html.Div([
+            html.Img(src=self.app.get_asset_url("404.png"), className="status-layout-image", alt="Resource Not Found"),
+            html.H2("Resource Not Found", className="status-layout-title"),
+            html.P("Unable to find the resource you are looking for.", className="status-layout-text"),
+        ], className="status-layout status-layout-404")
 
-        header = html.Div(id=AppAPI.HEADER_ID, children=[
+        self.LOADING_LAYOUT = html.Div([
+            html.Img(src=self.app.get_asset_url("loading.gif"), className="status-layout-image", alt="Loading"),
+            html.H2("Loading...", className="status-layout-title"),
+            html.P("Please wait a moment.", className="status-layout-text"),
+        ],className="status-layout status-layout-loading")
+
+        self.MAINTENANCE_LAYOUT = html.Div([
+            html.Img(src=self.app.get_asset_url("maintenance.png"), className="status-layout-image", alt="Under Maintenance"),
+            html.H2("Resource Under Maintenance", className="status-layout-title"),
+            html.P("This resource is temporarily down for maintenance.", className="status-layout-text"),
+            html.P("Please try again later.", className="status-layout-text"),
+        ], className="status-layout status-layout-maintenance")
+
+        self.DEVELOPMENT_LAYOUT = html.Div([
+            html.Img(src=self.app.get_asset_url("development.png"), className="status-layout-image", alt="Work in Progress"),
+            html.H2("Work in progress", className="status-layout-title"),
+            html.P("This resource is currently under development.", className="status-layout-text"),
+            html.P("Please try again later.", className="status-layout-text"),
+        ], className="status-layout status-layout-development")
+
+    def _init_header_(self) -> html.Div:
+
+        return html.Div(id=self.HEADER_ID, children=[
             html.Div(children=[
-                html.Div(children=[html.Img(src=self.app.get_asset_url("logo.png"), className="image")], className="logo"),
+                html.Div(children=[html.Img(src=self.app.get_asset_url("logo.png"), className="image")],
+                         className="logo"),
                 html.Div(children=[
                     html.H1(
                         children=self.name,
@@ -116,7 +141,7 @@ class AppAPI(ABC):
                     "padding": "0px 15px 0px 0px",
                     "margin": "auto auto auto auto"
                 }),
-                html.Div(id=AppAPI.SELECTED_ID, children=self.description, style={
+                html.Div(id=self.SELECTED_ID, children=self.description, style={
                     "display": "flex",
                     "flex-direction": "row",
                     "justify-content": "flex-start",
@@ -131,7 +156,9 @@ class AppAPI(ABC):
                 "flex-direction": "row",
                 "justify-content": "flex-start"
             }),
-            html.Div(children=[html.A(children=link["button"], href=endpoint, className="selection") for endpoint, link in self._links_.items()], className="selector")
+            html.Div(
+                children=[html.A(children=link["button"], href=endpoint, className="selection") for endpoint, link in
+                          self._links_.items()], className="selector")
         ], style={
             "display": "flex",
             "flex-direction": "row",
@@ -141,12 +168,16 @@ class AppAPI(ABC):
             "border-bottom": "2px solid black"
         })
 
-        content = html.Div(
-            id=AppAPI.CONTENT_ID,
-            children=[]
+    def _init_content_(self) -> html.Div:
+
+        return html.Div(
+            children=[self.LOADING_LAYOUT],
+            id=self.CONTENT_ID
         )
 
-        footer = html.Div(id=AppAPI.FOOTER_ID, children=[
+    def _init_footer_(self) -> html.Div:
+
+        return html.Div(id=self.FOOTER_ID, children=[
             html.A(children=f"Contact: {self.contact}", href=f"mailto:{self.contact}", style={
                 "font-weight": "normal"
             })
@@ -160,27 +191,42 @@ class AppAPI(ABC):
             "padding": "5px 5px 5px 5px"
         })
 
-        hidden = html.Div(id=AppAPI.HIDDEN_ID, children=[
-            dcc.Interval(id=AppAPI.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
-            dcc.Store(id=AppAPI.SESSION_ID, storage_type="memory"),
-            dcc.Location(id=AppAPI.LOCATION_ID, refresh=False)
-        ], style={})
+    def _init_hidden_(self) -> html.Div:
+
+        return html.Div(id=self.HIDDEN_ID, children=[
+            dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
+            dcc.Store(id=self.SESSION_ID, storage_type="memory"),
+            dcc.Location(id=self.LOCATION_ID, refresh=False)
+        ])
+
+    def _init_layout_(self):
+
+        self._init_status_()
+        self._log_.debug(lambda: "Loaded Status Layout")
+        self.layout()
+        self._log_.debug(lambda: "Loaded Specific Layout")
+        header = self._init_header_()
+        self._log_.debug(lambda: "Loaded Header Layout")
+        content = self._init_content_()
+        self._log_.debug(lambda: "Loaded Content Layout")
+        footer = self._init_footer_()
+        self._log_.debug(lambda: "Loaded Footer Layout")
+        hidden = self._init_hidden_()
+        self._log_.debug(lambda: "Loaded Hidden Layout")
 
         self.app.layout = html.Div(
-            id=AppAPI.LAYOUT_ID,
             children=[header, content, footer, hidden],
+            id=self.LAYOUT_ID,
             style={"font-family": "BNPP Sans"}
         )
-
-        self._links_ = dict(sorted(self._links_.items(), key=lambda item: item[1]["order"]))
 
     def _init_callbacks_(self):
 
         @self.app.callback(
-            dash.Output(AppAPI.LOCATION_ID, "pathname", allow_duplicate=True),
-            dash.Output(AppAPI.SELECTED_ID, "children", allow_duplicate=True),
-            dash.Output(AppAPI.CONTENT_ID, "children", allow_duplicate=True),
-            dash.Input(AppAPI.LOCATION_ID, "pathname")
+            dash.Output(self.LOCATION_ID, "pathname", allow_duplicate=True),
+            dash.Output(self.SELECTED_ID, "children", allow_duplicate=True),
+            dash.Output(self.CONTENT_ID, "children", allow_duplicate=True),
+            dash.Input(self.LOCATION_ID, "pathname")
         )
         def _location_callback_(anchor: str):
             self._log_.debug(lambda: f"Location Callback: Received Anchor = {anchor}")
@@ -188,7 +234,7 @@ class AppAPI(ABC):
             self._log_.debug(lambda: f"Location Callback: Parsed Anchor = {anchor}")
             link = self._links_.get(anchor, None)
             self._log_.debug(lambda: f"Location Callback: Link Found = {link is not None}")
-            layout = link["layout"] if (link is not None) else AppAPI.NOT_FOUND_LAYOUT
+            layout = link["layout"] if (link is not None) else self.NOT_FOUND_LAYOUT
             description = link["description"] if (link is not None and self.description is not None) else dash.no_update
             return anchor, description, layout
 
@@ -222,4 +268,4 @@ class AppAPI(ABC):
         raise NotImplementedError
 
     def run(self):
-        return self.app.run_server(port=self.port, debug=self.debug)
+        return self.app.run(port=self.port, debug=self.debug)

@@ -1,0 +1,45 @@
+.status-layout {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 60vh;
+    padding: 40px 16px;
+    box-sizing: border-box;
+}
+
+.status-layout-image {
+    max-width: 300px;
+    width: 100%;
+    height: auto;
+    margin-bottom: 24px;
+}
+
+.status-layout-title {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+}
+
+.status-layout-text {
+    font-size: 18px;
+    max-width: 600px;
+    margin: 0;
+}
+
+.status-layout-404 .status-layout-title {
+    color: #c0392b;
+}
+
+.status-layout-loading .status-layout-title {
+    color: #2980b9;
+}
+
+.status-layout-maintenance .status-layout-title {
+    color: #f39c12;
+}
+
+.status-layout-development .status-layout-title {
+    color: #27ae60;
+}
