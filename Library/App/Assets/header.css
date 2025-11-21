@@ -1,14 +1,81 @@
-.image {
-    height: 50px;
-    width: 50px;
+.header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid black;
+    padding: 5px 5px 5px 5px;
+    margin: 0 0 0 0;
 }
 
-.logo {
+.header-information-block {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 0 0 0 0;
+    margin: 0 0 0 0;
+}
+
+.header-logo {
     padding: 0 0 0 5px;
     margin: auto 10px auto auto;
 }
 
-.selection {
+.header-image {
+    height: 50px;
+    width: 50px;
+    padding: 0 0 0 0;
+    margin: auto auto auto auto;
+}
+
+.header-title-team {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 0 15px 0 0;
+    margin: auto auto auto auto;
+}
+
+.header-title {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    font-size: 32px;
+    font-weight: bold;
+    padding: 0 0 0 0;
+    margin: 0 0 0 0;
+}
+
+.header-team {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    font-size: 18px;
+    font-weight: normal;
+    padding: 0 0 0 0;
+    margin: 0 0 0 0;
+}
+
+.header-description {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    font-size: 24px;
+    font-weight: normal;
+    border-left: 1px solid black;
+    padding: 0 0 0 15px;
+    margin: auto auto auto auto;
+}
+
+.header-selection-block {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    padding: 0 0 0 0;
+    margin: 0 0 0 0;
+}
+
+.header-selection {
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
@@ -22,12 +89,8 @@
     margin: auto auto auto 20px;
 }
 
-.selection:hover {
+.header-selection:hover {
     text-decoration: underline;
-}
-
-.selector {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-end;
+    padding: 0 10px 0 0;
+    margin: auto auto auto 20px;
 }

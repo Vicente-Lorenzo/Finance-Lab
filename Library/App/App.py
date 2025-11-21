@@ -107,89 +107,33 @@ class AppAPI(ABC):
 
     def _init_header_(self) -> html.Div:
 
-        return html.Div(id=self.HEADER_ID, children=[
-            html.Div(children=[
-                html.Div(children=[html.Img(src=self.app.get_asset_url("logo.png"), className="image")],
-                         className="logo"),
-                html.Div(children=[
-                    html.H1(
-                        children=self.name,
-                        style={
-                            "display": "flex",
-                            "flex-direction": "row",
-                            "justify-content": "flex-start",
-                            "font-size": "32px",
-                            "font-weight": "bold",
-                            "margin": "0px 0px 0px 0px"
-                        }
-                    ),
-                    html.H4(
-                        children=self.team,
-                        style={
-                            "display": "flex",
-                            "flex-direction": "row",
-                            "justify-content": "flex-start",
-                            "font-size": "18px",
-                            "font-weight": "normal",
-                            "margin": "0px 0px 0px 0px"
-                        }
-                    )
-                ], style={
-                    "display": "flex",
-                    "flex-direction": "column",
-                    "justify-content": "flex-start",
-                    "padding": "0px 15px 0px 0px",
-                    "margin": "auto auto auto auto"
-                }),
-                html.Div(id=self.SELECTED_ID, children=self.description, style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "flex-start",
-                    "font-size": "24px",
-                    "font-weight": "normal",
-                    "border-left": "1px solid black",
-                    "padding": "0px 0px 0px 15px",
-                    "margin": "auto auto auto auto"
-                })
-            ], style={
-                "display": "flex",
-                "flex-direction": "row",
-                "justify-content": "flex-start"
-            }),
-            html.Div(
-                children=[html.A(children=link["button"], href=endpoint, className="selection") for endpoint, link in
-                          self._links_.items()], className="selector")
-        ], style={
-            "display": "flex",
-            "flex-direction": "row",
-            "align-items": "center",
-            "justify-content": "space-between",
-            "padding": "5px 5px 5px 5px",
-            "border-bottom": "2px solid black"
-        })
+        return html.Div([
+            html.Div([
+                html.Div([html.Img(src=self.app.get_asset_url("logo.png"), className="header-image")], className="header-logo"),
+                html.Div([html.H1(self.name, className="header-title"), html.H4(self.team, className="header-team")], className="header-title-team"),
+                html.Div(self.description, id=self.SELECTED_ID, className="header-description")
+            ], className="header-information-block"),
+            html.Div([html.A(link["button"], href=endpoint, className="header-selection") for endpoint, link in self._links_.items()
+            ], className="header-selection-block")
+        ], id=self.HEADER_ID, className="header")
 
     def _init_content_(self) -> html.Div:
 
         return html.Div(
-            children=[self.LOADING_LAYOUT],
-            id=self.CONTENT_ID
+            [self.LOADING_LAYOUT],
+            id=self.CONTENT_ID,
+            className="content"
         )
 
     def _init_footer_(self) -> html.Div:
 
-        return html.Div(id=self.FOOTER_ID, children=[
-            html.A(children=f"Contact: {self.contact}", href=f"mailto:{self.contact}", style={
-                "font-weight": "normal"
-            })
-        ], style={
-            "right": "0",
-            "bottom": "0",
-            "position": "fixed",
-            "border-top": "2px solid black",
-            "border-left": "2px solid black",
-            "margin": "auto auto auto auto",
-            "padding": "5px 5px 5px 5px"
-        })
+        return html.Div([
+            html.A(
+                f"Contact: {self.contact}",
+                href=f"mailto:{self.contact}",
+                className="footer-contact"
+            )
+        ], id=self.FOOTER_ID, className="footer")
 
     def _init_hidden_(self) -> html.Div:
 
@@ -215,9 +159,9 @@ class AppAPI(ABC):
         self._log_.debug(lambda: "Loaded Hidden Layout")
 
         self.app.layout = html.Div(
-            children=[header, content, footer, hidden],
+            [header, content, footer, hidden],
             id=self.LAYOUT_ID,
-            style={"font-family": "BNPP Sans"}
+            className="app"
         )
 
     def _init_callbacks_(self):

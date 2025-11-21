@@ -1,0 +1,23 @@
+.footer {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    border-top: 2px solid black;
+    border-left: 2px solid black;
+    padding: 5px 5px 5px 5px;
+    margin: auto auto auto auto;
+}
+
+.footer-contact {
+    font-weight: normal;
+    text-decoration: none;
+    color: inherit;
+    padding: 0 0 0 0;
+    margin: auto auto auto auto;
+}
+
+.footer-contact:hover {
+    text-decoration: underline;
+    padding: 0 0 0 0;
+    margin: auto auto auto auto;
+}
