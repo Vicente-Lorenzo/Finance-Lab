@@ -1,116 +1,94 @@
-import os
-from pathlib import Path
-from fastapi import FastAPI
-from fastapi.middleware.wsgi import WSGIMiddleware
-
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-
 import dash
-from dash import html, dcc, page_container
-from dash.exceptions import PreventUpdate
-import dash_bootstrap_components as dbc
+from dash import html, dcc
+from pathlib import PurePath, PurePosixPath
+from abc import ABC, abstractmethod
 
 from Library.Logging import HandlerAPI
-from Library.Utility import inspect_file, inspect_file_path, traceback_regex_module
+from Library.Utility import inspect_file, inspect_path, inspect_file_path, traceback_calling_module
 
-@dataclass(kw_only=True)
 class AppAPI(ABC):
 
     LAYOUT_ID = {"type": "div", "index": "layout"}
     HEADER_ID = {"type": "div", "index": "header"}
     CONTENT_ID = {"type": "div", "index": "content"}
     FOOTER_ID = {"type": "div", "index": "footer"}
+    HIDDEN_ID = {"type": "div", "index": "hidden"}
 
+    LOCATION_ID = {"type": "location", "index": "page"}
     SELECTED_ID = {"type": "div", "index": "selected"}
     INTERVAL_ID = {"type": "interval", "index": "interval"}
     SESSION_ID = {"type": "storage", "index": "session"}
-    LOCATION_ID = {"type": "location", "index": "page"}
 
-    App: dash.Dash = field(init=False)
+    NOT_FOUND_LAYOUT = html.Div("Error 404: Resource Not Found")
 
-    Title: str = field(init=True, default="<Insert Title>")
-    Name: str = field(init=True, default="<Insert Name>")
-    Team: str = field(init=True, default="<Insert Team>")
-    Description: str = field(init=True, default=None)
-    Contact: str = field(init=True, default="<Insert Contact>")
-
-    Port: int = field(init=True, default=8050)
-    Debug: bool = field(init=True, default=False)
-
-    Module: Path = field(init=False, default=None)
-    Anchor: str = field(init=False, default=None)
-
-    def __post_init__(self):
+    def __init__(self,
+                 name: str = "<Insert App Name>",
+                 title: str = "<Insert App Title>",
+                 team: str = "<Insert Team Name>",
+                 description: str = None,
+                 contact: str = None,
+                 anchor: str = "/",
+                 port: int = 8050,
+                 debug: bool = False):
 
         self._log_: HandlerAPI = HandlerAPI()
 
-        self._links_: dict = {}
-        self._counter_: int = 0
+        self.name: str = name
+        self._log_.debug(lambda: f"Defined Name = {self.name}")
+        self.title: str = title
+        self._log_.debug(lambda: f"Defined Title = {self.title}")
+        self.team: str = team
+        self._log_.debug(lambda: f"Defined Team = {self.team}")
+        self.description: str = description
+        self._log_.debug(lambda: f"Defined Description = {self.description}")
+        self.contact: str = contact
+        self._log_.debug(lambda: f"Defined Contact = {self.contact}")
+        self.port: int = port
+        self._log_.debug(lambda: f"Defined Port = {self.port}")
+        self.debug: bool = debug
+        self._log_.debug(lambda: f"Defined Debug = {self.debug}")
 
-        if jhub.is_service():
-            self._log_.debug(lambda: "Configuring for Remove Prod")
-            api = os.environ.get("JUPYTERHUB_USER").replace("-team", "")
-            self._log_.debug(lambda: f"Defined Profile API: {api}")
-            directory = inspect_file_path(traceback_regex_module(pattern=r"^/team/team-api/[^/]+/__init__\.py$").name)
-            self._log_.debug(lambda: f"Defined Directory: {directory}")
-            endpoint = f"/services/{api}/{directory}/"
-            self._log_.debug(lambda: f"Defined Endpoint: {endpoint}")
-            self.Module = inspect_file(endpoint, header=True)
-            self.Anchor = inspect_file_path(endpoint, header=True, footer=True)
-        elif jhub.is_jupyterhub():
-            self._log_.debug(lambda: "Configuring for Remote Dev")
-            user = os.environ.get("JUPYTERHUB_USER")
-            self._log_.debug(lambda: f"Defined User: {user}")
-            server = os.environ.get("JUPYTERHUB_SERVER_NAME")
-            self._log_.debug(lambda: f"Defined Server: {server}")
-            endpoint = f"/user/{user}/{server}/proxy/{self.Port}/"
-            self._log_.debug(lambda: f"Defined Endpoint: {endpoint}")
-            self.Module = inspect_file(endpoint, header=True)
-            self.Anchor = inspect_file_path(endpoint, header=True, footer=True)
-        else:
-            self._log_.debug(lambda: "Configuring for Local Dev")
-            endpoint = "/"
-            self._log_.debug(lambda: f"Defined Endpoint: {endpoint}")
-            self.Module = inspect_file(endpoint, header=True)
-            self.Anchor = inspect_file_path(endpoint, header=True, footer=True)
+        self.anchor: PurePath = inspect_file(anchor, header=True, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Defined Anchor = {self.anchor}")
+        self.endpoint: str = inspect_file_path(anchor, header=True, footer=True, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Defined Endpoint = {self.endpoint}")
 
-        self._log_.debug(lambda: f"Defined Module: {self.Module}")
-        self._log_.debug(lambda: f"Defined Anchor: {self.Anchor}")
+        self.module: PurePath = traceback_calling_module(resolve=True)
+        self._log_.debug(lambda: f"Defined Calling = {self.module}")
+        self.assets: str = inspect_path(self.module / "Assets")
+        self._log_.debug(lambda: f"Defined Assets = {self.assets}")
 
-        self._init_app_()
-        self._log_.debug(lambda: "Initialized App")
+        self._init_app()
+        self._log_.info(lambda: "Initialized App")
 
         self._init_layout_()
-        self._log_.debug(lambda: "Initialized Layout")
+        self._log_.info(lambda: "Initialized Layout")
 
         self._init_callbacks_()
-        self._log_.debug(lambda: "Initialized Callbacks")
+        self._log_.info(lambda: "Initialized Callbacks")
 
-    def _init_app_(self):
-        self.App = dash.Dash(
-            name=__name__,
-            title=self.Title,
-            use_pages=True,
-            pages_folder="",
-            requests_pathname_prefix=self.Anchor,
-            external_stylesheets=[dbc.themes.BOOTSTRAP],
-            update_title="",
+    def _init_app(self):
+
+        self.app = dash.Dash(
+            name=self.name,
+            title=self.title,
+            assets_folder=self.assets,
+            url_base_pathname=self.endpoint,
             suppress_callback_exceptions=True,
             prevent_initial_callbacks=True
         )
 
     def _init_layout_(self):
 
+        self._links_: dict[str, dict] = {}
         self.layout()
-        self._registry_()
 
         header = html.Div(id=AppAPI.HEADER_ID, children=[
             html.Div(children=[
-                html.Div(children=[html.Img(src="./assets/logo.png", className="image")], className="logo"),
+                html.Div(children=[html.Img(src=self.app.get_asset_url("logo.png"), className="image")], className="logo"),
                 html.Div(children=[
                     html.H1(
-                        children=self.Name,
+                        children=self.name,
                         style={
                             "display": "flex",
                             "flex-direction": "row",
@@ -121,7 +99,7 @@ class AppAPI(ABC):
                         }
                     ),
                     html.H4(
-                        children=self.Team,
+                        children=self.team,
                         style={
                             "display": "flex",
                             "flex-direction": "row",
@@ -138,7 +116,7 @@ class AppAPI(ABC):
                     "padding": "0px 15px 0px 0px",
                     "margin": "auto auto auto auto"
                 }),
-                html.Div(id=AppAPI.SELECTED_ID, children=self.Description, style={
+                html.Div(id=AppAPI.SELECTED_ID, children=self.description, style={
                     "display": "flex",
                     "flex-direction": "row",
                     "justify-content": "flex-start",
@@ -165,11 +143,11 @@ class AppAPI(ABC):
 
         content = html.Div(
             id=AppAPI.CONTENT_ID,
-            children=page_container
+            children=[]
         )
 
         footer = html.Div(id=AppAPI.FOOTER_ID, children=[
-            html.A(children=f"Contact: {self.Contact}", href=f"mailto:{self.Contact}", style={
+            html.A(children=f"Contact: {self.contact}", href=f"mailto:{self.contact}", style={
                 "font-weight": "normal"
             })
         ], style={
@@ -182,60 +160,58 @@ class AppAPI(ABC):
             "padding": "5px 5px 5px 5px"
         })
 
-        hidden = html.Div(children=[
+        hidden = html.Div(id=AppAPI.HIDDEN_ID, children=[
             dcc.Interval(id=AppAPI.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
             dcc.Store(id=AppAPI.SESSION_ID, storage_type="memory"),
             dcc.Location(id=AppAPI.LOCATION_ID, refresh=False)
         ], style={})
 
-        self.App.layout = html.Div(
+        self.app.layout = html.Div(
             id=AppAPI.LAYOUT_ID,
             children=[header, content, footer, hidden],
             style={"font-family": "BNPP Sans"}
         )
 
+        self._links_ = dict(sorted(self._links_.items(), key=lambda item: item[1]["order"]))
+
     def _init_callbacks_(self):
 
-        @self.App.callback(
+        @self.app.callback(
+            dash.Output(AppAPI.LOCATION_ID, "pathname", allow_duplicate=True),
             dash.Output(AppAPI.SELECTED_ID, "children", allow_duplicate=True),
-            dash.Input(AppAPI.LOCATION_ID, "pathname"),
-            prevent_initial_call=True)
-        def _update_description_callback_(path: str) -> str | None:
-            if self.Description: raise PreventUpdate
-            endpoint = inspect_file_path(path, header=True)
-            return self._page_(endpoint)["description"]
+            dash.Output(AppAPI.CONTENT_ID, "children", allow_duplicate=True),
+            dash.Input(AppAPI.LOCATION_ID, "pathname")
+        )
+        def _location_callback_(anchor: str):
+            self._log_.debug(lambda: f"Location Callback: Received Anchor = {anchor}")
+            anchor = inspect_file_path(anchor, header=True, builder=PurePosixPath)
+            self._log_.debug(lambda: f"Location Callback: Parsed Anchor = {anchor}")
+            link = self._links_.get(anchor, None)
+            self._log_.debug(lambda: f"Location Callback: Link Found = {link is not None}")
+            layout = link["layout"] if (link is not None) else AppAPI.NOT_FOUND_LAYOUT
+            description = link["description"] if (link is not None and self.description is not None) else dash.no_update
+            return anchor, description, layout
 
         self.callbacks()
 
     def link(self, path: str, button: str, description: str, layout):
-        module = inspect_file(path).name
-        endpoint = inspect_file_path(self.Module / module, header=True)
-        order = self._order_()
-        dash.register_page(
-            endpoint,
-            path=path,
-            endpoint=endpoint,
-            button=button,
-            order=order,
-            description=description,
-            title=self.Title,
-            anchor=self.Anchor,
-            layout=layout
-        )
-
-    def _order_(self):
-        order = self._counter_
-        self._counter_ += 1
-        return order
-
-    def _registry_(self):
-        for endpoint, link in dash.page_registry.items():
-            if link["anchor"] == self.Anchor and link["title"] == self.Title:
-                self._links_[endpoint] = link
-        self._links_ = dict(sorted(self._links_.items(), key=lambda item: item[1]["order"]))
-
-    def _page_(self, path: str) -> dict | None:
-        return self._links_[path]
+        self._log_.debug(lambda: f"Link Definition: Path = {path}")
+        path = inspect_file(path, header=True, builder=PurePosixPath).name
+        anchor: str = inspect_path(self.anchor / path)
+        self._log_.debug(lambda: f"Link Definition: Anchor = {anchor}")
+        endpoint: str = inspect_path(self.anchor / path, footer=True)
+        self._log_.debug(lambda: f"Link Definition: Endpoint = {endpoint}")
+        order = len(self._links_)
+        self._log_.debug(lambda: f"Link Definition: Order = {order}")
+        self._links_[anchor] = {
+            "order": order,
+            "button": button,
+            "description": description,
+            "anchor": anchor,
+            "endpoint": endpoint,
+            "layout": layout
+        }
+        self._log_.info(lambda: f"Defined Link: Anchor = {anchor}")
 
     @abstractmethod
     def layout(self):
@@ -246,9 +222,4 @@ class AppAPI(ABC):
         raise NotImplementedError
 
     def run(self):
-        return self.App.run_server(port=self.Port, debug=self.Debug)
-
-    def mount(self):
-        app = FastAPI()
-        app.mount("/", WSGIMiddleware(self.App.server))
-        return app
+        return self.app.run_server(port=self.port, debug=self.debug)
