@@ -1,6 +1,7 @@
 import dash
 from typing import Self
-from dash import html, dcc
+from dash import dcc, html
+import dash_bootstrap_components as dbc
 from pathlib import PurePath, PurePosixPath
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
@@ -19,21 +20,27 @@ class Link:
     Children: list[Self] = field(init=True, default_factory=list)
     Layout: html.Div = field(init=True, default=None)
     Selection: html.Div = field(init=True, default=None)
+    Hidden: bool = field(init=True, default=False)
 
 class AppAPI(ABC):
 
-    LAYOUT_ID = {"type": "div", "index": "layout"}
-    HEADER_ID = {"type": "div", "index": "header"}
-    CONTENT_ID = {"type": "div", "index": "content"}
-    FOOTER_ID = {"type": "div", "index": "footer"}
-    HIDDEN_ID = {"type": "div", "index": "hidden"}
+    LAYOUT_ID: dict = {"type": "div", "index": "layout"}
+    HEADER_ID: dict = {"type": "div", "index": "header"}
+    CONTENT_ID: dict = {"type": "div", "index": "content"}
+    FOOTER_ID: dict = {"type": "div", "index": "footer"}
+    HIDDEN_ID: dict = {"type": "div", "index": "hidden"}
 
-    INFORMATION_ID = {"type": "div", "index": "information"}
-    SELECTED_ID = {"type": "div", "index": "selected"}
-    SELECTION_ID = {"type": "div", "index": "selection"}
-    LOCATION_ID = {"type": "location", "index": "page"}
-    INTERVAL_ID = {"type": "interval", "index": "interval"}
-    SESSION_ID = {"type": "storage", "index": "session"}
+    INFORMATION_ID: dict = {"type": "div", "index": "information"}
+    LOCATION_ID: dict = {"type": "location", "index": "page"}
+    SELECTED_ID: dict = {"type": "div", "index": "selected"}
+    SELECTION_ID: dict = {"type": "div", "index": "selection"}
+    INTERVAL_ID: dict = {"type": "interval", "index": "interval"}
+    SESSION_ID: dict = {"type": "storage", "index": "session"}
+
+    EMPTY_LAYOUT: html.Div = None
+    LOADING_LAYOUT: html.Div = None
+    DEVELOPMENT_LAYOUT: html.Div = None
+    MAINTENANCE_LAYOUT: html.Div = None
 
     def __init__(self,
                  name: str = "<Insert App Name>",
@@ -76,7 +83,7 @@ class AppAPI(ABC):
         self._init_app()
         self._log_.info(lambda: "Initialized App")
 
-        self._init_layout_()
+        self._init_layouts_()
         self._log_.info(lambda: "Initialized Layout")
 
         self._init_callbacks_()
@@ -89,24 +96,25 @@ class AppAPI(ABC):
             title=self.title,
             assets_folder=self.assets,
             url_base_pathname=self.endpoint,
+            external_stylesheets=[dbc.themes.BOOTSTRAP],
             suppress_callback_exceptions=True,
             prevent_initial_callbacks=True
         )
 
-    def _init_status_(self) -> None:
+    def _init_links_(self) -> None:
 
-        self.NOT_FOUND_LAYOUT = html.Div([
+        self.EMPTY_LAYOUT = html.Div([
             html.Img(src=self.app.get_asset_url("404.png"), className="status-layout-image", alt="Resource Not Found"),
             html.H2("Resource Not Found", className="status-layout-title"),
             html.P("Unable to find the resource you are looking for.", className="status-layout-text"),
             html.P("Please check the url path.", className="status-layout-text"),
-        ], className="status-layout status-layout-404")
+        ], className="status-layout status-layout-empty")
 
         self.LOADING_LAYOUT = html.Div([
             html.Img(src=self.app.get_asset_url("loading.gif"), className="status-layout-image", alt="Loading"),
             html.H2("Loading...", className="status-layout-title"),
             html.P("Please wait a moment.", className="status-layout-text"),
-        ],className="status-layout status-layout-loading")
+        ], className="status-layout status-layout-loading")
 
         self.MAINTENANCE_LAYOUT = html.Div([
             html.Img(src=self.app.get_asset_url("maintenance.png"), className="status-layout-image", alt="Under Maintenance"),
@@ -122,6 +130,10 @@ class AppAPI(ABC):
             html.P("Please try again later.", className="status-layout-text"),
         ], className="status-layout status-layout-development")
 
+    def _init_selections_(self) -> None:
+
+        pass
+
     def _init_header_(self) -> html.Div:
 
         return html.Div([
@@ -130,7 +142,7 @@ class AppAPI(ABC):
                 html.Div([html.H1(self.name, className="header-title"), html.H4(self.team, className="header-team")], className="header-title-team"),
                 html.Div(self.description, id=self.SELECTED_ID, className="header-description")
             ], id=self.INFORMATION_ID, className="header-information-block"),
-            html.Div([], id=self.SELECTION_ID, className="header-selection-block")
+            html.Div(None, id=self.SELECTION_ID, className="header-selection-block")
         ], id=self.HEADER_ID, className="header")
 
     def _init_content_(self) -> html.Div:
@@ -157,12 +169,14 @@ class AppAPI(ABC):
             dcc.Location(id=self.LOCATION_ID, refresh=False)
         ], id=self.HIDDEN_ID)
 
-    def _init_layout_(self):
+    def _init_layouts_(self):
 
-        self._init_status_()
-        self._log_.debug(lambda: "Loaded Status Layout")
+        self._init_links_()
+        self._log_.debug(lambda: "Loaded Links Layout")
         self.layout()
         self._log_.debug(lambda: "Loaded Specific Layout")
+        self._init_selections_()
+        self._log_.debug(lambda: "Loaded Selection Layouts")
         header = self._init_header_()
         self._log_.debug(lambda: "Loaded Header Layout")
         content = self._init_content_()
@@ -183,18 +197,26 @@ class AppAPI(ABC):
         @self.app.callback(
             dash.Output(self.LOCATION_ID, "pathname", allow_duplicate=True),
             dash.Output(self.SELECTED_ID, "children", allow_duplicate=True),
+            dash.Output(self.SELECTION_ID, "children", allow_duplicate=True),
             dash.Output(self.CONTENT_ID, "children", allow_duplicate=True),
             dash.Input(self.LOCATION_ID, "pathname")
         )
-        def _location_callback_(anchor: str):
-            self._log_.debug(lambda: f"Location Callback: Received Anchor = {anchor}")
-            anchor = inspect_file_path(anchor, header=True, builder=PurePosixPath)
-            self._log_.debug(lambda: f"Location Callback: Parsed Anchor = {anchor}")
-            link = self._links_.get(anchor, None)
-            self._log_.debug(lambda: f"Location Callback: Link Found = {link is not None}")
-            layout = link["layout"] if (link is not None) else self.NOT_FOUND_LAYOUT
-            description = link["description"] if (link is not None and self.description is not None) else dash.no_update
-            return anchor, description, layout
+        def _location_callback_(path: str):
+            self._log_.debug(lambda: f"Location Callback: Received Path = {path}")
+            endpoint = inspect_file_path(path, header=True, builder=PurePosixPath)
+            self._log_.debug(lambda: f"Location Callback: Parsed Endpoint = {endpoint}")
+            link = self._links_.get(endpoint, None)
+            if link is not None:
+                self._log_.debug(lambda: f"Location Callback: Link Found")
+                description = link.Description if not self.description else dash.no_update
+                selection = link.Selection if link.Selection else dash.no_update
+                layout = link.Layout if link.Layout else self.DEVELOPMENT_LAYOUT
+            else:
+                self._log_.debug(lambda: f"Location Callback: Link Not Found")
+                description = dash.no_update
+                selection = dash.no_update
+                layout = self.EMPTY_LAYOUT
+            return endpoint, description, selection, layout
 
         self.callbacks()
 
@@ -213,14 +235,14 @@ class AppAPI(ABC):
             if endpoint not in self._links_:
                 self._log_.debug(lambda: "Link Definition: Not Found")
                 link = Link()
+                link.Anchor = anchor
+                link.Endpoint = endpoint
                 if parent is not None:
                     link.Parent = parent
                     self._log_.debug(lambda: f"Link Definition: Parent = {parent.Endpoint}")
                     parent.Children.append(link)
                     link.Order = (order := len(parent.Children))
                     self._log_.debug(lambda: f"Link Definition: Order = {order}")
-                link.Anchor = anchor
-                link.Endpoint = endpoint
                 self._links_[endpoint] = link
             else:
                 self._log_.debug(lambda: "Link Definition: Found")
@@ -229,7 +251,7 @@ class AppAPI(ABC):
         parent.Button = button
         parent.Description = description
         parent.Layout = layout
-        self._log_.info(lambda: f"Defined Link: Endpoint = {endpoint}")
+        self._log_.info(lambda: f"Defined Link: Endpoint = {parent.Endpoint}")
 
     @abstractmethod
     def layout(self):
