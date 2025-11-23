@@ -1,10 +1,24 @@
 import dash
+from typing import Self
 from dash import html, dcc
 from pathlib import PurePath, PurePosixPath
+from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 
 from Library.Logging import HandlerAPI
 from Library.Utility import inspect_file, inspect_path, inspect_file_path, traceback_calling_module
+
+@dataclass(slots=True)
+class Link:
+    Order: int = field(init=True, default=None)
+    Button: str = field(init=True, default=None)
+    Description: str = field(init=True, default=None)
+    Anchor: str = field(init=True, default=None)
+    Endpoint: str = field(init=True, default=None)
+    Parent: Self = field(init=True, default=None)
+    Children: list[Self] = field(init=True, default_factory=list)
+    Layout: html.Div = field(init=True, default=None)
+    Selection: html.Div = field(init=True, default=None)
 
 class AppAPI(ABC):
 
@@ -14,8 +28,10 @@ class AppAPI(ABC):
     FOOTER_ID = {"type": "div", "index": "footer"}
     HIDDEN_ID = {"type": "div", "index": "hidden"}
 
-    LOCATION_ID = {"type": "location", "index": "page"}
+    INFORMATION_ID = {"type": "div", "index": "information"}
     SELECTED_ID = {"type": "div", "index": "selected"}
+    SELECTION_ID = {"type": "div", "index": "selection"}
+    LOCATION_ID = {"type": "location", "index": "page"}
     INTERVAL_ID = {"type": "interval", "index": "interval"}
     SESSION_ID = {"type": "storage", "index": "session"}
 
@@ -30,7 +46,7 @@ class AppAPI(ABC):
                  debug: bool = False):
 
         self._log_: HandlerAPI = HandlerAPI()
-        self._links_: dict[str, dict] = {}
+        self._links_: dict[str, Link] = {}
 
         self.name: str = name
         self._log_.debug(lambda: f"Defined Name = {self.name}")
@@ -113,18 +129,15 @@ class AppAPI(ABC):
                 html.Div([html.Img(src=self.app.get_asset_url("logo.png"), className="header-image")], className="header-logo"),
                 html.Div([html.H1(self.name, className="header-title"), html.H4(self.team, className="header-team")], className="header-title-team"),
                 html.Div(self.description, id=self.SELECTED_ID, className="header-description")
-            ], className="header-information-block"),
-            html.Div([html.A(link["button"], href=endpoint, className="header-selection") for endpoint, link in self._links_.items()
-            ], className="header-selection-block")
+            ], id=self.INFORMATION_ID, className="header-information-block"),
+            html.Div([], id=self.SELECTION_ID, className="header-selection-block")
         ], id=self.HEADER_ID, className="header")
 
     def _init_content_(self) -> html.Div:
 
-        return html.Div(
-            [self.LOADING_LAYOUT],
-            id=self.CONTENT_ID,
-            className="content"
-        )
+        return html.Div([
+            self.LOADING_LAYOUT
+        ], id=self.CONTENT_ID, className="content")
 
     def _init_footer_(self) -> html.Div:
 
@@ -138,11 +151,11 @@ class AppAPI(ABC):
 
     def _init_hidden_(self) -> html.Div:
 
-        return html.Div(id=self.HIDDEN_ID, children=[
+        return html.Div([
             dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
             dcc.Store(id=self.SESSION_ID, storage_type="memory"),
             dcc.Location(id=self.LOCATION_ID, refresh=False)
-        ])
+        ], id=self.HIDDEN_ID)
 
     def _init_layout_(self):
 
@@ -186,23 +199,37 @@ class AppAPI(ABC):
         self.callbacks()
 
     def link(self, path: str, button: str, description: str, layout):
-        self._log_.debug(lambda: f"Link Definition: Path = {path}")
-        path = inspect_file(path, header=True, builder=PurePosixPath).name
-        anchor: str = inspect_path(self.anchor / path)
-        self._log_.debug(lambda: f"Link Definition: Anchor = {anchor}")
-        endpoint: str = inspect_path(self.anchor / path, footer=True)
-        self._log_.debug(lambda: f"Link Definition: Endpoint = {endpoint}")
-        order = len(self._links_)
-        self._log_.debug(lambda: f"Link Definition: Order = {order}")
-        self._links_[anchor] = {
-            "order": order,
-            "button": button,
-            "description": description,
-            "anchor": anchor,
-            "endpoint": endpoint,
-            "layout": layout
-        }
-        self._log_.info(lambda: f"Defined Link: Anchor = {anchor}")
+        alias: PurePath | None = None
+        parent: Link | None = None
+        for name in inspect_file(path, header=True, builder=PurePosixPath).parts:
+            self._log_.debug(lambda: f"Link Definition: Name = {name}")
+            name = inspect_file(name, header=True, builder=PurePosixPath).name
+            alias = self.anchor / alias / name if alias is not None else self.anchor / name
+            self._log_.debug(lambda: f"Link Definition: Alias = {alias}")
+            anchor = inspect_path(alias)
+            self._log_.debug(lambda: f"Link Definition: Anchor = {anchor}")
+            endpoint = inspect_path(alias, footer=True)
+            self._log_.debug(lambda: f"Link Definition: Endpoint = {endpoint}")
+            if endpoint not in self._links_:
+                self._log_.debug(lambda: "Link Definition: Not Found")
+                link = Link()
+                if parent is not None:
+                    link.Parent = parent
+                    self._log_.debug(lambda: f"Link Definition: Parent = {parent.Endpoint}")
+                    parent.Children.append(link)
+                    link.Order = (order := len(parent.Children))
+                    self._log_.debug(lambda: f"Link Definition: Order = {order}")
+                link.Anchor = anchor
+                link.Endpoint = endpoint
+                self._links_[endpoint] = link
+            else:
+                self._log_.debug(lambda: "Link Definition: Found")
+                link = self._links_[endpoint]
+            parent = link
+        parent.Button = button
+        parent.Description = description
+        parent.Layout = layout
+        self._log_.info(lambda: f"Defined Link: Endpoint = {endpoint}")
 
     @abstractmethod
     def layout(self):
