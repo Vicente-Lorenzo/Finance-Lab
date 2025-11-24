@@ -67,7 +67,7 @@
     margin: auto auto auto auto;
 }
 
-.header-selection-block {
+.header-navigation-block {
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
@@ -75,7 +75,7 @@
     margin: 0 0 0 0;
 }
 
-.header-selection {
+.header-navigation {
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
@@ -85,12 +85,6 @@
     font-size: 24px;
     font-weight: normal;
     text-decoration: none;
-    padding: 0 10px 0 0;
-    margin: auto auto auto 20px;
-}
-
-.header-selection:hover {
-    text-decoration: underline;
     padding: 0 10px 0 0;
     margin: auto auto auto 20px;
 }

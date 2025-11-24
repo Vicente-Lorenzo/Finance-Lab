@@ -19,7 +19,7 @@ class Link:
     Parent: Self = field(init=True, default=None)
     Children: list[Self] = field(init=True, default_factory=list)
     Layout: html.Div = field(init=True, default=None)
-    Selection: html.Div = field(init=True, default=None)
+    Navigation: dbc.Navbar = field(init=True, default=None)
     Hidden: bool = field(init=True, default=False)
 
 class AppAPI(ABC):
@@ -33,7 +33,7 @@ class AppAPI(ABC):
     INFORMATION_ID: dict = {"type": "div", "index": "information"}
     LOCATION_ID: dict = {"type": "location", "index": "page"}
     SELECTED_ID: dict = {"type": "div", "index": "selected"}
-    SELECTION_ID: dict = {"type": "div", "index": "selection"}
+    NAVIGATION_ID: dict = {"type": "div", "index": "navigation"}
     INTERVAL_ID: dict = {"type": "interval", "index": "interval"}
     SESSION_ID: dict = {"type": "storage", "index": "session"}
 
@@ -96,7 +96,7 @@ class AppAPI(ABC):
             title=self.title,
             assets_folder=self.assets,
             url_base_pathname=self.endpoint,
-            external_stylesheets=[dbc.themes.BOOTSTRAP],
+            external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
             suppress_callback_exceptions=True,
             prevent_initial_callbacks=True
         )
@@ -132,7 +132,31 @@ class AppAPI(ABC):
 
     def _init_selections_(self) -> None:
 
-        pass
+        def new_tab_button(href: str):
+            return html.A(
+                dbc.Button(html.I(className="bi bi-box-arrow-up-right")),
+                href=href,
+                target="_blank",
+                title="Open in new tab"
+            )
+
+        for endpoint, link in self._links_.items():
+            if not link.Children and link.Parent is not None:
+                link.Navigation = link.Parent.Navigation
+                continue
+            items = []
+            for child in link.Children:
+                items.append(dbc.Button(child.Button, href=child.Endpoint))
+                items.append(new_tab_button(child.Endpoint))
+                if child.Children:
+                    subitems = []
+                    for subchild in child.Children:
+                        subitems.append(dbc.DropdownMenuItem([
+                            html.Span(subchild.Button),
+                            new_tab_button(subchild.Endpoint)
+                        ], href=subchild.Endpoint))
+                    items.append(dbc.DropdownMenu(subitems, direction="down"))
+            link.Navigation = dbc.Navbar(items)
 
     def _init_header_(self) -> html.Div:
 
@@ -142,7 +166,7 @@ class AppAPI(ABC):
                 html.Div([html.H1(self.name, className="header-title"), html.H4(self.team, className="header-team")], className="header-title-team"),
                 html.Div(self.description, id=self.SELECTED_ID, className="header-description")
             ], id=self.INFORMATION_ID, className="header-information-block"),
-            html.Div(None, id=self.SELECTION_ID, className="header-selection-block")
+            html.Div(None, id=self.NAVIGATION_ID, className="header-navigation-block")
         ], id=self.HEADER_ID, className="header")
 
     def _init_content_(self) -> html.Div:
@@ -197,19 +221,19 @@ class AppAPI(ABC):
         @self.app.callback(
             dash.Output(self.LOCATION_ID, "pathname", allow_duplicate=True),
             dash.Output(self.SELECTED_ID, "children", allow_duplicate=True),
-            dash.Output(self.SELECTION_ID, "children", allow_duplicate=True),
+            dash.Output(self.NAVIGATION_ID, "children", allow_duplicate=True),
             dash.Output(self.CONTENT_ID, "children", allow_duplicate=True),
             dash.Input(self.LOCATION_ID, "pathname")
         )
         def _location_callback_(path: str):
             self._log_.debug(lambda: f"Location Callback: Received Path = {path}")
-            endpoint = inspect_file_path(path, header=True, builder=PurePosixPath)
+            endpoint = inspect_file_path(path, header=True, footer=True, builder=PurePosixPath)
             self._log_.debug(lambda: f"Location Callback: Parsed Endpoint = {endpoint}")
             link = self._links_.get(endpoint, None)
             if link is not None:
                 self._log_.debug(lambda: f"Location Callback: Link Found")
                 description = link.Description if not self.description else dash.no_update
-                selection = link.Selection if link.Selection else dash.no_update
+                selection = link.Navigation if link.Navigation else dash.no_update
                 layout = link.Layout if link.Layout else self.DEVELOPMENT_LAYOUT
             else:
                 self._log_.debug(lambda: f"Location Callback: Link Not Found")
