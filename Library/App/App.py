@@ -132,31 +132,34 @@ class AppAPI(ABC):
 
     def _init_selections_(self) -> None:
 
-        def new_tab_button(href: str):
+        def new_tab_button(href: str, className: str):
             return html.A(
-                dbc.Button(html.I(className="bi bi-box-arrow-up-right")),
+                dbc.Button(html.I(className="bi bi-box-arrow-up-right"), className=f"{className}-b"),
                 href=href,
                 target="_blank",
-                title="Open in new tab"
+                title="Open in new tab",
+                className=f"{className}-a",
             )
 
         for endpoint, link in self._links_.items():
             if not link.Children and link.Parent is not None:
                 link.Navigation = link.Parent.Navigation
                 continue
-            items = []
+            items: list = []
+            if link.Parent is not None:
+                items.append(dbc.ButtonGroup(dbc.Button("⭰ Back", href=link.Parent.Endpoint, className="header-navigation-button"), className="header-navigation-group"))
             for child in link.Children:
-                items.append(dbc.Button(child.Button, href=child.Endpoint))
-                items.append(new_tab_button(child.Endpoint))
+                item_group: list = [dbc.Button(child.Button, href=child.Endpoint, className="header-navigation-button"), new_tab_button(href=child.Endpoint, className="header-navigation-button-tab")]
                 if child.Children:
-                    subitems = []
+                    dropdown_group = []
                     for subchild in child.Children:
-                        subitems.append(dbc.DropdownMenuItem([
-                            html.Span(subchild.Button),
-                            new_tab_button(subchild.Endpoint)
-                        ], href=subchild.Endpoint))
-                    items.append(dbc.DropdownMenu(subitems, direction="down"))
-            link.Navigation = dbc.Navbar(items)
+                        dropdown_group.append(dbc.DropdownMenuItem([
+                            dbc.Button(subchild.Button, href=subchild.Endpoint, className="header-navigation-dropdown-button"),
+                            new_tab_button(href=subchild.Endpoint, className="header-navigation-dropdown-button-tab")
+                        ], className="header-navigation-dropdown-group"),)
+                    item_group.append(dbc.DropdownMenu(dropdown_group, direction="down", className="header-navigation-dropdown"))
+                items.append(dbc.ButtonGroup(item_group, className="header-navigation-group"))
+            link.Navigation = dbc.Navbar(items, className="header-navigation-bar")
 
     def _init_header_(self) -> html.Div:
 
