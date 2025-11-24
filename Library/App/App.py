@@ -187,6 +187,9 @@ class AppAPI(ABC):
 
     def _init_footer_(self) -> html.Div:
 
+        if not self.contact:
+            return html.Div(id=self.FOOTER_ID)
+
         return html.Div([
             html.A(
                 f"Contact: {self.contact}",
