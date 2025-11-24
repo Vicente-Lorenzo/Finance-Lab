@@ -142,14 +142,18 @@ class AppAPI(ABC):
             )
 
         for endpoint, link in self._links_.items():
+
             if not link.Children and link.Parent is not None:
                 link.Navigation = link.Parent.Navigation
                 continue
-            items: list = []
+
+            navigation_items: list = []
+
             if link.Parent is not None:
-                items.append(dbc.ButtonGroup(dbc.Button("⭰ Back", href=link.Parent.Endpoint, className="header-navigation-button"), className="header-navigation-group"))
+                navigation_items.append(dbc.ButtonGroup(dbc.Button("⭰ Back", href=link.Parent.Endpoint, className="header-navigation-button"), className="header-navigation-group"))
+
             for child in link.Children:
-                item_group: list = [dbc.Button(child.Button, href=child.Endpoint, className="header-navigation-button"), new_tab_button(href=child.Endpoint, className="header-navigation-button-tab")]
+                navigation_group: list = [dbc.Button(child.Button, href=child.Endpoint, className="header-navigation-button"), new_tab_button(href=child.Endpoint, className="header-navigation-button-tab")]
                 if child.Children:
                     dropdown_group = []
                     for subchild in child.Children:
@@ -157,9 +161,9 @@ class AppAPI(ABC):
                             dbc.Button(subchild.Button, href=subchild.Endpoint, className="header-navigation-dropdown-button"),
                             new_tab_button(href=subchild.Endpoint, className="header-navigation-dropdown-button-tab")
                         ], className="header-navigation-dropdown-group"),)
-                    item_group.append(dbc.DropdownMenu(dropdown_group, direction="down", className="header-navigation-dropdown"))
-                items.append(dbc.ButtonGroup(item_group, className="header-navigation-group"))
-            link.Navigation = dbc.Navbar(items, className="header-navigation-bar")
+                    navigation_group.append(dbc.DropdownMenu(dropdown_group, direction="down", className="header-navigation-dropdown"))
+                navigation_items.append(dbc.ButtonGroup(navigation_group, className="header-navigation-group"))
+            link.Navigation = dbc.Navbar(navigation_items, className="header-navigation-bar")
 
     def _init_header_(self) -> html.Div:
 

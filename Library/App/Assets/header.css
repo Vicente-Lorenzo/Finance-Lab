@@ -78,7 +78,6 @@
 .header-navigation-bar {
     cursor: pointer !important;
     background-color: white !important;
-    border-radius: 6px !important;
     padding: 0 0 0 0 !important;
     margin: auto auto auto auto !important;
 }
@@ -100,18 +99,7 @@
     border: 1px solid black !important;
     border-radius: 6px !important;
     padding: 0 0 0 0 !important;
-    margin: auto 10px auto 10px !important;
-}
-
-.header-navigation-group:hover .header-navigation-button,
-.header-navigation-group:hover .header-navigation-button-tab,
-.header-navigation-group:hover .header-navigation-button-tab-a,
-.header-navigation-group:hover .header-navigation-button-tab-b,
-.header-navigation-group:hover .header-navigation-button-tab-b .btn,
-.header-navigation-group:hover .header-navigation-dropdown,
-.header-navigation-group:hover .header-navigation-dropdown .dropdown-toggle {
-    background-color: lightgray !important;
-    color: black !important;
+    margin: auto 15px auto 15px !important;
 }
 
 .header-navigation-button-tab-b i {
@@ -144,16 +132,6 @@
     box-sizing: border-box !important;
 }
 
-.header-navigation-dropdown-group .dropdown-item:hover,
-.header-navigation-dropdown-button .dropdown-item:hover,
-.header-navigation-dropdown-button .btn .dropdown-item:hover,
-.header-navigation-dropdown-button-tab-a .dropdown-item:hover,
-.header-navigation-dropdown-button-tab-b .dropdown-item:hover,
-.header-navigation-dropdown-button-tab-b .btn .dropdown-item:hover {
-    background-color: lightgray !important;
-    color: black !important;
-}
-
 .header-navigation-dropdown .dropdown-item:hover .header-navigation-dropdown-button-tab-b i {
     opacity: 1 !important;
     transition: opacity 0.50s ease !important;
@@ -161,6 +139,5 @@
 
 .header-navigation-dropdown .dropdown-item .header-navigation-dropdown-button-tab-b i {
     opacity: 0 !important;
-    padding-left: 10px !important;
     transition: opacity 0.50s ease !important;
 }
