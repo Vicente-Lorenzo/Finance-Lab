@@ -150,16 +150,19 @@ class AppAPI(ABC):
             navigation_items: list = []
 
             if link.Parent is not None:
-                navigation_items.append(dbc.ButtonGroup(dbc.Button("⭰ Back", href=link.Parent.Endpoint, className="header-navigation-button"), className="header-navigation-group"))
+                navigation_items.append(dbc.ButtonGroup(dbc.Button("⭰ Back", href=link.Parent.Anchor, className="header-navigation-button"), className="header-navigation-group"))
 
             for child in link.Children:
-                navigation_group: list = [dbc.Button(child.Button, href=child.Endpoint, className="header-navigation-button"), new_tab_button(href=child.Endpoint, className="header-navigation-button-tab")]
+                navigation_group: list = [
+                    dbc.Button(child.Button, href=child.Anchor, className="header-navigation-button"),
+                    new_tab_button(href=child.Anchor, className="header-navigation-button-tab")
+                ]
                 if child.Children:
                     dropdown_group = []
                     for subchild in child.Children:
                         dropdown_group.append(dbc.DropdownMenuItem([
-                            dbc.Button(subchild.Button, href=subchild.Endpoint, className="header-navigation-dropdown-button"),
-                            new_tab_button(href=subchild.Endpoint, className="header-navigation-dropdown-button-tab")
+                            dbc.Button(subchild.Button, href=subchild.Anchor, className="header-navigation-dropdown-button"),
+                            new_tab_button(href=subchild.Anchor, className="header-navigation-dropdown-button-tab")
                         ], className="header-navigation-dropdown-group"),)
                     navigation_group.append(dbc.DropdownMenu(dropdown_group, direction="down", className="header-navigation-dropdown"))
                 navigation_items.append(dbc.ButtonGroup(navigation_group, className="header-navigation-group"))
@@ -234,11 +237,14 @@ class AppAPI(ABC):
         )
         def _location_callback_(path: str):
             self._log_.debug(lambda: f"Location Callback: Received Path = {path}")
+            anchor = inspect_file_path(path, header=True, builder=PurePosixPath)
+            self._log_.debug(lambda: f"Location Callback: Parsed Anchor = {anchor}")
             endpoint = inspect_file_path(path, header=True, footer=True, builder=PurePosixPath)
             self._log_.debug(lambda: f"Location Callback: Parsed Endpoint = {endpoint}")
             link = self._links_.get(endpoint, None)
             if link is not None:
                 self._log_.debug(lambda: f"Location Callback: Link Found")
+                anchor = link.Anchor
                 description = link.Description if not self.description else dash.no_update
                 selection = link.Navigation if link.Navigation else dash.no_update
                 layout = link.Layout if link.Layout else self.DEVELOPMENT_LAYOUT
@@ -247,7 +253,7 @@ class AppAPI(ABC):
                 description = dash.no_update
                 selection = dash.no_update
                 layout = self.EMPTY_LAYOUT
-            return endpoint, description, selection, layout
+            return anchor, description, selection, layout
 
         self.callbacks()
 
@@ -270,7 +276,7 @@ class AppAPI(ABC):
                 link.Endpoint = endpoint
                 if parent is not None:
                     link.Parent = parent
-                    self._log_.debug(lambda: f"Link Definition: Parent = {parent.Endpoint}")
+                    self._log_.debug(lambda: f"Link Definition: Parent = {parent.Anchor}")
                     parent.Children.append(link)
                     link.Order = (order := len(parent.Children))
                     self._log_.debug(lambda: f"Link Definition: Order = {order}")
