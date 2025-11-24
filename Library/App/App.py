@@ -11,7 +11,6 @@ from Library.Utility import inspect_file, inspect_path, inspect_file_path, trace
 
 @dataclass(slots=True)
 class Link:
-    Order: int = field(init=True, default=None)
     Button: str = field(init=True, default=None)
     Description: str = field(init=True, default=None)
     Anchor: str = field(init=True, default=None)
@@ -281,8 +280,7 @@ class AppAPI(ABC):
                     link.Parent = parent
                     self._log_.debug(lambda: f"Link Definition: Parent = {parent.Anchor}")
                     parent.Children.append(link)
-                    link.Order = (order := len(parent.Children))
-                    self._log_.debug(lambda: f"Link Definition: Order = {order}")
+                    self._log_.debug(lambda: f"Link Definition: Siblings = {len(parent.Children)}")
                 self._links_[endpoint] = link
             else:
                 self._log_.debug(lambda: "Link Definition: Found")
