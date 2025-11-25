@@ -152,7 +152,7 @@ class AppAPI(ABC):
             navigation_items: list = []
 
             if link.Parent is not None:
-                navigation_items.append(dbc.ButtonGroup(dbc.Button("⭰ Back", href=link.Parent.Anchor, className="header-navigation-button"), className="header-navigation-group"))
+                navigation_items.append(dbc.ButtonGroup(dbc.Button(f"⭰ {link.Parent.Button}", href=link.Parent.Anchor, className="header-navigation-button"), className="header-navigation-group"))
 
             for child in link.Children:
                 navigation_group: list = [
