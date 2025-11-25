@@ -33,13 +33,13 @@ class AppAPI(ABC):
     LOCATION_ID: dict = {"type": "location", "index": "page"}
     SELECTED_ID: dict = {"type": "div", "index": "selected"}
     NAVIGATION_ID: dict = {"type": "div", "index": "navigation"}
+    CONTROL_ID: dict = {"type": "div", "index": "control"}
+    BACKWARD_ID: dict = {"type": "button", "index": "backward"}
+    REFRESH_ID: dict = {"type": "button", "index": "refresh"}
+    FORWARD_ID: dict = {"type": "button", "index": "forward"}
     INTERVAL_ID: dict = {"type": "interval", "index": "interval"}
+    HISTORY_ID: dict = {"type": "storage", "index": "history"}
     SESSION_ID: dict = {"type": "storage", "index": "session"}
-
-    EMPTY_LAYOUT: html.Div = None
-    LOADING_LAYOUT: html.Div = None
-    DEVELOPMENT_LAYOUT: html.Div = None
-    MAINTENANCE_LAYOUT: html.Div = None
 
     def __init__(self,
                  name: str = "<Insert App Name>",
@@ -81,6 +81,9 @@ class AppAPI(ABC):
 
         self._init_app()
         self._log_.info(lambda: "Initialized App")
+
+        self._init_links_()
+        self._log_.debug(lambda: "Initialized Links")
 
         self._init_layouts_()
         self._log_.info(lambda: "Initialized Layout")
@@ -129,7 +132,7 @@ class AppAPI(ABC):
             html.P("Please try again later.", className="status-layout-text"),
         ], className="status-layout status-layout-development")
 
-    def _init_selections_(self) -> None:
+    def _init_navigation_(self) -> None:
 
         def new_tab_button(href: str, className: str):
             return html.A(
@@ -173,9 +176,16 @@ class AppAPI(ABC):
             html.Div([
                 html.Div([html.Img(src=self.app.get_asset_url("logo.png"), className="header-image")], className="header-logo"),
                 html.Div([html.H1(self.name, className="header-title"), html.H4(self.team, className="header-team")], className="header-title-team"),
-                html.Div(self.description, id=self.SELECTED_ID, className="header-description")
+                html.Div([self.description], id=self.SELECTED_ID, className="header-description")
             ], id=self.INFORMATION_ID, className="header-information-block"),
-            html.Div(None, id=self.NAVIGATION_ID, className="header-navigation-block")
+            html.Div(None, id=self.NAVIGATION_ID, className="header-navigation-block"),
+            html.Div([dbc.ButtonGroup([
+                    dbc.Button(html.I(className="bi bi-arrow-left"), id=self.BACKWARD_ID),
+                    dbc.Button(html.I(className="bi bi-arrow-repeat"), id=self.REFRESH_ID),
+                    dbc.Button(html.I(className="bi bi-arrow-right"), id=self.FORWARD_ID),
+                ], className="header-control-block")
+            ], id=self.CONTROL_ID)
+
         ], id=self.HEADER_ID, className="header")
 
     def _init_content_(self) -> html.Div:
@@ -201,18 +211,17 @@ class AppAPI(ABC):
 
         return html.Div([
             dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
+            dcc.Store(id=self.HISTORY_ID, storage_type="session", data={"stack": [], "index": -1}),
             dcc.Store(id=self.SESSION_ID, storage_type="memory"),
             dcc.Location(id=self.LOCATION_ID, refresh=False)
         ], id=self.HIDDEN_ID)
 
     def _init_layouts_(self):
 
-        self._init_links_()
-        self._log_.debug(lambda: "Loaded Links Layout")
         self.layout()
         self._log_.debug(lambda: "Loaded Specific Layout")
-        self._init_selections_()
-        self._log_.debug(lambda: "Loaded Selection Layouts")
+        self._init_navigation_()
+        self._log_.debug(lambda: "Loaded Navigation Layouts")
         header = self._init_header_()
         self._log_.debug(lambda: "Loaded Header Layout")
         content = self._init_content_()
@@ -246,16 +255,64 @@ class AppAPI(ABC):
             link = self._links_.get(endpoint, None)
             if link is not None:
                 self._log_.debug(lambda: f"Location Callback: Link Found")
-                anchor = link.Anchor
                 description = link.Description if not self.description else dash.no_update
-                selection = link.Navigation if link.Navigation else dash.no_update
+                navigation = link.Navigation if link.Navigation else dash.no_update
                 layout = link.Layout if link.Layout else self.DEVELOPMENT_LAYOUT
             else:
                 self._log_.debug(lambda: f"Location Callback: Link Not Found")
                 description = dash.no_update
-                selection = dash.no_update
+                navigation = dash.no_update
                 layout = self.EMPTY_LAYOUT
-            return anchor, description, selection, layout
+            return anchor, description, navigation, layout
+
+        @self.app.callback(
+            dash.Output(self.HISTORY_ID, "data", allow_duplicate=True),
+            dash.Input(self.LOCATION_ID, "pathname"),
+            dash.State(self.HISTORY_ID, "data"),
+            prevent_initial_call=True
+        )
+        def _history_callback_(path, history):
+            stack = history["stack"]
+            index = history["index"]
+            if index == -1 or (index >= 0 and stack[index] != path):
+                stack = stack[:index + 1]
+                stack.append(path)
+                index = len(stack) - 1
+            return {"stack": stack, "index": index}
+
+        @self.app.callback(
+            dash.Output(self.LOCATION_ID, "pathname", allow_duplicate=True),
+            dash.Input(self.BACKWARD_ID, "n_clicks"),
+            dash.State(self.HISTORY_ID, "data"),
+            prevent_initial_call=True
+        )
+        def _backward_callback_(_, history):
+            i = history["index"]
+            if i > 0:
+                return history["stack"][i - 1]
+            return dash.no_update
+
+        @self.app.callback(
+            dash.Output(self.LOCATION_ID, "pathname", allow_duplicate=True),
+            dash.Input(self.REFRESH_ID, "n_clicks"),
+            dash.State(self.LOCATION_ID, "pathname"),
+            prevent_initial_call=True
+        )
+        def _refresh_callback_(_, path):
+            return path
+
+        @self.app.callback(
+            dash.Output(self.LOCATION_ID, "pathname", allow_duplicate=True),
+            dash.Input(self.FORWARD_ID, "n_clicks"),
+            dash.State(self.HISTORY_ID, "data"),
+            prevent_initial_call=True
+        )
+        def _forward_callback_(_, history):
+            i = history["index"]
+            stack = history["stack"]
+            if i < len(stack) - 1:
+                return stack[i + 1]
+            return dash.no_update
 
         self.callbacks()
 
