@@ -11,15 +11,14 @@ from Library.Utility import inspect_file, inspect_path, inspect_file_path, trace
 
 @dataclass(slots=True)
 class Link:
-    Button: str = field(init=True, default=None)
-    Description: str = field(init=True, default=None)
     Anchor: str = field(init=True, default=None)
     Endpoint: str = field(init=True, default=None)
+    Button: str = field(init=True, default=None)
+    Description: str = field(init=True, default=None)
     Parent: Self = field(init=True, default=None)
     Children: list[Self] = field(init=True, default_factory=list)
-    Layout: html.Div = field(init=True, default=None)
     Navigation: dbc.Navbar = field(init=True, default=None)
-    Hidden: bool = field(init=True, default=False)
+    Layout: html.Div = field(init=True, default=None)
 
 class AppAPI(ABC):
 
@@ -29,11 +28,9 @@ class AppAPI(ABC):
     FOOTER_ID: dict = {"type": "div", "index": "footer"}
     HIDDEN_ID: dict = {"type": "div", "index": "hidden"}
 
-    INFORMATION_ID: dict = {"type": "div", "index": "information"}
     LOCATION_ID: dict = {"type": "location", "index": "page"}
     SELECTED_ID: dict = {"type": "div", "index": "selected"}
     NAVIGATION_ID: dict = {"type": "div", "index": "navigation"}
-    CONTROL_ID: dict = {"type": "div", "index": "control"}
     BACKWARD_ID: dict = {"type": "button", "index": "backward"}
     REFRESH_ID: dict = {"type": "button", "index": "refresh"}
     FORWARD_ID: dict = {"type": "button", "index": "forward"}
@@ -47,6 +44,7 @@ class AppAPI(ABC):
                  team: str = "<Insert Team Name>",
                  description: str = None,
                  contact: str = None,
+                 update: str = "",
                  anchor: str = "/",
                  port: int = 8050,
                  debug: bool = False):
@@ -64,6 +62,8 @@ class AppAPI(ABC):
         self._log_.debug(lambda: f"Defined Description = {self.description}")
         self.contact: str = contact
         self._log_.debug(lambda: f"Defined Contact = {self.contact}")
+        self.update: str = update
+        self._log_.debug(lambda: f"Defined Update = {update}")
         self.port: int = port
         self._log_.debug(lambda: f"Defined Port = {self.port}")
         self.debug: bool = debug
@@ -96,6 +96,7 @@ class AppAPI(ABC):
         self.app = dash.Dash(
             name=self.name,
             title=self.title,
+            update_title=self.update,
             assets_folder=self.assets,
             url_base_pathname=self.endpoint,
             external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
@@ -177,15 +178,15 @@ class AppAPI(ABC):
                 html.Div([html.Img(src=self.app.get_asset_url("logo.png"), className="header-image")], className="header-logo"),
                 html.Div([html.H1(self.name, className="header-title"), html.H4(self.team, className="header-team")], className="header-title-team"),
                 html.Div([self.description], id=self.SELECTED_ID, className="header-description")
-            ], id=self.INFORMATION_ID, className="header-information-block"),
-            html.Div(None, id=self.NAVIGATION_ID, className="header-navigation-block"),
-            html.Div([dbc.ButtonGroup([
+            ], className="header-information-block"),
+            html.Div([
+                html.Div(None, id=self.NAVIGATION_ID, className="header-navigation-block"),
+                html.Div([dbc.ButtonGroup([
                     dbc.Button(html.I(className="bi bi-arrow-left"), id=self.BACKWARD_ID),
                     dbc.Button(html.I(className="bi bi-arrow-repeat"), id=self.REFRESH_ID),
                     dbc.Button(html.I(className="bi bi-arrow-right"), id=self.FORWARD_ID),
-                ], className="header-control-block")
-            ], id=self.CONTROL_ID)
-
+                ], className="header-history-block")])
+            ], className="header-control-block")
         ], id=self.HEADER_ID, className="header")
 
     def _init_content_(self) -> html.Div:
@@ -212,7 +213,7 @@ class AppAPI(ABC):
         return html.Div([
             dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
             dcc.Store(id=self.HISTORY_ID, storage_type="session", data={"stack": [], "index": -1}),
-            dcc.Store(id=self.SESSION_ID, storage_type="memory"),
+            dcc.Store(id=self.SESSION_ID, storage_type="session"),
             dcc.Location(id=self.LOCATION_ID, refresh=False)
         ], id=self.HIDDEN_ID)
 
@@ -244,7 +245,8 @@ class AppAPI(ABC):
             dash.Output(self.SELECTED_ID, "children", allow_duplicate=True),
             dash.Output(self.NAVIGATION_ID, "children", allow_duplicate=True),
             dash.Output(self.CONTENT_ID, "children", allow_duplicate=True),
-            dash.Input(self.LOCATION_ID, "pathname")
+            dash.Input(self.LOCATION_ID, "pathname"),
+            prevent_initial_call=False
         )
         def _location_callback_(path: str):
             self._log_.debug(lambda: f"Location Callback: Received Path = {path}")
