@@ -22,27 +22,27 @@ class Link:
 
 class AppAPI(ABC):
 
-    LAYOUT_ID: dict = {"type": "div", "index": "layout"}
-    HEADER_ID: dict = {"type": "div", "index": "header"}
-    CONTENT_ID: dict = {"type": "div", "index": "content"}
-    FOOTER_ID: dict = {"type": "div", "index": "footer"}
-    HIDDEN_ID: dict = {"type": "div", "index": "hidden"}
+    _LAYOUT_ID_: dict = {"type": "div", "index": "layout"}
+    _HEADER_ID_: dict = {"type": "div", "index": "header"}
+    _CONTENT_ID_: dict = {"type": "div", "index": "content"}
+    _FOOTER_ID_: dict = {"type": "div", "index": "footer"}
+    _HIDDEN_ID_: dict = {"type": "div", "index": "hidden"}
 
-    LOCATION_ID: dict = {"type": "location", "index": "page"}
-    SELECTED_ID: dict = {"type": "div", "index": "selected"}
-    NAVIGATION_ID: dict = {"type": "div", "index": "navigation"}
-    BACKWARD_ID: dict = {"type": "button", "index": "backward"}
-    REFRESH_ID: dict = {"type": "button", "index": "refresh"}
-    FORWARD_ID: dict = {"type": "button", "index": "forward"}
+    _LOCATION_ID_: dict = {"type": "location", "index": "page"}
+    _SELECTED_ID_: dict = {"type": "div", "index": "selected"}
+    _NAVIGATION_ID_: dict = {"type": "div", "index": "navigation"}
+    _BACKWARD_ID_: dict = {"type": "button", "index": "backward"}
+    _REFRESH_ID_: dict = {"type": "button", "index": "refresh"}
+    _FORWARD_ID_: dict = {"type": "button", "index": "forward"}
 
-    TERMINAL_ARROW_ID: dict = {"type": "span", "index": "terminal"}
-    TERMINAL_BUTTON_ID: dict = {"type": "button", "index": "terminal"}
-    TERMINAL_CONTENT_ID: dict = {"type": "div", "index": "terminal"}
-    TERMINAL_COLLAPSE_ID: dict = {"type": "collapse", "index": "terminal"}
-    CONTACTS_ARROW_ID: dict = {"type": "span", "index": "contacts"}
-    CONTACTS_BUTTON_ID: dict = {"type": "button", "index": "contacts"}
-    CONTACTS_CONTENT_ID: dict = {"type": "div", "index": "contacts"}
-    CONTACTS_COLLAPSE_ID: dict = {"type": "collapse", "index": "contacts"}
+    _TERMINAL_ARROW_ID_: dict = {"type": "span", "index": "terminal"}
+    _TERMINAL_BUTTON_ID_: dict = {"type": "button", "index": "terminal"}
+    _TERMINAL_CONTENT_ID_: dict = {"type": "div", "index": "terminal"}
+    _TERMINAL_COLLAPSE_ID_: dict = {"type": "collapse", "index": "terminal"}
+    _CONTACTS_ARROW_ID_: dict = {"type": "span", "index": "contacts"}
+    _CONTACTS_BUTTON_ID_: dict = {"type": "button", "index": "contacts"}
+    _CONTACTS_CONTENT_ID_: dict = {"type": "div", "index": "contacts"}
+    _CONTACTS_COLLAPSE_ID_: dict = {"type": "collapse", "index": "contacts"}
 
     INTERVAL_ID: dict = {"type": "interval", "index": "interval"}
     HISTORY_ID: dict = {"type": "storage", "index": "history"}
@@ -187,31 +187,31 @@ class AppAPI(ABC):
             html.Div([
                 html.Div([html.Img(src=self.app.get_asset_url("logo.png"), className="header-image")], className="header-logo"),
                 html.Div([html.H1(self.name, className="header-title"), html.H4(self.team, className="header-team")], className="header-title-team"),
-                html.Div([self.description], id=self.SELECTED_ID, className="header-description")
+                html.Div([self.description], id=self._SELECTED_ID_, className="header-description")
             ], className="header-information-block"),
             html.Div([
-                html.Div(None, id=self.NAVIGATION_ID, className="header-navigation-block"),
+                html.Div(None, id=self._NAVIGATION_ID_, className="header-navigation-block"),
                 html.Div([dbc.ButtonGroup([
-                    dbc.Button(html.I(className="bi bi-arrow-left"), id=self.BACKWARD_ID),
-                    dbc.Button(html.I(className="bi bi-arrow-repeat"), id=self.REFRESH_ID),
-                    dbc.Button(html.I(className="bi bi-arrow-right"), id=self.FORWARD_ID),
+                    dbc.Button(html.I(className="bi bi-arrow-left"), id=self._BACKWARD_ID_),
+                    dbc.Button(html.I(className="bi bi-arrow-repeat"), id=self._REFRESH_ID_),
+                    dbc.Button(html.I(className="bi bi-arrow-right"), id=self._FORWARD_ID_),
                 ], className="header-history-block")])
             ], className="header-control-block")
-        ], id=self.HEADER_ID, className="header")
+        ], id=self._HEADER_ID_, className="header")
 
     def _init_content_(self) -> html.Div:
 
         return html.Div([
             self.LOADING_LAYOUT
-        ], id=self.CONTENT_ID, className="content")
+        ], id=self._CONTENT_ID_, className="content")
 
     def _init_footer_(self) -> html.Div:
         return html.Div([
-            dbc.Button([html.Span("▼", id=self.CONTACTS_ARROW_ID), " Contacts"], id=self.CONTACTS_BUTTON_ID, color="primary", className="footer-button"),
-            dbc.Button(["Terminal ", html.Span("▼", id=self.TERMINAL_ARROW_ID)], id=self.TERMINAL_BUTTON_ID, color="primary", className="footer-button"),
-            dbc.Collapse(dbc.Card(dbc.CardBody(html.Div("Contacts will appear here...", id=self.CONTACTS_CONTENT_ID)), className="footer-panel footer-panel-left"), id=self.CONTACTS_COLLAPSE_ID, is_open=False),
-            dbc.Collapse(dbc.Card(dbc.CardBody(html.Div("Terminal output will appear here...", id=self.TERMINAL_CONTENT_ID)), className="footer-panel footer-panel-right"), id=self.TERMINAL_COLLAPSE_ID, is_open=False)
-        ], id=self.FOOTER_ID, className="footer")
+            dbc.Button([html.Span("▼", id=self._CONTACTS_ARROW_ID_), " Contacts"], id=self._CONTACTS_BUTTON_ID_, color="primary", className="footer-button"),
+            dbc.Button(["Terminal ", html.Span("▼", id=self._TERMINAL_ARROW_ID_)], id=self._TERMINAL_BUTTON_ID_, color="primary", className="footer-button"),
+            dbc.Collapse(dbc.Card(dbc.CardBody(html.Div("Contacts will appear here...", id=self._CONTACTS_CONTENT_ID_)), className="footer-panel footer-panel-left"), id=self._CONTACTS_COLLAPSE_ID_, is_open=False),
+            dbc.Collapse(dbc.Card(dbc.CardBody(html.Div("Terminal output will appear here...", id=self._TERMINAL_CONTENT_ID_)), className="footer-panel footer-panel-right"), id=self._TERMINAL_COLLAPSE_ID_, is_open=False)
+        ], id=self._FOOTER_ID_, className="footer")
 
     def _init_hidden_(self) -> html.Div:
 
@@ -219,8 +219,8 @@ class AppAPI(ABC):
             dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
             dcc.Store(id=self.HISTORY_ID, storage_type="session", data={"stack": [], "index": -1}),
             dcc.Store(id=self.SESSION_ID, storage_type="session"),
-            dcc.Location(id=self.LOCATION_ID, refresh=False)
-        ], id=self.HIDDEN_ID)
+            dcc.Location(id=self._LOCATION_ID_, refresh=False)
+        ], id=self._HIDDEN_ID_)
 
     def _init_layouts_(self):
 
@@ -239,18 +239,18 @@ class AppAPI(ABC):
 
         self.app.layout = html.Div(
             [header, content, footer, hidden],
-            id=self.LAYOUT_ID,
+            id=self._LAYOUT_ID_,
             className="app"
         )
 
     def _init_callbacks_(self):
 
         @self.app.callback(
-            dash.Output(self.LOCATION_ID, "pathname", allow_duplicate=True),
-            dash.Output(self.SELECTED_ID, "children", allow_duplicate=True),
-            dash.Output(self.NAVIGATION_ID, "children", allow_duplicate=True),
-            dash.Output(self.CONTENT_ID, "children", allow_duplicate=True),
-            dash.Input(self.LOCATION_ID, "pathname"),
+            dash.Output(self._LOCATION_ID_, "pathname", allow_duplicate=True),
+            dash.Output(self._SELECTED_ID_, "children", allow_duplicate=True),
+            dash.Output(self._NAVIGATION_ID_, "children", allow_duplicate=True),
+            dash.Output(self._CONTENT_ID_, "children", allow_duplicate=True),
+            dash.Input(self._LOCATION_ID_, "pathname"),
             prevent_initial_call=False
         )
         def _location_callback_(path: str):
@@ -274,7 +274,7 @@ class AppAPI(ABC):
 
         @self.app.callback(
             dash.Output(self.HISTORY_ID, "data", allow_duplicate=True),
-            dash.Input(self.LOCATION_ID, "pathname"),
+            dash.Input(self._LOCATION_ID_, "pathname"),
             dash.State(self.HISTORY_ID, "data"),
             prevent_initial_call=True
         )
@@ -288,8 +288,8 @@ class AppAPI(ABC):
             return {"stack": stack, "index": index}
 
         @self.app.callback(
-            dash.Output(self.LOCATION_ID, "pathname", allow_duplicate=True),
-            dash.Input(self.BACKWARD_ID, "n_clicks"),
+            dash.Output(self._LOCATION_ID_, "pathname", allow_duplicate=True),
+            dash.Input(self._BACKWARD_ID_, "n_clicks"),
             dash.State(self.HISTORY_ID, "data"),
             prevent_initial_call=True
         )
@@ -300,17 +300,17 @@ class AppAPI(ABC):
             return dash.no_update
 
         @self.app.callback(
-            dash.Output(self.LOCATION_ID, "pathname", allow_duplicate=True),
-            dash.Input(self.REFRESH_ID, "n_clicks"),
-            dash.State(self.LOCATION_ID, "pathname"),
+            dash.Output(self._LOCATION_ID_, "pathname", allow_duplicate=True),
+            dash.Input(self._REFRESH_ID_, "n_clicks"),
+            dash.State(self._LOCATION_ID_, "pathname"),
             prevent_initial_call=True
         )
         def _refresh_callback_(_, path):
             return path
 
         @self.app.callback(
-            dash.Output(self.LOCATION_ID, "pathname", allow_duplicate=True),
-            dash.Input(self.FORWARD_ID, "n_clicks"),
+            dash.Output(self._LOCATION_ID_, "pathname", allow_duplicate=True),
+            dash.Input(self._FORWARD_ID_, "n_clicks"),
             dash.State(self.HISTORY_ID, "data"),
             prevent_initial_call=True
         )
@@ -327,10 +327,10 @@ class AppAPI(ABC):
             return arrow, is_open
 
         @self.app.callback(
-            dash.Output(self.TERMINAL_ARROW_ID, "children", allow_duplicate=True),
-            dash.Output(self.TERMINAL_COLLAPSE_ID, "is_open", allow_duplicate=True),
-            dash.Input(self.TERMINAL_BUTTON_ID, "n_clicks"),
-            dash.State(self.TERMINAL_COLLAPSE_ID, "is_open"),
+            dash.Output(self._TERMINAL_ARROW_ID_, "children", allow_duplicate=True),
+            dash.Output(self._TERMINAL_COLLAPSE_ID_, "is_open", allow_duplicate=True),
+            dash.Input(self._TERMINAL_BUTTON_ID_, "n_clicks"),
+            dash.State(self._TERMINAL_COLLAPSE_ID_, "is_open"),
             prevent_initial_call=True
         )
         def _terminal_callback_(_, was_open: bool):
@@ -340,10 +340,10 @@ class AppAPI(ABC):
             return arrow, is_open
 
         @self.app.callback(
-            dash.Output(self.CONTACTS_ARROW_ID, "children", allow_duplicate=True),
-            dash.Output(self.CONTACTS_COLLAPSE_ID, "is_open", allow_duplicate=True),
-            dash.Input(self.CONTACTS_BUTTON_ID, "n_clicks"),
-            dash.State(self.CONTACTS_COLLAPSE_ID, "is_open"),
+            dash.Output(self._CONTACTS_ARROW_ID_, "children", allow_duplicate=True),
+            dash.Output(self._CONTACTS_COLLAPSE_ID_, "is_open", allow_duplicate=True),
+            dash.Input(self._CONTACTS_BUTTON_ID_, "n_clicks"),
+            dash.State(self._CONTACTS_COLLAPSE_ID_, "is_open"),
             prevent_initial_call=True
         )
         def _contact_callback_(_, was_open: bool):
