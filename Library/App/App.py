@@ -53,7 +53,7 @@ class AppAPI(ABC):
                  title: str = "<Insert App Title>",
                  team: str = "<Insert Team Name>",
                  description: str = None,
-                 contact: str = None,
+                 contact: str = "<Insert Contact Email>",
                  update: str = "",
                  anchor: str = "/",
                  port: int = 8050,
@@ -205,11 +205,18 @@ class AppAPI(ABC):
             self.LOADING_LAYOUT
         ], id=self._CONTENT_ID_, className="content")
 
+    def _init_contacts_(self) -> html.Div:
+
+        return html.Div([
+            html.Div([html.B("Team: "), html.Span(self.team)]),
+            html.Div([html.B("Contact: "), html.A(self.contact, href=f"mailto:{self.contact}")])
+        ])
+
     def _init_footer_(self) -> html.Div:
         return html.Div([
-            dbc.Button([html.Span("▼", id=self._CONTACTS_ARROW_ID_), " Contacts"], id=self._CONTACTS_BUTTON_ID_, color="primary", className="footer-button"),
-            dbc.Button(["Terminal ", html.Span("▼", id=self._TERMINAL_ARROW_ID_)], id=self._TERMINAL_BUTTON_ID_, color="primary", className="footer-button"),
-            dbc.Collapse(dbc.Card(dbc.CardBody(html.Div("Contacts will appear here...", id=self._CONTACTS_CONTENT_ID_)), className="footer-panel footer-panel-left"), id=self._CONTACTS_COLLAPSE_ID_, is_open=False),
+            dbc.Button([html.Span("▼", id=self._CONTACTS_ARROW_ID_), " Contacts ", html.I(className="bi bi-question-circle")], id=self._CONTACTS_BUTTON_ID_, color="primary", className="footer-button"),
+            dbc.Button([html.I(className="bi bi-terminal"), " Terminal ", html.Span("▼", id=self._TERMINAL_ARROW_ID_)], id=self._TERMINAL_BUTTON_ID_, color="primary", className="footer-button"),
+            dbc.Collapse(dbc.Card(dbc.CardBody(html.Div(self._init_contacts_(), id=self._CONTACTS_CONTENT_ID_)), className="footer-panel footer-panel-left"), id=self._CONTACTS_COLLAPSE_ID_, is_open=False),
             dbc.Collapse(dbc.Card(dbc.CardBody(html.Div("Terminal output will appear here...", id=self._TERMINAL_CONTENT_ID_)), className="footer-panel footer-panel-right"), id=self._TERMINAL_COLLAPSE_ID_, is_open=False)
         ], id=self._FOOTER_ID_, className="footer")
 
@@ -334,7 +341,6 @@ class AppAPI(ABC):
             prevent_initial_call=True
         )
         def _terminal_callback_(_, was_open: bool):
-            self._log_.debug(lambda: "Terminal Callback: Received Click")
             arrow, is_open = _collapsable_callback_(was_open)
             self._log_.debug(lambda: f"Terminal Callback: {'Expanding' if is_open else 'Collapsing'}")
             return arrow, is_open
@@ -347,7 +353,6 @@ class AppAPI(ABC):
             prevent_initial_call=True
         )
         def _contact_callback_(_, was_open: bool):
-            self._log_.debug(lambda: "Contacts Callback: Received Click")
             arrow, is_open = _collapsable_callback_(was_open)
             self._log_.debug(lambda: f"Contacts Callback: {'Expanding' if is_open else 'Collapsing'}")
             return arrow, is_open
