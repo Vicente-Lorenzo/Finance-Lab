@@ -45,8 +45,9 @@ class AppAPI(ABC):
     _CONTACTS_COLLAPSE_ID_: dict = {"type": "collapse", "index": "contacts"}
 
     INTERVAL_ID: dict = {"type": "interval", "index": "interval"}
-    HISTORY_ID: dict = {"type": "storage", "index": "history"}
-    SESSION_ID: dict = {"type": "storage", "index": "session"}
+    HISTORY_STORAGE_ID: dict = {"type": "storage", "index": "history"}
+    TERMINAL_STORAGE_ID: dict = {"type": "storage", "index": "terminal"}
+    SESSION_STORAGE_ID: dict = {"type": "storage", "index": "session"}
 
     def __init__(self,
                  name: str = "<Insert App Name>",
@@ -224,8 +225,8 @@ class AppAPI(ABC):
 
         return html.Div([
             dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
-            dcc.Store(id=self.HISTORY_ID, storage_type="session", data={"stack": [], "index": -1}),
-            dcc.Store(id=self.SESSION_ID, storage_type="session"),
+            dcc.Store(id=self.HISTORY_STORAGE_ID, storage_type="session", data={"stack": [], "index": -1}),
+            dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session"),
             dcc.Location(id=self._PAGE_LOCATION_ID_, refresh=False)
         ], id=self._HIDDEN_ID_)
 
@@ -280,9 +281,9 @@ class AppAPI(ABC):
             return anchor, description, navigation, layout
 
         @self.app.callback(
-            dash.Output(self.HISTORY_ID, "data", allow_duplicate=True),
+            dash.Output(self.HISTORY_STORAGE_ID, "data", allow_duplicate=True),
             dash.Input(self._PAGE_LOCATION_ID_, "pathname"),
-            dash.State(self.HISTORY_ID, "data"),
+            dash.State(self.HISTORY_STORAGE_ID, "data"),
             prevent_initial_call=True
         )
         def _history_callback_(path, history):
@@ -297,7 +298,7 @@ class AppAPI(ABC):
         @self.app.callback(
             dash.Output(self._PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
             dash.Input(self._PAGE_BACKWARD_ID_, "n_clicks"),
-            dash.State(self.HISTORY_ID, "data"),
+            dash.State(self.HISTORY_STORAGE_ID, "data"),
             prevent_initial_call=True
         )
         def _backward_callback_(_, history):
@@ -318,7 +319,7 @@ class AppAPI(ABC):
         @self.app.callback(
             dash.Output(self._PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
             dash.Input(self._PAGE_FORWARD_ID_, "n_clicks"),
-            dash.State(self.HISTORY_ID, "data"),
+            dash.State(self.HISTORY_STORAGE_ID, "data"),
             prevent_initial_call=True
         )
         def _forward_callback_(_, history):
