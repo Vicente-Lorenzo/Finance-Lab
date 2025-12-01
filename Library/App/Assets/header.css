@@ -17,8 +17,8 @@
 }
 
 .header-logo {
-    padding: 0 0 0 5px;
-    margin: auto 10px auto auto;
+    padding: 0 0 0 0;
+    margin: auto 10px auto 5px;
 }
 
 .header-image {
@@ -71,6 +71,7 @@
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
+    align-items: center;
     padding: 0 0 0 0;
     margin: 0 0 0 0;
 }
@@ -142,10 +143,20 @@
     transition: opacity 0.50s ease !important;
 }
 
+.header-navigation-history-block {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0 0 0 0;
+    margin: auto auto auto 15px;
+}
+
 .header-control-block {
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
+    align-items: center;
     padding: 0 0 0 0;
-    margin: 0 0 0 0;
+    margin: auto 5px auto auto;
 }
