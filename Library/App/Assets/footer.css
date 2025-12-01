@@ -1,23 +1,41 @@
 .footer {
     position: fixed;
-    right: 0;
     bottom: 0;
-    border-top: 2px solid black;
-    border-left: 2px solid black;
+    left: 0;
+    right: 0;
+    height: 45px;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 2000;
+    background: rgba(250,250,250,0.9);
+    border-top: 1px solid #ccc;
     padding: 5px 5px 5px 5px;
-    margin: auto auto auto auto;
+    margin: 0 0 0 0;
 }
 
-.footer-contact {
-    font-weight: normal;
-    text-decoration: none;
-    color: inherit;
-    padding: 0 0 0 0;
-    margin: auto auto auto auto;
+.footer-button {
+    z-index: 2100;
 }
 
-.footer-contact:hover {
-    text-decoration: underline;
-    padding: 0 0 0 0;
-    margin: auto auto auto auto;
+.footer-panel {
+    position: fixed !important;
+    bottom: 45px;
+    overflow: auto;
+    max-height: 80vh;
+    border-radius: 6px 6px 0 0;
+    background: white;
+    z-index: 1999;
+}
+
+.footer-panel-left {
+    left: 0;
+    width: 20vw;
+}
+
+.footer-panel-right {
+    right: 0;
+    width: 80vw;
 }

@@ -34,6 +34,16 @@ class AppAPI(ABC):
     BACKWARD_ID: dict = {"type": "button", "index": "backward"}
     REFRESH_ID: dict = {"type": "button", "index": "refresh"}
     FORWARD_ID: dict = {"type": "button", "index": "forward"}
+
+    TERMINAL_ARROW_ID: dict = {"type": "span", "index": "terminal"}
+    TERMINAL_BUTTON_ID: dict = {"type": "button", "index": "terminal"}
+    TERMINAL_CONTENT_ID: dict = {"type": "div", "index": "terminal"}
+    TERMINAL_COLLAPSE_ID: dict = {"type": "collapse", "index": "terminal"}
+    CONTACTS_ARROW_ID: dict = {"type": "span", "index": "contacts"}
+    CONTACTS_BUTTON_ID: dict = {"type": "button", "index": "contacts"}
+    CONTACTS_CONTENT_ID: dict = {"type": "div", "index": "contacts"}
+    CONTACTS_COLLAPSE_ID: dict = {"type": "collapse", "index": "contacts"}
+
     INTERVAL_ID: dict = {"type": "interval", "index": "interval"}
     HISTORY_ID: dict = {"type": "storage", "index": "history"}
     SESSION_ID: dict = {"type": "storage", "index": "session"}
@@ -196,16 +206,11 @@ class AppAPI(ABC):
         ], id=self.CONTENT_ID, className="content")
 
     def _init_footer_(self) -> html.Div:
-
-        if not self.contact:
-            return html.Div(id=self.FOOTER_ID)
-
         return html.Div([
-            html.A(
-                f"Contact: {self.contact}",
-                href=f"mailto:{self.contact}",
-                className="footer-contact"
-            )
+            dbc.Button([html.Span("▼", id=self.CONTACTS_ARROW_ID), " Contacts"], id=self.CONTACTS_BUTTON_ID, color="primary", className="footer-button"),
+            dbc.Button(["Terminal ", html.Span("▼", id=self.TERMINAL_ARROW_ID)], id=self.TERMINAL_BUTTON_ID, color="primary", className="footer-button"),
+            dbc.Collapse(dbc.Card(dbc.CardBody(html.Div("Contacts will appear here...", id=self.CONTACTS_CONTENT_ID)), className="footer-panel footer-panel-left"), id=self.CONTACTS_COLLAPSE_ID, is_open=False),
+            dbc.Collapse(dbc.Card(dbc.CardBody(html.Div("Terminal output will appear here...", id=self.TERMINAL_CONTENT_ID)), className="footer-panel footer-panel-right"), id=self.TERMINAL_COLLAPSE_ID, is_open=False)
         ], id=self.FOOTER_ID, className="footer")
 
     def _init_hidden_(self) -> html.Div:
@@ -315,6 +320,37 @@ class AppAPI(ABC):
             if i < len(stack) - 1:
                 return stack[i + 1]
             return dash.no_update
+
+        def _collapsable_callback_(was_open: bool):
+            is_open = not was_open
+            arrow = "▲" if is_open else "▼"
+            return arrow, is_open
+
+        @self.app.callback(
+            dash.Output(self.TERMINAL_ARROW_ID, "children", allow_duplicate=True),
+            dash.Output(self.TERMINAL_COLLAPSE_ID, "is_open", allow_duplicate=True),
+            dash.Input(self.TERMINAL_BUTTON_ID, "n_clicks"),
+            dash.State(self.TERMINAL_COLLAPSE_ID, "is_open"),
+            prevent_initial_call=True
+        )
+        def _terminal_callback_(_, was_open: bool):
+            self._log_.debug(lambda: "Terminal Callback: Received Click")
+            arrow, is_open = _collapsable_callback_(was_open)
+            self._log_.debug(lambda: f"Terminal Callback: {'Expanding' if is_open else 'Collapsing'}")
+            return arrow, is_open
+
+        @self.app.callback(
+            dash.Output(self.CONTACTS_ARROW_ID, "children", allow_duplicate=True),
+            dash.Output(self.CONTACTS_COLLAPSE_ID, "is_open", allow_duplicate=True),
+            dash.Input(self.CONTACTS_BUTTON_ID, "n_clicks"),
+            dash.State(self.CONTACTS_COLLAPSE_ID, "is_open"),
+            prevent_initial_call=True
+        )
+        def _contact_callback_(_, was_open: bool):
+            self._log_.debug(lambda: "Contacts Callback: Received Click")
+            arrow, is_open = _collapsable_callback_(was_open)
+            self._log_.debug(lambda: f"Contacts Callback: {'Expanding' if is_open else 'Collapsing'}")
+            return arrow, is_open
 
         self.callbacks()
 
