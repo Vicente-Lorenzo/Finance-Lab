@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 
 from Library.Logging import HandlerAPI
+from Library.App import HistorySessionAPI
 from Library.Utility import inspect_file, inspect_path, inspect_file_path, traceback_calling_module
 
 @dataclass(slots=True)
@@ -225,7 +226,7 @@ class AppAPI(ABC):
 
         return html.Div([
             dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
-            dcc.Store(id=self.HISTORY_STORAGE_ID, storage_type="session", data={"stack": [], "index": -1}),
+            dcc.Store(id=self.HISTORY_STORAGE_ID, storage_type="session", data=HistorySessionAPI().dict()),
             dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session"),
             dcc.Location(id=self._PAGE_LOCATION_ID_, refresh=False)
         ], id=self._HIDDEN_ID_)
@@ -287,13 +288,9 @@ class AppAPI(ABC):
             prevent_initial_call=True
         )
         def _history_callback_(path, history):
-            stack = history["stack"]
-            index = history["index"]
-            if index == -1 or (index >= 0 and stack[index] != path):
-                stack = stack[:index + 1]
-                stack.append(path)
-                index = len(stack) - 1
-            return {"stack": stack, "index": index}
+            history = HistorySessionAPI(**history)
+            history.register(path)
+            return history.dict()
 
         @self.app.callback(
             dash.Output(self._PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
@@ -302,10 +299,9 @@ class AppAPI(ABC):
             prevent_initial_call=True
         )
         def _backward_callback_(_, history):
-            i = history["index"]
-            if i > 0:
-                return history["stack"][i - 1]
-            return dash.no_update
+            history = HistorySessionAPI(**history)
+            path = history.backward()
+            return path if path else dash.no_update
 
         @self.app.callback(
             dash.Output(self._PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
@@ -323,11 +319,9 @@ class AppAPI(ABC):
             prevent_initial_call=True
         )
         def _forward_callback_(_, history):
-            i = history["index"]
-            stack = history["stack"]
-            if i < len(stack) - 1:
-                return stack[i + 1]
-            return dash.no_update
+            history = HistorySessionAPI(**history)
+            path = history.forward()
+            return path if path else dash.no_update
 
         def _collapsable_callback_(was_open: bool):
             is_open = not was_open
