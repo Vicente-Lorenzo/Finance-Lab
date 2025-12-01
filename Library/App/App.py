@@ -28,12 +28,12 @@ class AppAPI(ABC):
     _FOOTER_ID_: dict = {"type": "div", "index": "footer"}
     _HIDDEN_ID_: dict = {"type": "div", "index": "hidden"}
 
-    _LOCATION_ID_: dict = {"type": "location", "index": "page"}
-    _SELECTED_ID_: dict = {"type": "div", "index": "selected"}
-    _NAVIGATION_ID_: dict = {"type": "div", "index": "navigation"}
-    _BACKWARD_ID_: dict = {"type": "button", "index": "backward"}
-    _REFRESH_ID_: dict = {"type": "button", "index": "refresh"}
-    _FORWARD_ID_: dict = {"type": "button", "index": "forward"}
+    _PAGE_LOCATION_ID_: dict = {"type": "location", "index": "page"}
+    _PAGE_SELECTED_ID_: dict = {"type": "div", "index": "selected"}
+    _PAGE_NAVIGATION_ID_: dict = {"type": "div", "index": "navigation"}
+    _PAGE_BACKWARD_ID_: dict = {"type": "button", "index": "backward"}
+    _PAGE_REFRESH_ID_: dict = {"type": "button", "index": "refresh"}
+    _PAGE_FORWARD_ID_: dict = {"type": "button", "index": "forward"}
 
     _TERMINAL_ARROW_ID_: dict = {"type": "span", "index": "terminal"}
     _TERMINAL_BUTTON_ID_: dict = {"type": "button", "index": "terminal"}
@@ -187,14 +187,14 @@ class AppAPI(ABC):
             html.Div([
                 html.Div([html.Img(src=self.app.get_asset_url("logo.png"), className="header-image")], className="header-logo"),
                 html.Div([html.H1(self.name, className="header-title"), html.H4(self.team, className="header-team")], className="header-title-team"),
-                html.Div([self.description], id=self._SELECTED_ID_, className="header-description")
+                html.Div([self.description], id=self._PAGE_SELECTED_ID_, className="header-description")
             ], className="header-information-block"),
             html.Div([
-                html.Div(None, id=self._NAVIGATION_ID_, className="header-navigation-block"),
+                html.Div(None, id=self._PAGE_NAVIGATION_ID_, className="header-navigation-block"),
                 html.Div([dbc.ButtonGroup([
-                    dbc.Button(html.I(className="bi bi-arrow-left"), id=self._BACKWARD_ID_),
-                    dbc.Button(html.I(className="bi bi-arrow-repeat"), id=self._REFRESH_ID_),
-                    dbc.Button(html.I(className="bi bi-arrow-right"), id=self._FORWARD_ID_),
+                    dbc.Button(html.I(className="bi bi-arrow-left"), id=self._PAGE_BACKWARD_ID_),
+                    dbc.Button(html.I(className="bi bi-arrow-repeat"), id=self._PAGE_REFRESH_ID_),
+                    dbc.Button(html.I(className="bi bi-arrow-right"), id=self._PAGE_FORWARD_ID_),
                 ], className="header-history-block")])
             ], className="header-control-block")
         ], id=self._HEADER_ID_, className="header")
@@ -226,7 +226,7 @@ class AppAPI(ABC):
             dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
             dcc.Store(id=self.HISTORY_ID, storage_type="session", data={"stack": [], "index": -1}),
             dcc.Store(id=self.SESSION_ID, storage_type="session"),
-            dcc.Location(id=self._LOCATION_ID_, refresh=False)
+            dcc.Location(id=self._PAGE_LOCATION_ID_, refresh=False)
         ], id=self._HIDDEN_ID_)
 
     def _init_layouts_(self):
@@ -253,11 +253,11 @@ class AppAPI(ABC):
     def _init_callbacks_(self):
 
         @self.app.callback(
-            dash.Output(self._LOCATION_ID_, "pathname", allow_duplicate=True),
-            dash.Output(self._SELECTED_ID_, "children", allow_duplicate=True),
-            dash.Output(self._NAVIGATION_ID_, "children", allow_duplicate=True),
+            dash.Output(self._PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
+            dash.Output(self._PAGE_SELECTED_ID_, "children", allow_duplicate=True),
+            dash.Output(self._PAGE_NAVIGATION_ID_, "children", allow_duplicate=True),
             dash.Output(self._CONTENT_ID_, "children", allow_duplicate=True),
-            dash.Input(self._LOCATION_ID_, "pathname"),
+            dash.Input(self._PAGE_LOCATION_ID_, "pathname"),
             prevent_initial_call=False
         )
         def _location_callback_(path: str):
@@ -281,7 +281,7 @@ class AppAPI(ABC):
 
         @self.app.callback(
             dash.Output(self.HISTORY_ID, "data", allow_duplicate=True),
-            dash.Input(self._LOCATION_ID_, "pathname"),
+            dash.Input(self._PAGE_LOCATION_ID_, "pathname"),
             dash.State(self.HISTORY_ID, "data"),
             prevent_initial_call=True
         )
@@ -295,8 +295,8 @@ class AppAPI(ABC):
             return {"stack": stack, "index": index}
 
         @self.app.callback(
-            dash.Output(self._LOCATION_ID_, "pathname", allow_duplicate=True),
-            dash.Input(self._BACKWARD_ID_, "n_clicks"),
+            dash.Output(self._PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
+            dash.Input(self._PAGE_BACKWARD_ID_, "n_clicks"),
             dash.State(self.HISTORY_ID, "data"),
             prevent_initial_call=True
         )
@@ -307,17 +307,17 @@ class AppAPI(ABC):
             return dash.no_update
 
         @self.app.callback(
-            dash.Output(self._LOCATION_ID_, "pathname", allow_duplicate=True),
-            dash.Input(self._REFRESH_ID_, "n_clicks"),
-            dash.State(self._LOCATION_ID_, "pathname"),
+            dash.Output(self._PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
+            dash.Input(self._PAGE_REFRESH_ID_, "n_clicks"),
+            dash.State(self._PAGE_LOCATION_ID_, "pathname"),
             prevent_initial_call=True
         )
         def _refresh_callback_(_, path):
             return path
 
         @self.app.callback(
-            dash.Output(self._LOCATION_ID_, "pathname", allow_duplicate=True),
-            dash.Input(self._FORWARD_ID_, "n_clicks"),
+            dash.Output(self._PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
+            dash.Input(self._PAGE_FORWARD_ID_, "n_clicks"),
             dash.State(self.HISTORY_ID, "data"),
             prevent_initial_call=True
         )
