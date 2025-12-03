@@ -36,9 +36,9 @@ class LoggingAPI(ABC):
 
     _instance_tags_: str = None
 
-    log_flag: bool = False
-    enter_flag: bool = False
-    exit_flag: bool = False
+    _log_flag_: bool = None
+    _enter_flag_: bool = None
+    _exit_flag_: bool = None
 
     _dummy_: Callable[[Callable[[], str]], None] = lambda *_: None
     debug: Callable[[Callable[[], str | BytesIO]], None] = None
@@ -49,8 +49,9 @@ class LoggingAPI(ABC):
     exception: Callable[[Callable[[], str | BytesIO]], None] = None
 
     @classmethod
+    @abstractmethod
     def _setup_class_(cls) -> None:
-        pass
+        raise NotImplementedError
 
     def __init_subclass__(cls):
         cls._class_lock_ = Lock()
@@ -146,6 +147,42 @@ class LoggingAPI(ABC):
     def reset_verbose_level(cls) -> None:
         cls.set_verbose_level(cls._class_verbose_default_)
 
+    @classmethod
+    def is_enabled(cls) -> bool:
+        return cls._log_flag_
+
+    @classmethod
+    def enable_loging(cls) -> None:
+        cls._log_flag_ = True
+
+    @classmethod
+    def disable_logging(cls) -> None:
+        cls._log_flag_ = False
+
+    @classmethod
+    def is_entered(cls):
+        return cls._enter_flag_
+
+    @classmethod
+    def enable_entering(cls) -> None:
+        cls._enter_flag_ = False
+
+    @classmethod
+    def disable_entering(cls) -> None:
+        cls._enter_flag_ = True
+
+    @classmethod
+    def is_exited(cls):
+        return not cls._exit_flag_
+
+    @classmethod
+    def enable_exiting(cls) -> None:
+        cls._exit_flag_ = True
+
+    @classmethod
+    def disable_exiting(cls) -> None:
+        cls._exit_flag_ = False
+
     @staticmethod
     def now() -> datetime:
         return datetime.now()
@@ -184,7 +221,7 @@ class LoggingAPI(ABC):
                 cls._class_verbose_max_ = verbose
             if cls._class_verbose_min_ is None or verbose.value < cls._class_verbose_min_.value:
                 cls._class_verbose_min_ = verbose
-            if not cls.log_flag: return
+            if not cls.is_enabled(): return
             message = content() if isinstance(content, Callable) else content
             log = self._build_log_(level_tag=level_tag, message=message)
             cls._output_log_(verbose=verbose, log=log)
@@ -213,11 +250,11 @@ class LoggingAPI(ABC):
     def __enter__(self):
         cls = self.__class__
         with cls._class_lock_:
-            if not cls.enter_flag:
+            if not cls.is_entered():
                 cls.class_timer.start()
                 self._enter_()
-                cls.enter_flag = True
-                self.exit_flag = True
+                cls.disable_entering()
+                self.enable_exiting()
         return self
 
     def _exit_(self) -> None:
@@ -226,9 +263,9 @@ class LoggingAPI(ABC):
     def __exit__(self, exc_type, exc_value, exc_traceback):
         cls = self.__class__
         with cls._class_lock_:
-            if self.exit_flag:
+            if not self.is_exited():
                 cls.class_timer.stop()
                 self._exit_()
-                cls.enter_flag = False
-                self.exit_flag = False
+                cls.enable_entering()
+                self.disable_exiting()
         return self
