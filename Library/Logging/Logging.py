@@ -51,7 +51,7 @@ class LoggingAPI(ABC):
     @classmethod
     @abstractmethod
     def _setup_class_(cls) -> None:
-        raise NotImplementedError
+        cls.set_verbose_level(VerboseLevel.Debug, default=True)
 
     def __init_subclass__(cls):
         cls._class_lock_ = Lock()
