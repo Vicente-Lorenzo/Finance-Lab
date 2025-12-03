@@ -1,13 +1,13 @@
-import datetime
 from enum import Enum
 from io import BytesIO
 from typing import Callable
 from abc import ABC, abstractmethod
+from datetime import datetime
 from threading import Lock
 
-from Library.Utility import datetime_to_string
+from Library.Statistics import Timer
 
-class VerboseType(Enum):
+class VerboseLevel(Enum):
     Silent = 0
     Exception = 1
     Error = 2
@@ -18,194 +18,217 @@ class VerboseType(Enum):
 
 class LoggingAPI(ABC):
 
-    _default_verbose: VerboseType = VerboseType.Silent
-    _current_verbose: VerboseType = VerboseType.Silent
+    _class_lock_: Lock = None
+    class_timer: Timer = None
 
-    _base_tags: dict = {}
-    _class_tags: dict = {}
-    _instance_tags: dict = {}
+    _class_tags_: str = None
+    _class_debug_tag_: str = None
+    _class_info_tag_: str = None
+    _class_alert_tag_: str = None
+    _class_warning_tag_: str = None
+    _class_error_tag_: str = None
+    _class_exception_tag_: str = None
 
-    _static_log_debug: str | None = None
-    _static_log_info: str | None = None
-    _static_log_alert: str | None = None
-    _static_log_warning: str | None = None
-    _static_log_error: str | None = None
-    _static_log_exception: str | None = None
+    _class_verbose_default_: VerboseLevel = None
+    _class_verbose_current_: VerboseLevel = None
+    _class_verbose_max_: VerboseLevel = None
+    _class_verbose_min_: VerboseLevel = None
 
-    _lock: Lock = None
+    _instance_tags_: str = None
 
-    _dummy: Callable[[Callable[[], str]], None] = lambda *_: None
-    debug: Callable[[Callable[[], str | BytesIO]], None] = _dummy
-    info: Callable[[Callable[[], str | BytesIO]], None] = _dummy
-    alert: Callable[[Callable[[], str | BytesIO]], None] = _dummy
-    warning: Callable[[Callable[[], str | BytesIO]], None] = _dummy
-    error: Callable[[Callable[[], str | BytesIO]], None] = _dummy
-    exception: Callable[[Callable[[], str | BytesIO]], None] = _dummy
+    log_flag: bool = False
+    enter_flag: bool = False
+    exit_flag: bool = False
 
-    _enter_flag: bool = False
-    _exit_flag: bool = False
+    _dummy_: Callable[[Callable[[], str]], None] = lambda *_: None
+    debug: Callable[[Callable[[], str | BytesIO]], None] = None
+    info: Callable[[Callable[[], str | BytesIO]], None] = None
+    alert: Callable[[Callable[[], str | BytesIO]], None] = None
+    warning: Callable[[Callable[[], str | BytesIO]], None] = None
+    error: Callable[[Callable[[], str | BytesIO]], None] = None
+    exception: Callable[[Callable[[], str | BytesIO]], None] = None
+
+    @classmethod
+    def _setup_class_(cls) -> None:
+        pass
+
+    def __init_subclass__(cls):
+        cls._class_lock_ = Lock()
+        cls.class_timer = Timer()
+        cls._set_class_verbose_tags_()
+        cls._setup_class_()
+
+    def __init__(self, *args, **kwargs) -> None:
+        self.set_instance_tags(*args, **kwargs)
 
     @staticmethod
-    def init(**kwargs) -> None:
-        LoggingAPI._base_tags.clear()
-        LoggingAPI._base_tags.update(kwargs)
+    @abstractmethod
+    def _format_tag_(*args, **kwargs) -> str:
+        raise NotImplementedError
 
     @classmethod
-    def setup(cls, verbose: VerboseType, **kwargs) -> None:
-        cls._class_tags.clear()
-        cls._class_tags.update(kwargs)
-        cls._default_verbose = verbose
-        cls._lock = Lock()
-        cls.reset()
-
-    def __init__(self, **kwargs):
-        self._instance_tags.clear()
-        for k, v in kwargs.items():
-            if k in LoggingAPI._base_tags:
-                self._base_tags[k] = v
-            elif k in self.__class__._class_tags:
-                self._class_tags[k] = v
-            else:
-                self._instance_tags[k] = v
-        self._format()
+    def set_class_tags(cls, *args, **kwargs) -> None:
+        if not (args or kwargs): return
+        cls._class_tags_ = " - ".join([cls._format_tag_(tag=tag) for tag in (*args, *kwargs.values())])
 
     @classmethod
-    def level(cls, verbose: VerboseType) -> None:
-        with cls._lock:
-            if verbose == cls._current_verbose:
-                return
+    def _set_class_verbose_tags_(cls) -> None:
+        cls._class_debug_tag_ = cls._format_tag_(tag=VerboseLevel.Debug.name)
+        cls._class_info_tag_ = cls._format_tag_(tag=VerboseLevel.Info.name)
+        cls._class_alert_tag_ = cls._format_tag_(tag=VerboseLevel.Alert.name)
+        cls._class_warning_tag_ = cls._format_tag_(tag=VerboseLevel.Warning.name)
+        cls._class_error_tag_ = cls._format_tag_(tag=VerboseLevel.Error.name)
+        cls._class_exception_tag_ = cls._format_tag_(tag=VerboseLevel.Exception.name)
+
+    def set_instance_tags(self, *args, **kwargs) -> None:
+        if not (args or kwargs): return
+        separator = self._format_tag_(tag=" - ", separator=True)
+        self._instance_tags_ = separator.join([self._format_tag_(tag=tag) for tag in (*args, *kwargs.values())])
+
+    @classmethod
+    def set_verbose_level(cls, verbose: VerboseLevel, default=False) -> None:
+        with cls._class_lock_:
+            if default:
+                cls._class_verbose_default_ = verbose
             match verbose:
-                case VerboseType.Debug:
-                    cls.debug = cls._debug
-                    cls.info = cls._info
-                    cls.alert = cls._alert
-                    cls.warning = cls._warning
-                    cls.error = cls._error
-                    cls.exception = cls._exception
-                case VerboseType.Info:
-                    cls.debug = cls._dummy
-                    cls.info = cls._info
-                    cls.alert = cls._alert
-                    cls.warning = cls._warning
-                    cls.error = cls._error
-                    cls.exception = cls._exception
-                case VerboseType.Alert:
-                    cls.debug = cls._dummy
-                    cls.info = cls._dummy
-                    cls.alert = cls._alert
-                    cls.warning = cls._warning
-                    cls.error = cls._error
-                    cls.exception = cls._exception
-                case VerboseType.Warning:
-                    cls.debug = cls._dummy
-                    cls.info = cls._dummy
-                    cls.alert = cls._dummy
-                    cls.warning = cls._warning
-                    cls.error = cls._error
-                    cls.exception = cls._exception
-                case VerboseType.Error:
-                    cls.debug = cls._dummy
-                    cls.info = cls._dummy
-                    cls.alert = cls._dummy
-                    cls.warning = cls._dummy
-                    cls.error = cls._error
-                    cls.exception = cls._exception
-                case VerboseType.Exception:
-                    cls.debug = cls._dummy
-                    cls.info = cls._dummy
-                    cls.alert = cls._dummy
-                    cls.warning = cls._dummy
-                    cls.error = cls._dummy
-                    cls.exception = cls._exception
-                case VerboseType.Silent:
-                    cls.debug = cls._dummy
-                    cls.info = cls._dummy
-                    cls.alert = cls._dummy
-                    cls.warning = cls._dummy
-                    cls.error = cls._dummy
-                    cls.exception = cls._dummy
-            cls._current_verbose = verbose
+                case VerboseLevel.Debug:
+                    cls.debug = cls._debug_
+                    cls.info = cls._info_
+                    cls.alert = cls._alert_
+                    cls.warning = cls._warning_
+                    cls.error = cls._error_
+                    cls.exception = cls._exception_
+                case VerboseLevel.Info:
+                    cls.debug = cls._dummy_
+                    cls.info = cls._info_
+                    cls.alert = cls._alert_
+                    cls.warning = cls._warning_
+                    cls.error = cls._error_
+                    cls.exception = cls._exception_
+                case VerboseLevel.Alert:
+                    cls.debug = cls._dummy_
+                    cls.info = cls._dummy_
+                    cls.alert = cls._alert_
+                    cls.warning = cls._warning_
+                    cls.error = cls._error_
+                    cls.exception = cls._exception_
+                case VerboseLevel.Warning:
+                    cls.debug = cls._dummy_
+                    cls.info = cls._dummy_
+                    cls.alert = cls._dummy_
+                    cls.warning = cls._warning_
+                    cls.error = cls._error_
+                    cls.exception = cls._exception_
+                case VerboseLevel.Error:
+                    cls.debug = cls._dummy_
+                    cls.info = cls._dummy_
+                    cls.alert = cls._dummy_
+                    cls.warning = cls._dummy_
+                    cls.error = cls._error_
+                    cls.exception = cls._exception_
+                case VerboseLevel.Exception:
+                    cls.debug = cls._dummy_
+                    cls.info = cls._dummy_
+                    cls.alert = cls._dummy_
+                    cls.warning = cls._dummy_
+                    cls.error = cls._dummy_
+                    cls.exception = cls._exception_
+                case VerboseLevel.Silent:
+                    cls.debug = cls._dummy_
+                    cls.info = cls._dummy_
+                    cls.alert = cls._dummy_
+                    cls.warning = cls._dummy_
+                    cls.error = cls._dummy_
+                    cls.exception = cls._dummy_
+            cls._class_verbose_current_ = verbose
 
     @classmethod
-    def reset(cls) -> None:
-        cls.level(cls._default_verbose)
+    def reset_verbose_level(cls) -> None:
+        cls.set_verbose_level(cls._class_verbose_default_)
 
-    def _enter_(self):
-        pass
-
-    def __enter__(self):
-        with self.__class__._lock:
-            if not self.__class__._enter_flag:
-                self._enter_()
-                self.__class__._enter_flag = True
-                self._exit_flag = True
-            else:
-                self._exit_flag = False
-        return self
-
-    def _exit_(self):
-        pass
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        with self.__class__._lock:
-            if self._exit_flag:
-                self._exit_()
-                self.__class__._enter_flag = False
-                self._exit_flag = False
-        return self
+    @staticmethod
+    def now() -> datetime:
+        return datetime.now()
 
     @staticmethod
     def timestamp() -> str:
-        return datetime_to_string(dt=datetime.datetime.now(), fmt="%Y-%m-%d %H:%M:%S.%f")[:-3]
+        return LoggingAPI.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
-    @staticmethod
-    @abstractmethod
-    def _format_tag(static: str, tag: str) -> str:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _format_level(self, *args, **kwargs) -> str:
-        raise NotImplementedError
-
-    @abstractmethod
-    def _format(self) -> None:
-        raise NotImplementedError
-
-    @staticmethod
-    @abstractmethod
-    def _build_log(*args, **kwargs):
-        raise NotImplementedError
-
-    @staticmethod
-    @abstractmethod
-    def _output_log(*args, **kwargs):
-        raise NotImplementedError
+    def _build_log_(self, level_tag: str = None, message: str = None) -> str:
+        log = self._format_tag_(tag=self.timestamp())
+        separator = self._format_tag_(tag=" - ", separator=True)
+        if self._class_tags_ is not None:
+            log += separator
+            log += self._class_tags_
+        if level_tag is not None:
+            log += separator
+            log += level_tag
+        if self._instance_tags_ is not None:
+            log += separator
+            log += self._instance_tags_
+        if message is not None:
+            message_tag = self._format_tag_(tag=message)
+            log += separator
+            log += message_tag
+        return log
 
     @classmethod
-    def _log(cls, *args, **kwargs):
-        with cls._lock:
-            cls._output_log(*args, **kwargs)
-
     @abstractmethod
-    def _debug(self, content_func: Callable[[], str | BytesIO]):
+    def _output_log_(cls, verbose: VerboseLevel, log: str) -> None:
         raise NotImplementedError
 
-    @abstractmethod
-    def _info(self, content_func: Callable[[], str | BytesIO]):
-        raise NotImplementedError
+    def _log_(self, verbose: VerboseLevel, level_tag: str, content: Callable[[], str | BytesIO] | str) -> None:
+        cls = self.__class__
+        with cls._class_lock_:
+            if cls._class_verbose_max_ is None or verbose.value > cls._class_verbose_max_.value:
+                cls._class_verbose_max_ = verbose
+            if cls._class_verbose_min_ is None or verbose.value < cls._class_verbose_min_.value:
+                cls._class_verbose_min_ = verbose
+            if not cls.log_flag: return
+            message = content() if isinstance(content, Callable) else content
+            log = self._build_log_(level_tag=level_tag, message=message)
+            cls._output_log_(verbose=verbose, log=log)
 
-    @abstractmethod
-    def _alert(self, content_func: Callable[[], str | BytesIO]):
-        raise NotImplementedError
+    def _debug_(self, content: Callable[[], str | BytesIO] | str) -> None:
+        self._log_(VerboseLevel.Debug, self._class_debug_tag_, content)
 
-    @abstractmethod
-    def _warning(self, content_func: Callable[[], str | BytesIO]):
-        raise NotImplementedError
+    def _info_(self, content: Callable[[], str | BytesIO] | str) -> None:
+        self._log_(VerboseLevel.Info, self._class_info_tag_, content)
 
-    @abstractmethod
-    def _error(self, content_func: Callable[[], str | BytesIO]):
-        raise NotImplementedError
+    def _alert_(self, content: Callable[[], str | BytesIO] | str) -> None:
+        self._log_(VerboseLevel.Alert, self._class_alert_tag_, content)
 
-    @abstractmethod
-    def _exception(self, content_func: Callable[[], str | BytesIO]):
-        raise NotImplementedError
+    def _warning_(self, content: Callable[[], str | BytesIO] | str) -> None:
+        self._log_(VerboseLevel.Warning, self._class_warning_tag_, content)
+
+    def _error_(self, content: Callable[[], str | BytesIO] | str) -> None:
+        self._log_(VerboseLevel.Error, self._class_error_tag_, content)
+
+    def _exception_(self, content: Callable[[], str | BytesIO] | str) -> None:
+        self._log_(VerboseLevel.Exception, self._class_exception_tag_, content)
+
+    def _enter_(self) -> None:
+        pass
+
+    def __enter__(self):
+        cls = self.__class__
+        with cls._class_lock_:
+            if not cls.enter_flag:
+                cls.class_timer.start()
+                self._enter_()
+                cls.enter_flag = True
+                self.exit_flag = True
+        return self
+
+    def _exit_(self) -> None:
+        pass
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        cls = self.__class__
+        with cls._class_lock_:
+            if self.exit_flag:
+                cls.class_timer.stop()
+                self._exit_()
+                cls.enter_flag = False
+                self.exit_flag = False
+        return self

@@ -1,69 +1,36 @@
-from io import BytesIO
-from typing import Callable
+from Library.Logging import VerboseLevel, LoggingAPI
 
-from Library.Logging import VerboseType, LoggingAPI
+class ConsoleLoggingAPI(LoggingAPI):
 
-class ConsoleAPI(LoggingAPI):
+    _GREEN_: str = "\033[38;5;46m"
+    _BLUE_: str = "\033[38;5;33m"
+    _YELLOW_: str = "\033[38;5;226m"
+    _ORANGE_: str = "\033[38;5;208m"
+    _RED_: str = "\033[38;5;196m"
+    _DARKRED_: str = "\033[38;5;197m"
+    _GRAY_: str = "\033[38;5;245m"
+    _LIGHTGRAY_: str = "\033[38;5;240m"
+    _WHITE_: str = "\033[0m"
 
-    _GREEN: str = "\033[38;5;46m"
-    _BLUE: str = "\033[38;5;33m"
-    _YELLOW: str = "\033[38;5;226m"
-    _ORANGE: str = "\033[38;5;208m"
-    _RED: str = "\033[38;5;196m"
-    _DARK_RED: str = "\033[38;5;197m"
-    _GRAY: str = "\033[38;5;245m"
-    _LIGHT_GRAY: str = "\033[38;5;240m"
-    _WHITE: str = "\033[0m"
-
-    @staticmethod
-    def _format_tag(static: str, tag: str) -> str:
-        static += f"{ConsoleAPI._WHITE}{tag}{ConsoleAPI._LIGHT_GRAY}"
-        return static
-
-    def _format_level(self, level: VerboseType, level_color: str) -> str:
-        static = ""
-        for base_tag in LoggingAPI._base_tags.values():
-            static = ConsoleAPI._format_tag(static, base_tag)
-            static += " - "
-        for class_tag in ConsoleAPI._class_tags.values():
-            static = ConsoleAPI._format_tag(static, class_tag)
-            static += " - "
-        static += f"{level_color}{level.name}{ConsoleAPI._LIGHT_GRAY}"
-        for instance_tags in self._instance_tags.values():
-            static += " - "
-            static = ConsoleAPI._format_tag(static, instance_tags)
-        return static
-
-    def _format(self) -> None:
-        self._static_log_debug: str = self._format_level(VerboseType.Debug, ConsoleAPI._GREEN)
-        self._static_log_info: str = self._format_level(VerboseType.Info, ConsoleAPI._BLUE)
-        self._static_log_alert: str = self._format_level(VerboseType.Alert, ConsoleAPI._ORANGE)
-        self._static_log_warning: str = self._format_level(VerboseType.Warning, ConsoleAPI._YELLOW)
-        self._static_log_error: str = self._format_level(VerboseType.Error, ConsoleAPI._RED)
-        self._static_log_exception: str = self._format_level(VerboseType.Exception, ConsoleAPI._DARK_RED)
+    @classmethod
+    def _setup_class_(cls) -> None:
+        cls.set_verbose_level(VerboseLevel.Debug, default=True)
+        cls.log_flag = True
 
     @staticmethod
-    def _build_log(static_log: str, content_func: Callable[[], str | BytesIO]):
-        return f"{ConsoleAPI._WHITE}{LoggingAPI.timestamp()}{ConsoleAPI._LIGHT_GRAY} - {ConsoleAPI._WHITE}{static_log}{ConsoleAPI._LIGHT_GRAY} - {ConsoleAPI._GRAY}{content_func()}{ConsoleAPI._WHITE}"
+    def _format_tag_(tag: str,  separator: bool = False, color: str = _WHITE_, default: str = _WHITE_) -> str:
+        color = ConsoleLoggingAPI._LIGHTGRAY_ if separator else color
+        return f"{color}{tag}{default}"
 
-    @staticmethod
-    def _output_log(static_log: str, content_func: Callable[[], str | BytesIO]):
-        print(ConsoleAPI._build_log(static_log, content_func))
+    @classmethod
+    def _set_class_verbose_tags_(cls) -> None:
+        cls._class_debug_tag_ = cls._format_tag_(tag=VerboseLevel.Debug.name, color=cls._GREEN_)
+        cls._class_info_tag_ = cls._format_tag_(tag=VerboseLevel.Info.name, color=cls._BLUE_)
+        cls._class_alert_tag_ = cls._format_tag_(tag=VerboseLevel.Alert.name, color=cls._ORANGE_)
+        cls._class_warning_tag_ = cls._format_tag_(tag=VerboseLevel.Warning.name, color=cls._YELLOW_)
+        cls._class_error_tag_ = cls._format_tag_(tag=VerboseLevel.Error.name, color=cls._RED_)
+        cls._class_exception_tag_ = cls._format_tag_(tag=VerboseLevel.Exception.name, color=cls._DARKRED_)
 
-    def _debug(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._static_log_debug, content_func)
-
-    def _info(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._static_log_info, content_func)
-
-    def _alert(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._static_log_alert, content_func)
-
-    def _warning(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._static_log_warning, content_func)
-
-    def _error(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._static_log_error, content_func)
-
-    def _exception(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._static_log_exception, content_func)
+    @classmethod
+    def _output_log_(cls, verbose: VerboseLevel, log: str) -> None:
+        print(log)

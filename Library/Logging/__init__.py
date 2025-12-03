@@ -1,14 +1,10 @@
-from Library.Logging.Logging import VerboseType, LoggingAPI
-from Library.Logging.Console import ConsoleAPI
-from Library.Logging.Telegram import TelegramAPI
-from Library.Logging.File import FileAPI
-from Library.Logging.Handler import HandlerAPI
+from Library.Logging.Logging import VerboseLevel, LoggingAPI
+from Library.Logging.Console import ConsoleLoggingAPI
+from Library.Logging.Buffer import BufferLoggingAPI
 
 __all__ = [
-    "VerboseType",
+    "VerboseLevel",
     "LoggingAPI",
-    "ConsoleAPI",
-    "TelegramAPI",
-    "FileAPI",
-    "HandlerAPI"
+    "ConsoleLoggingAPI",
+    "BufferLoggingAPI"
 ]
