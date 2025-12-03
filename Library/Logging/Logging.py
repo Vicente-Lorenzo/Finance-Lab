@@ -152,7 +152,7 @@ class LoggingAPI(ABC):
         return cls._log_flag_
 
     @classmethod
-    def enable_loging(cls) -> None:
+    def enable_logging(cls) -> None:
         cls._log_flag_ = True
 
     @classmethod

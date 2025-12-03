@@ -9,10 +9,10 @@ class BufferLoggingAPI(LoggingAPI):
 
     @classmethod
     def _setup_class_(cls) -> None:
+        cls.set_verbose_level(VerboseLevel.Debug, default=True)
         cls._buffer_ = deque()
         cls._buffer_lock_ = Lock()
-        cls.set_verbose_level(VerboseLevel.Debug, default=True)
-        cls.log_flag = True
+        cls.enable_logging()
 
     @staticmethod
     def _format_tag_(tag: str, separator: bool = False) -> str:
