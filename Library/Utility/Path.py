@@ -36,9 +36,13 @@ def traceback_working_module_path(header: bool = False, footer: bool = False, re
     traceback: str = traceback_working()
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
-def traceback_depth(depth: int = 1) -> str:
-    f = _getframe(depth).f_code.co_filename
-    return f if f not in ("<string>", "<stdin>", "<exec>") else None
+def traceback_depth(depth: int = 1) -> str | None:
+    f: str = _getframe(depth).f_code.co_filename
+    if f in ("<string>", "<stdin>", "<exec>", "<frozen>"):
+        return None
+    if f.startswith("<") and f.endswith(">"):
+        return None
+    return f
 
 def traceback_depth_file(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path, depth: int = 2) -> PurePath | Path:
     traceback: str = traceback_depth(depth=depth)
@@ -56,9 +60,34 @@ def traceback_depth_module_path(header: bool = False, footer: bool = False, reso
     traceback: str = traceback_depth(depth=depth)
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
+def traceback_current():
+    depth: int = 0
+    while current := traceback_depth(depth=depth):
+        if current != __file__: break
+        depth += 1
+    return current if current else traceback_working()
+
+def traceback_current_file(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+    traceback: str = traceback_current()
+    return inspect_file(file=traceback, header=header, resolve=resolve, builder=builder)
+
+def traceback_current_file_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+    traceback: str = traceback_current()
+    return inspect_file_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
+
+def traceback_current_module(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+    traceback: str = traceback_current()
+    return inspect_module(file=traceback, header=header, resolve=resolve, builder=builder)
+
+def traceback_current_module_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+    traceback: str = traceback_current()
+    return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
+
 def traceback_calling() -> str:
     depth: int = 0
-    while (calling := traceback_depth(depth=depth)) is None or calling == __file__:
+    current: str = traceback_current()
+    while calling := traceback_depth(depth=depth):
+        if calling != __file__ and calling != current: break
         depth += 1
     return calling if calling else traceback_working()
 
@@ -81,9 +110,9 @@ def traceback_calling_module_path(header: bool = False, footer: bool = False, re
 def traceback_regex(pattern: str) -> str:
     depth: int = 0
     pattern: Pattern = compile(pattern)
-    while not search(pattern, calling := traceback_depth(depth=depth)):
+    while not search(pattern, expression := traceback_depth(depth=depth)):
         depth += 1
-    return calling if calling else traceback_working()
+    return expression if expression else traceback_working()
 
 def traceback_regex_file(pattern: str, header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     traceback: str = traceback_regex(pattern=pattern)
