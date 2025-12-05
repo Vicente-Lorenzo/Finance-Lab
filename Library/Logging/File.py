@@ -1,102 +1,80 @@
 from pathlib import Path
-from typing import Callable
-from datetime import datetime
-from io import BytesIO, TextIOWrapper
+from io import TextIOWrapper
 
-from Library.Logging import VerboseType, LoggingAPI
-from Library.Utility import datetime_to_string
+from Library.Logging import VerboseLevel, BufferLoggingAPI
+from Library.Utility import inspect_file
 
-class FileAPI(LoggingAPI):
+class FileLoggingAPI(BufferLoggingAPI):
 
-    _BUFFER_LIMIT: int = 1e6
-    _buffer: list[str] = []
-    _buffer_size: int = 0
-
-    _dir_path: Path = Path("Library") / Path("Logging") / Path("Logs")
-    _file_path: Path = None
-    _file: TextIOWrapper | None = None
-
-    @staticmethod
-    def _flush():
-        FileAPI._file.writelines(FileAPI._buffer)
-        FileAPI._file.flush()
-
-    @staticmethod
-    def _clear():
-        FileAPI._buffer.clear()
-        FileAPI._buffer_size = 0
+    _dir_path_: Path = None
+    _file_name_: str = None
+    _file_extension_: str = None
+    _file_path_: Path = None
+    _file_: TextIOWrapper = None
 
     @classmethod
-    def setup(cls, verbose: VerboseType, uid: list[str], **kwargs) -> None:
-        super().setup(verbose, **kwargs)
-        now = datetime.now()
-        unique_date = datetime_to_string(dt=now, fmt="%Y-%m-%d")
-        unique_time = datetime_to_string(dt=now, fmt="%H-%M-%S")
-        cls._file_path = cls._dir_path / f"{'_'.join(uid)}_{unique_date}_{unique_time}.log"
+    def _setup_class_(cls) -> None:
+        super()._setup_class_()
+        cls.set_dir_path(inspect_file("Logs", resolve=True))
+        cls.set_file_extension(file_extension="file.log")
 
-    def _enter_(self):
-        FileAPI._file = FileAPI._file_path.open("a", encoding="utf-8")
+    @classmethod
+    def set_dir_path(cls, dir_path: Path) -> None:
+        cls._dir_path_ = dir_path
 
-    def _exit_(self):
-        if FileAPI._buffer_size:
-            FileAPI._flush()
-        FileAPI._clear()
-        FileAPI._file.close()
+    @classmethod
+    def set_file_name(cls, file_name: str) -> None:
+        cls._file_name_ = file_name
 
-    @staticmethod
-    def _format_tag(static: str, tag: str) -> str:
-        static += f"{tag}"
-        return static
+    @classmethod
+    def set_file_extension(cls, file_extension: str) -> None:
+        cls._file_extension_ = file_extension
 
-    def _format_level(self, level: VerboseType) -> str:
-        static = ""
-        for base_tag in LoggingAPI._base_tags.values():
-            static = FileAPI._format_tag(static, base_tag)
-            static += " - "
-        for class_tag in FileAPI._class_tags.values():
-            static = FileAPI._format_tag(static, class_tag)
-            static += " - "
-        static += f"{level.name}"
-        for instance_tags in self._instance_tags.values():
-            static += " - "
-            static = FileAPI._format_tag(static, instance_tags)
-        return static
+    @classmethod
+    def get_file_hyperlink(cls) -> str:
+        return cls._file_path_.as_uri()
 
-    def _format(self) -> None:
-        self._static_log_debug: str = self._format_level(VerboseType.Debug)
-        self._static_log_info: str = self._format_level(VerboseType.Info)
-        self._static_log_alert: str = self._format_level(VerboseType.Alert)
-        self._static_log_warning: str = self._format_level(VerboseType.Warning)
-        self._static_log_error: str = self._format_level(VerboseType.Error)
-        self._static_log_exception: str = self._format_level(VerboseType.Exception)
+    @classmethod
+    def _output_log_(cls, verbose: VerboseLevel, log: str) -> None:
+        return cls._buffer_pushone_(log=log + "\n")
 
     @staticmethod
-    def _build_log(static_log: str, content_func: Callable[[], str | BytesIO]):
-        return f"{LoggingAPI.timestamp()} - {static_log} - {content_func()}\n"
+    def _format_file_name_(file_name: str):
+        if not file_name: return file_name
+        file_name = file_name.replace(' ', '-')
+        file_name = file_name.replace('/', '-')
+        file_name = file_name.replace('\\', '-')
+        file_name = file_name.replace(':', '')
+        return file_name
 
-    @staticmethod
-    def _output_log(static_log: str, content_func: Callable[[], str | BytesIO]):
-        log = FileAPI._build_log(static_log, content_func)
-        FileAPI._buffer.append(log)
-        FileAPI._buffer_size += len(log)
-        if FileAPI._buffer_size >= FileAPI._BUFFER_LIMIT:
-            FileAPI._flush()
-            FileAPI._clear()
+    @classmethod
+    def _enter_(cls):
+        now = cls.now()
+        unique_date = now.strftime("%Y-%m-%d")
+        unique_time = now.strftime("%H-%M-%S")
+        tokens = []
+        if cls._user_info_:
+            tokens.append(cls._format_file_name_(file_name=cls._user_info_))
+        if cls._host_info_:
+            tokens.append(cls._format_file_name_(file_name=cls._host_info_))
+        if cls._exec_info_:
+            tokens.append(cls._format_file_name_(file_name=cls._exec_info_))
+        tokens.append(cls._format_file_name_(file_name=unique_date))
+        tokens.append(cls._format_file_name_(file_name=unique_time))
+        if cls._file_name_:
+            tokens.append(cls._format_file_name_(file_name=cls._file_name_))
+        if cls._path_info_:
+            tokens.append(cls._format_file_name_(file_name=cls._path_info_))
+        file_name = "__".join(tokens)
+        cls._file_path_ = cls._dir_path_ / f"{file_name}.{cls._file_extension_}"
+        if not cls._dir_path_.exists():
+            cls._dir_path_.mkdir(parents=True, exist_ok=True)
+        cls._file_ = cls._file_path_.open("w")
+        cls.disable_entering()
 
-    def _debug(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._static_log_debug, content_func)
-
-    def _info(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._static_log_info, content_func)
-
-    def _alert(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._static_log_alert, content_func)
-
-    def _warning(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._static_log_warning, content_func)
-
-    def _error(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._static_log_error, content_func)
-
-    def _exception(self, content_func: Callable[[], str | BytesIO]):
-        self._log(self._static_log_exception, content_func)
+    @classmethod
+    def _exit_(cls):
+        logs = cls._buffer_pullall_()
+        cls._file_.writelines(logs)
+        cls._file_.close()
+        cls.enable_entering()
