@@ -42,6 +42,18 @@ from Library.Utility.Path import (
     traceback_regex_module_path,
     PathAPI
 )
+from Library.Utility.Runtime import (
+    is_windows,
+    is_linux,
+    is_mac,
+    is_local,
+    is_remote,
+    is_python,
+    is_ipython,
+    is_console,
+    is_terminal,
+    is_notebook
+)
 
 __all__ = [
     "gantt",
@@ -56,4 +68,5 @@ __all__ = [
     "traceback_calling", "traceback_calling_file", "traceback_calling_file_path", "traceback_calling_module", "traceback_calling_module_path",
     "traceback_regex", "traceback_regex_file", "traceback_regex_file_path", "traceback_regex_module", "traceback_regex_module_path",
     "PathAPI",
+    "is_windows", "is_linux", "is_mac", "is_local", "is_remote", "is_python", "is_console", "is_terminal", "is_notebook"
 ]
