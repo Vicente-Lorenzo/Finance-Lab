@@ -4,7 +4,7 @@ from pathlib import PurePath, Path
 from re import Pattern, compile, search
 from dataclasses import dataclass, field
 
-from Library.Utility import is_notebook, find_notebook
+from Library.Utility import contains, is_notebook, find_notebook
 
 def inspect_file(file: str, header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     file: PurePath = builder("/") / file if header else builder(file)
@@ -40,10 +40,8 @@ def traceback_working_module_path(header: bool = False, footer: bool = False, re
 
 def traceback_depth(depth: int = 1) -> str | None:
     f: str = _getframe(depth).f_code.co_filename
-    if f in ("<string>", "<stdin>", "<exec>", "<frozen>"):
-        return None
-    if f.startswith("<") and f.endswith(">"):
-        return None
+    if contains(f, ("ipython", "ipykernel", "interactiveshell", "runpy")):
+        return find_notebook() if is_notebook() else f
     return f
 
 def traceback_depth_file(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path, depth: int = 2) -> PurePath | Path:
@@ -63,16 +61,16 @@ def traceback_depth_module_path(header: bool = False, footer: bool = False, reso
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
 def traceback_origin() -> str:
-    if is_notebook(): return find_notebook()
     depth: int = 0
     origin: str | None = None
     try:
-        while origin := traceback_depth(depth=depth): depth += 1
+        while origin := traceback_depth(depth=depth):
+            depth += 1
     except ValueError:
         depth -= 1
         origin = traceback_depth(depth=depth)
     finally:
-        return origin if origin else traceback_working()
+        return origin
 
 def traceback_origin_file(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     traceback: str = traceback_origin()
@@ -95,7 +93,7 @@ def traceback_current():
     while current := traceback_depth(depth=depth):
         if current != __file__: break
         depth += 1
-    return current if current else traceback_working()
+    return current
 
 def traceback_current_file(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     traceback: str = traceback_current()
@@ -119,7 +117,7 @@ def traceback_calling() -> str:
     while calling := traceback_depth(depth=depth):
         if calling != __file__ and calling != current: break
         depth += 1
-    return calling if calling else traceback_working()
+    return calling
 
 def traceback_calling_file(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     traceback: str = traceback_calling()
@@ -142,7 +140,7 @@ def traceback_regex(pattern: str) -> str:
     pattern: Pattern = compile(pattern)
     while not search(pattern, expression := traceback_depth(depth=depth)):
         depth += 1
-    return expression if expression else traceback_working()
+    return expression
 
 def traceback_regex_file(pattern: str, header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     traceback: str = traceback_regex(pattern=pattern)

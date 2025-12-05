@@ -1,7 +1,10 @@
 from Library.Utility.Chart import gantt
 from Library.Utility.Image import image
-from Library.Utility.Math import equals
-from Library.Utility.Typing import cast
+from Library.Utility.Typing import (
+    cast,
+    equals,
+    contains
+)
 from Library.Utility.DateTime import (
     datetime_to_string,
     string_to_datetime,
@@ -65,8 +68,7 @@ from Library.Utility.Path import (
 __all__ = [
     "gantt",
     "image",
-    "cast",
-    "equals",
+    "cast", "equals", "contains",
     "datetime_to_string", "string_to_datetime", "datetime_to_timestamp", "timestamp_to_datetime", "datetime_to_iso", "iso_to_datetime", "seconds_to_string",
     "is_windows", "is_linux", "is_mac", "is_local", "is_remote", "find_ipython", "is_python", "is_console", "is_terminal", "is_notebook", "find_notebook",
     "inspect_file", "inspect_file_path", "inspect_module", "inspect_module_path",
