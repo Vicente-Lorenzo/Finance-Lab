@@ -15,12 +15,15 @@ from Library.Utility.DateTime import (
     seconds_to_string
 )
 from Library.Utility.Runtime import (
+    find_user,
     is_windows,
     is_linux,
     is_mac,
     is_local,
     is_remote,
+    is_service,
     find_ipython,
+    find_shell,
     is_python,
     is_ipython,
     is_console,
@@ -70,7 +73,8 @@ __all__ = [
     "image",
     "cast", "equals", "contains",
     "datetime_to_string", "string_to_datetime", "datetime_to_timestamp", "timestamp_to_datetime", "datetime_to_iso", "iso_to_datetime", "seconds_to_string",
-    "is_windows", "is_linux", "is_mac", "is_local", "is_remote", "find_ipython", "is_python", "is_console", "is_terminal", "is_notebook", "find_notebook",
+    "find_user", "is_windows", "is_linux", "is_mac", "is_local", "is_remote", "is_service",
+    "find_ipython", "find_shell", "is_python", "is_console", "is_terminal", "is_notebook", "find_notebook",
     "inspect_file", "inspect_file_path", "inspect_module", "inspect_module_path",
     "traceback_working", "traceback_working_module", "traceback_working_module_path",
     "traceback_depth", "traceback_depth_file", "traceback_depth_file_path", "traceback_depth_module", "traceback_depth_module_path",

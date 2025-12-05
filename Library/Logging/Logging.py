@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from threading import Lock
 
+from Library.Utility import *
 from Library.Statistics import Timer
 
 class VerboseLevel(Enum):
@@ -48,9 +49,34 @@ class LoggingAPI(ABC):
     error: Callable[[Callable[[], str | BytesIO]], None] = None
     exception: Callable[[Callable[[], str | BytesIO]], None] = None
 
+    _host_info_: str = None
+    _exec_info_: str = None
+    _path_info_: str = None
+    _user_info_: str = None
+
+    @staticmethod
+    def set_host_info(host_info: str) -> None:
+        LoggingAPI._host_info_ = host_info
+
+    @staticmethod
+    def set_exec_info(exec_info: str) -> None:
+        LoggingAPI._exec_info_ = exec_info
+
+    @staticmethod
+    def set_path_info(path_info: str) -> None:
+        LoggingAPI._path_info_ = path_info
+
+    @staticmethod
+    def set_user_info(user_info: str) -> None:
+        LoggingAPI._user_info_ = user_info
+
     @classmethod
     @abstractmethod
     def _setup_class_(cls) -> None:
+        cls.set_host_info(host_info="Local" if is_local() else "Remote")
+        cls.set_exec_info(exec_info="Python" if is_python() else "Notebook")
+        cls.set_path_info(path_info=traceback_origin_file_path(resolve=True))
+        cls.set_user_info(user_info=user if (user := find_user()) else "Team")
         cls.set_verbose_level(VerboseLevel.Debug, default=True)
 
     def __init_subclass__(cls):

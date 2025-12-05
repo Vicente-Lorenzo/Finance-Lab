@@ -1,13 +1,23 @@
 from functools import lru_cache
-import sys
+
+def find_user():
+    try:
+        import getpass
+        return getpass.getuser()
+    except (OSError, KeyError, ImportError):
+        import os
+        return os.environ.get("USER") or os.environ.get("USERNAME")
 
 def is_windows():
+    import sys
     return sys.platform.startswith("win")
 
 def is_linux():
+    import sys
     return sys.platform.startswith("linux")
 
 def is_mac():
+    import sys
     return sys.platform.startswith("darwin")
 
 def is_local():
@@ -16,6 +26,9 @@ def is_local():
 def is_remote():
     return is_linux()
 
+def is_service():
+    return is_remote() and not find_user()
+
 @lru_cache(maxsize=1)
 def find_ipython():
     from IPython import get_ipython
@@ -23,7 +36,7 @@ def find_ipython():
     return ipython
 
 @lru_cache(maxsize=1)
-def get_shell():
+def find_shell():
     try:
         ipython = find_ipython()
         return type(ipython).__name__ if ipython else None
@@ -31,19 +44,19 @@ def get_shell():
         return None
 
 def is_python():
-    return get_shell() is None
+    return find_shell() is None
 
 def is_ipython():
-    return get_shell() is not None
+    return find_shell() is not None
 
 def is_notebook():
-    return get_shell() == "ZMQInteractiveShell"
+    return find_shell() == "ZMQInteractiveShell"
 
 def is_terminal():
-    return get_shell() == "TerminalInteractiveShell"
+    return find_shell() == "TerminalInteractiveShell"
 
 def is_console():
-    return get_shell() == "PyDevTerminalInteractiveShell"
+    return find_shell() == "PyDevTerminalInteractiveShell"
 
 @lru_cache(maxsize=1)
 def find_notebook():
