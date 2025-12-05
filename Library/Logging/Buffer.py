@@ -1,6 +1,7 @@
 from threading import Lock
 from collections import deque
-from Library.Logging import LoggingAPI, VerboseLevel
+
+from Library.Logging import VerboseLevel, LoggingAPI
 
 class BufferLoggingAPI(LoggingAPI):
 
