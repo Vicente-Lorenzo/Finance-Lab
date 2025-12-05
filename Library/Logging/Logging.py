@@ -19,6 +19,11 @@ class VerboseLevel(Enum):
 
 class LoggingAPI(ABC):
 
+    _host_info_: str = "Local" if is_local() else "Remote"
+    _exec_info_: str = "Python" if is_python() else "Notebook"
+    _path_info_: str = traceback_origin_file_path(resolve=True)
+    _user_info_: str = user if (user := find_user()) else "Team"
+
     _class_lock_: Lock = None
     class_timer: Timer = None
 
@@ -35,11 +40,11 @@ class LoggingAPI(ABC):
     _class_verbose_max_: VerboseLevel = None
     _class_verbose_min_: VerboseLevel = None
 
-    _instance_tags_: str = None
+    _class_log_flag_: bool = None
+    _class_enter_flag_: bool = None
+    _class_exit_flag_: bool = None
 
-    _log_flag_: bool = None
-    _enter_flag_: bool = None
-    _exit_flag_: bool = None
+    _instance_tags_: str = None
 
     _dummy_: Callable[[Callable[[], str]], None] = lambda *_: None
     debug: Callable[[Callable[[], str | BytesIO]], None] = None
@@ -48,11 +53,6 @@ class LoggingAPI(ABC):
     warning: Callable[[Callable[[], str | BytesIO]], None] = None
     error: Callable[[Callable[[], str | BytesIO]], None] = None
     exception: Callable[[Callable[[], str | BytesIO]], None] = None
-
-    _host_info_: str = None
-    _exec_info_: str = None
-    _path_info_: str = None
-    _user_info_: str = None
 
     @staticmethod
     def set_host_info(host_info: str) -> None:
@@ -73,10 +73,6 @@ class LoggingAPI(ABC):
     @classmethod
     @abstractmethod
     def _setup_class_(cls) -> None:
-        cls.set_host_info(host_info="Local" if is_local() else "Remote")
-        cls.set_exec_info(exec_info="Python" if is_python() else "Notebook")
-        cls.set_path_info(path_info=traceback_origin_file_path(resolve=True))
-        cls.set_user_info(user_info=user if (user := find_user()) else "Team")
         cls.set_verbose_level(VerboseLevel.Debug, default=True)
 
     def __init_subclass__(cls):
@@ -175,39 +171,39 @@ class LoggingAPI(ABC):
 
     @classmethod
     def is_enabled(cls) -> bool:
-        return cls._log_flag_
+        return cls._class_log_flag_
 
     @classmethod
     def enable_logging(cls) -> None:
-        cls._log_flag_ = True
+        cls._class_log_flag_ = True
 
     @classmethod
     def disable_logging(cls) -> None:
-        cls._log_flag_ = False
+        cls._class_log_flag_ = False
 
     @classmethod
     def is_entered(cls):
-        return cls._enter_flag_
+        return cls._class_enter_flag_
 
     @classmethod
     def enable_entering(cls) -> None:
-        cls._enter_flag_ = False
+        cls._class_enter_flag_ = False
 
     @classmethod
     def disable_entering(cls) -> None:
-        cls._enter_flag_ = True
+        cls._class_enter_flag_ = True
 
     @classmethod
     def is_exited(cls):
-        return not cls._exit_flag_
+        return not cls._class_exit_flag_
 
     @classmethod
     def enable_exiting(cls) -> None:
-        cls._exit_flag_ = True
+        cls._class_exit_flag_ = True
 
     @classmethod
     def disable_exiting(cls) -> None:
-        cls._exit_flag_ = False
+        cls._class_exit_flag_ = False
 
     @staticmethod
     def now() -> datetime:
