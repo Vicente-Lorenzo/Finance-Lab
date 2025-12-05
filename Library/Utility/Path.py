@@ -60,6 +60,33 @@ def traceback_depth_module_path(header: bool = False, footer: bool = False, reso
     traceback: str = traceback_depth(depth=depth)
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
+def traceback_origin() -> str:
+    depth: int = 0
+    origin: str | None = None
+    try:
+        while origin := traceback_depth(depth=depth): depth += 1
+    except ValueError:
+        depth -= 1
+        origin = traceback_depth(depth=depth)
+    finally:
+        return origin if origin else traceback_working()
+
+def traceback_origin_file(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+    traceback: str = traceback_origin()
+    return inspect_file(file=traceback, header=header, resolve=resolve, builder=builder)
+
+def traceback_origin_file_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+    traceback: str = traceback_origin()
+    return inspect_file_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
+
+def traceback_origin_module(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+    traceback: str = traceback_origin()
+    return inspect_module(file=traceback, header=header, resolve=resolve, builder=builder)
+
+def traceback_origin_module_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+    traceback: str = traceback_origin()
+    return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
+
 def traceback_current():
     depth: int = 0
     while current := traceback_depth(depth=depth):
