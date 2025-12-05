@@ -4,6 +4,8 @@ from pathlib import PurePath, Path
 from re import Pattern, compile, search
 from dataclasses import dataclass, field
 
+from Library.Utility import is_notebook, find_notebook
+
 def inspect_file(file: str, header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     file: PurePath = builder("/") / file if header else builder(file)
     return file.resolve() if (isinstance(file, Path) and resolve) else file
@@ -61,6 +63,7 @@ def traceback_depth_module_path(header: bool = False, footer: bool = False, reso
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
 def traceback_origin() -> str:
+    if is_notebook(): return find_notebook()
     depth: int = 0
     origin: str | None = None
     try:

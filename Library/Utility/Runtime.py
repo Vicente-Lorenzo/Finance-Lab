@@ -17,7 +17,7 @@ def is_remote():
     return is_linux()
 
 @lru_cache(maxsize=1)
-def get_ipython():
+def find_ipython():
     from IPython import get_ipython
     ipython = get_ipython()
     return ipython
@@ -25,7 +25,7 @@ def get_ipython():
 @lru_cache(maxsize=1)
 def get_shell():
     try:
-        ipython = get_ipython()
+        ipython = find_ipython()
         return type(ipython).__name__ if ipython else None
     except (ImportError, AttributeError):
         return None
@@ -46,6 +46,6 @@ def is_console():
     return get_shell() == "PyDevTerminalInteractiveShell"
 
 @lru_cache(maxsize=1)
-def get_notebook():
-    ipython = get_ipython()
+def find_notebook():
+    ipython = find_ipython()
     return ipython.user_ns["__session__"]
