@@ -178,7 +178,8 @@ class LoggingAPI(ABC):
 
     @classmethod
     def is_enabled(cls) -> bool:
-        return cls._class_log_flag_
+        with cls._class_lock_:
+            return cls._class_log_flag_
 
     @classmethod
     def enable_logging(cls) -> None:
@@ -192,7 +193,8 @@ class LoggingAPI(ABC):
 
     @classmethod
     def is_entered(cls):
-        return cls._class_enter_flag_
+        with cls._class_lock_:
+            return cls._class_enter_flag_
 
     @classmethod
     def enable_entering(cls) -> None:
@@ -206,7 +208,8 @@ class LoggingAPI(ABC):
 
     @classmethod
     def is_exited(cls):
-        return not cls._class_exit_flag_
+        with cls._class_lock_:
+            return not cls._class_exit_flag_
 
     @classmethod
     def enable_exiting(cls) -> None:
