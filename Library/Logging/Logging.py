@@ -3,7 +3,7 @@ from io import BytesIO
 from typing import Callable
 from abc import ABC, abstractmethod
 from datetime import datetime
-from threading import Lock
+from threading import RLock
 
 from Library.Utility import *
 from Library.Statistics import Timer
@@ -19,7 +19,7 @@ class VerboseLevel(Enum):
 
 class LoggingAPI(ABC):
 
-    _lock_: Lock = Lock()
+    _lock_: RLock = RLock()
     _host_info_: str = "Local" if is_local() else "Remote"
     _exec_info_: str = "Python" if is_python() else "Notebook"
     _path_info_: str = traceback_origin_file_path(resolve=True)
@@ -27,7 +27,7 @@ class LoggingAPI(ABC):
     _verbose_max_: VerboseLevel = None
     _verbose_min_: VerboseLevel = None
 
-    _class_lock_: Lock = None
+    _class_lock_: RLock = None
     class_timer: Timer = None
 
     _class_tags_: str = None
@@ -61,7 +61,7 @@ class LoggingAPI(ABC):
         cls.set_verbose_level(VerboseLevel.Debug, default=True)
 
     def __init_subclass__(cls):
-        cls._class_lock_ = Lock()
+        cls._class_lock_ = RLock()
         cls.class_timer = Timer()
         cls._set_class_verbose_tags_()
         cls._setup_class_()
@@ -83,13 +83,12 @@ class LoggingAPI(ABC):
 
     @classmethod
     def _set_class_verbose_tags_(cls) -> None:
-        with cls._class_lock_:
-            cls._class_debug_tag_ = cls._format_tag_(tag=VerboseLevel.Debug.name)
-            cls._class_info_tag_ = cls._format_tag_(tag=VerboseLevel.Info.name)
-            cls._class_alert_tag_ = cls._format_tag_(tag=VerboseLevel.Alert.name)
-            cls._class_warning_tag_ = cls._format_tag_(tag=VerboseLevel.Warning.name)
-            cls._class_error_tag_ = cls._format_tag_(tag=VerboseLevel.Error.name)
-            cls._class_exception_tag_ = cls._format_tag_(tag=VerboseLevel.Exception.name)
+        cls._class_debug_tag_ = cls._format_tag_(tag=VerboseLevel.Debug.name)
+        cls._class_info_tag_ = cls._format_tag_(tag=VerboseLevel.Info.name)
+        cls._class_alert_tag_ = cls._format_tag_(tag=VerboseLevel.Alert.name)
+        cls._class_warning_tag_ = cls._format_tag_(tag=VerboseLevel.Warning.name)
+        cls._class_error_tag_ = cls._format_tag_(tag=VerboseLevel.Error.name)
+        cls._class_exception_tag_ = cls._format_tag_(tag=VerboseLevel.Exception.name)
 
     def set_instance_tags(self, *args, **kwargs) -> None:
         if self.is_entered(): return
