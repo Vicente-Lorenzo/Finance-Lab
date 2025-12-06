@@ -24,12 +24,13 @@ class ConsoleLoggingAPI(LoggingAPI):
 
     @classmethod
     def _set_class_verbose_tags_(cls) -> None:
-        cls._class_debug_tag_ = cls._format_tag_(tag=VerboseLevel.Debug.name, color=cls._GREEN_)
-        cls._class_info_tag_ = cls._format_tag_(tag=VerboseLevel.Info.name, color=cls._BLUE_)
-        cls._class_alert_tag_ = cls._format_tag_(tag=VerboseLevel.Alert.name, color=cls._ORANGE_)
-        cls._class_warning_tag_ = cls._format_tag_(tag=VerboseLevel.Warning.name, color=cls._YELLOW_)
-        cls._class_error_tag_ = cls._format_tag_(tag=VerboseLevel.Error.name, color=cls._RED_)
-        cls._class_exception_tag_ = cls._format_tag_(tag=VerboseLevel.Exception.name, color=cls._DARKRED_)
+        with cls._class_lock_:
+            cls._class_debug_tag_ = cls._format_tag_(tag=VerboseLevel.Debug.name, color=cls._GREEN_)
+            cls._class_info_tag_ = cls._format_tag_(tag=VerboseLevel.Info.name, color=cls._BLUE_)
+            cls._class_alert_tag_ = cls._format_tag_(tag=VerboseLevel.Alert.name, color=cls._ORANGE_)
+            cls._class_warning_tag_ = cls._format_tag_(tag=VerboseLevel.Warning.name, color=cls._YELLOW_)
+            cls._class_error_tag_ = cls._format_tag_(tag=VerboseLevel.Error.name, color=cls._RED_)
+            cls._class_exception_tag_ = cls._format_tag_(tag=VerboseLevel.Exception.name, color=cls._DARKRED_)
 
     @classmethod
     def _output_log_(cls, verbose: VerboseLevel, log: str) -> None:
