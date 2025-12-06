@@ -16,7 +16,7 @@ class FileLoggingAPI(BufferLoggingAPI):
     def _setup_class_(cls) -> None:
         super()._setup_class_()
         cls.set_dir_path(inspect_file("Logs", resolve=True))
-        cls.set_file_extension(file_extension="text.log")
+        cls.set_file_extension(file_extension="log")
 
     @classmethod
     def set_dir_path(cls, dir_path: Path) -> None:
