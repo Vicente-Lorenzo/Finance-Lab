@@ -1,7 +1,7 @@
 from Library.Utility import HTML
-from Library.Logging import VerboseLevel, FileLoggingAPI
+from Library.Logging import VerboseLevel, BufferLoggingAPI
 
-class WebLoggingAPI(FileLoggingAPI):
+class WebLoggingAPI(BufferLoggingAPI):
 
     _GREEN_ = "#00FF00"
     _BLUE_ = "#0087FF"
@@ -11,13 +11,7 @@ class WebLoggingAPI(FileLoggingAPI):
     _DARKRED_ = "#FF005F"
     _GRAY_ = "#8A8A8A"
     _LIGHTGRAY_ = "#585858"
-    _WHITE_ = "#FFFFFF"
     _BLACK_ = "#000000"
-
-    @classmethod
-    def _setup_class_(cls) -> None:
-        super()._setup_class_()
-        cls.set_file_extension(file_extension="html")
 
     @staticmethod
     def _format_tag_(tag: str, color: str = _BLACK_, separator: bool = False) -> str:
@@ -35,5 +29,4 @@ class WebLoggingAPI(FileLoggingAPI):
 
     @classmethod
     def _output_log_(cls, verbose: VerboseLevel, log: str) -> None:
-        log = log + HTML.blank_line()
-        return cls._buffer_pushone_(log=log + "\n")
+        return cls._buffer_pushone_(log=log + HTML.blank_line() + "\n")
