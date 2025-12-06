@@ -20,19 +20,26 @@ class FileLoggingAPI(BufferLoggingAPI):
 
     @classmethod
     def set_dir_path(cls, dir_path: Path) -> None:
-        cls._dir_path_ = dir_path
+        with cls._class_lock_:
+            if cls.is_entered(): return
+            cls._dir_path_ = dir_path
 
     @classmethod
     def set_file_name(cls, file_name: str) -> None:
-        cls._file_name_ = file_name
+        with cls._class_lock_:
+            if cls.is_entered(): return
+            cls._file_name_ = file_name
 
     @classmethod
     def set_file_extension(cls, file_extension: str) -> None:
-        cls._file_extension_ = file_extension
+        with cls._class_lock_:
+            if cls.is_entered(): return
+            cls._file_extension_ = file_extension
 
     @classmethod
     def get_file_hyperlink(cls) -> str:
-        return cls._file_path_.as_uri()
+        with cls._class_lock_:
+            return cls._file_path_.as_uri()
 
     @classmethod
     def _output_log_(cls, verbose: VerboseLevel, log: str) -> None:

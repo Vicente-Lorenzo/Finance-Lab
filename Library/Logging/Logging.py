@@ -55,26 +55,6 @@ class LoggingAPI(ABC):
     error: Callable[[Callable[[], str | BytesIO]], None] = None
     exception: Callable[[Callable[[], str | BytesIO]], None] = None
 
-    @staticmethod
-    def set_host_info(host_info: str) -> None:
-        with LoggingAPI._lock_:
-            LoggingAPI._host_info_ = host_info
-
-    @staticmethod
-    def set_exec_info(exec_info: str) -> None:
-        with LoggingAPI._lock_:
-            LoggingAPI._exec_info_ = exec_info
-
-    @staticmethod
-    def set_path_info(path_info: str) -> None:
-        with LoggingAPI._lock_:
-            LoggingAPI._path_info_ = path_info
-
-    @staticmethod
-    def set_user_info(user_info: str) -> None:
-        with LoggingAPI._lock_:
-            LoggingAPI._user_info_ = user_info
-
     @classmethod
     @abstractmethod
     def _setup_class_(cls) -> None:
@@ -97,6 +77,7 @@ class LoggingAPI(ABC):
     @classmethod
     def set_class_tags(cls, *args, **kwargs) -> None:
         with cls._class_lock_:
+            if cls.is_entered(): return
             if not (args or kwargs): return
             cls._class_tags_ = " - ".join([cls._format_tag_(tag=tag) for tag in (*args, *kwargs.values())])
 
@@ -111,6 +92,7 @@ class LoggingAPI(ABC):
             cls._class_exception_tag_ = cls._format_tag_(tag=VerboseLevel.Exception.name)
 
     def set_instance_tags(self, *args, **kwargs) -> None:
+        if self.is_entered(): return
         if not (args or kwargs): return
         separator = self._format_tag_(tag=" - ", separator=True)
         self._instance_tags_ = separator.join([self._format_tag_(tag=tag) for tag in (*args, *kwargs.values())])
@@ -220,6 +202,30 @@ class LoggingAPI(ABC):
     def disable_exiting(cls) -> None:
         with cls._class_lock_:
             cls._class_exit_flag_ = False
+
+    @classmethod
+    def set_host_info(cls, host_info: str) -> None:
+        with LoggingAPI._lock_:
+            if cls.is_entered(): return
+            LoggingAPI._host_info_ = host_info
+
+    @classmethod
+    def set_exec_info(cls, exec_info: str) -> None:
+        with LoggingAPI._lock_:
+            if cls.is_entered(): return
+            LoggingAPI._exec_info_ = exec_info
+
+    @classmethod
+    def set_path_info(cls, path_info: str) -> None:
+        with LoggingAPI._lock_:
+            if cls.is_entered(): return
+            LoggingAPI._path_info_ = path_info
+
+    @classmethod
+    def set_user_info(cls, user_info: str) -> None:
+        with LoggingAPI._lock_:
+            if cls.is_entered(): return
+            LoggingAPI._user_info_ = user_info
 
     @staticmethod
     def now() -> datetime:

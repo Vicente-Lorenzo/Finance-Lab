@@ -25,6 +25,11 @@ class BufferLoggingAPI(LoggingAPI):
             return len(cls._buffer_)
 
     @classmethod
+    def _buffer_clear_(cls) -> None:
+        with cls._buffer_lock_:
+            cls._buffer_.clear()
+
+    @classmethod
     def _buffer_pushone_(cls, log: str) -> None:
         with cls._buffer_lock_:
             cls._buffer_.append(log)
@@ -48,11 +53,6 @@ class BufferLoggingAPI(LoggingAPI):
             logs = list(cls._buffer_)
             cls._buffer_.clear()
         return logs
-
-    @classmethod
-    def _buffer_clear_(cls) -> None:
-        with cls._buffer_lock_:
-            cls._buffer_.clear()
 
     @classmethod
     def _output_log_(cls, verbose: VerboseLevel, log: str) -> None:
