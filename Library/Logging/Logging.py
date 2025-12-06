@@ -19,10 +19,13 @@ class VerboseLevel(Enum):
 
 class LoggingAPI(ABC):
 
+    _lock_: Lock = Lock()
     _host_info_: str = "Local" if is_local() else "Remote"
     _exec_info_: str = "Python" if is_python() else "Notebook"
     _path_info_: str = traceback_origin_file_path(resolve=True)
     _user_info_: str = user if (user := find_user()) else "Team"
+    _verbose_max_: VerboseLevel = None
+    _verbose_min_: VerboseLevel = None
 
     _class_lock_: Lock = None
     class_timer: Timer = None
@@ -37,8 +40,6 @@ class LoggingAPI(ABC):
 
     _class_verbose_default_: VerboseLevel = None
     _class_verbose_current_: VerboseLevel = None
-    _class_verbose_max_: VerboseLevel = None
-    _class_verbose_min_: VerboseLevel = None
 
     _class_log_flag_: bool = None
     _class_enter_flag_: bool = None
@@ -56,19 +57,23 @@ class LoggingAPI(ABC):
 
     @staticmethod
     def set_host_info(host_info: str) -> None:
-        LoggingAPI._host_info_ = host_info
+        with LoggingAPI._lock_:
+            LoggingAPI._host_info_ = host_info
 
     @staticmethod
     def set_exec_info(exec_info: str) -> None:
-        LoggingAPI._exec_info_ = exec_info
+        with LoggingAPI._lock_:
+            LoggingAPI._exec_info_ = exec_info
 
     @staticmethod
     def set_path_info(path_info: str) -> None:
-        LoggingAPI._path_info_ = path_info
+        with LoggingAPI._lock_:
+            LoggingAPI._path_info_ = path_info
 
     @staticmethod
     def set_user_info(user_info: str) -> None:
-        LoggingAPI._user_info_ = user_info
+        with LoggingAPI._lock_:
+            LoggingAPI._user_info_ = user_info
 
     @classmethod
     @abstractmethod
@@ -91,17 +96,19 @@ class LoggingAPI(ABC):
 
     @classmethod
     def set_class_tags(cls, *args, **kwargs) -> None:
-        if not (args or kwargs): return
-        cls._class_tags_ = " - ".join([cls._format_tag_(tag=tag) for tag in (*args, *kwargs.values())])
+        with cls._class_lock_:
+            if not (args or kwargs): return
+            cls._class_tags_ = " - ".join([cls._format_tag_(tag=tag) for tag in (*args, *kwargs.values())])
 
     @classmethod
     def _set_class_verbose_tags_(cls) -> None:
-        cls._class_debug_tag_ = cls._format_tag_(tag=VerboseLevel.Debug.name)
-        cls._class_info_tag_ = cls._format_tag_(tag=VerboseLevel.Info.name)
-        cls._class_alert_tag_ = cls._format_tag_(tag=VerboseLevel.Alert.name)
-        cls._class_warning_tag_ = cls._format_tag_(tag=VerboseLevel.Warning.name)
-        cls._class_error_tag_ = cls._format_tag_(tag=VerboseLevel.Error.name)
-        cls._class_exception_tag_ = cls._format_tag_(tag=VerboseLevel.Exception.name)
+        with cls._class_lock_:
+            cls._class_debug_tag_ = cls._format_tag_(tag=VerboseLevel.Debug.name)
+            cls._class_info_tag_ = cls._format_tag_(tag=VerboseLevel.Info.name)
+            cls._class_alert_tag_ = cls._format_tag_(tag=VerboseLevel.Alert.name)
+            cls._class_warning_tag_ = cls._format_tag_(tag=VerboseLevel.Warning.name)
+            cls._class_error_tag_ = cls._format_tag_(tag=VerboseLevel.Error.name)
+            cls._class_exception_tag_ = cls._format_tag_(tag=VerboseLevel.Exception.name)
 
     def set_instance_tags(self, *args, **kwargs) -> None:
         if not (args or kwargs): return
@@ -175,11 +182,13 @@ class LoggingAPI(ABC):
 
     @classmethod
     def enable_logging(cls) -> None:
-        cls._class_log_flag_ = True
+        with cls._class_lock_:
+            cls._class_log_flag_ = True
 
     @classmethod
     def disable_logging(cls) -> None:
-        cls._class_log_flag_ = False
+        with cls._class_lock_:
+            cls._class_log_flag_ = False
 
     @classmethod
     def is_entered(cls):
@@ -187,11 +196,13 @@ class LoggingAPI(ABC):
 
     @classmethod
     def enable_entering(cls) -> None:
-        cls._class_enter_flag_ = False
+        with cls._class_lock_:
+            cls._class_enter_flag_ = False
 
     @classmethod
     def disable_entering(cls) -> None:
-        cls._class_enter_flag_ = True
+        with cls._class_lock_:
+            cls._class_enter_flag_ = True
 
     @classmethod
     def is_exited(cls):
@@ -199,11 +210,13 @@ class LoggingAPI(ABC):
 
     @classmethod
     def enable_exiting(cls) -> None:
-        cls._class_exit_flag_ = True
+        with cls._class_lock_:
+            cls._class_exit_flag_ = True
 
     @classmethod
     def disable_exiting(cls) -> None:
-        cls._class_exit_flag_ = False
+        with cls._class_lock_:
+            cls._class_exit_flag_ = False
 
     @staticmethod
     def now() -> datetime:
@@ -238,11 +251,12 @@ class LoggingAPI(ABC):
 
     def _log_(self, verbose: VerboseLevel, level_tag: str, content: Callable[[], str | BytesIO] | str) -> None:
         cls = self.__class__
+        with LoggingAPI._lock_:
+            if LoggingAPI._verbose_max_ is None or verbose.value > LoggingAPI._verbose_max_.value:
+                LoggingAPI._verbose_max_ = verbose
+            if LoggingAPI._verbose_min_ is None or verbose.value < LoggingAPI._verbose_min_.value:
+                LoggingAPI._verbose_min_ = verbose
         with cls._class_lock_:
-            if cls._class_verbose_max_ is None or verbose.value > cls._class_verbose_max_.value:
-                cls._class_verbose_max_ = verbose
-            if cls._class_verbose_min_ is None or verbose.value < cls._class_verbose_min_.value:
-                cls._class_verbose_min_ = verbose
             if not cls.is_enabled(): return
             message = content() if isinstance(content, Callable) else content
             log = self._build_log_(level_tag=level_tag, message=message)
