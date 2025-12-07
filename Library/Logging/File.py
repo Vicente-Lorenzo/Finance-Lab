@@ -42,8 +42,28 @@ class FileLoggingAPI(BufferLoggingAPI):
             return cls._file_path_.as_uri()
 
     @classmethod
-    def _output_log_(cls, verbose: VerboseLevel, log: str) -> None:
-        return super()._output_log_(verbose=verbose, log=log + "\n")
+    def _exists_(cls) -> bool:
+        return cls._dir_path_.exists()
+
+    @classmethod
+    def _mkdir_(cls) -> None:
+        cls._dir_path_.mkdir(parents=True, exist_ok=True)
+
+    @classmethod
+    def _open_(cls) -> TextIOWrapper:
+        return cls._file_path_.open("w")
+
+    @classmethod
+    def _write_(cls, logs: list[str]) -> None:
+        cls._file_.writelines(logs)
+
+    @classmethod
+    def _close_(cls) -> None:
+        cls._file_.close()
+
+    @classmethod
+    def output(cls, verbose: VerboseLevel, log: str) -> None:
+        return super().output(verbose=verbose, log=log + "\n")
 
     @staticmethod
     def _format_file_name_(file_name: str):
@@ -74,14 +94,14 @@ class FileLoggingAPI(BufferLoggingAPI):
             tokens.append(cls._format_file_name_(file_name=cls._path_info_))
         file_name = "__".join(tokens)
         cls._file_path_ = cls._dir_path_ / f"{file_name}.{cls._file_extension_}"
-        if not cls._dir_path_.exists():
-            cls._dir_path_.mkdir(parents=True, exist_ok=True)
-        cls._file_ = cls._file_path_.open("w")
+        if not cls._exists_():
+            cls._mkdir_()
+        cls._file_ = cls._open_()
         cls.disable_entering()
 
     @classmethod
     def _exit_(cls):
-        logs = cls._stream_log_()
-        cls._file_.writelines(logs)
-        cls._file_.close()
+        logs = cls.stream()
+        cls._write_(logs)
+        cls._close_()
         cls.enable_entering()
