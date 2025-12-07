@@ -14,7 +14,7 @@ class ConsoleLoggingAPI(LoggingAPI):
 
     @classmethod
     def _setup_class_(cls) -> None:
-        cls.set_verbose_level(VerboseLevel.Debug, default=True)
+        super()._setup_class_()
         cls.enable_logging()
 
     @staticmethod

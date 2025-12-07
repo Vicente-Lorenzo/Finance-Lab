@@ -11,7 +11,7 @@ class BufferLoggingAPI(LoggingAPI, ABC):
 
     @classmethod
     def _setup_class_(cls) -> None:
-        cls.set_verbose_level(VerboseLevel.Debug, default=True)
+        super()._setup_class_()
         cls._buffer_ = deque()
         cls._buffer_lock_ = Lock()
         cls.enable_logging()
