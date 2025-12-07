@@ -22,23 +22,33 @@ class EmailLoggingAPI(ReportLoggingAPI, WebLoggingAPI):
 
     @classmethod
     def set_email_title(cls, title: str) -> None:
-        cls._email_title_ = title
+        with cls._class_lock_:
+            if cls.is_entered(): return
+            cls._email_title_ = title
 
     @classmethod
     def set_email_from_address(cls, from_address: str) -> None:
-        cls._email_from_address_ = from_address
+        with cls._class_lock_:
+            if cls.is_entered(): return
+            cls._email_from_address_ = from_address
 
     @classmethod
     def set_email_to_addresses(cls, to_addresses: list[str] | str) -> None:
-        cls._email_to_addresses_ = to_addresses
+        with cls._class_lock_:
+            if cls.is_entered(): return
+            cls._email_to_addresses_ = to_addresses
 
     @classmethod
     def set_email_cc_addresses(cls, cc_addresses: list[str] | str) -> None:
-        cls._email_cc_addresses_ = cc_addresses
+        with cls._class_lock_:
+            if cls.is_entered(): return
+            cls._email_cc_addresses_ = cc_addresses
 
     @classmethod
     def set_email_download_hyperlink(cls, download_hyperlink: str) -> None:
-        cls._email_download_hyperlink_ = download_hyperlink
+        with cls._class_lock_:
+            if cls.is_entered(): return
+            cls._email_download_hyperlink_ = download_hyperlink
 
     @classmethod
     def output(cls, verbose: VerboseLevel, log: str) -> None:
