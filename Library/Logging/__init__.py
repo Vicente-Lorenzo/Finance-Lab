@@ -4,6 +4,7 @@ from Library.Logging.Buffer import BufferLoggingAPI
 from Library.Logging.Report import ReportLoggingAPI
 from Library.Logging.File import FileLoggingAPI
 from Library.Logging.Web import WebLoggingAPI
+from Library.Logging.Email import EmailLoggingAPI
 
 __all__ = [
     "VerboseLevel",
