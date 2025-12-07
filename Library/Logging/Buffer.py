@@ -1,16 +1,17 @@
+from abc import ABC
 from threading import Lock
 from collections import deque
 
 from Library.Logging import VerboseLevel, LoggingAPI
 
-class BufferLoggingAPI(LoggingAPI):
+class BufferLoggingAPI(LoggingAPI, ABC):
 
     _buffer_: deque[str] = None
     _buffer_lock_: Lock = None
 
     @classmethod
     def _setup_class_(cls) -> None:
-        super()._setup_class_()
+        cls.set_verbose_level(VerboseLevel.Debug, default=True)
         cls._buffer_ = deque()
         cls._buffer_lock_ = Lock()
         cls.enable_logging()
