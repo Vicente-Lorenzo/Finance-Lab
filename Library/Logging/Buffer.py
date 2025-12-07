@@ -20,40 +20,13 @@ class BufferLoggingAPI(LoggingAPI):
         return tag
 
     @classmethod
-    def _buffer_size_(cls) -> int:
-        with cls._buffer_lock_:
-            return len(cls._buffer_)
-
-    @classmethod
-    def _buffer_clear_(cls) -> None:
-        with cls._buffer_lock_:
-            cls._buffer_.clear()
-
-    @classmethod
-    def _buffer_pushone_(cls, log: str) -> None:
+    def _output_log_(cls, verbose: VerboseLevel, log: str) -> None:
         with cls._buffer_lock_:
             cls._buffer_.append(log)
 
     @classmethod
-    def _buffer_pullone_(cls) -> str | None:
-        with cls._buffer_lock_:
-            return cls._buffer_.popleft() if cls._buffer_ else None
-
-    @classmethod
-    def _buffer_pullmany_(cls, n: int) -> list[str]:
-        logs = []
-        with cls._buffer_lock_:
-            for _ in range(min(n, cls._buffer_size_())):
-                logs.append(cls._buffer_.popleft())
-        return logs
-
-    @classmethod
-    def _buffer_pullall_(cls) -> list[str]:
+    def _stream_log_(cls) -> list:
         with cls._buffer_lock_:
             logs = list(cls._buffer_)
             cls._buffer_.clear()
-        return logs
-
-    @classmethod
-    def _output_log_(cls, verbose: VerboseLevel, log: str) -> None:
-        return cls._buffer_pushone_(log=log)
+            return logs

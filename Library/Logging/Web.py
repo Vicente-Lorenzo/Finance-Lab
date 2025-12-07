@@ -29,4 +29,4 @@ class WebLoggingAPI(BufferLoggingAPI):
 
     @classmethod
     def _output_log_(cls, verbose: VerboseLevel, log: str) -> None:
-        return cls._buffer_pushone_(log=log + HTML.blank_line() + "\n")
+        return super()._output_log_(verbose=verbose, log=log + HTML.blank_line() + "\n")

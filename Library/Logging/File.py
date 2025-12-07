@@ -43,7 +43,7 @@ class FileLoggingAPI(BufferLoggingAPI):
 
     @classmethod
     def _output_log_(cls, verbose: VerboseLevel, log: str) -> None:
-        return cls._buffer_pushone_(log=log + "\n")
+        return super()._output_log_(verbose=verbose, log=log + "\n")
 
     @staticmethod
     def _format_file_name_(file_name: str):
@@ -81,7 +81,7 @@ class FileLoggingAPI(BufferLoggingAPI):
 
     @classmethod
     def _exit_(cls):
-        logs = cls._buffer_pullall_()
+        logs = cls._stream_log_()
         cls._file_.writelines(logs)
         cls._file_.close()
         cls.enable_entering()
