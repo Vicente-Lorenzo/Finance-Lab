@@ -51,6 +51,7 @@ class ReportLoggingAPI(LoggingAPI, ABC):
         if not cls.is_success_report_enabled(): return False
         return cls._verbose_min_ and cls._verbose_min_.value > cls._class_verbose_threshold_.value
 
-    def is_failure_report(self) -> bool:
-        if not self.is_failure_report_enabled(): return False
-        return self._verbose_min_ and self._verbose_min_.value <= self._class_verbose_threshold_.value
+    @classmethod
+    def is_failure_report(cls) -> bool:
+        if not cls.is_failure_report_enabled(): return False
+        return cls._verbose_min_ and cls._verbose_min_.value <= cls._class_verbose_threshold_.value
