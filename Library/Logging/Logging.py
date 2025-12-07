@@ -79,7 +79,8 @@ class LoggingAPI(ABC):
         with cls._class_lock_:
             if cls.is_entered(): return
             if not (args or kwargs): return
-            cls._class_tags_ = " - ".join([cls._format_tag_(tag=tag) for tag in (*args, *kwargs.values())])
+            separator = cls._format_tag_(tag=" - ", separator=True)
+            cls._class_tags_ = separator.join([cls._format_tag_(tag=tag) for tag in (*args, *kwargs.values())])
 
     @classmethod
     def _set_class_verbose_tags_(cls) -> None:
