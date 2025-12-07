@@ -30,7 +30,7 @@ class LoggingAPI(ABC):
     _class_lock_: RLock = None
     class_timer: Timer = None
 
-    _class_tags_: str = None
+    _class_tags_ = None
     _class_debug_tag_: str = None
     _class_info_tag_: str = None
     _class_alert_tag_: str = None
@@ -45,7 +45,7 @@ class LoggingAPI(ABC):
     _class_enter_flag_: bool = None
     _class_exit_flag_: bool = None
 
-    _instance_tags_: str = None
+    _instance_tags_ = None
 
     _dummy_: Callable[[Callable[[], str]], None] = lambda *_: None
     debug: Callable[[Callable[[], str | BytesIO]], None] = None
@@ -75,12 +75,16 @@ class LoggingAPI(ABC):
         pass
 
     @classmethod
+    def _join_tags(cls, tags: list):
+        separator = cls._format_tag_(tag=" - ", separator=True)
+        return separator.join(tags)
+
+    @classmethod
     def set_class_tags(cls, *args, **kwargs) -> None:
         with cls._class_lock_:
             if cls.is_entered(): return
             if not (args or kwargs): return
-            separator = cls._format_tag_(tag=" - ", separator=True)
-            cls._class_tags_ = separator.join([cls._format_tag_(tag=tag) for tag in (*args, *kwargs.values())])
+            cls._class_tags_ = cls._join_tags([cls._format_tag_(tag=tag) for tag in (*args, *kwargs.values())])
 
     @classmethod
     def _set_class_verbose_tags_(cls) -> None:
@@ -94,8 +98,7 @@ class LoggingAPI(ABC):
     def set_instance_tags(self, *args, **kwargs) -> None:
         if self.is_entered(): return
         if not (args or kwargs): return
-        separator = self._format_tag_(tag=" - ", separator=True)
-        self._instance_tags_ = separator.join([self._format_tag_(tag=tag) for tag in (*args, *kwargs.values())])
+        self._instance_tags_ = self._join_tags([self._format_tag_(tag=tag) for tag in (*args, *kwargs.values())])
 
     @classmethod
     def set_verbose_level(cls, verbose: VerboseLevel, default=False) -> None:
@@ -236,26 +239,20 @@ class LoggingAPI(ABC):
         return LoggingAPI.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
     def build(self, level_tag: str = None, message: str = None) -> str:
-        log = self._format_tag_(tag=self.timestamp())
-        separator = self._format_tag_(tag=" - ", separator=True)
+        tags = [self._format_tag_(tag=self.timestamp())]
         if self._class_tags_ is not None:
-            log += separator
-            log += self._class_tags_
+            tags.append(self._class_tags_)
         if level_tag is not None:
-            log += separator
-            log += level_tag
+            tags.append(level_tag)
         if self._instance_tags_ is not None:
-            log += separator
-            log += self._instance_tags_
+            tags.append(self._instance_tags_)
         if message is not None:
-            message_tag = self._format_tag_(tag=message)
-            log += separator
-            log += message_tag
-        return log
+            tags.append(self._format_tag_(tag=message))
+        return self._join_tags(tags)
 
     @classmethod
     @abstractmethod
-    def output(cls, verbose: VerboseLevel, log: str) -> None:
+    def output(cls, verbose: VerboseLevel, log) -> None:
         pass
 
     def log(self, verbose: VerboseLevel, level_tag: str, content: Callable[[], str | BytesIO] | str) -> None:

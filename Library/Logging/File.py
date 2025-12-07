@@ -62,7 +62,7 @@ class FileLoggingAPI(BufferLoggingAPI):
         cls._file_.close()
 
     @classmethod
-    def output(cls, verbose: VerboseLevel, log: str) -> None:
+    def output(cls, verbose: VerboseLevel, log) -> None:
         return super().output(verbose=verbose, log=log + "\n")
 
     @staticmethod

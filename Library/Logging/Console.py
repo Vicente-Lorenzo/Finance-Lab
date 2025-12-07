@@ -32,5 +32,5 @@ class ConsoleLoggingAPI(LoggingAPI):
         cls._class_exception_tag_ = cls._format_tag_(tag=VerboseLevel.Exception.name, color=cls._DARKRED_)
 
     @classmethod
-    def output(cls, verbose: VerboseLevel, log: str) -> None:
+    def output(cls, verbose: VerboseLevel, log) -> None:
         print(log)

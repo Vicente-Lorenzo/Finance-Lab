@@ -1,4 +1,5 @@
-from Library.Utility import HTML
+from dash import html
+
 from Library.Logging import VerboseLevel, BufferLoggingAPI
 
 class WebLoggingAPI(BufferLoggingAPI):
@@ -14,9 +15,22 @@ class WebLoggingAPI(BufferLoggingAPI):
     _BLACK_ = "#000000"
 
     @staticmethod
-    def _format_tag_(tag: str, color: str = _BLACK_, separator: bool = False) -> str:
+    def _format_tag_(tag: str, color: str = _BLACK_, separator: bool = False) -> html.Span:
         color = WebLoggingAPI._LIGHTGRAY_ if separator else color
-        return HTML.span(content=tag, font_color=color, font_family="Consolas")
+        return html.Span(tag, style={"color": color, "font-family": "Consolas"})
+
+    @classmethod
+    def _join_tags(cls, tags: list):
+        separator = cls._format_tag_(tag=" - ", separator=True)
+        result = []
+        for tag in tags:
+            if isinstance(tag, list):
+                result.extend(tag)
+            else:
+                result.append(tag)
+            result.append(separator)
+        result.pop()
+        return result
 
     @classmethod
     def _set_class_verbose_tags_(cls) -> None:
@@ -28,5 +42,5 @@ class WebLoggingAPI(BufferLoggingAPI):
         cls._class_exception_tag_ = cls._format_tag_(tag=VerboseLevel.Exception.name, color=cls._DARKRED_)
 
     @classmethod
-    def output(cls, verbose: VerboseLevel, log: str) -> None:
-        return super().output(verbose=verbose, log=log + HTML.blank_line() + "\n")
+    def output(cls, verbose: VerboseLevel, log) -> None:
+        return super().output(verbose=verbose, log=html.Div([*log, html.Br()]))
