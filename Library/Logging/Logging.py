@@ -72,7 +72,7 @@ class LoggingAPI(ABC):
     @staticmethod
     @abstractmethod
     def _format_tag_(*args, **kwargs) -> str:
-        raise NotImplementedError
+        pass
 
     @classmethod
     def set_class_tags(cls, *args, **kwargs) -> None:
@@ -255,7 +255,7 @@ class LoggingAPI(ABC):
     @classmethod
     @abstractmethod
     def output(cls, verbose: VerboseLevel, log: str) -> None:
-        raise NotImplementedError
+        pass
 
     def log(self, verbose: VerboseLevel, level_tag: str, content: Callable[[], str | BytesIO] | str) -> None:
         cls = self.__class__
