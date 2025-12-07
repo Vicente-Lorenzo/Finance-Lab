@@ -20,38 +20,52 @@ class ReportLoggingAPI(LoggingAPI, ABC):
 
     @classmethod
     def is_success_report_enabled(cls) -> bool:
-        return cls._class_success_flag_
+        with cls._class_lock_:
+            return cls._class_success_flag_
 
     @classmethod
     def enable_success_report(cls) -> None:
-        cls._class_success_flag_ = True
+        with cls._class_lock_:
+            if cls.is_entered(): return
+            cls._class_success_flag_ = True
 
     @classmethod
     def disable_success_report(cls) -> None:
-        cls._class_success_flag_ = False
+        with cls._class_lock_:
+            if cls.is_entered(): return
+            cls._class_success_flag_ = False
 
     @classmethod
     def is_failure_report_enabled(cls) -> bool:
-        return cls._class_failure_flag_
+        with cls._class_lock_:
+            return cls._class_failure_flag_
 
     @classmethod
     def enable_failure_report(cls) -> None:
-        cls._class_failure_flag_ = True
+        with cls._class_lock_:
+            if cls.is_entered(): return
+            cls._class_failure_flag_ = True
 
     @classmethod
     def disable_failure_report(cls) -> None:
-        cls._class_failure_flag_ = False
+        with cls._class_lock_:
+            if cls.is_entered(): return
+            cls._class_failure_flag_ = False
 
     @classmethod
     def set_threshold_level(cls, threshold_verbose: VerboseLevel) -> None:
-        cls._class_verbose_threshold_ = threshold_verbose
+        with cls._class_lock_:
+            if cls.is_entered(): return
+            cls._class_verbose_threshold_ = threshold_verbose
 
     @classmethod
     def is_success_report(cls) -> bool:
-        if not cls.is_success_report_enabled(): return False
-        return cls._verbose_min_ and cls._verbose_min_.value > cls._class_verbose_threshold_.value
+        with cls._class_lock_:
+            if not cls.is_success_report_enabled(): return False
+            return cls._verbose_min_ and cls._verbose_min_.value > cls._class_verbose_threshold_.value
 
     @classmethod
     def is_failure_report(cls) -> bool:
-        if not cls.is_failure_report_enabled(): return False
-        return cls._verbose_min_ and cls._verbose_min_.value <= cls._class_verbose_threshold_.value
+        with cls._class_lock_:
+            if not cls.is_failure_report_enabled(): return False
+            return cls._verbose_min_ and cls._verbose_min_.value <= cls._class_verbose_threshold_.value
