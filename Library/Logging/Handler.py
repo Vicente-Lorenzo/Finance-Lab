@@ -3,65 +3,75 @@ from io import BytesIO
 from typing import Callable
 from functools import wraps
 
-from Library.Logging import *
+from Library.Logging import VerboseLevel, ConsoleLoggingAPI, FileLoggingAPI, WebLoggingAPI
 
-class HandlerAPI:
+class HandlerLoggingAPI:
 
-    def __init__(self, **kwargs):
-        self.console = ConsoleAPI(**kwargs)
-        self.telegram = TelegramAPI(**kwargs)
-        self.file = FileAPI(**kwargs)
+    def __init__(self, *args, **kwargs) -> None:
+        self.console = ConsoleLoggingAPI(*args, **kwargs)
+        self.file = FileLoggingAPI(*args, **kwargs)
+        self.web = WebLoggingAPI(*args, **kwargs)
 
-    def level(self, verbose: VerboseType) -> None:
-        self.console.level(verbose)
-        self.telegram.level(verbose)
-        self.file.level(verbose)
+    def set_class_tags(self, *args, **kwargs) -> None:
+        self.console.set_class_tags(*args, **kwargs)
+        self.file.set_class_tags(*args, **kwargs)
+        self.web.set_class_tags(*args, **kwargs)
 
-    def reset(self) -> None:
-        self.console.reset()
-        self.telegram.reset()
-        self.file.reset()
+    def set_instance_tags(self, *args, **kwargs) -> None:
+        self.console.set_instance_tags(*args, **kwargs)
+        self.file.set_instance_tags(*args, **kwargs)
+        self.web.set_instance_tags(*args, **kwargs)
 
-    def debug(self, content_func: Callable[[], str | BytesIO]):
-        self.console.debug(content_func)
-        self.telegram.debug(content_func)
-        self.file.debug(content_func)
+    def set_verbose_level(self, verbose: VerboseLevel) -> None:
+        self.console.set_verbose_level(verbose)
+        self.file.set_verbose_level(verbose)
+        self.web.set_verbose_level(verbose)
 
-    def info(self, content_func: Callable[[], str | BytesIO]):
-        self.console.info(content_func)
-        self.telegram.info(content_func)
-        self.file.info(content_func)
+    def reset_verbose_level(self) -> None:
+        self.console.reset_verbose_level()
+        self.file.reset_verbose_level()
+        self.web.reset_verbose_level()
 
-    def alert(self, content_func: Callable[[], str | BytesIO]):
-        self.console.alert(content_func)
-        self.telegram.alert(content_func)
-        self.file.alert(content_func)
+    def debug(self, content: Callable[[], str | BytesIO] | str) -> None:
+        self.console.debug(content)
+        self.file.debug(content)
+        self.web.debug(content)
 
-    def warning(self, content_func: Callable[[], str | BytesIO]):
-        self.console.warning(content_func)
-        self.telegram.warning(content_func)
-        self.file.warning(content_func)
+    def info(self, content: Callable[[], str | BytesIO] | str) -> None:
+        self.console.info(content)
+        self.file.info(content)
+        self.web.info(content)
 
-    def error(self, content_func: Callable[[], str | BytesIO]):
-        self.console.error(content_func)
-        self.telegram.error(content_func)
-        self.file.error(content_func)
+    def alert(self, content: Callable[[], str | BytesIO] | str) -> None:
+        self.console.alert(content)
+        self.file.alert(content)
+        self.web.alert(content)
 
-    def exception(self, content_func: Callable[[], str | BytesIO]):
-        self.console.exception(content_func)
-        self.telegram.exception(content_func)
-        self.file.exception(content_func)
+    def warning(self, content: Callable[[], str | BytesIO] | str) -> None:
+        self.console.warning(content)
+        self.file.warning(content)
+        self.web.warning(content)
+
+    def error(self, content: Callable[[], str | BytesIO] | str) -> None:
+        self.console.error(content)
+        self.file.error(content)
+        self.web.error(content)
+
+    def exception(self, content: Callable[[], str | BytesIO] | str) -> None:
+        self.console.exception(content)
+        self.file.exception(content)
+        self.web.exception(content)
 
     def __enter__(self):
         self.console.__enter__()
-        self.telegram.__enter__()
         self.file.__enter__()
+        self.web.__enter__()
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.console.__exit__(exc_type, exc_value, exc_traceback)
-        self.telegram.__exit__(exc_type, exc_value, exc_traceback)
         self.file.__exit__(exc_type, exc_value, exc_traceback)
+        self.web.__exit__(exc_type, exc_value, exc_traceback)
         return self
 
     def guard(self, func: Callable):

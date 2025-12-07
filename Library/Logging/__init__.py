@@ -6,7 +6,7 @@ from Library.Logging.File import FileLoggingAPI
 from Library.Logging.Bucket import BucketLoggingAPI
 from Library.Logging.Web import WebLoggingAPI
 from Library.Logging.Email import EmailLoggingAPI
-
+from Library.Logging.Handler import HandlerLoggingAPI
 
 __all__ = [
     "VerboseLevel",
@@ -17,5 +17,6 @@ __all__ = [
     "FileLoggingAPI",
     "BucketLoggingAPI",
     "WebLoggingAPI",
-    "EmailLoggingAPI"
+    "EmailLoggingAPI",
+    "HandlerLoggingAPI"
 ]
