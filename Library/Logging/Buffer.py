@@ -21,12 +21,12 @@ class BufferLoggingAPI(LoggingAPI, ABC):
         return tag
 
     @classmethod
-    def _output_log_(cls, verbose: VerboseLevel, log: str) -> None:
+    def output(cls, verbose: VerboseLevel, log: str) -> None:
         with cls._buffer_lock_:
             cls._buffer_.append(log)
 
     @classmethod
-    def _stream_log_(cls) -> list:
+    def stream(cls) -> list:
         with cls._buffer_lock_:
             logs = list(cls._buffer_)
             cls._buffer_.clear()

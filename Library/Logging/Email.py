@@ -41,7 +41,7 @@ class EmailLoggingAPI(ReportLoggingAPI, WebLoggingAPI):
         cls._email_download_hyperlink_ = download_hyperlink
 
     @classmethod
-    def _output_log_(cls, verbose: VerboseLevel, log: str) -> None:
+    def output(cls, verbose: VerboseLevel, log: str) -> None:
         mailer.send(
             subject=verbose.name,
             from_=cls._email_from_address_,

@@ -28,5 +28,5 @@ class WebLoggingAPI(BufferLoggingAPI):
         cls._class_exception_tag_ = cls._format_tag_(tag=VerboseLevel.Exception.name, color=cls._DARKRED_)
 
     @classmethod
-    def _output_log_(cls, verbose: VerboseLevel, log: str) -> None:
-        return super()._output_log_(verbose=verbose, log=log + HTML.blank_line() + "\n")
+    def output(cls, verbose: VerboseLevel, log: str) -> None:
+        return super().output(verbose=verbose, log=log + HTML.blank_line() + "\n")

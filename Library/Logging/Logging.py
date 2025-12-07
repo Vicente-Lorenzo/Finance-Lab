@@ -234,7 +234,7 @@ class LoggingAPI(ABC):
     def timestamp() -> str:
         return LoggingAPI.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
-    def _build_log_(self, level_tag: str = None, message: str = None) -> str:
+    def build(self, level_tag: str = None, message: str = None) -> str:
         log = self._format_tag_(tag=self.timestamp())
         separator = self._format_tag_(tag=" - ", separator=True)
         if self._class_tags_ is not None:
@@ -254,10 +254,10 @@ class LoggingAPI(ABC):
 
     @classmethod
     @abstractmethod
-    def _output_log_(cls, verbose: VerboseLevel, log: str) -> None:
+    def output(cls, verbose: VerboseLevel, log: str) -> None:
         raise NotImplementedError
 
-    def _log_(self, verbose: VerboseLevel, level_tag: str, content: Callable[[], str | BytesIO] | str) -> None:
+    def log(self, verbose: VerboseLevel, level_tag: str, content: Callable[[], str | BytesIO] | str) -> None:
         cls = self.__class__
         with LoggingAPI._lock_:
             if LoggingAPI._verbose_max_ is None or verbose.value > LoggingAPI._verbose_max_.value:
@@ -267,26 +267,26 @@ class LoggingAPI(ABC):
         with cls._class_lock_:
             if not cls.is_enabled(): return
             message = content() if isinstance(content, Callable) else content
-            log = self._build_log_(level_tag=level_tag, message=message)
-            cls._output_log_(verbose=verbose, log=log)
+            log = self.build(level_tag=level_tag, message=message)
+            cls.output(verbose=verbose, log=log)
 
     def _debug_(self, content: Callable[[], str | BytesIO] | str) -> None:
-        self._log_(VerboseLevel.Debug, self._class_debug_tag_, content)
+        self.log(VerboseLevel.Debug, self._class_debug_tag_, content)
 
     def _info_(self, content: Callable[[], str | BytesIO] | str) -> None:
-        self._log_(VerboseLevel.Info, self._class_info_tag_, content)
+        self.log(VerboseLevel.Info, self._class_info_tag_, content)
 
     def _alert_(self, content: Callable[[], str | BytesIO] | str) -> None:
-        self._log_(VerboseLevel.Alert, self._class_alert_tag_, content)
+        self.log(VerboseLevel.Alert, self._class_alert_tag_, content)
 
     def _warning_(self, content: Callable[[], str | BytesIO] | str) -> None:
-        self._log_(VerboseLevel.Warning, self._class_warning_tag_, content)
+        self.log(VerboseLevel.Warning, self._class_warning_tag_, content)
 
     def _error_(self, content: Callable[[], str | BytesIO] | str) -> None:
-        self._log_(VerboseLevel.Error, self._class_error_tag_, content)
+        self.log(VerboseLevel.Error, self._class_error_tag_, content)
 
     def _exception_(self, content: Callable[[], str | BytesIO] | str) -> None:
-        self._log_(VerboseLevel.Exception, self._class_exception_tag_, content)
+        self.log(VerboseLevel.Exception, self._class_exception_tag_, content)
 
     def _enter_(self) -> None:
         pass
