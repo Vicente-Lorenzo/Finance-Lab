@@ -10,9 +10,9 @@ from pathlib import PurePath, PurePosixPath
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 
-from Library.Logging import HandlerAPI
+from Library.Logging import HandlerLoggingAPI
 from Library.App import HistorySessionAPI, TerminalSessionAPI
-from Library.Utility import inspect_file, inspect_path, inspect_file_path, traceback_calling_module
+from Library.Utility import inspect_file, inspect_path, inspect_file_path, traceback_current_module
 
 @dataclass(slots=True)
 class Link:
@@ -61,11 +61,15 @@ class AppAPI(ABC):
                  description: str = None,
                  contact: str = "<Insert Contact Email>",
                  update: str = "",
-                 anchor: str = "/",
-                 port: int = 8050,
+                 protocol: str = None,
+                 host: str = None,
+                 port: int = None,
+                 domain: str = None,
+                 proxy: str = None,
+                 anchor: str = None,
                  debug: bool = False):
 
-        self._log_: HandlerAPI = HandlerAPI()
+        self._log_: HandlerLoggingAPI = HandlerLoggingAPI()
         self._links_: dict[str, Link] = {}
 
         self.name: str = name
@@ -79,18 +83,42 @@ class AppAPI(ABC):
         self.contact: str = contact
         self._log_.debug(lambda: f"Defined Contact = {self.contact}")
         self.update: str = update
-        self._log_.debug(lambda: f"Defined Update = {update}")
-        self.port: int = port
-        self._log_.debug(lambda: f"Defined Port = {self.port}")
-        self.debug: bool = debug
-        self._log_.debug(lambda: f"Defined Debug = {self.debug}")
+        self._log_.debug(lambda: f"Defined Update = {self.update}")
 
+        protocol: str = protocol or "http"
+        self.protocol: str = inspect_file_path(protocol, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Defined Protocol = {self.protocol}")
+        host: str = host or "localhost"
+        self.host: str = inspect_file_path(host, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Defined Host = {self.host}")
+        self.port: int = port or 8050
+        self._log_.debug(lambda: f"Defined Port = {self.port}")
+
+        host_address: str = f"{self.host}:{self.port}"
+        self.host_address: str = inspect_file_path(host_address, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Defined Host Address = {self.host_address}")
+        self.host_url: str = f"{self.protocol}://{self.host_address}"
+        self._log_.debug(lambda: f"Defined Host URL = {self.host_url}")
+
+        domain_address: str = domain or self.host_address
+        self.domain_address: str = inspect_file_path(domain_address, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Defined Domain Address = {self.domain_address}")
+        self.domain_url: str = f"{self.protocol}://{self.domain_address}"
+        self._log_.debug(lambda: f"Defined Domain URL = {self.domain_url}")
+
+        self.proxy: str = proxy or f"{self.host_url}::{self.domain_url}"
+        self._log_.debug(lambda: f"Defined Proxy = {self.proxy}")
+
+        anchor: str = anchor or "/"
         self.anchor: PurePath = inspect_file(anchor, header=True, builder=PurePosixPath)
         self._log_.debug(lambda: f"Defined Anchor = {self.anchor}")
         self.endpoint: str = inspect_file_path(anchor, header=True, footer=True, builder=PurePosixPath)
         self._log_.debug(lambda: f"Defined Endpoint = {self.endpoint}")
 
-        self.module: PurePath = traceback_calling_module(resolve=True)
+        self.debug: bool = debug
+        self._log_.debug(lambda: f"Defined Debug = {self.debug}")
+
+        self.module: PurePath = traceback_current_module(resolve=True)
         self._log_.debug(lambda: f"Defined Calling = {self.module}")
         self.assets: str = inspect_path(self.module / "Assets")
         self._log_.debug(lambda: f"Defined Assets = {self.assets}")
@@ -269,6 +297,7 @@ class AppAPI(ABC):
             dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
             dcc.Store(id=self.HISTORY_STORAGE_ID, storage_type="session", data=HistorySessionAPI().dict()),
             dcc.Store(id=self.TERMINAL_STORAGE_ID, storage_type="memory", data=TerminalSessionAPI().dict()),
+            dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session"),
             dcc.Location(id=self._PAGE_LOCATION_ID_, refresh=False)
         ], id=self._HIDDEN_ID_)
 
@@ -452,4 +481,11 @@ class AppAPI(ABC):
         raise NotImplementedError
 
     def run(self):
-        return self.app.run(port=self.port, debug=self.debug)
+        return self.app.run(
+            host=self.host,
+            port=self.port,
+            proxy=self.proxy,
+            debug=self.debug,
+            jupyter_mode="external",
+            jupyter_server_url=self.domain_url
+        )
