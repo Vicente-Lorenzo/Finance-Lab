@@ -1,7 +1,4 @@
-import io
-import sys
 import dash
-import threading
 from typing import Self
 from dash import dcc, html
 from dash.exceptions import PreventUpdate
@@ -10,8 +7,8 @@ from pathlib import PurePath, PurePosixPath
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 
+from Library.App import HistorySessionAPI
 from Library.Logging import HandlerLoggingAPI
-from Library.App import HistorySessionAPI, TerminalSessionAPI
 from Library.Utility import inspect_file, inspect_path, inspect_file_path, traceback_current_module
 
 @dataclass(slots=True)
