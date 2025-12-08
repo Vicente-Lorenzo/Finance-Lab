@@ -2,7 +2,7 @@
 # from mailer.report import Report
 from dash import html
 
-from Library.Utility import HTML
+from Library.Utility import htmlize
 from Library.Logging import VerboseLevel, ReportLoggingAPI, WebLoggingAPI
 
 class EmailLoggingAPI(WebLoggingAPI, ReportLoggingAPI):
@@ -86,13 +86,13 @@ class EmailLoggingAPI(WebLoggingAPI, ReportLoggingAPI):
         title = " @ ".join([result_tag, execution_tag, timestamp_tag]) if not cls._email_title_ else cls._email_title_
 
         r = Report()
-        r.append(HTML.div(content=result_tag, font_size="10pt", font_weight="bold", font_color=result_color, font_family="Consolas"))
-        r.append(HTML.div(content=threshold_tag, font_size="10pt", font_weight="bold", font_family="Consolas"))
-        r.append(HTML.blank_line())
-        r.append(HTML.div(content=execution_tag, font_size="10pt", font_weight="bold", font_family="Consolas"))
-        r.append(HTML.div(content=timestamp_tag, font_size="10pt", font_weight="bold", font_family="Consolas"))
-        r.append(HTML.div(content=time_tag, font_size="10pt", font_weight="bold", font_family="Consolas"))
-        r.append(HTML.div(content=HTML.hyperlink(link=cls._email_download_hyperlink_, content="Download Log (S3)"), font_size="10pt", font_weight="bold", font_family="Consolas"))
+        r.append(htmlize(html.Div(result_tag, style={"color": result_color, "font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"})))
+        r.append(html.Div(threshold_tag, style={"font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"}))
+        r.append(html.Br())
+        r.append(html.Div(execution_tag, style={"font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"}))
+        r.append(html.Div(timestamp_tag, style={"font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"}))
+        r.append(html.Div(time_tag, style={"font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"}))
+        r.append(html.Div(html.A("Download Log (S3)", href=cls._email_download_hyperlink_, style={"font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"})))
 
         mailer.send(
             subject=title,
