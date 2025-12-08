@@ -1,5 +1,9 @@
 from Library.Utility.Chart import gantt
 from Library.Utility.Image import image
+from Library.Utility.HTML import (
+    stylize,
+    htmlize
+)
 from Library.Utility.Typing import (
     cast,
     equals,
@@ -71,6 +75,7 @@ from Library.Utility.Path import (
 __all__ = [
     "gantt",
     "image",
+    "stylize", "htmlize",
     "cast", "equals", "contains",
     "datetime_to_string", "string_to_datetime", "datetime_to_timestamp", "timestamp_to_datetime", "datetime_to_iso", "iso_to_datetime", "seconds_to_string",
     "find_user", "is_windows", "is_linux", "is_mac", "is_local", "is_remote", "is_service",
