@@ -51,7 +51,6 @@ class AppAPI(ABC):
 
     INTERVAL_ID: dict = {"type": "interval", "index": "interval"}
     HISTORY_STORAGE_ID: dict = {"type": "storage", "index": "history"}
-    TERMINAL_STORAGE_ID: dict = {"type": "storage", "index": "terminal"}
     SESSION_STORAGE_ID: dict = {"type": "storage", "index": "session"}
 
     def __init__(self,
@@ -123,9 +122,6 @@ class AppAPI(ABC):
         self.assets: str = inspect_path(self.module / "Assets")
         self._log_.debug(lambda: f"Defined Assets = {self.assets}")
 
-        self._init_terminal_()
-        self._log_.debug(lambda: "Initialized Terminal")
-
         self._init_app()
         self._log_.info(lambda: "Initialized App")
 
@@ -137,40 +133,6 @@ class AppAPI(ABC):
 
         self._init_callbacks_()
         self._log_.info(lambda: "Initialized Callbacks")
-
-    def _init_terminal_(self) -> None:
-
-        class Tee(io.TextIOBase):
-
-            def __init__(self, original, lock, buffer_ref):
-                self._original = original
-                self._lock = lock
-                self._buffer_ref = buffer_ref
-
-            def write(self, s):
-                with self._lock:
-                    self._buffer_ref[0] += s
-                    if len(self._buffer_ref[0]) > 20000:
-                        self._buffer_ref[0] = self._buffer_ref[0][-20000:]
-
-                return self._original.write(s)
-
-            def flush(self):
-                return self._original.flush()
-
-        self._terminal_lock_ = threading.Lock()
-
-        self._terminal_buffer_ = [""]
-
-        self._stdout_original_ = sys.stdout
-        self._stderr_original_ = sys.stderr
-
-        sys.stdout = Tee(sys.stdout, self._terminal_lock_, self._terminal_buffer_)
-        sys.stderr = Tee(sys.stderr, self._terminal_lock_, self._terminal_buffer_)
-
-    def _terminal_snapshot_(self) -> str:
-        with self._terminal_lock_:
-            return self._terminal_buffer_[0]
 
     def _init_app(self):
 
@@ -288,7 +250,7 @@ class AppAPI(ABC):
             dbc.Button([html.Span("▼", id=self._CONTACTS_ARROW_ID_), " Contacts ", html.I(className="bi bi-question-circle")], id=self._CONTACTS_BUTTON_ID_, color="primary", className="footer-button"),
             dbc.Button([html.I(className="bi bi-terminal"), " Terminal ", html.Span("▼", id=self._TERMINAL_ARROW_ID_)], id=self._TERMINAL_BUTTON_ID_, color="primary", className="footer-button"),
             dbc.Collapse(dbc.Card(dbc.CardBody(html.Div(self._init_contacts_(), id=self._CONTACTS_CONTENT_ID_)), className="footer-panel footer-panel-left"), id=self._CONTACTS_COLLAPSE_ID_, is_open=False),
-            dbc.Collapse(dbc.Card(dbc.CardBody(html.Pre(None, id=self._TERMINAL_CONTENT_ID_)), color="dark", inverse=True, className="footer-panel footer-panel-right"), id=self._TERMINAL_COLLAPSE_ID_, is_open=False)
+            dbc.Collapse(dbc.Card(dbc.CardBody(html.Pre([], id=self._TERMINAL_CONTENT_ID_)), color="dark", inverse=True, className="footer-panel footer-panel-right"), id=self._TERMINAL_COLLAPSE_ID_, is_open=False)
         ], id=self._FOOTER_ID_, className="footer")
 
     def _init_hidden_(self) -> html.Div:
@@ -296,7 +258,6 @@ class AppAPI(ABC):
         return html.Div([
             dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
             dcc.Store(id=self.HISTORY_STORAGE_ID, storage_type="session", data=HistorySessionAPI().dict()),
-            dcc.Store(id=self.TERMINAL_STORAGE_ID, storage_type="memory", data=TerminalSessionAPI().dict()),
             dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session"),
             dcc.Location(id=self._PAGE_LOCATION_ID_, refresh=False)
         ], id=self._HIDDEN_ID_)
@@ -423,20 +384,16 @@ class AppAPI(ABC):
             return arrow, is_open
 
         @self.app.callback(
-            dash.Output(self.TERMINAL_STORAGE_ID, "data", allow_duplicate=True),
             dash.Output(self._TERMINAL_CONTENT_ID_, "children", allow_duplicate=True),
             dash.Input(self.INTERVAL_ID, "n_intervals"),
-            dash.State(self.TERMINAL_STORAGE_ID, "data"),
+            dash.State(self._TERMINAL_CONTENT_ID_, "children"),
             prevent_initial_call=True
         )
-        def _terminal_stream_callback_(_, terminal_data):
-            terminal = TerminalSessionAPI(**terminal_data)
-            content = self._terminal_snapshot_()
-            if content == terminal.Buffer:
-                raise PreventUpdate
-            terminal.Clear()
-            terminal.Add(content)
-            return terminal.dict(), content
+        def _terminal_stream_callback_(_, terminal):
+            logs = self._log_.web.stream()
+            if not logs: raise PreventUpdate
+            terminal.extend(logs)
+            return terminal
 
         self.callbacks()
 
