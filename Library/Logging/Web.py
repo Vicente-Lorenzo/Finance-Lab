@@ -14,6 +14,11 @@ class WebLoggingAPI(BufferLoggingAPI):
     _LIGHTGRAY_ = "#585858"
     _BLACK_ = "#000000"
 
+    @classmethod
+    def _setup_class_(cls) -> None:
+        super()._setup_class_()
+        cls.set_verbose_level(VerboseLevel.Silent, default=True)
+
     @staticmethod
     def _format_tag_(tag: str, color: str = _BLACK_, separator: bool = False) -> html.Span:
         color = WebLoggingAPI._LIGHTGRAY_ if separator else color

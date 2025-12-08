@@ -15,6 +15,7 @@ class FileLoggingAPI(BufferLoggingAPI):
     @classmethod
     def _setup_class_(cls) -> None:
         super()._setup_class_()
+        cls.set_verbose_level(VerboseLevel.Debug, default=True)
         cls.set_dir_path(inspect_file("Logs", resolve=True))
         cls.set_file_extension(file_extension="log")
 

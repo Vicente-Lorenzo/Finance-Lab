@@ -1,7 +1,6 @@
-from abc import ABC
 from Library.Logging import VerboseLevel, LoggingAPI
 
-class ReportLoggingAPI(LoggingAPI, ABC):
+class ReportLoggingAPI(LoggingAPI):
 
     _SUCCESS_TAG_ = "[✔️Success✔️]"
     _FAILURE_TAG_ = "[❌Failure❌]"
@@ -12,11 +11,16 @@ class ReportLoggingAPI(LoggingAPI, ABC):
 
     @classmethod
     def _setup_class_(cls) -> None:
+        super()._setup_class_()
         cls.set_verbose_level(VerboseLevel.Silent, default=True)
         cls.set_threshold_level(VerboseLevel.Exception)
         cls.disable_success_report()
         cls.enable_failure_report()
         cls.enable_logging()
+
+    @staticmethod
+    def _format_tag_(tag: str, separator: bool = False) -> str:
+        return tag
 
     @classmethod
     def is_success_report_enabled(cls) -> bool:
@@ -69,3 +73,7 @@ class ReportLoggingAPI(LoggingAPI, ABC):
         with cls._class_lock_:
             if not cls.is_failure_report_enabled(): return False
             return cls._verbose_min_ and cls._verbose_min_.value <= cls._class_verbose_threshold_.value
+
+    @classmethod
+    def output(cls, verbose: VerboseLevel, log) -> None:
+        pass

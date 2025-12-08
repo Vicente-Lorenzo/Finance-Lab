@@ -1,7 +1,7 @@
 from io import TextIOWrapper
 # import credentials_wrapper as cw
 
-from Library.Logging import FileLoggingAPI
+from Library.Logging import VerboseLevel, FileLoggingAPI
 from Library.Utility import inspect_path
 
 class BucketLoggingAPI(FileLoggingAPI):
@@ -13,6 +13,7 @@ class BucketLoggingAPI(FileLoggingAPI):
     @classmethod
     def _setup_class_(cls) -> None:
         super()._setup_class_()
+        cls.set_verbose_level(VerboseLevel.Debug, default=True)
         cls.set_bucket_name("lisbonTradingData")
         cls.set_bucket_link("https://jupyterhub.cib.echonet/services/s3viewer/bucket/lisbonTRADINGDATA/")
 

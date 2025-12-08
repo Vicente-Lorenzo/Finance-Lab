@@ -1,10 +1,11 @@
 # import mailer
 # from mailer.report import Report
+from dash import html
 
 from Library.Utility import HTML
 from Library.Logging import VerboseLevel, ReportLoggingAPI, WebLoggingAPI
 
-class EmailLoggingAPI(ReportLoggingAPI, WebLoggingAPI):
+class EmailLoggingAPI(WebLoggingAPI, ReportLoggingAPI):
 
     _email_title_: str = None
     _email_from_address_: str = None
@@ -16,6 +17,7 @@ class EmailLoggingAPI(ReportLoggingAPI, WebLoggingAPI):
     @classmethod
     def _setup_class_(cls) -> None:
         super()._setup_class_()
+        cls.set_verbose_level(VerboseLevel.Silent, default=True)
         # cls.set_email_from_address(from_address=cls.user_info.email)
         cls.set_email_to_addresses(to_addresses=[cls._email_default_address_])
         # cls.set_email_cc_addresses(cc_addresses=[cls.user_info.email])
@@ -51,14 +53,15 @@ class EmailLoggingAPI(ReportLoggingAPI, WebLoggingAPI):
             cls._email_download_hyperlink_ = download_hyperlink
 
     @classmethod
-    def output(cls, verbose: VerboseLevel, log: str) -> None:
-        mailer.send(
-            subject=verbose.name,
-            from_=cls._email_from_address_,
-            to=cls._email_to_addresses_,
-            cc=cls._email_cc_addresses_,
-            content=log
-        )
+    def output(cls, verbose: VerboseLevel, log) -> None:
+        super().output(verbose=verbose, log=log)
+        # mailer.send(
+        #    subject=verbose.name,
+        #    from_=cls._email_from_address_,
+        #    to=cls._email_to_addresses_,
+        #    cc=cls._email_cc_addresses_,
+        #    content=log
+        # )
 
     @classmethod
     def _exit_(cls):

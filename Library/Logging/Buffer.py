@@ -1,10 +1,9 @@
-from abc import ABC
 from threading import RLock
 from collections import deque
 
 from Library.Logging import VerboseLevel, LoggingAPI
 
-class BufferLoggingAPI(LoggingAPI, ABC):
+class BufferLoggingAPI(LoggingAPI):
 
     _buffer_: deque[str] = None
     _buffer_lock_: RLock = None
@@ -12,6 +11,7 @@ class BufferLoggingAPI(LoggingAPI, ABC):
     @classmethod
     def _setup_class_(cls) -> None:
         super()._setup_class_()
+        cls.set_verbose_level(VerboseLevel.Silent, default=True)
         cls._buffer_ = deque()
         cls._buffer_lock_ = RLock()
         cls.enable_logging()

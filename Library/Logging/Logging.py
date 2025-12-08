@@ -58,7 +58,7 @@ class LoggingAPI(ABC):
     @classmethod
     @abstractmethod
     def _setup_class_(cls) -> None:
-        cls.set_verbose_level(VerboseLevel.Debug, default=True)
+        cls.set_verbose_level(VerboseLevel.Silent, default=True)
 
     def __init_subclass__(cls):
         cls._class_lock_ = RLock()
@@ -72,7 +72,7 @@ class LoggingAPI(ABC):
     @staticmethod
     @abstractmethod
     def _format_tag_(*args, **kwargs) -> str:
-        pass
+        raise NotImplementedError
 
     @classmethod
     def _join_tags(cls, tags: list):
@@ -253,7 +253,7 @@ class LoggingAPI(ABC):
     @classmethod
     @abstractmethod
     def output(cls, verbose: VerboseLevel, log) -> None:
-        pass
+        raise NotImplementedError
 
     def log(self, verbose: VerboseLevel, level_tag: str, content: Callable[[], str | BytesIO] | str) -> None:
         cls = self.__class__
