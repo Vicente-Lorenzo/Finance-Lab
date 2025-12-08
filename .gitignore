@@ -14,5 +14,6 @@
 *.algo
 *.pstat
 *.log
+*.html
 
 *Research.ipynb
