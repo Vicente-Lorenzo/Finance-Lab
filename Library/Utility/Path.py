@@ -40,6 +40,8 @@ def traceback_working_module_path(header: bool = False, footer: bool = False, re
 
 def traceback_depth(depth: int = 1) -> str | None:
     f: str = _getframe(depth).f_code.co_filename
+    if f.startswith("<") and f.endswith(">"):
+        return traceback_working()
     if contains(f, ("ipython", "ipykernel", "interactiveshell", "runpy")):
         return find_notebook() if is_notebook() else f
     return f
