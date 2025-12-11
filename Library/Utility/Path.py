@@ -6,59 +6,71 @@ from dataclasses import dataclass, field
 
 from Library.Utility import contains, is_notebook, find_notebook
 
-def inspect_file(file: str, header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
-    file: PurePath = builder("/") / file if header else builder(file)
+def inspect_file(file: str | None, header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+    file: str = file or ""
+    sep: str = PurePath._flavour.sep
+    if header is True:
+        file: PurePath = builder(sep) / file
+    elif header is False:
+        file: PurePath = builder(file.lstrip(sep))
+    else:
+        file: PurePath = builder(file)
     return file.resolve() if (isinstance(file, Path) and resolve) else file
 
-def inspect_path(file: PurePath, footer: bool = False) -> str:
-    sep: str = file._flavour.sep
+def inspect_path(file: PurePath, footer: bool = None) -> str:
+    sep: str = PurePath._flavour.sep
     file: str = str(file)
-    return file + sep if (footer and set(file) != set(sep)) else file
+    if footer is True:
+        return file + sep if set(file) != set(sep) else file
+    elif footer is False:
+        return file.rstrip(sep)
+    else:
+        return file
 
-def inspect_file_path(file: str, header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+def inspect_file_path(file: str | None, header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> str:
     path: PurePath = inspect_file(file=file, header=header, resolve=resolve, builder=builder)
     return inspect_path(file=path, footer=footer)
 
-def inspect_module(file: str, header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+def inspect_module(file: str | None, header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     path: PurePath = inspect_file(file=file, header=header, resolve=resolve, builder=builder)
     return path.parent if path.suffix else path
 
-def inspect_module_path(file: str, header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+def inspect_module_path(file: str | None, header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> str:
     module: PurePath = inspect_module(file=file, header=header, resolve=resolve, builder=builder)
     return inspect_path(file=module, footer=footer)
 
 def traceback_working() -> str:
     return getcwd()
 
-def traceback_working_module(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+def traceback_working_module(header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     traceback: str = traceback_working()
     return inspect_module(file=traceback, header=header, resolve=resolve, builder=builder)
 
-def traceback_working_module_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+def traceback_working_module_path(header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> str:
     traceback: str = traceback_working()
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
 def traceback_depth(depth: int = 1) -> str | None:
     f: str = _getframe(depth).f_code.co_filename
     if f.startswith("<") and f.endswith(">"):
-        return traceback_working()
+        return find_notebook() if is_notebook() else traceback_working()
     if contains(f, ("ipython", "ipykernel", "interactiveshell", "runpy")):
         return find_notebook() if is_notebook() else f
     return f
 
-def traceback_depth_file(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path, depth: int = 2) -> PurePath | Path:
+def traceback_depth_file(header: bool = None, resolve: bool = False, builder: type[PurePath] = Path, depth: int = 2) -> PurePath | Path:
     traceback: str = traceback_depth(depth=depth)
     return inspect_file(file=traceback, header=header, resolve=resolve, builder=builder)
 
-def traceback_depth_file_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path, depth: int = 2) -> str:
+def traceback_depth_file_path(header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path, depth: int = 2) -> str:
     traceback: str = traceback_depth(depth=depth)
     return inspect_file_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
-def traceback_depth_module(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path, depth: int = 2) -> PurePath | Path:
+def traceback_depth_module(header: bool = None, resolve: bool = False, builder: type[PurePath] = Path, depth: int = 2) -> PurePath | Path:
     traceback: str = traceback_depth(depth=depth)
     return inspect_module(file=traceback, header=header, resolve=resolve, builder=builder)
 
-def traceback_depth_module_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path, depth: int = 2) -> str:
+def traceback_depth_module_path(header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path, depth: int = 2) -> str:
     traceback: str = traceback_depth(depth=depth)
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
@@ -74,19 +86,19 @@ def traceback_origin() -> str:
     finally:
         return origin
 
-def traceback_origin_file(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+def traceback_origin_file(header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     traceback: str = traceback_origin()
     return inspect_file(file=traceback, header=header, resolve=resolve, builder=builder)
 
-def traceback_origin_file_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+def traceback_origin_file_path(header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> str:
     traceback: str = traceback_origin()
     return inspect_file_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
-def traceback_origin_module(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+def traceback_origin_module(header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     traceback: str = traceback_origin()
     return inspect_module(file=traceback, header=header, resolve=resolve, builder=builder)
 
-def traceback_origin_module_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+def traceback_origin_module_path(header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> str:
     traceback: str = traceback_origin()
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
@@ -97,19 +109,19 @@ def traceback_current():
         depth += 1
     return current
 
-def traceback_current_file(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+def traceback_current_file(header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     traceback: str = traceback_current()
     return inspect_file(file=traceback, header=header, resolve=resolve, builder=builder)
 
-def traceback_current_file_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+def traceback_current_file_path(header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> str:
     traceback: str = traceback_current()
     return inspect_file_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
-def traceback_current_module(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+def traceback_current_module(header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     traceback: str = traceback_current()
     return inspect_module(file=traceback, header=header, resolve=resolve, builder=builder)
 
-def traceback_current_module_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+def traceback_current_module_path(header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> str:
     traceback: str = traceback_current()
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
@@ -121,19 +133,19 @@ def traceback_calling() -> str:
         depth += 1
     return calling
 
-def traceback_calling_file(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+def traceback_calling_file(header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     traceback: str = traceback_calling()
     return inspect_file(file=traceback, header=header, resolve=resolve, builder=builder)
 
-def traceback_calling_file_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+def traceback_calling_file_path(header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> str:
     traceback: str = traceback_calling()
     return inspect_file_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
-def traceback_calling_module(header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+def traceback_calling_module(header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     traceback: str = traceback_calling()
     return inspect_module(file=traceback, header=header, resolve=resolve, builder=builder)
 
-def traceback_calling_module_path(header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+def traceback_calling_module_path(header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> str:
     traceback: str = traceback_calling()
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
@@ -144,19 +156,19 @@ def traceback_regex(pattern: str) -> str:
         depth += 1
     return expression
 
-def traceback_regex_file(pattern: str, header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+def traceback_regex_file(pattern: str, header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     traceback: str = traceback_regex(pattern=pattern)
     return inspect_file(file=traceback, header=header, resolve=resolve, builder=builder)
 
-def traceback_regex_file_path(pattern: str, header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+def traceback_regex_file_path(pattern: str, header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> str:
     traceback: str = traceback_regex(pattern=pattern)
     return inspect_file_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
-def traceback_regex_module(pattern: str, header: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+def traceback_regex_module(pattern: str, header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     traceback: str = traceback_regex(pattern=pattern)
     return inspect_module(file=traceback, header=header, resolve=resolve, builder=builder)
 
-def traceback_regex_module_path(pattern: str, header: bool = False, footer: bool = False, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+def traceback_regex_module_path(pattern: str, header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> str:
     traceback: str = traceback_regex(pattern=pattern)
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
