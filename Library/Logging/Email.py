@@ -18,9 +18,9 @@ class EmailLoggingAPI(WebLoggingAPI, ReportLoggingAPI):
     def _setup_class_(cls) -> None:
         super()._setup_class_()
         cls.set_verbose_level(VerboseLevel.Silent, default=True)
-        # cls.set_email_from_address(from_address=cls.user_info.email)
+        # cls.set_email_from_address(from_address=cls._user_info_.email)
         cls.set_email_to_addresses(to_addresses=[cls._email_default_address_])
-        # cls.set_email_cc_addresses(cc_addresses=[cls.user_info.email])
+        # cls.set_email_cc_addresses(cc_addresses=[cls._user_info_.email])
 
     @classmethod
     def set_email_title(cls, title: str) -> None:
@@ -55,13 +55,6 @@ class EmailLoggingAPI(WebLoggingAPI, ReportLoggingAPI):
     @classmethod
     def output(cls, verbose: VerboseLevel, log) -> None:
         super().output(verbose=verbose, log=log)
-        # mailer.send(
-        #    subject=verbose.name,
-        #    from_=cls._email_from_address_,
-        #    to=cls._email_to_addresses_,
-        #    cc=cls._email_cc_addresses_,
-        #    content=log
-        # )
 
     @classmethod
     def _exit_(cls):
@@ -87,12 +80,12 @@ class EmailLoggingAPI(WebLoggingAPI, ReportLoggingAPI):
 
         r = Report()
         r.append(htmlize(html.Div(result_tag, style={"color": result_color, "font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"})))
-        r.append(html.Div(threshold_tag, style={"font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"}))
-        r.append(html.Br())
-        r.append(html.Div(execution_tag, style={"font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"}))
-        r.append(html.Div(timestamp_tag, style={"font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"}))
-        r.append(html.Div(time_tag, style={"font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"}))
-        r.append(html.Div(html.A("Download Log (S3)", href=cls._email_download_hyperlink_, style={"font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"})))
+        r.append(htmlize(html.Div(threshold_tag, style={"font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"})))
+        r.append(htmlize(html.Br()))
+        r.append(htmlize(html.Div(execution_tag, style={"font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"})))
+        r.append(htmlize(html.Div(timestamp_tag, style={"font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"})))
+        r.append(htmlize(html.Div(time_tag, style={"font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"})))
+        r.append(htmlize(html.Div(html.A("Download Log (S3)", href=cls._email_download_hyperlink_, style={"font-size": "10pt", "font-weight": "bold", "font-family": "Consolas"}))))
 
         mailer.send(
             subject=title,

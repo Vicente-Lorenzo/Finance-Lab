@@ -1,4 +1,4 @@
-from io import TextIOWrapper
+from typing import TextIO
 # import credentials_wrapper as cw
 
 from Library.Logging import VerboseLevel, FileLoggingAPI
@@ -45,10 +45,10 @@ class BucketLoggingAPI(FileLoggingAPI):
 
     @classmethod
     def _mkdir_(cls) -> None:
-        cls._bucket_.mkdir(inspect_path(cls._dir_path_))
+        cls._bucket_.mkdirs(inspect_path(cls._dir_path_), exist_ok=True)
 
     @classmethod
-    def _open_(cls) -> TextIOWrapper:
+    def _open_(cls) -> TextIO:
         return cls._bucket_.open(inspect_path(cls._file_path_), "w")
 
     @classmethod

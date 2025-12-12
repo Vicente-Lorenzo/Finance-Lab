@@ -12,7 +12,7 @@ class WebLoggingAPI(BufferLoggingAPI):
     _DARKRED_ = "#FF005F"
     _GRAY_ = "#8A8A8A"
     _LIGHTGRAY_ = "#585858"
-    _BLACK_ = "#000000"
+    _WHITE_ = "#FFFFFF"
 
     @classmethod
     def _setup_class_(cls) -> None:
@@ -20,7 +20,7 @@ class WebLoggingAPI(BufferLoggingAPI):
         cls.set_verbose_level(VerboseLevel.Silent, default=True)
 
     @staticmethod
-    def _format_tag_(tag: str, color: str = _BLACK_, separator: bool = False) -> html.Span:
+    def _format_tag_(tag: str, color: str = _WHITE_, separator: bool = False) -> html.Span:
         color = WebLoggingAPI._LIGHTGRAY_ if separator else color
         return html.Span(tag, style={"color": color, "font-family": "Consolas"})
 

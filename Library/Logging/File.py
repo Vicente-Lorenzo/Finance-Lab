@@ -1,5 +1,5 @@
 from pathlib import Path
-from io import TextIOWrapper
+from typing import TextIO
 
 from Library.Logging import VerboseLevel, BufferLoggingAPI
 from Library.Utility import inspect_file
@@ -10,13 +10,13 @@ class FileLoggingAPI(BufferLoggingAPI):
     _file_name_: str = None
     _file_extension_: str = None
     _file_path_: Path = None
-    _file_: TextIOWrapper = None
+    _file_: TextIO = None
 
     @classmethod
     def _setup_class_(cls) -> None:
         super()._setup_class_()
         cls.set_verbose_level(VerboseLevel.Debug, default=True)
-        cls.set_dir_path(inspect_file("Logs", resolve=True))
+        cls.set_dir_path(inspect_file("Logs"))
         cls.set_file_extension(file_extension="log")
 
     @classmethod
@@ -51,7 +51,7 @@ class FileLoggingAPI(BufferLoggingAPI):
         cls._dir_path_.mkdir(parents=True, exist_ok=True)
 
     @classmethod
-    def _open_(cls) -> TextIOWrapper:
+    def _open_(cls) -> TextIO:
         return cls._file_path_.open("w")
 
     @classmethod
