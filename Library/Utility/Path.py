@@ -8,7 +8,7 @@ from Library.Utility import contains, is_notebook, find_notebook
 
 def inspect_file(file: str | None, header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     file: str = file or ""
-    sep: str = PurePath._flavour.sep
+    sep: str = builder._flavour.sep
     if header is True:
         file: PurePath = builder(sep) / file
     elif header is False:
@@ -18,7 +18,7 @@ def inspect_file(file: str | None, header: bool = None, resolve: bool = False, b
     return file.resolve() if (isinstance(file, Path) and resolve) else file
 
 def inspect_path(file: PurePath, footer: bool = None) -> str:
-    sep: str = PurePath._flavour.sep
+    sep: str = file._flavour.sep
     file: str = str(file)
     if footer is True:
         return file + sep if set(file) != set(sep) else file
