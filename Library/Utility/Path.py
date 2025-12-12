@@ -176,11 +176,11 @@ def traceback_regex_module_path(pattern: str, header: bool = None, footer: bool 
 class PathAPI:
 
     File: str = field(init=True, repr=True)
-    Module: PurePath = field(default=None, init=True, repr=True)
+    Module: Path = field(default=None, init=True, repr=True)
 
     def __post_init__(self):
         self.Module = self.Module or traceback_calling_module(resolve=True)
 
     @property
-    def Path(self) -> PurePath | Path:
+    def Path(self) -> Path:
         return self.Module / self.File
