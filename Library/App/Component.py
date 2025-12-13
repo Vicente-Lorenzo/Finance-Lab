@@ -31,16 +31,20 @@ class ButtonAPI(ComponentAPI):
         self._vertical_: bool = vertical
         self._classname_: str = classname
 
-    def button(self) -> Component:
+    def button(self, *args, **kwargs) -> Component:
+        key = kwargs.pop("key", self._key_)
+        color = kwargs.pop("color", self._background_)
+        classname = kwargs.pop("className", "button")
         return dbc.Button(
-            children=self._label_,
-            id=self._key_,
-            color=self._background_,
-            className=f"button"
+            *args,
+            id=key,
+            color=color,
+            className=classname,
+            **kwargs,
         )
 
     def group(self) -> list[Component]:
-        return [self.button()]
+        return [self.button(self._label_)]
 
     def build(self) -> Component:
         return dbc.ButtonGroup(
@@ -71,25 +75,7 @@ class PageButtonAPI(ButtonAPI):
         )
         self._target_: str = target
 
-    def button(self) -> Component:
-        return dbc.Button(
-            children=self._label_,
-            id=self._key_,
-            href=self._target_,
-            title="Open Page",
-            color=self._background_,
-            className=f"button"
-        )
-
-    def external(self) -> Component:
-        return dbc.Button(
-            href=self._target_,
-            external_link=True,
-            target="_blank",
-            title="Open Page (New Tab)",
-            color=self._background_,
-            className=f"external bi bi-box-arrow-up-right"
-        )
-
     def group(self) -> list[Component]:
-        return [self.button(), self.external()]
+        button = self.button(self._label_, title="Open Page", href=self._target_)
+        external = self.button(external_link=True, title="Open Page (New Tab)", href=self._target_, target="_blank", className="external bi bi-box-arrow-up-right")
+        return [button, external]
