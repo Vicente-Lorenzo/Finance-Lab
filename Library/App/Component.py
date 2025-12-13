@@ -6,7 +6,7 @@ from Library.Utility import Component
 class ComponentAPI(Component, ABC):
 
     @abstractmethod
-    def build(self):
+    def build(self) -> Component:
         raise NotImplementedError
 
     def __repr__(self):
@@ -42,7 +42,7 @@ class ButtonAPI(ComponentAPI):
     def group(self) -> list[Component]:
         return [self.button()]
 
-    def build(self):
+    def build(self) -> Component:
         return dbc.ButtonGroup(
             children=self.group(),
             size=self._size_,
@@ -71,7 +71,7 @@ class PageButtonAPI(ButtonAPI):
         )
         self._target_: str = target
 
-    def button(self):
+    def button(self) -> Component:
         return dbc.Button(
             children=self._label_,
             id=self._key_,
@@ -81,7 +81,7 @@ class PageButtonAPI(ButtonAPI):
             className=f"button"
         )
 
-    def external(self):
+    def external(self) -> Component:
         return dbc.Button(
             href=self._target_,
             external_link=True,

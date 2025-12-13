@@ -5,8 +5,8 @@ import dash_bootstrap_components as dbc
 from abc import ABC, abstractmethod
 from pathlib import PurePosixPath
 
-from Library.Logging import HandlerLoggingAPI
-from Library.App import PageAPI, DefaultLayoutAPI, HistorySessionAPI
+from Library.Logging import *
+from Library.App import *
 from Library.Utility.HTML import *
 from Library.Utility.Path import *
 
@@ -38,10 +38,10 @@ class AppAPI(ABC):
     HISTORY_STORAGE_ID: dict = {"type": "storage", "index": "history"}
     SESSION_STORAGE_ID: dict = {"type": "storage", "index": "session"}
 
-    EMPTY_LAYOUT: html.Div = None
-    LOADING_LAYOUT: html.Div = None
-    MAINTENANCE_LAYOUT: html.Div = None
-    DEVELOPMENT_LAYOUT: html.Div = None
+    EMPTY_LAYOUT: Component = None
+    LOADING_LAYOUT: Component = None
+    MAINTENANCE_LAYOUT: Component = None
+    DEVELOPMENT_LAYOUT: Component = None
 
     def __init__(self,
                  name: str = "<Insert App Name>",
@@ -293,13 +293,13 @@ class AppAPI(ABC):
                 self._log_.debug(lambda: f"Location Callback: Page Found")
                 description = page.description if not self.description and page.description else dash.no_update
                 navigation = page.navigation if page.navigation else dash.no_update
-                layout = page.content
+                content = page.layout
             else:
                 self._log_.debug(lambda: f"Location Callback: Page Not Found")
                 description = dash.no_update
                 navigation = dash.no_update
-                layout = self.EMPTY_LAYOUT
-            return anchor, description, navigation, layout
+                content = self.EMPTY_LAYOUT
+            return anchor, description, navigation, content
 
         @self.app.callback(
             dash.Output(self.HISTORY_STORAGE_ID, "data", allow_duplicate=True),

@@ -27,11 +27,11 @@ class PageAPI(ABC):
         self._parent_: Self = None
         self._children_: list[Self] = []
 
-        self._layout_: Component = self.layout()
+        self._layout_: Component = self.build()
         self._navigation_: Component | None = None
 
     @abstractmethod
-    def layout(self) -> Component:
+    def build(self) -> Component:
         return self.app.DEVELOPMENT_LAYOUT
 
     @property
@@ -67,7 +67,7 @@ class PageAPI(ABC):
         return [self] + self.children
 
     @property
-    def content(self):
+    def layout(self):
         return self._layout_
     @property
     def navigation(self):

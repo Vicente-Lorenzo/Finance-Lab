@@ -6,12 +6,11 @@ from Library.Utility import Component
 class LayoutAPI(Component, ABC):
 
     @abstractmethod
-    def build(self):
+    def build(self) -> Component:
         raise NotImplementedError
 
     def __repr__(self):
         return repr(self.build())
-
 
 class DefaultLayoutAPI(LayoutAPI):
 
@@ -28,7 +27,7 @@ class DefaultLayoutAPI(LayoutAPI):
         self._details_: str = details
         self._classname_: str = classname
 
-    def build(self):
+    def build(self) -> Component:
         return html.Div([
             html.Img(src=self._image_, alt=self._title_, className="default-layout-image"),
             html.H2(self._title_, className="default-layout-title"),
