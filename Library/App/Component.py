@@ -33,12 +33,11 @@ class ButtonAPI(ComponentAPI):
 
     def button(self, *args, **kwargs) -> Component:
         key = kwargs.pop("key", self._key_)
-        color = kwargs.pop("color", self._background_)
         classname = kwargs.pop("className", "button")
         return dbc.Button(
             *args,
             id=key,
-            color=color,
+            color=self._background_,
             className=classname,
             **kwargs,
         )
