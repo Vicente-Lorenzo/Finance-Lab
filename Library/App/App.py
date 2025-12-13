@@ -1,26 +1,14 @@
 import dash
-from typing import Self
 from dash import dcc, html
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
-from pathlib import PurePath, PurePosixPath
-from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
+from pathlib import PurePosixPath
 
-from Library.App import HistorySessionAPI
 from Library.Logging import HandlerLoggingAPI
-from Library.Utility import inspect_file, inspect_path, inspect_file_path, traceback_current_module
-
-@dataclass(slots=True)
-class Link:
-    Anchor: str = field(init=True, default=None)
-    Endpoint: str = field(init=True, default=None)
-    Button: str = field(init=True, default=None)
-    Description: str = field(init=True, default=None)
-    Parent: Self = field(init=True, default=None)
-    Children: list[Self] = field(init=True, default_factory=list)
-    Navigation: dbc.Navbar = field(init=True, default=None)
-    Layout: html.Div = field(init=True, default=None)
+from Library.App import PageAPI, DefaultLayoutAPI, HistorySessionAPI
+from Library.Utility.HTML import *
+from Library.Utility.Path import *
 
 class AppAPI(ABC):
 
@@ -50,6 +38,11 @@ class AppAPI(ABC):
     HISTORY_STORAGE_ID: dict = {"type": "storage", "index": "history"}
     SESSION_STORAGE_ID: dict = {"type": "storage", "index": "session"}
 
+    EMPTY_LAYOUT: html.Div = None
+    LOADING_LAYOUT: html.Div = None
+    MAINTENANCE_LAYOUT: html.Div = None
+    DEVELOPMENT_LAYOUT: html.Div = None
+
     def __init__(self,
                  name: str = "<Insert App Name>",
                  title: str = "<Insert App Title>",
@@ -65,8 +58,8 @@ class AppAPI(ABC):
                  anchor: str = None,
                  debug: bool = False):
 
-        self._log_: HandlerLoggingAPI = HandlerLoggingAPI()
-        self._links_: dict[str, Link] = {}
+        self._log_: HandlerLoggingAPI = HandlerLoggingAPI(self.__class__.__name__)
+        self._pages_: dict[str, PageAPI] = {}
 
         self.name: str = name
         self._log_.debug(lambda: f"Defined Name = {self.name}")
@@ -119,11 +112,11 @@ class AppAPI(ABC):
         self.assets: str = inspect_path(self.module / "Assets")
         self._log_.debug(lambda: f"Defined Assets = {self.assets}")
 
-        self._init_app()
+        self._init_app_()
         self._log_.info(lambda: "Initialized App")
 
-        self._init_links_()
-        self._log_.debug(lambda: "Initialized Links")
+        self._init_pages_()
+        self._log_.debug(lambda: "Initialized Pages")
 
         self._init_layouts_()
         self._log_.info(lambda: "Initialized Layout")
@@ -131,7 +124,7 @@ class AppAPI(ABC):
         self._init_callbacks_()
         self._log_.info(lambda: "Initialized Callbacks")
 
-    def _init_app(self):
+    def _init_app_(self):
 
         self.app = dash.Dash(
             name=self.name,
@@ -144,34 +137,37 @@ class AppAPI(ABC):
             prevent_initial_callbacks=True
         )
 
-    def _init_links_(self) -> None:
+    def _init_pages_(self) -> None:
 
-        self.EMPTY_LAYOUT = html.Div([
-            html.Img(src=self.app.get_asset_url("404.png"), className="status-layout-image", alt="Resource Not Found"),
-            html.H2("Resource Not Found", className="status-layout-title"),
-            html.P("Unable to find the resource you are looking for.", className="status-layout-text"),
-            html.P("Please check the url path.", className="status-layout-text"),
-        ], className="status-layout status-layout-empty")
+        self.EMPTY_LAYOUT: Component = DefaultLayoutAPI(
+            image=self.app.get_asset_url("404.png"),
+            title="Resource Not Found",
+            description="Unable to find the resource you are looking for.",
+            details="Please check the url path."
+        ).build()
 
-        self.LOADING_LAYOUT = html.Div([
-            html.Img(src=self.app.get_asset_url("loading.gif"), className="status-layout-image", alt="Loading"),
-            html.H2("Loading...", className="status-layout-title"),
-            html.P("Please wait a moment.", className="status-layout-text"),
-        ], className="status-layout status-layout-loading")
+        self.LOADING_LAYOUT = DefaultLayoutAPI(
+            image=self.app.get_asset_url("loading.gif"),
+            title="Loading...",
+            description="This resource is loading its content.",
+            details="Please wait a moment."
+        ).build()
 
-        self.MAINTENANCE_LAYOUT = html.Div([
-            html.Img(src=self.app.get_asset_url("maintenance.png"), className="status-layout-image", alt="Under Maintenance"),
-            html.H2("Resource Under Maintenance", className="status-layout-title"),
-            html.P("This resource is temporarily down for maintenance.", className="status-layout-text"),
-            html.P("Please try again later.", className="status-layout-text"),
-        ], className="status-layout status-layout-maintenance")
+        self.MAINTENANCE_LAYOUT = DefaultLayoutAPI(
+            image=self.app.get_asset_url("maintenance.png"),
+            title="Resource Under Maintenance",
+            description="This resource is temporarily down for maintenance.",
+            details="Please try again later."
+        ).build()
 
-        self.DEVELOPMENT_LAYOUT = html.Div([
-            html.Img(src=self.app.get_asset_url("development.png"), className="status-layout-image", alt="Work in Progress"),
-            html.H2("Resource Under Development", className="status-layout-title"),
-            html.P("This resource is currently under development.", className="status-layout-text"),
-            html.P("Please try again later.", className="status-layout-text"),
-        ], className="status-layout status-layout-development")
+        self.DEVELOPMENT_LAYOUT = DefaultLayoutAPI(
+            image=self.app.get_asset_url("development.png"),
+            title="Resource Under Development",
+            description="This resource is currently under development.",
+            details="Please try again later."
+        ).build()
+
+        self.pages()
 
     def _init_navigation_(self) -> None:
 
@@ -184,32 +180,32 @@ class AppAPI(ABC):
                 className=f"{className}-a",
             )
 
-        for endpoint, link in self._links_.items():
+        for endpoint, page in self._pages_.items():
 
-            if not link.Children and link.Parent is not None:
-                link.Navigation = link.Parent.Navigation
+            if not page.children and page.parent is not None:
+                page.navigation = page.parent.navigation
                 continue
 
             navigation_items: list = []
 
-            if link.Parent is not None:
-                navigation_items.append(dbc.ButtonGroup(dbc.Button(f"⭰ {link.Parent.Button}", href=link.Parent.Anchor, className="header-navigation-button"), className="header-navigation-group"))
+            if page.parent is not None:
+                navigation_items.append(dbc.ButtonGroup(dbc.Button(f"⭰ {page.parent.button}", href=page.parent._anchor_, className="header-navigation-button"), className="header-navigation-group"))
 
-            for child in link.Children:
+            for child in page.children:
                 navigation_group: list = [
-                    dbc.Button(child.Button, href=child.Anchor, className="header-navigation-button"),
-                    new_tab_button(href=child.Anchor, className="header-navigation-button-tab")
+                    dbc.Button(child.button, href=child._anchor_, className="header-navigation-button"),
+                    new_tab_button(href=child._anchor_, className="header-navigation-button-tab")
                 ]
-                if child.Children:
+                if child.children:
                     dropdown_group = []
-                    for subchild in child.Children:
+                    for subchild in child.children:
                         dropdown_group.append(dbc.DropdownMenuItem([
-                            dbc.Button(subchild.Button, href=subchild.Anchor, className="header-navigation-dropdown-button"),
-                            new_tab_button(href=subchild.Anchor, className="header-navigation-dropdown-button-tab")
-                        ], className="header-navigation-dropdown-group"),)
+                            dbc.Button(subchild.button, href=subchild._anchor_, className="header-navigation-dropdown-button"),
+                            new_tab_button(href=subchild._anchor_, className="header-navigation-dropdown-button-tab")
+                        ], className="header-navigation-dropdown-group"))
                     navigation_group.append(dbc.DropdownMenu(dropdown_group, direction="down", className="header-navigation-dropdown"))
                 navigation_items.append(dbc.ButtonGroup(navigation_group, className="header-navigation-group"))
-            link.Navigation = dbc.Navbar(navigation_items, className="header-navigation-bar")
+            page.navigation = dbc.Navbar(navigation_items, className="header-navigation-bar")
 
     def _init_header_(self) -> html.Div:
 
@@ -247,7 +243,7 @@ class AppAPI(ABC):
             dbc.Button([html.Span("▼", id=self._CONTACTS_ARROW_ID_), " Contacts ", html.I(className="bi bi-question-circle")], id=self._CONTACTS_BUTTON_ID_, color="primary", className="footer-button"),
             dbc.Button([html.I(className="bi bi-terminal"), " Terminal ", html.Span("▼", id=self._TERMINAL_ARROW_ID_)], id=self._TERMINAL_BUTTON_ID_, color="primary", className="footer-button"),
             dbc.Collapse(dbc.Card(dbc.CardBody(html.Div(self._init_contacts_(), id=self._CONTACTS_CONTENT_ID_)), className="footer-panel footer-panel-left"), id=self._CONTACTS_COLLAPSE_ID_, is_open=False),
-            dbc.Collapse(dbc.Card(dbc.CardBody(html.Pre([], id=self._TERMINAL_CONTENT_ID_)), className="footer-panel footer-panel-right"), id=self._TERMINAL_COLLAPSE_ID_, is_open=False)
+            dbc.Collapse(dbc.Card(dbc.CardBody(html.Pre([], id=self._TERMINAL_CONTENT_ID_)), color="dark", inverse=True, className="footer-panel footer-panel-right"), id=self._TERMINAL_COLLAPSE_ID_, is_open=False)
         ], id=self._FOOTER_ID_, className="footer")
 
     def _init_hidden_(self) -> html.Div:
@@ -261,10 +257,6 @@ class AppAPI(ABC):
 
     def _init_layouts_(self):
 
-        self.layout()
-        self._log_.debug(lambda: "Loaded Specific Layout")
-        self._init_navigation_()
-        self._log_.debug(lambda: "Loaded Navigation Layouts")
         header = self._init_header_()
         self._log_.debug(lambda: "Loaded Header Layout")
         content = self._init_content_()
@@ -292,18 +284,18 @@ class AppAPI(ABC):
         )
         def _update_location_callback_(path: str):
             self._log_.debug(lambda: f"Location Callback: Received Path = {path}")
-            anchor = inspect_file_path(path, header=True, builder=PurePosixPath)
+            anchor = self.anchorize(path=path)
             self._log_.debug(lambda: f"Location Callback: Parsed Anchor = {anchor}")
-            endpoint = inspect_file_path(path, header=True, footer=True, builder=PurePosixPath)
+            endpoint = self.endpointize(path=path)
             self._log_.debug(lambda: f"Location Callback: Parsed Endpoint = {endpoint}")
-            link = self._links_.get(endpoint, None)
-            if link is not None:
-                self._log_.debug(lambda: f"Location Callback: Link Found")
-                description = link.Description if not self.description else dash.no_update
-                navigation = link.Navigation if link.Navigation else dash.no_update
-                layout = link.Layout if link.Layout else self.DEVELOPMENT_LAYOUT
+            page = self._pages_.get(endpoint, None)
+            if page is not None:
+                self._log_.debug(lambda: f"Location Callback: Page Found")
+                description = page.description if not self.description and page.description else dash.no_update
+                navigation = page.navigation if page.navigation else dash.no_update
+                layout = page.content
             else:
-                self._log_.debug(lambda: f"Location Callback: Link Not Found")
+                self._log_.debug(lambda: f"Location Callback: Page Not Found")
                 description = dash.no_update
                 navigation = dash.no_update
                 layout = self.EMPTY_LAYOUT
@@ -326,7 +318,8 @@ class AppAPI(ABC):
             dash.State(self.HISTORY_STORAGE_ID, "data"),
             prevent_initial_call=True
         )
-        def _backward_history_callback_(_, history):
+        def _backward_history_callback_(clicks, history):
+            if clicks is None: raise PreventUpdate
             history = HistorySessionAPI(**history)
             path = history.Backward()
             return path if path else dash.no_update
@@ -337,7 +330,8 @@ class AppAPI(ABC):
             dash.State(self._PAGE_LOCATION_ID_, "pathname"),
             prevent_initial_call=True
         )
-        def _refresh_history_callback_(_, path):
+        def _refresh_history_callback_(clicks, path):
+            if clicks is None: raise PreventUpdate
             return path
 
         @self.app.callback(
@@ -346,7 +340,8 @@ class AppAPI(ABC):
             dash.State(self.HISTORY_STORAGE_ID, "data"),
             prevent_initial_call=True
         )
-        def _forward_history_callback_(_, history):
+        def _forward_history_callback_(clicks, history):
+            if clicks is None: raise PreventUpdate
             history = HistorySessionAPI(**history)
             path = history.Forward()
             return path if path else dash.no_update
@@ -363,7 +358,8 @@ class AppAPI(ABC):
             dash.State(self._CONTACTS_COLLAPSE_ID_, "is_open"),
             prevent_initial_call=True
         )
-        def _contacts_button_callback_(_, was_open: bool):
+        def _contacts_button_callback_(clicks, was_open: bool):
+            if clicks is None: raise PreventUpdate
             arrow, is_open = _collapsable_button_callback_(was_open)
             self._log_.debug(lambda: f"Contacts Callback: {'Expanding' if is_open else 'Collapsing'}")
             return arrow, is_open
@@ -375,7 +371,8 @@ class AppAPI(ABC):
             dash.State(self._TERMINAL_COLLAPSE_ID_, "is_open"),
             prevent_initial_call=True
         )
-        def _terminal_button_callback_(_, was_open: bool):
+        def _terminal_button_callback_(clicks, was_open: bool):
+            if clicks is None: raise PreventUpdate
             arrow, is_open = _collapsable_button_callback_(was_open)
             self._log_.debug(lambda: f"Terminal Callback: {'Expanding' if is_open else 'Collapsing'}")
             return arrow, is_open
@@ -392,46 +389,82 @@ class AppAPI(ABC):
             terminal.extend(logs)
             return terminal
 
-        self.callbacks()
+        # self.callbacks()
 
-    def link(self, path: str, button: str, description: str, layout):
+    def resolve(self, path: str | PurePath, footer: bool = None) -> str:
+        path: str = inspect_path(path) if isinstance(path, PurePath) else path
+        self._log_.debug(lambda: f"Resolve Path: Received = {path}")
+        path: str = inspect_file_path(path, header=False, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Resolve Path: Parsed = {path}")
+        resolve: str = inspect_path(self.anchor / path, footer=footer)
+        self._log_.debug(lambda: f"Resolve Path: Resolved = {resolve}")
+        return resolve
+
+    def anchorize(self, path: str | PurePath):
+        return self.resolve(path, footer=False)
+
+    def endpointize(self, path: str | PurePath):
+        return self.resolve(path, footer=True)
+
+    """
+    def link(self, page: PageAPI):
         alias: PurePath | None = None
-        parent: Link | None = None
-        for name in inspect_file(path, header=True, builder=PurePosixPath).parts:
-            self._log_.debug(lambda: f"Link Definition: Name = {name}")
+        node: PageAPI | None = None
+        path: PurePath = inspect_file(page.path, header=True, builder=PurePosixPath)
+        for name in path.parts:
+            self._log_.debug(lambda: f"Page Linking: Name = {name}")
             name = inspect_file(name, header=True, builder=PurePosixPath).name
             alias = self.anchor / alias / name if alias is not None else self.anchor / name
-            self._log_.debug(lambda: f"Link Definition: Alias = {alias}")
+            self._log_.debug(lambda: f"Page Linking: Alias = {alias}")
             anchor = inspect_path(alias)
-            self._log_.debug(lambda: f"Link Definition: Anchor = {anchor}")
+            self._log_.debug(lambda: f"Page Linking: Anchor = {anchor}")
             endpoint = inspect_path(alias, footer=True)
-            self._log_.debug(lambda: f"Link Definition: Endpoint = {endpoint}")
-            if endpoint not in self._links_:
-                self._log_.debug(lambda: "Link Definition: Not Found")
-                link = Link()
-                link.Anchor = anchor
-                link.Endpoint = endpoint
-                if parent is not None:
-                    link.Parent = parent
-                    self._log_.debug(lambda: f"Link Definition: Parent = {parent.Anchor}")
-                    parent.Children.append(link)
-                    self._log_.debug(lambda: f"Link Definition: Siblings = {len(parent.Children)}")
-                self._links_[endpoint] = link
+            self._log_.debug(lambda: f"Page Linking: Endpoint = {endpoint}")
+            if endpoint not in self._pages_:
+                self._log_.debug(lambda: "Page Linking: Not Found")
+                new = PageAPI(
+                    app=self,
+                    path=inspect_path(alias),
+                    anchor=anchor,
+                    endpoint=endpoint,
+                    indexed=False
+                )
+                new.parent = node
+                if node:
+                    self._log_.debug(lambda: f"Page Linking: Parent = {node._anchor_}")
+                    self._log_.debug(lambda: f"Page Linking: Family = {len(node.family)}")
+                self._pages_[endpoint] = new
             else:
-                self._log_.debug(lambda: "Link Definition: Found")
-                link = self._links_[endpoint]
-            parent = link
-        parent.Button = button
-        parent.Description = description
-        parent.Layout = layout
-        self._log_.info(lambda: f"Defined Link: Endpoint = {parent.Endpoint}")
+                self._log_.debug(lambda: "Page Linking: Found")
+                new = self._pages_[endpoint]
+            node = new
+        self._pages_[page._endpoint_] = page
+        self._log_.info(lambda: f"Defined Link: Endpoint = {node._endpoint_}")
+    """
+
+    def link(self, page: PageAPI):
+        relative_path: PurePath = inspect_file(page.path, header=True, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Page Linking: Relative Path = {relative_path}")
+        relative_anchor = self.anchorize(path=relative_path)
+        self._log_.debug(lambda: f"Page Linking: Relative Anchor = {relative_anchor}")
+        relative_endpoint = self.endpointize(path=relative_path)
+        self._log_.debug(lambda: f"Page Linking: Relative Endpoint = {relative_endpoint}")
+        intermediate_alias: PurePath = inspect_file("/", builder=PurePosixPath)
+        for part in relative_path.parts[1:-1]:
+            intermediate_path: PurePath = inspect_file(part, header=True, builder=PurePosixPath)
+            intermediate_alias = intermediate_alias / intermediate_path.name
+            self._log_.debug(lambda: f"Page Linking: Intermediate Path = {intermediate_alias}")
+            intermediate_anchor = self.anchorize(path=intermediate_alias)
+            self._log_.debug(lambda: f"Page Linking: Intermediate Anchor = {intermediate_anchor}")
+            intermediate_endpoint = self.endpointize(path=intermediate_alias)
+            self._log_.debug(lambda: f"Page Linking: Intermediate Endpoint = {intermediate_endpoint}")
+        page.anchor = relative_anchor
+        page.endpoint = relative_endpoint
+        self._pages_[page._endpoint_] = page
+        self._log_.info(lambda: f"Page Linking: Defined Page = {page}")
 
     @abstractmethod
-    def layout(self):
-        raise NotImplementedError
-
-    @abstractmethod
-    def callbacks(self):
+    def pages(self):
         raise NotImplementedError
 
     def run(self):

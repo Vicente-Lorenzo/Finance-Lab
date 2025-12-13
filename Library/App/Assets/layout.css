@@ -1,0 +1,64 @@
+.default-layout {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height: 80vh;
+    padding: 0 0 0 0;
+    margin: auto auto auto auto;
+}
+
+.default-layout-image {
+    max-width: 300px;
+    width: 100%;
+    height: auto;
+    padding: 0 0 0 0;
+    margin: 0 0 0 0;
+}
+
+.default-layout-title {
+    max-width: 600px;
+    width: 100%;
+    height: auto;
+    font-size: 32px;
+    font-weight: bold;
+    padding: 0 0 0 0;
+    margin: 20px 0 0 0;
+}
+
+.default-layout-description {
+    max-width: 600px;
+    width: 100%;
+    height: auto;
+    font-size: 18px;
+    font-weight: normal;
+    padding: 0 0 0 0;
+    margin: 20px 0 0 0;
+}
+
+.default-layout-details {
+    max-width: 600px;
+    width: 100%;
+    height: auto;
+    font-size: 18px;
+    font-weight: normal;
+    padding: 0 0 0 0;
+    margin: 10px 0 0 0;
+}
+
+.default-layout-empty .default-layout-title {
+    color: #c0392b;
+}
+
+.default-layout-loading .default-layout-title {
+    color: #2980b9;
+}
+
+.default-layout-maintenance .default-layout-title {
+    color: #f39c12;
+}
+
+.default-layout-development .default-layout-title {
+    color: #27ae60;
+}
