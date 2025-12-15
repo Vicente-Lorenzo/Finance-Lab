@@ -12,7 +12,7 @@ from Library.Utility.Path import *
 
 class AppAPI(ABC):
 
-    _LAYOUT_ID_: dict = {"type": "div", "index": "layout"}
+    _LAYOUT_ID_: dict = {"type": "div", "index": "app"}
     _HEADER_ID_: dict = {"type": "div", "index": "header"}
     _CONTENT_ID_: dict = {"type": "div", "index": "content"}
     _FOOTER_ID_: dict = {"type": "div", "index": "footer"}
@@ -217,11 +217,10 @@ class AppAPI(ABC):
             ], className="header-information-block"),
             html.Div([
                 html.Div(None, id=self._PAGE_NAVIGATION_ID_, className="header-navigation-block"),
-                html.Div([dbc.ButtonGroup([
-                    dbc.Button(html.I(className="bi bi-arrow-left"), id=self._PAGE_BACKWARD_ID_),
-                    dbc.Button(html.I(className="bi bi-arrow-repeat"), id=self._PAGE_REFRESH_ID_),
-                    dbc.Button(html.I(className="bi bi-arrow-right"), id=self._PAGE_FORWARD_ID_),
-                ], className="header-history-block")])
+                html.Div(ButtonMenuAPI(
+                    keys=[self._PAGE_BACKWARD_ID_, self._PAGE_REFRESH_ID_, self._PAGE_FORWARD_ID_],
+                    classnames=["bi bi-arrow-left", "bi bi-arrow-repeat", "bi bi-arrow-right"]
+                ).build(), className="header-history-block")
             ], className="header-control-block")
         ], id=self._HEADER_ID_, className="header")
 
