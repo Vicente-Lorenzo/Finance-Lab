@@ -10,6 +10,14 @@ from Library.App import *
 from Library.Utility.HTML import *
 from Library.Utility.Path import *
 
+def callback(*args, **kwargs):
+    def decorator(func):
+        func._callback_ = True
+        func._callback_args_ = args
+        func._callback_kwargs_ = kwargs
+        return func
+    return decorator
+
 class AppAPI(ABC):
 
     _LAYOUT_ID_: dict = {"type": "div", "index": "app"}
@@ -273,122 +281,135 @@ class AppAPI(ABC):
 
     def _init_callbacks_(self):
 
-        @self.app.callback(
-            dash.Output(self._PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
-            dash.Output(self._PAGE_SELECTED_ID_, "children", allow_duplicate=True),
-            dash.Output(self._PAGE_NAVIGATION_ID_, "children", allow_duplicate=True),
-            dash.Output(self._CONTENT_ID_, "children", allow_duplicate=True),
-            dash.Input(self._PAGE_LOCATION_ID_, "pathname"),
-            prevent_initial_call=False
-        )
-        def _update_location_callback_(path: str):
-            self._log_.debug(lambda: f"Location Callback: Received Path = {path}")
-            anchor = self.anchorize(path=path)
-            self._log_.debug(lambda: f"Location Callback: Parsed Anchor = {anchor}")
-            endpoint = self.endpointize(path=path)
-            self._log_.debug(lambda: f"Location Callback: Parsed Endpoint = {endpoint}")
-            page = self.locate(endpoint=endpoint)
-            if page is not None:
-                self._log_.debug(lambda: f"Location Callback: Page Found")
-                description = page.description if not self.description and page.description else dash.no_update
-                navigation = page.navigation if page.navigation else dash.no_update
-                content = page.layout
-            else:
-                self._log_.debug(lambda: f"Location Callback: Page Not Found")
-                description = dash.no_update
-                navigation = dash.no_update
-                content = self.EMPTY_LAYOUT
-            return anchor, description, navigation, content
+        for cls in reversed(type(self).mro()):
+            if cls is object:
+                continue
+            for name, func in cls.__dict__.items():
+                if not callable(func):
+                    continue
+                if not getattr(func, "_callback_", False):
+                    continue
+                bound = getattr(self, name)
+                callback_args = getattr(func, "_callback_args_")
+                callback_kwargs = getattr(func, "_callback_kwargs_")
+                self.app.callback(*callback_args, **callback_kwargs)(bound)
+                self._log_.debug(lambda: f"Loaded Callback: {name}")
 
-        @self.app.callback(
-            dash.Output(self.HISTORY_STORAGE_ID, "data", allow_duplicate=True),
-            dash.Input(self._PAGE_LOCATION_ID_, "pathname"),
-            dash.State(self.HISTORY_STORAGE_ID, "data"),
-            prevent_initial_call=True
-        )
-        def _update_history_callback_(path, history):
-            history = HistorySessionAPI(**history)
-            history.Register(path)
-            return history.dict()
+    @callback(
+        dash.Output(_PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
+        dash.Output(_PAGE_SELECTED_ID_, "children", allow_duplicate=True),
+        dash.Output(_PAGE_NAVIGATION_ID_, "children", allow_duplicate=True),
+        dash.Output(_CONTENT_ID_, "children", allow_duplicate=True),
+        dash.Input(_PAGE_LOCATION_ID_, "pathname"),
+        prevent_initial_call=False
+    )
+    def _update_location_callback_(self, path: str):
+        self._log_.debug(lambda: f"Location Callback: Received Path = {path}")
+        anchor = self.anchorize(path=path)
+        self._log_.debug(lambda: f"Location Callback: Parsed Anchor = {anchor}")
+        endpoint = self.endpointize(path=path)
+        self._log_.debug(lambda: f"Location Callback: Parsed Endpoint = {endpoint}")
+        page = self.locate(endpoint=endpoint)
+        if page is not None:
+            self._log_.debug(lambda: f"Location Callback: Page Found")
+            description = page.description if not self.description and page.description else dash.no_update
+            navigation = page.navigation if page.navigation else dash.no_update
+            content = page.layout
+        else:
+            self._log_.debug(lambda: f"Location Callback: Page Not Found")
+            description = dash.no_update
+            navigation = dash.no_update
+            content = self.EMPTY_LAYOUT
+        return anchor, description, navigation, content
 
-        @self.app.callback(
-            dash.Output(self._PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
-            dash.Input(self._PAGE_BACKWARD_ID_, "n_clicks"),
-            dash.State(self.HISTORY_STORAGE_ID, "data"),
-            prevent_initial_call=True
-        )
-        def _backward_history_callback_(clicks, history):
-            if clicks is None: raise PreventUpdate
-            history = HistorySessionAPI(**history)
-            path = history.Backward()
-            return path if path else dash.no_update
+    @callback(
+        dash.Output(HISTORY_STORAGE_ID, "data", allow_duplicate=True),
+        dash.Input(_PAGE_LOCATION_ID_, "pathname"),
+        dash.State(HISTORY_STORAGE_ID, "data"),
+        prevent_initial_call=True
+    )
+    def _update_history_callback_(self, path, history):
+        history = HistorySessionAPI(**history)
+        history.Register(path)
+        return history.dict()
 
-        @self.app.callback(
-            dash.Output(self._PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
-            dash.Input(self._PAGE_REFRESH_ID_, "n_clicks"),
-            dash.State(self._PAGE_LOCATION_ID_, "pathname"),
-            prevent_initial_call=True
-        )
-        def _refresh_history_callback_(clicks, path):
-            if clicks is None: raise PreventUpdate
-            return path
+    @callback(
+        dash.Output(_PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
+        dash.Input(_PAGE_BACKWARD_ID_, "n_clicks"),
+        dash.State(HISTORY_STORAGE_ID, "data"),
+        prevent_initial_call=True
+    )
+    def _backward_history_callback_(self, clicks, history):
+        if clicks is None: raise PreventUpdate
+        history = HistorySessionAPI(**history)
+        path = history.Backward()
+        return path if path else dash.no_update
 
-        @self.app.callback(
-            dash.Output(self._PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
-            dash.Input(self._PAGE_FORWARD_ID_, "n_clicks"),
-            dash.State(self.HISTORY_STORAGE_ID, "data"),
-            prevent_initial_call=True
-        )
-        def _forward_history_callback_(clicks, history):
-            if clicks is None: raise PreventUpdate
-            history = HistorySessionAPI(**history)
-            path = history.Forward()
-            return path if path else dash.no_update
+    @callback(
+        dash.Output(_PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
+        dash.Input(_PAGE_REFRESH_ID_, "n_clicks"),
+        dash.State(_PAGE_LOCATION_ID_, "pathname"),
+        prevent_initial_call=True
+    )
+    def _refresh_history_callback_(self, clicks, path):
+        if clicks is None: raise PreventUpdate
+        return path
 
-        def _collapsable_button_callback_(was_open: bool):
-            is_open = not was_open
-            arrow = "▲" if is_open else "▼"
-            return arrow, is_open
+    @callback(
+        dash.Output(_PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
+        dash.Input(_PAGE_FORWARD_ID_, "n_clicks"),
+        dash.State(HISTORY_STORAGE_ID, "data"),
+        prevent_initial_call=True
+    )
+    def _forward_history_callback_(self, clicks, history):
+        if clicks is None: raise PreventUpdate
+        history = HistorySessionAPI(**history)
+        path = history.Forward()
+        return path if path else dash.no_update
 
-        @self.app.callback(
-            dash.Output(self._CONTACTS_ARROW_ID_, "children", allow_duplicate=True),
-            dash.Output(self._CONTACTS_COLLAPSE_ID_, "is_open", allow_duplicate=True),
-            dash.Input(self._CONTACTS_BUTTON_ID_, "n_clicks"),
-            dash.State(self._CONTACTS_COLLAPSE_ID_, "is_open"),
-            prevent_initial_call=True
-        )
-        def _contacts_button_callback_(clicks, was_open: bool):
-            if clicks is None: raise PreventUpdate
-            arrow, is_open = _collapsable_button_callback_(was_open)
-            self._log_.debug(lambda: f"Contacts Callback: {'Expanding' if is_open else 'Collapsing'}")
-            return arrow, is_open
+    @staticmethod
+    def _collapsable_button_callback_(was_open: bool):
+        is_open = not was_open
+        arrow = "▲" if is_open else "▼"
+        return arrow, is_open
 
-        @self.app.callback(
-            dash.Output(self._TERMINAL_ARROW_ID_, "children", allow_duplicate=True),
-            dash.Output(self._TERMINAL_COLLAPSE_ID_, "is_open", allow_duplicate=True),
-            dash.Input(self._TERMINAL_BUTTON_ID_, "n_clicks"),
-            dash.State(self._TERMINAL_COLLAPSE_ID_, "is_open"),
-            prevent_initial_call=True
-        )
-        def _terminal_button_callback_(clicks, was_open: bool):
-            if clicks is None: raise PreventUpdate
-            arrow, is_open = _collapsable_button_callback_(was_open)
-            self._log_.debug(lambda: f"Terminal Callback: {'Expanding' if is_open else 'Collapsing'}")
-            return arrow, is_open
+    @callback(
+        dash.Output(_CONTACTS_ARROW_ID_, "children", allow_duplicate=True),
+        dash.Output(_CONTACTS_COLLAPSE_ID_, "is_open", allow_duplicate=True),
+        dash.Input(_CONTACTS_BUTTON_ID_, "n_clicks"),
+        dash.State(_CONTACTS_COLLAPSE_ID_, "is_open"),
+        prevent_initial_call=True
+    )
+    def _contacts_button_callback_(self, clicks, was_open: bool):
+        if clicks is None: raise PreventUpdate
+        arrow, is_open = self._collapsable_button_callback_(was_open)
+        self._log_.debug(lambda: f"Contacts Callback: {'Expanding' if is_open else 'Collapsing'}")
+        return arrow, is_open
 
-        @self.app.callback(
-            dash.Output(self._TERMINAL_CONTENT_ID_, "children", allow_duplicate=True),
-            dash.Input(self.INTERVAL_ID, "n_intervals"),
-            dash.State(self._TERMINAL_CONTENT_ID_, "children"),
-            prevent_initial_call=True
-        )
-        def _terminal_stream_callback_(_, terminal):
-            logs = self._log_.web.stream()
-            if not logs: raise PreventUpdate
-            terminal.extend(logs)
-            return terminal
+    @callback(
+        dash.Output(_TERMINAL_ARROW_ID_, "children", allow_duplicate=True),
+        dash.Output(_TERMINAL_COLLAPSE_ID_, "is_open", allow_duplicate=True),
+        dash.Input(_TERMINAL_BUTTON_ID_, "n_clicks"),
+        dash.State(_TERMINAL_COLLAPSE_ID_, "is_open"),
+        prevent_initial_call=True
+    )
+    def _terminal_button_callback_(self, clicks, was_open: bool):
+        if clicks is None: raise PreventUpdate
+        arrow, is_open = self._collapsable_button_callback_(was_open)
+        self._log_.debug(lambda: f"Terminal Callback: {'Expanding' if is_open else 'Collapsing'}")
+        return arrow, is_open
 
-        # self.callbacks()
+    @callback(
+        dash.Output(_TERMINAL_CONTENT_ID_, "children", allow_duplicate=True),
+        dash.Input(INTERVAL_ID, "n_intervals"),
+        dash.State(_TERMINAL_CONTENT_ID_, "children"),
+        prevent_initial_call=True
+    )
+    def _terminal_stream_callback_(self, _, terminal):
+        logs = self._log_.web.stream()
+        if not logs: raise PreventUpdate
+        terminal.extend(logs)
+        return terminal
 
     def resolve(self, path: str | PurePath, footer: bool = None) -> str:
         path: str = inspect_path(path) if isinstance(path, PurePath) else path

@@ -12,7 +12,10 @@ from Library.App.Layout import (
 from Library.App.History import HistorySessionAPI
 from Library.App.Terminal import TerminalSessionAPI
 from Library.App.Page import PageAPI
-from Library.App.App import AppAPI
+from Library.App.App import (
+    callback,
+    AppAPI
+)
 
 __all__ = [
     "ComponentAPI", "ButtonAPI", "PageButtonAPI", "ButtonMenuAPI", "PageButtonMenuAPI",
@@ -20,5 +23,5 @@ __all__ = [
     "HistorySessionAPI",
     "TerminalSessionAPI",
     "PageAPI",
-    "AppAPI"
+    "callback", "AppAPI"
 ]
