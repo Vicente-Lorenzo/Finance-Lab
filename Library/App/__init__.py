@@ -1,7 +1,9 @@
 from Library.App.Component import (
     ComponentAPI,
     ButtonAPI,
-    PageButtonAPI
+    PageButtonAPI,
+    ButtonMenuAPI,
+    PageButtonMenuAPI,
 )
 from Library.App.Layout import (
     LayoutAPI,
@@ -13,7 +15,7 @@ from Library.App.Page import PageAPI
 from Library.App.App import AppAPI
 
 __all__ = [
-    "ComponentAPI", "ButtonAPI", "PageButtonAPI",
+    "ComponentAPI", "ButtonAPI", "PageButtonAPI", "ButtonMenuAPI", "PageButtonMenuAPI",
     "LayoutAPI", "DefaultLayoutAPI",
     "HistorySessionAPI",
     "TerminalSessionAPI",
