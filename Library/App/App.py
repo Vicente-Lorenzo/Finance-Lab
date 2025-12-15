@@ -2,7 +2,6 @@ import dash
 from dash import dcc, html
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
-from abc import ABC, abstractmethod
 from pathlib import PurePosixPath
 
 from Library.Logging import *
@@ -18,7 +17,7 @@ def callback(*args, **kwargs):
         return func
     return decorator
 
-class AppAPI(ABC):
+class AppAPI:
 
     _LAYOUT_ID_: dict = {"type": "div", "index": "app"}
     _HEADER_ID_: dict = {"type": "div", "index": "header"}
@@ -46,10 +45,11 @@ class AppAPI(ABC):
     HISTORY_STORAGE_ID: dict = {"type": "storage", "index": "history"}
     SESSION_STORAGE_ID: dict = {"type": "storage", "index": "session"}
 
-    EMPTY_LAYOUT: Component = None
+    NOT_FOUND_LAYOUT: Component = None
     LOADING_LAYOUT: Component = None
     MAINTENANCE_LAYOUT: Component = None
     DEVELOPMENT_LAYOUT: Component = None
+    NOT_INDEXED_LAYOUT: Component = None
 
     def __init__(self,
                  name: str = "<Insert App Name>",
@@ -126,6 +126,9 @@ class AppAPI(ABC):
         self._init_pages_()
         self._log_.debug(lambda: "Initialized Pages")
 
+        self._init_navigation_()
+        self._log_.debug(lambda: "Initialized Navigation")
+
         self._init_layouts_()
         self._log_.info(lambda: "Initialized Layout")
 
@@ -147,7 +150,7 @@ class AppAPI(ABC):
 
     def _init_pages_(self) -> None:
 
-        self.EMPTY_LAYOUT: Component = DefaultLayoutAPI(
+        self.NOT_FOUND_LAYOUT: Component = DefaultLayoutAPI(
             image=self.app.get_asset_url("404.png"),
             title="Resource Not Found",
             description="Unable to find the resource you are looking for.",
@@ -175,6 +178,13 @@ class AppAPI(ABC):
             details="Please try again later."
         ).build()
 
+        self.NOT_INDEXED_LAYOUT = DefaultLayoutAPI(
+            image=self.app.get_asset_url("indexed.png"),
+            title="Resource Not Indexed",
+            description="This resource is not indexed at any page.",
+            details="Please try again later."
+        )
+
         self.pages()
 
     def _init_navigation_(self) -> None:
@@ -199,14 +209,14 @@ class AppAPI(ABC):
             if page.parent is not None:
                 navigation_items.append(dbc.ButtonGroup(dbc.Button(f"⭰ {page.parent.button}", href=page.parent._anchor_, className="header-navigation-button"), className="header-navigation-group"))
 
-            for child in page.children:
+            for member in page.family:
                 navigation_group: list = [
-                    dbc.Button(child.button, href=child._anchor_, className="header-navigation-button"),
-                    new_tab_button(href=child._anchor_, className="header-navigation-button-tab")
+                    dbc.Button(member.button, href=member._anchor_, className="header-navigation-button"),
+                    new_tab_button(href=member._anchor_, className="header-navigation-button-tab")
                 ]
-                if child.children:
+                if member.children:
                     dropdown_group = []
-                    for subchild in child.children:
+                    for subchild in member.children:
                         dropdown_group.append(dbc.DropdownMenuItem([
                             dbc.Button(subchild.button, href=subchild._anchor_, className="header-navigation-dropdown-button"),
                             new_tab_button(href=subchild._anchor_, className="header-navigation-dropdown-button-tab")
@@ -319,7 +329,7 @@ class AppAPI(ABC):
             self._log_.debug(lambda: f"Location Callback: Page Not Found")
             description = dash.no_update
             navigation = dash.no_update
-            content = self.EMPTY_LAYOUT
+            content = self.NOT_FOUND_LAYOUT
         return anchor, description, navigation, content
 
     @callback(
@@ -429,41 +439,8 @@ class AppAPI(ABC):
     def locate(self, endpoint: str) -> PageAPI | None:
         return self._pages_.get(endpoint, None)
 
-    """
-    def link(self, page: PageAPI):
-        alias: PurePath | None = None
-        node: PageAPI | None = None
-        path: PurePath = inspect_file(page.path, header=True, builder=PurePosixPath)
-        for name in path.parts:
-            self._log_.debug(lambda: f"Page Linking: Name = {name}")
-            name = inspect_file(name, header=True, builder=PurePosixPath).name
-            alias = self.anchor / alias / name if alias is not None else self.anchor / name
-            self._log_.debug(lambda: f"Page Linking: Alias = {alias}")
-            anchor = inspect_path(alias)
-            self._log_.debug(lambda: f"Page Linking: Anchor = {anchor}")
-            endpoint = inspect_path(alias, footer=True)
-            self._log_.debug(lambda: f"Page Linking: Endpoint = {endpoint}")
-            if endpoint not in self._pages_:
-                self._log_.debug(lambda: "Page Linking: Not Found")
-                new = PageAPI(
-                    app=self,
-                    path=inspect_path(alias),
-                    anchor=anchor,
-                    endpoint=endpoint,
-                    indexed=False
-                )
-                new.parent = node
-                if node:
-                    self._log_.debug(lambda: f"Page Linking: Parent = {node._anchor_}")
-                    self._log_.debug(lambda: f"Page Linking: Family = {len(node.family)}")
-                self._pages_[endpoint] = new
-            else:
-                self._log_.debug(lambda: "Page Linking: Found")
-                new = self._pages_[endpoint]
-            node = new
-        self._pages_[page._endpoint_] = page
-        self._log_.info(lambda: f"Defined Link: Endpoint = {node._endpoint_}")
-    """
+    def index(self, endpoint: str, page: PageAPI) -> None:
+        self._pages_[endpoint] = page
 
     def link(self, page: PageAPI):
         relative_path: PurePath = inspect_file(page.path, header=True, builder=PurePosixPath)
@@ -473,6 +450,7 @@ class AppAPI(ABC):
         relative_endpoint = self.endpointize(path=relative_path)
         self._log_.debug(lambda: f"Page Linking: Relative Endpoint = {relative_endpoint}")
         intermediate_alias: PurePath = inspect_file("/", builder=PurePosixPath)
+        intermediate_parent: PageAPI = self.locate(endpoint=self.endpointize(path=intermediate_alias))
         for part in relative_path.parts[1:-1]:
             intermediate_path: PurePath = inspect_file(part, header=True, builder=PurePosixPath)
             intermediate_alias = intermediate_alias / intermediate_path.name
@@ -482,14 +460,34 @@ class AppAPI(ABC):
             intermediate_endpoint = self.endpointize(path=intermediate_alias)
             self._log_.debug(lambda: f"Page Linking: Intermediate Endpoint = {intermediate_endpoint}")
             intermediate_page: PageAPI = self.locate(endpoint=intermediate_endpoint)
+            if not intermediate_page:
+                intermediate_page = PageAPI(
+                    app=self,
+                    path=inspect_path(intermediate_alias),
+                    description="Resource Not Indexed",
+                    indexed=False,
+                    layout=self.NOT_INDEXED_LAYOUT
+                )
+                self._log_.debug(lambda: f"Page Linking: Created Intermediate Page = {intermediate_endpoint}")
+            intermediate_page.anchor = intermediate_anchor
+            intermediate_page.endpoint = intermediate_endpoint
+            self.index(endpoint=intermediate_endpoint, page=intermediate_page)
+            self._log_.debug(lambda: f"Page Linking: Linked Intermediate Page = {intermediate_endpoint}")
+            intermediate_page.attach(parent=intermediate_parent)
+            intermediate_parent = intermediate_page
         page.anchor = relative_anchor
         page.endpoint = relative_endpoint
-        self._pages_[page._endpoint_] = page
-        self._log_.info(lambda: f"Page Linking: Defined Page = {page}")
+        existing = self.locate(endpoint=relative_endpoint)
+        if existing:
+            page.merge(existing)
+            self._log_.debug(lambda: f"Page Linking: Merged Relative Page = {relative_endpoint}")
+        else:
+            self.index(endpoint=relative_endpoint, page=page)
+            self._log_.info(lambda: f"Page Linking: Linked Relative Page = {page}")
+        page.attach(parent=intermediate_parent)
 
-    @abstractmethod
     def pages(self):
-        raise NotImplementedError
+        pass
 
     def run(self):
         return self.app.run(

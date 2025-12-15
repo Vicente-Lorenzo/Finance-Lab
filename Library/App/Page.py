@@ -1,17 +1,17 @@
 from typing import Self
-from abc import ABC, abstractmethod
 
 from Library.Logging import HandlerLoggingAPI
 from Library.Utility import Component
 
-class PageAPI(ABC):
+class PageAPI:
 
     def __init__(self,
                  app,
                  path: str,
                  button: str = None,
                  description: str = None,
-                 indexed: bool = True):
+                 indexed: bool = True,
+                 layout: Component = None):
 
         self._log_: HandlerLoggingAPI = HandlerLoggingAPI(self.__class__.__name__)
 
@@ -24,13 +24,12 @@ class PageAPI(ABC):
         self._anchor_: str | None = None
         self._endpoint_: str | None = None
 
-        self._parent_: Self = None
-        self._children_: list[Self] = []
+        self._parent_: PageAPI | None = None
+        self._children_: list[PageAPI] = []
 
-        self._layout_: Component = self.build()
+        self._layout_: Component = layout or self.build()
         self._navigation_: Component | None = None
 
-    @abstractmethod
     def build(self) -> Component:
         return self.app.DEVELOPMENT_LAYOUT
 
@@ -50,18 +49,9 @@ class PageAPI(ABC):
     @property
     def parent(self) -> Self:
         return self._parent_
-    @parent.setter
-    def parent(self, parent: Self) -> None:
-        if parent is None: return
-        if parent.parent is not None:
-            parent.children = self
-        self._parent_ = parent
     @property
     def children(self) -> list[Self]:
         return self._children_
-    @children.setter
-    def children(self, children: Self) -> None:
-        self._children_.append(children)
     @property
     def family(self) -> list[Self]:
         return [self] + self.children
@@ -72,6 +62,34 @@ class PageAPI(ABC):
     @property
     def navigation(self):
         return self._navigation_
+    @navigation.setter
+    def navigation(self, navigation: Component) -> None:
+        self._navigation_ = navigation
+
+    def attach(self, parent: Self):
+        if parent is None:
+            return
+        if self._parent_ is parent:
+            return
+        if self._parent_:
+            self._parent_._children_.remove(self)
+        self._parent_ = parent
+        if self in parent._children_:
+            idx = parent._children_.index(self)
+            parent._children_[idx] = self
+        else:
+            parent._children_.append(self)
+        self._log_.debug(lambda: f"Attached Page = {self.endpoint} to Parent = {parent.endpoint}")
+
+    def merge(self, page: Self):
+        self._parent_ = page._parent_
+        self._children_ = page._children_
+        if self._parent_ and page in self._parent_._children_:
+            idx = self._parent_._children_.index(page)
+            self._parent_._children_[idx] = self
+        for child in self._children_:
+            child._parent_ = self
+        self._log_.debug(lambda: f"Merged Pages = {page.endpoint}")
 
     def __repr__(self):
         return f"{self.description} @ {self.endpoint}"
