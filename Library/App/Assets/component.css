@@ -1,10 +1,10 @@
-.component-page-button-group .external {
+.component-button-group .external-button {
     opacity: 0;
     transition: opacity 0.50s ease;
     pointer-events: none;
 }
 
-.component-page-button-group:hover .external {
+.component-button-group:hover .external-button {
     opacity: 1;
     pointer-events: auto;
 }
