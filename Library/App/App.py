@@ -288,7 +288,7 @@ class AppAPI(ABC):
             self._log_.debug(lambda: f"Location Callback: Parsed Anchor = {anchor}")
             endpoint = self.endpointize(path=path)
             self._log_.debug(lambda: f"Location Callback: Parsed Endpoint = {endpoint}")
-            page = self._pages_.get(endpoint, None)
+            page = self.locate(endpoint=endpoint)
             if page is not None:
                 self._log_.debug(lambda: f"Location Callback: Page Found")
                 description = page.description if not self.description and page.description else dash.no_update
@@ -406,6 +406,9 @@ class AppAPI(ABC):
     def endpointize(self, path: str | PurePath):
         return self.resolve(path, footer=True)
 
+    def locate(self, endpoint: str) -> PageAPI | None:
+        return self._pages_.get(endpoint, None)
+
     """
     def link(self, page: PageAPI):
         alias: PurePath | None = None
@@ -458,6 +461,7 @@ class AppAPI(ABC):
             self._log_.debug(lambda: f"Page Linking: Intermediate Anchor = {intermediate_anchor}")
             intermediate_endpoint = self.endpointize(path=intermediate_alias)
             self._log_.debug(lambda: f"Page Linking: Intermediate Endpoint = {intermediate_endpoint}")
+            intermediate_page: PageAPI = self.locate(endpoint=intermediate_endpoint)
         page.anchor = relative_anchor
         page.endpoint = relative_endpoint
         self._pages_[page._endpoint_] = page
