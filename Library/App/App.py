@@ -236,10 +236,10 @@ class AppAPI:
             html.Div([
                 html.Div(None, id=self._PAGE_NAVIGATION_ID_, className="header-navigation-block"),
                 ButtonContainerAPI(background="primary", border="white", elements=[
-                    ButtonAPI(key=self._PAGE_BACKWARD_ID_, classname="bi bi-arrow-left"),
-                    ButtonAPI(key=self._PAGE_REFRESH_ID_, classname="bi bi-arrow-repeat"),
-                    ButtonAPI(key=self._PAGE_FORWARD_ID_, classname="bi bi-arrow-right")
-                ], classname="header-history-block").build()
+                    ButtonAPI(key=self._PAGE_BACKWARD_ID_, stylename="bi bi-arrow-left"),
+                    ButtonAPI(key=self._PAGE_REFRESH_ID_, stylename="bi bi-arrow-repeat"),
+                    ButtonAPI(key=self._PAGE_FORWARD_ID_, stylename="bi bi-arrow-right")
+                ], stylename="header-history-block").build()
             ], className="header-control-block")
         ], id=self._HEADER_ID_, className="header")
 
@@ -257,12 +257,18 @@ class AppAPI:
         ])
 
     def _init_footer_(self) -> html.Div:
+
         return html.Div([
-            dbc.Button([
-                html.I("▼", id=self._CONTACTS_ARROW_ID_),
-                " Contacts ",
-                html.I(className="bi bi-question-circle")], id=self._CONTACTS_BUTTON_ID_, color="primary", className="footer-button"),
-            dbc.Button([html.I(className="bi bi-terminal"), " Terminal ", html.Span("▼", id=self._TERMINAL_ARROW_ID_)], id=self._TERMINAL_BUTTON_ID_, color="primary", className="footer-button"),
+            ButtonAPI(key=self._CONTACTS_BUTTON_ID_, label=[
+                IconAPI(icon="bi bi-caret-down-fill", key=self._CONTACTS_ARROW_ID_),
+                TextAPI(text="  Contacts  "),
+                IconAPI(icon="bi bi-question-circle")
+            ], background="primary", border="white", stylename="footer-button").build(),
+            ButtonAPI(key=self._TERMINAL_BUTTON_ID_, label=[
+                IconAPI(icon="bi bi-terminal"),
+                TextAPI(text="  Terminal  "),
+                IconAPI(icon="bi bi-caret-down-fill", key=self._TERMINAL_ARROW_ID_)
+            ], background="primary", border="white", stylename="footer-button").build(),
             dbc.Collapse(dbc.Card(dbc.CardBody(html.Div(self._init_contacts_(), id=self._CONTACTS_CONTENT_ID_)), className="footer-panel footer-panel-left"), id=self._CONTACTS_COLLAPSE_ID_, is_open=False),
             dbc.Collapse(dbc.Card(dbc.CardBody(html.Pre([], id=self._TERMINAL_CONTENT_ID_)), color="dark", inverse=True, className="footer-panel footer-panel-right"), id=self._TERMINAL_COLLAPSE_ID_, is_open=False)
         ], id=self._FOOTER_ID_, className="footer")
@@ -382,36 +388,39 @@ class AppAPI:
         return path if path else dash.no_update
 
     @staticmethod
-    def _collapsable_button_callback_(was_open: bool):
+    def _collapsable_button_callback_(was_open: bool, classname: str):
         is_open = not was_open
-        arrow = "▲" if is_open else "▼"
-        return arrow, is_open
+        if is_open: classname = classname.replace("down", "up")
+        else: classname = classname.replace("up", "down")
+        return is_open, classname
 
     @callback(
-        dash.Output(_CONTACTS_ARROW_ID_, "children", allow_duplicate=True),
         dash.Output(_CONTACTS_COLLAPSE_ID_, "is_open", allow_duplicate=True),
+        dash.Output(_CONTACTS_ARROW_ID_, "className", allow_duplicate=True),
         dash.Input(_CONTACTS_BUTTON_ID_, "n_clicks"),
         dash.State(_CONTACTS_COLLAPSE_ID_, "is_open"),
+        dash.State(_CONTACTS_ARROW_ID_, "className"),
         prevent_initial_call=True
     )
-    def _contacts_button_callback_(self, clicks, was_open: bool):
+    def _contacts_button_callback_(self, clicks, was_open: bool, classname: str):
         if clicks is None: raise PreventUpdate
-        arrow, is_open = self._collapsable_button_callback_(was_open)
+        is_open, classname = self._collapsable_button_callback_(was_open=was_open, classname=classname)
         self._log_.debug(lambda: f"Contacts Callback: {'Expanding' if is_open else 'Collapsing'}")
-        return arrow, is_open
+        return is_open, classname
 
     @callback(
-        dash.Output(_TERMINAL_ARROW_ID_, "children", allow_duplicate=True),
         dash.Output(_TERMINAL_COLLAPSE_ID_, "is_open", allow_duplicate=True),
+        dash.Output(_TERMINAL_ARROW_ID_, "className", allow_duplicate=True),
         dash.Input(_TERMINAL_BUTTON_ID_, "n_clicks"),
         dash.State(_TERMINAL_COLLAPSE_ID_, "is_open"),
+        dash.State(_TERMINAL_ARROW_ID_, "className"),
         prevent_initial_call=True
     )
-    def _terminal_button_callback_(self, clicks, was_open: bool):
+    def _terminal_button_callback_(self, clicks, was_open: bool, classname: str):
         if clicks is None: raise PreventUpdate
-        arrow, is_open = self._collapsable_button_callback_(was_open)
+        is_open, classname = self._collapsable_button_callback_(was_open=was_open, classname=classname)
         self._log_.debug(lambda: f"Terminal Callback: {'Expanding' if is_open else 'Collapsing'}")
-        return arrow, is_open
+        return is_open, classname
 
     @callback(
         dash.Output(_TERMINAL_CONTENT_ID_, "children", allow_duplicate=True),

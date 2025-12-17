@@ -8,11 +8,11 @@ from Library.Utility import Component
 def parse_key(key: dict = None) -> dict:
     return key or {}
 
-def parse_classname(basename: str = None, classname: str = None, instancename: str = None) -> str:
+def parse_classname(basename: str = None, classname: str = None, stylename: str = None) -> str:
     basename: str = basename or ""
     classname: str = classname or ""
-    instancename: str = instancename or ""
-    return f"{basename} {classname} {instancename}".strip()
+    stylename: str = stylename or ""
+    return f"{basename} {classname} {stylename}".strip()
 
 def parse_style(basestyle: dict = None, classstyle: dict = None) -> dict:
     return {**(basestyle or {}), **(classstyle or {})}
@@ -23,12 +23,12 @@ class ComponentAPI(Component, ABC):
     key: dict = field(default_factory=dict)
     basename: str = field(default="component")
     classname: str = field(default_factory=str)
-    instancename: str = field(default_factory=str)
+    stylename: str = field(default_factory=str)
     style: dict = field(default_factory=dict)
 
     def __post_init__(self):
         self.key = parse_key(key=self.key)
-        self.classname = parse_classname(basename=self.basename, classname=self.classname, instancename=self.instancename)
+        self.classname = parse_classname(basename=self.basename, classname=self.classname, stylename=self.stylename)
         self.style = parse_style(basestyle=self.style)
 
     def arguments(self) -> dict:
@@ -54,11 +54,11 @@ class ContainerAPI(ComponentAPI, ABC):
 class IconAPI(ComponentAPI):
 
     classname: str = field(default="icon")
-    text: str = field(default_factory=str)
     icon: str = field(default_factory=str)
+    text: str = field(default_factory=str)
 
     def __post_init__(self):
-        self.instancename = self.icon
+        self.stylename = self.icon
         super().__post_init__()
 
     def build(self) -> Component:
@@ -68,11 +68,11 @@ class IconAPI(ComponentAPI):
 class TextAPI(ComponentAPI):
 
     classname: str = field(default="text")
-    text: str = field(default_factory=str)
     icon: str = field(default_factory=str)
+    text: str = field(default_factory=str)
 
     def __post_init__(self):
-        self.instancename = self.icon
+        self.stylename = self.icon
         super().__post_init__()
 
     def build(self) -> Component:
@@ -176,13 +176,13 @@ class PaginatorAPI(ButtonContainerAPI):
             title="Open Page",
             external=False,
             label=self.label,
-            instancename="internal"
+            stylename="internal"
         )
         external = ButtonAPI(
             target=self.target,
             title="Open Page (New Tab)",
             external=True,
-            instancename="external bi bi-box-arrow-up-right"
+            stylename="external bi bi-box-arrow-up-right"
         )
         self.elements = [internal, external]
         super().__post_init__()
