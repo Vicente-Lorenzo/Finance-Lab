@@ -4,6 +4,7 @@ from Library.App.Component import (
     IconAPI,
     TextAPI,
     ButtonAPI,
+    IconButtonAPI,
     ButtonContainerAPI,
     PaginatorAPI,
 )
@@ -20,7 +21,9 @@ from Library.App.App import (
 )
 
 __all__ = [
-    "ComponentAPI", "IconAPI", "TextAPI", "ButtonAPI", "ButtonContainerAPI", "PaginatorAPI",
+    "ComponentAPI", "IconAPI", "TextAPI",
+    "ButtonAPI", "IconButtonAPI", "ButtonContainerAPI",
+    "PaginatorAPI",
     "LayoutAPI", "DefaultLayoutAPI",
     "HistorySessionAPI",
     "TerminalSessionAPI",
