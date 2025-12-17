@@ -144,13 +144,13 @@
     transition: opacity 0.50s ease !important;
 }
 
-.header-navigation-history-block {
+.header-history-block {
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
     align-items: center;
     padding: 0 0 0 0;
-    margin: auto auto auto 15px;
+    margin: auto 10px auto 15px;
 }
 
 .header-control-block {

@@ -183,7 +183,7 @@ class AppAPI:
             title="Resource Not Indexed",
             description="This resource is not indexed at any page.",
             details="Please try again later."
-        )
+        ).build()
 
         self.pages()
 
@@ -235,10 +235,11 @@ class AppAPI:
             ], className="header-information-block"),
             html.Div([
                 html.Div(None, id=self._PAGE_NAVIGATION_ID_, className="header-navigation-block"),
-                html.Div(ButtonMenuAPI(
-                    keys=[self._PAGE_BACKWARD_ID_, self._PAGE_REFRESH_ID_, self._PAGE_FORWARD_ID_],
-                    classnames=["bi bi-arrow-left", "bi bi-arrow-repeat", "bi bi-arrow-right"]
-                ).build(), className="header-history-block")
+                ButtonContainerAPI(background="primary", border="white", elements=[
+                    ButtonAPI(key=self._PAGE_BACKWARD_ID_, classname="bi bi-arrow-left"),
+                    ButtonAPI(key=self._PAGE_REFRESH_ID_, classname="bi bi-arrow-repeat"),
+                    ButtonAPI(key=self._PAGE_FORWARD_ID_, classname="bi bi-arrow-right")
+                ], classname="header-history-block").build()
             ], className="header-control-block")
         ], id=self._HEADER_ID_, className="header")
 
@@ -257,7 +258,10 @@ class AppAPI:
 
     def _init_footer_(self) -> html.Div:
         return html.Div([
-            dbc.Button([html.Span("▼", id=self._CONTACTS_ARROW_ID_), " Contacts ", html.I(className="bi bi-question-circle")], id=self._CONTACTS_BUTTON_ID_, color="primary", className="footer-button"),
+            dbc.Button([
+                html.I("▼", id=self._CONTACTS_ARROW_ID_),
+                " Contacts ",
+                html.I(className="bi bi-question-circle")], id=self._CONTACTS_BUTTON_ID_, color="primary", className="footer-button"),
             dbc.Button([html.I(className="bi bi-terminal"), " Terminal ", html.Span("▼", id=self._TERMINAL_ARROW_ID_)], id=self._TERMINAL_BUTTON_ID_, color="primary", className="footer-button"),
             dbc.Collapse(dbc.Card(dbc.CardBody(html.Div(self._init_contacts_(), id=self._CONTACTS_CONTENT_ID_)), className="footer-panel footer-panel-left"), id=self._CONTACTS_COLLAPSE_ID_, is_open=False),
             dbc.Collapse(dbc.Card(dbc.CardBody(html.Pre([], id=self._TERMINAL_CONTENT_ID_)), color="dark", inverse=True, className="footer-panel footer-panel-right"), id=self._TERMINAL_COLLAPSE_ID_, is_open=False)
