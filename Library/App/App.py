@@ -43,7 +43,9 @@ class AppAPI:
 
     INTERVAL_ID: dict = {"type": "interval", "index": "interval"}
     HISTORY_STORAGE_ID: dict = {"type": "storage", "index": "history"}
+    MEMORY_STORAGE_ID: dict = {"type": "storage", "index": "memory"}
     SESSION_STORAGE_ID: dict = {"type": "storage", "index": "session"}
+    LOCAL_STORAGE_ID: dict = {"type": "storage", "index": "local"}
 
     NOT_FOUND_LAYOUT: Component = None
     LOADING_LAYOUT: Component = None
@@ -263,12 +265,12 @@ class AppAPI:
                 IconAPI(icon="bi bi-caret-down-fill", key=self._CONTACTS_ARROW_ID_),
                 TextAPI(text="  Contacts  "),
                 IconAPI(icon="bi bi-question-circle")
-            ], background="primary", border="white", stylename="footer-button").build(),
+            ], background="primary", border="white").build(),
             ButtonAPI(key=self._TERMINAL_BUTTON_ID_, label=[
                 IconAPI(icon="bi bi-terminal"),
                 TextAPI(text="  Terminal  "),
                 IconAPI(icon="bi bi-caret-down-fill", key=self._TERMINAL_ARROW_ID_)
-            ], background="primary", border="white", stylename="footer-button").build(),
+            ], background="primary", border="white").build(),
             dbc.Collapse(dbc.Card(dbc.CardBody(html.Div(self._init_contacts_(), id=self._CONTACTS_CONTENT_ID_)), className="footer-panel footer-panel-left"), id=self._CONTACTS_COLLAPSE_ID_, is_open=False),
             dbc.Collapse(dbc.Card(dbc.CardBody(html.Pre([], id=self._TERMINAL_CONTENT_ID_)), color="dark", inverse=True, className="footer-panel footer-panel-right"), id=self._TERMINAL_COLLAPSE_ID_, is_open=False)
         ], id=self._FOOTER_ID_, className="footer")
@@ -278,7 +280,9 @@ class AppAPI:
         return html.Div([
             dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
             dcc.Store(id=self.HISTORY_STORAGE_ID, storage_type="session", data=HistorySessionAPI().dict()),
-            dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session"),
+            dcc.Store(id=self.MEMORY_STORAGE_ID, storage_type="memory", data=dict()),
+            dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session", data=dict()),
+            dcc.Store(id=self.LOCAL_STORAGE_ID, storage_type="local", data=dict()),
             dcc.Location(id=self._PAGE_LOCATION_ID_, refresh=False)
         ], id=self._HIDDEN_ID_)
 
