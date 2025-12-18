@@ -21,6 +21,7 @@ class AppAPI:
 
     _LAYOUT_ID_: dict = {"type": "div", "index": "app"}
     _HEADER_ID_: dict = {"type": "div", "index": "header"}
+    _SIDEBAR_ID_: dict = {"type": "div", "index": "sidebar"}
     _CONTENT_ID_: dict = {"type": "div", "index": "content"}
     _FOOTER_ID_: dict = {"type": "div", "index": "footer"}
     _HIDDEN_ID_: dict = {"type": "div", "index": "hidden"}
@@ -32,14 +33,19 @@ class AppAPI:
     _PAGE_REFRESH_ID_: dict = {"type": "button", "index": "refresh"}
     _PAGE_FORWARD_ID_: dict = {"type": "button", "index": "forward"}
 
-    _TERMINAL_ARROW_ID_: dict = {"type": "span", "index": "terminal"}
-    _TERMINAL_BUTTON_ID_: dict = {"type": "button", "index": "terminal"}
-    _TERMINAL_CONTENT_ID_: dict = {"type": "div", "index": "terminal"}
-    _TERMINAL_COLLAPSE_ID_: dict = {"type": "collapse", "index": "terminal"}
+    _SIDEBAR_BUTTON_ID_: dict = {"type": "button", "index": "sidebar"}
+    _SIDEBAR_COLLAPSE_ID_: dict = {"type": "collapse", "index": "sidebar"}
+    _SIDEBAR_CONTENT_ID_: dict = {"type": "div", "index": "sidebar-content"}
     _CONTACTS_ARROW_ID_: dict = {"type": "span", "index": "contacts"}
     _CONTACTS_BUTTON_ID_: dict = {"type": "button", "index": "contacts"}
     _CONTACTS_CONTENT_ID_: dict = {"type": "div", "index": "contacts"}
     _CONTACTS_COLLAPSE_ID_: dict = {"type": "collapse", "index": "contacts"}
+    _TERMINAL_ARROW_ID_: dict = {"type": "span", "index": "terminal"}
+    _TERMINAL_BUTTON_ID_: dict = {"type": "button", "index": "terminal"}
+    _TERMINAL_CONTENT_ID_: dict = {"type": "div", "index": "terminal"}
+    _TERMINAL_COLLAPSE_ID_: dict = {"type": "collapse", "index": "terminal"}
+    _CLEAN_CACHE_BUTTON_ID_: dict = {"type": "button", "index": "clean-cache"}
+    _CLEAN_DATA_BUTTON_ID_: dict = {"type": "button", "index": "clean-data"}
 
     INTERVAL_ID: dict = {"type": "interval", "index": "interval"}
     HISTORY_STORAGE_ID: dict = {"type": "storage", "index": "history"}
@@ -138,7 +144,6 @@ class AppAPI:
         self._log_.info(lambda: "Initialized Callbacks")
 
     def _init_app_(self):
-
         self.app = dash.Dash(
             name=self.name,
             title=self.title,
@@ -151,42 +156,36 @@ class AppAPI:
         )
 
     def _init_pages_(self) -> None:
-
         self.NOT_FOUND_LAYOUT: Component = DefaultLayoutAPI(
             image=self.app.get_asset_url("404.png"),
             title="Resource Not Found",
             description="Unable to find the resource you are looking for.",
             details="Please check the url path."
         ).build()
-
         self.LOADING_LAYOUT = DefaultLayoutAPI(
             image=self.app.get_asset_url("loading.gif"),
             title="Loading...",
             description="This resource is loading its content.",
             details="Please wait a moment."
         ).build()
-
         self.MAINTENANCE_LAYOUT = DefaultLayoutAPI(
             image=self.app.get_asset_url("maintenance.png"),
             title="Resource Under Maintenance",
             description="This resource is temporarily down for maintenance.",
             details="Please try again later."
         ).build()
-
         self.DEVELOPMENT_LAYOUT = DefaultLayoutAPI(
             image=self.app.get_asset_url("development.png"),
             title="Resource Under Development",
             description="This resource is currently under development.",
             details="Please try again later."
         ).build()
-
         self.NOT_INDEXED_LAYOUT = DefaultLayoutAPI(
             image=self.app.get_asset_url("indexed.png"),
             title="Resource Not Indexed",
             description="This resource is not indexed at any page.",
             details="Please try again later."
         ).build()
-
         self.pages()
 
     def _init_navigation_(self) -> None:
@@ -227,8 +226,7 @@ class AppAPI:
                 navigation_items.append(dbc.ButtonGroup(navigation_group, className="header-navigation-group"))
             page.navigation = dbc.Navbar(navigation_items, className="header-navigation-bar")
 
-    def _init_header_(self) -> html.Div:
-
+    def _init_header_(self) -> Component:
         return html.Div([
             html.Div([
                 html.Div([html.Img(src=self.app.get_asset_url("logo.png"), className="header-image")], className="header-logo"),
@@ -245,38 +243,60 @@ class AppAPI:
             ], className="header-control-block")
         ], id=self._HEADER_ID_, className="header")
 
-    def _init_content_(self) -> html.Div:
+    def _init_sidebar_(self) -> Component:
+        return dbc.Collapse(
+            html.Div(
+                html.Div(id=self._SIDEBAR_CONTENT_ID_, className="sidebar-content"),
+                id=self._SIDEBAR_ID_,
+                className="sidebar"
+            ), id=self._SIDEBAR_COLLAPSE_ID_, is_open=False)
 
+    def _init_content_(self) -> Component:
         return html.Div([
             self.LOADING_LAYOUT
         ], id=self._CONTENT_ID_, className="content")
 
-    def _init_contacts_(self) -> html.Div:
-
+    def _init_footer_(self) -> Component:
         return html.Div([
-            html.Div([html.B("Team: "), html.Span(self.team)]),
-            html.Div([html.B("Contact: "), html.A(self.contact, href=f"mailto:{self.contact}")])
-        ])
-
-    def _init_footer_(self) -> html.Div:
-
-        return html.Div([
-            ButtonAPI(key=self._CONTACTS_BUTTON_ID_, label=[
-                IconAPI(icon="bi bi-caret-down-fill", key=self._CONTACTS_ARROW_ID_),
-                TextAPI(text="  Contacts  "),
-                IconAPI(icon="bi bi-question-circle")
-            ], background="primary", border="white").build(),
-            ButtonAPI(key=self._TERMINAL_BUTTON_ID_, label=[
-                IconAPI(icon="bi bi-terminal"),
-                TextAPI(text="  Terminal  "),
-                IconAPI(icon="bi bi-caret-down-fill", key=self._TERMINAL_ARROW_ID_)
-            ], background="primary", border="white").build(),
-            dbc.Collapse(dbc.Card(dbc.CardBody(html.Div(self._init_contacts_(), id=self._CONTACTS_CONTENT_ID_)), className="footer-panel footer-panel-left"), id=self._CONTACTS_COLLAPSE_ID_, is_open=False),
-            dbc.Collapse(dbc.Card(dbc.CardBody(html.Pre([], id=self._TERMINAL_CONTENT_ID_)), color="dark", inverse=True, className="footer-panel footer-panel-right"), id=self._TERMINAL_COLLAPSE_ID_, is_open=False)
+            html.Div([
+                ButtonAPI(
+                    key=self._SIDEBAR_BUTTON_ID_,
+                    label=[IconAPI(icon="bi bi-layout-sidebar-inset")],
+                    background="primary", border="white"
+                ).build(),
+                ButtonAPI(key=self._CONTACTS_BUTTON_ID_, label=[
+                    IconAPI(icon="bi bi-caret-down-fill", key=self._CONTACTS_ARROW_ID_),
+                    TextAPI(text="  Contacts  "),
+                    IconAPI(icon="bi bi-question-circle")
+                ], background="primary", border="white").build(),
+            ], className="footer-left"),
+            html.Div([
+                ButtonAPI(
+                    key=self._CLEAN_CACHE_BUTTON_ID_,
+                    label=[IconAPI(icon="bi bi-trash"), TextAPI(text="  Clean Cache  ")],
+                    background="primary", border="white"
+                ).build(),
+                ButtonAPI(
+                    key=self._CLEAN_DATA_BUTTON_ID_,
+                    label=[IconAPI(icon="bi bi-database-x"), TextAPI(text="  Clean Data  ")],
+                    background="primary", border="white"
+                ).build(),
+                ButtonAPI(
+                    key=self._TERMINAL_BUTTON_ID_,
+                    label=[IconAPI(icon="bi bi-terminal"), TextAPI(text="  Terminal  "), IconAPI(icon="bi bi-caret-down-fill", key=self._TERMINAL_ARROW_ID_)],
+                    background="primary", border="white"
+                ).build(),
+            ], className="footer-right"),
+            dbc.Collapse(dbc.Card(dbc.CardBody([
+                html.Div([html.B("Team: "), html.Span(self.team)]),
+                html.Div([html.B("Contact: "), html.A(self.contact, href=f"mailto:{self.contact}")])
+            ]), className="footer-panel footer-panel-left"), id=self._CONTACTS_COLLAPSE_ID_, is_open=False),
+            dbc.Collapse(dbc.Card(dbc.CardBody([
+                html.Pre([], id=self._TERMINAL_CONTENT_ID_)
+            ]), className="footer-panel footer-panel-right", color="dark", inverse=True), id=self._TERMINAL_COLLAPSE_ID_, is_open=False)
         ], id=self._FOOTER_ID_, className="footer")
 
-    def _init_hidden_(self) -> html.Div:
-
+    def _init_hidden_(self) -> Component:
         return html.Div([
             dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
             dcc.Store(id=self.HISTORY_STORAGE_ID, storage_type="session", data=HistorySessionAPI().dict()),
@@ -290,6 +310,8 @@ class AppAPI:
 
         header = self._init_header_()
         self._log_.debug(lambda: "Loaded Header Layout")
+        sidebar = self._init_sidebar_()
+        self._log_.debug(lambda: "Loaded Sidebar Layout")
         content = self._init_content_()
         self._log_.debug(lambda: "Loaded Content Layout")
         footer = self._init_footer_()
@@ -298,7 +320,7 @@ class AppAPI:
         self._log_.debug(lambda: "Loaded Hidden Layout")
 
         self.app.layout = html.Div(
-            [header, content, footer, hidden],
+            [header, sidebar, content, footer, hidden],
             id=self._LAYOUT_ID_,
             className="app"
         )
@@ -399,6 +421,16 @@ class AppAPI:
         return is_open, classname
 
     @callback(
+        dash.Output(_SIDEBAR_COLLAPSE_ID_, "is_open"),
+        dash.Input(_SIDEBAR_BUTTON_ID_, "n_clicks"),
+        dash.State(_SIDEBAR_COLLAPSE_ID_, "is_open"),
+        prevent_initial_call=True
+    )
+    def _sidebar_button_callback_(self, clicks, was_open):
+        if clicks is None: raise PreventUpdate
+        return not was_open
+
+    @callback(
         dash.Output(_CONTACTS_COLLAPSE_ID_, "is_open", allow_duplicate=True),
         dash.Output(_CONTACTS_ARROW_ID_, "className", allow_duplicate=True),
         dash.Input(_CONTACTS_BUTTON_ID_, "n_clicks"),
@@ -411,6 +443,27 @@ class AppAPI:
         is_open, classname = self._collapsable_button_callback_(was_open=was_open, classname=classname)
         self._log_.debug(lambda: f"Contacts Callback: {'Expanding' if is_open else 'Collapsing'}")
         return is_open, classname
+
+    @callback(
+        dash.Output(MEMORY_STORAGE_ID, "data", allow_duplicate=True),
+        dash.Output(SESSION_STORAGE_ID, "data", allow_duplicate=True),
+        dash.Input(_CLEAN_CACHE_BUTTON_ID_, "n_clicks"),
+        prevent_initial_call=True
+    )
+    def _clean_cache_callback_(self, clicks):
+        if clicks is None: raise PreventUpdate
+        self._log_.debug(lambda: "Clean Cache Callback: Cleaning Cache")
+        return {}, {}
+
+    @callback(
+        dash.Output(LOCAL_STORAGE_ID, "data", allow_duplicate=True),
+        dash.Input(_CLEAN_DATA_BUTTON_ID_, "n_clicks"),
+        prevent_initial_call=True
+    )
+    def _clean_data_callback_(self, clicks):
+        if clicks is None: raise PreventUpdate
+        self._log_.debug(lambda: "Clean Data Callback: Cleaning Data")
+        return {}
 
     @callback(
         dash.Output(_TERMINAL_COLLAPSE_ID_, "is_open", allow_duplicate=True),
