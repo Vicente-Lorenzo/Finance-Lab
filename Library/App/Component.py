@@ -33,7 +33,7 @@ class ComponentAPI(Component, ABC):
 
     def arguments(self) -> dict:
         kwargs = {}
-        if self.key: kwargs.update(key=self.key)
+        if self.key: kwargs.update(id=self.key)
         if self.classname: kwargs.update(className=self.classname)
         if self.style: kwargs.update(style=self.style)
         return kwargs
