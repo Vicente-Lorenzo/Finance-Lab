@@ -6,9 +6,12 @@ from dataclasses import dataclass, field
 
 from Library.Utility import contains, is_notebook, find_notebook
 
+def inspect_separator(builder: type[PurePath] = Path) -> str:
+    return builder(".")._flavour.sep
+
 def inspect_file(file: str | None, header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+    sep: str = inspect_separator(builder=builder)
     file: str = file or ""
-    sep: str = builder._flavour.sep
     if header is True:
         file: PurePath = builder(sep) / file
     elif header is False:
@@ -18,7 +21,7 @@ def inspect_file(file: str | None, header: bool = None, resolve: bool = False, b
     return file.resolve() if (isinstance(file, Path) and resolve) else file
 
 def inspect_path(file: PurePath, footer: bool = None) -> str:
-    sep: str = file._flavour.sep
+    sep: str = inspect_separator(builder=type(file))
     file: str = str(file)
     if footer is True:
         return file + sep if set(file) != set(sep) else file
