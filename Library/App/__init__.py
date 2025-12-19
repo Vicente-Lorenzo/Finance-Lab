@@ -16,7 +16,6 @@ from Library.App.Layout import (
     DefaultLayoutAPI
 )
 from Library.App.History import HistorySessionAPI
-from Library.App.Terminal import TerminalSessionAPI
 from Library.App.Page import PageAPI
 from Library.App.App import (
     callback,
@@ -30,7 +29,6 @@ __all__ = [
     "PaginatorAPI",
     "LayoutAPI", "DefaultLayoutAPI",
     "HistorySessionAPI",
-    "TerminalSessionAPI",
     "PageAPI",
     "callback", "AppAPI"
 ]
