@@ -1,4 +1,4 @@
-from typing import Self
+from typing_extensions import Self
 
 from Library.Logging import HandlerLoggingAPI
 from Library.Utility import Component
@@ -79,17 +79,20 @@ class PageAPI:
             parent._children_[idx] = self
         else:
             parent._children_.append(self)
-        self._log_.debug(lambda: f"Attached Page = {self.endpoint} to Parent = {parent.endpoint}")
+        self._log_.debug(lambda: f"Attached {self} (Child) to {parent} (Parent)")
 
     def merge(self, page: Self):
-        self._parent_ = page._parent_
-        self._children_ = page._children_
-        if self._parent_ and page in self._parent_._children_:
-            idx = self._parent_._children_.index(page)
-            self._parent_._children_[idx] = self
+        parent = page._parent_
+        self._parent_ = parent
+        if parent:
+            idx = parent._children_.index(page)
+            parent._children_[idx] = self
+        self._children_ = list(page._children_)
         for child in self._children_:
             child._parent_ = self
-        self._log_.debug(lambda: f"Merged Pages = {page.endpoint}")
+        page._parent_ = None
+        page._children_.clear()
+        self._log_.debug(lambda: f"Merged {page} into {self}")
 
     def __repr__(self):
         return f"{self.description} @ {self.endpoint}"
