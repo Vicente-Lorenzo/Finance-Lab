@@ -79,7 +79,7 @@ class PageAPI:
             parent._children_[idx] = self
         else:
             parent._children_.append(self)
-        self._log_.debug(lambda: f"Attached {self} (Child) to {parent} (Parent)")
+        self._log_.debug(lambda: f"Attached {parent} (Parent) to {self} (Child)")
 
     def merge(self, page: Self):
         parent = page._parent_
@@ -92,7 +92,7 @@ class PageAPI:
             child._parent_ = self
         page._parent_ = None
         page._children_.clear()
-        self._log_.debug(lambda: f"Merged {page} into {self}")
+        self._log_.debug(lambda: f"Merged {page} (Old) into {self} (New)")
 
     def __repr__(self):
         return f"{self.description} @ {self.endpoint}"

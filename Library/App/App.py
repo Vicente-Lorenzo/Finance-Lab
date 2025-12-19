@@ -143,6 +143,70 @@ class AppAPI:
         self._init_callbacks_()
         self._log_.info(lambda: "Initialized Callbacks")
 
+    def resolve(self, path: PurePath | str, relative: bool, footer: bool = None) -> str:
+        path: PurePath = inspect_file(path, header=False, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Resolve Path: Received = {path}")
+        path: PurePath = self.anchor / path if relative else path
+        resolve: str = inspect_file_path(path, header=True, footer=footer, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Resolve Path: Resolved = {resolve}")
+        return resolve
+
+    def anchorize(self, path: PurePath | str, relative: bool = True):
+        return self.resolve(path, relative=relative, footer=False)
+
+    def endpointize(self, path: PurePath | str, relative: bool = True):
+        return self.resolve(path, relative=relative, footer=True)
+
+    def locate(self, endpoint: str) -> PageAPI | None:
+        return self._pages_.get(endpoint, None)
+
+    def index(self, endpoint: str, page: PageAPI) -> None:
+        self._pages_[endpoint] = page
+
+    def link(self, page: PageAPI):
+        relative_path: PurePath = inspect_file(page.path, header=True, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Page Linking: Relative Path = {relative_path}")
+        relative_anchor = self.anchorize(path=relative_path, relative=True)
+        self._log_.debug(lambda: f"Page Linking: Relative Anchor = {relative_anchor}")
+        relative_endpoint = self.endpointize(path=relative_path, relative=True)
+        self._log_.debug(lambda: f"Page Linking: Relative Endpoint = {relative_endpoint}")
+        intermediate_alias: PurePath = inspect_file("/", builder=PurePosixPath)
+        intermediate_parent: PageAPI = self.locate(endpoint=self.endpointize(path=intermediate_alias, relative=True))
+        for part in relative_path.parts[1:-1]:
+            intermediate_path: PurePath = inspect_file(part, header=True, builder=PurePosixPath)
+            intermediate_alias = intermediate_alias / intermediate_path.name
+            self._log_.debug(lambda: f"Page Linking: Intermediate Path = {intermediate_alias}")
+            intermediate_anchor = self.anchorize(path=intermediate_alias, relative=True)
+            self._log_.debug(lambda: f"Page Linking: Intermediate Anchor = {intermediate_anchor}")
+            intermediate_endpoint = self.endpointize(path=intermediate_alias, relative=True)
+            self._log_.debug(lambda: f"Page Linking: Intermediate Endpoint = {intermediate_endpoint}")
+            intermediate_page: PageAPI = self.locate(endpoint=intermediate_endpoint)
+            if not intermediate_page:
+                intermediate_page = PageAPI(
+                    app=self,
+                    path=inspect_path(intermediate_alias),
+                    description="Resource Not Indexed",
+                    indexed=False,
+                    layout=self.NOT_INDEXED_LAYOUT
+                )
+                self._log_.debug(lambda: f"Page Linking: Created Intermediate Page = {intermediate_endpoint}")
+            intermediate_page.anchor = intermediate_anchor
+            intermediate_page.endpoint = intermediate_endpoint
+            self.index(endpoint=intermediate_endpoint, page=intermediate_page)
+            self._log_.debug(lambda: f"Page Linking: Linked Intermediate Page = {intermediate_endpoint}")
+            intermediate_page.attach(parent=intermediate_parent)
+            intermediate_parent = intermediate_page
+        page.anchor = relative_anchor
+        page.endpoint = relative_endpoint
+        existing = self.locate(endpoint=relative_endpoint)
+        if existing:
+            page.merge(existing)
+            self._log_.debug(lambda: f"Page Linking: Merged Relative Page = {relative_endpoint}")
+        else:
+            self.index(endpoint=relative_endpoint, page=page)
+            self._log_.info(lambda: f"Page Linking: Linked Relative Page = {page}")
+        page.attach(parent=intermediate_parent)
+
     def _init_app_(self):
         self.app = dash.Dash(
             name=self.name,
@@ -351,9 +415,9 @@ class AppAPI:
     )
     def _update_location_callback_(self, path: str):
         self._log_.debug(lambda: f"Location Callback: Received Path = {path}")
-        anchor = self.anchorize(path=path)
+        anchor = self.anchorize(path=path, relative=False)
         self._log_.debug(lambda: f"Location Callback: Parsed Anchor = {anchor}")
-        endpoint = self.endpointize(path=path)
+        endpoint = self.endpointize(path=path, relative=False)
         self._log_.debug(lambda: f"Location Callback: Parsed Endpoint = {endpoint}")
         page = self.locate(endpoint=endpoint)
         if page is not None:
@@ -490,71 +554,6 @@ class AppAPI:
         if not logs: raise PreventUpdate
         terminal.extend(logs)
         return terminal
-
-    def resolve(self, path: str | PurePath, footer: bool = None) -> str:
-        path: str = inspect_path(path) if isinstance(path, PurePath) else path
-        self._log_.debug(lambda: f"Resolve Path: Received = {path}")
-        path: str = inspect_file_path(path, header=False, builder=PurePosixPath)
-        self._log_.debug(lambda: f"Resolve Path: Parsed = {path}")
-        resolve: str = inspect_path(self.anchor / path, footer=footer)
-        self._log_.debug(lambda: f"Resolve Path: Resolved = {resolve}")
-        return resolve
-
-    def anchorize(self, path: str | PurePath):
-        return self.resolve(path, footer=False)
-
-    def endpointize(self, path: str | PurePath):
-        return self.resolve(path, footer=True)
-
-    def locate(self, endpoint: str) -> PageAPI | None:
-        return self._pages_.get(endpoint, None)
-
-    def index(self, endpoint: str, page: PageAPI) -> None:
-        self._pages_[endpoint] = page
-
-    def link(self, page: PageAPI):
-        relative_path: PurePath = inspect_file(page.path, header=True, builder=PurePosixPath)
-        self._log_.debug(lambda: f"Page Linking: Relative Path = {relative_path}")
-        relative_anchor = self.anchorize(path=relative_path)
-        self._log_.debug(lambda: f"Page Linking: Relative Anchor = {relative_anchor}")
-        relative_endpoint = self.endpointize(path=relative_path)
-        self._log_.debug(lambda: f"Page Linking: Relative Endpoint = {relative_endpoint}")
-        intermediate_alias: PurePath = inspect_file("/", builder=PurePosixPath)
-        intermediate_parent: PageAPI = self.locate(endpoint=self.endpointize(path=intermediate_alias))
-        for part in relative_path.parts[1:-1]:
-            intermediate_path: PurePath = inspect_file(part, header=True, builder=PurePosixPath)
-            intermediate_alias = intermediate_alias / intermediate_path.name
-            self._log_.debug(lambda: f"Page Linking: Intermediate Path = {intermediate_alias}")
-            intermediate_anchor = self.anchorize(path=intermediate_alias)
-            self._log_.debug(lambda: f"Page Linking: Intermediate Anchor = {intermediate_anchor}")
-            intermediate_endpoint = self.endpointize(path=intermediate_alias)
-            self._log_.debug(lambda: f"Page Linking: Intermediate Endpoint = {intermediate_endpoint}")
-            intermediate_page: PageAPI = self.locate(endpoint=intermediate_endpoint)
-            if not intermediate_page:
-                intermediate_page = PageAPI(
-                    app=self,
-                    path=inspect_path(intermediate_alias),
-                    description="Resource Not Indexed",
-                    indexed=False,
-                    layout=self.NOT_INDEXED_LAYOUT
-                )
-                self._log_.debug(lambda: f"Page Linking: Created Intermediate Page = {intermediate_endpoint}")
-            intermediate_page.anchor = intermediate_anchor
-            intermediate_page.endpoint = intermediate_endpoint
-            self.index(endpoint=intermediate_endpoint, page=intermediate_page)
-            self._log_.debug(lambda: f"Page Linking: Linked Intermediate Page = {intermediate_endpoint}")
-            intermediate_page.attach(parent=intermediate_parent)
-            intermediate_parent = intermediate_page
-        page.anchor = relative_anchor
-        page.endpoint = relative_endpoint
-        existing = self.locate(endpoint=relative_endpoint)
-        if existing:
-            page.merge(existing)
-            self._log_.debug(lambda: f"Page Linking: Merged Relative Page = {relative_endpoint}")
-        else:
-            self.index(endpoint=relative_endpoint, page=page)
-            self._log_.info(lambda: f"Page Linking: Linked Relative Page = {page}")
-        page.attach(parent=intermediate_parent)
 
     def pages(self):
         pass

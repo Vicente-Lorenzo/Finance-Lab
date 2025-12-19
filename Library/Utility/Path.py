@@ -11,7 +11,7 @@ def inspect_separator(builder: type[PurePath] = Path) -> str:
 
 def inspect_file(file: PurePath | str | None, header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     sep: str = inspect_separator(builder=builder)
-    file: str = file or ""
+    file: str = str(file) or ""
     if header is True:
         file: PurePath = builder(sep) / builder(file)
     elif header is False:
