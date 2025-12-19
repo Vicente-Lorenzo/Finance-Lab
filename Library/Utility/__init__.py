@@ -37,6 +37,7 @@ from Library.Utility.Runtime import (
     find_notebook
 )
 from Library.Utility.Path import (
+    inspect_separator,
     inspect_file,
     inspect_path,
     inspect_file_path,
@@ -81,7 +82,7 @@ __all__ = [
     "datetime_to_string", "string_to_datetime", "datetime_to_timestamp", "timestamp_to_datetime", "datetime_to_iso", "iso_to_datetime", "seconds_to_string",
     "find_user", "is_windows", "is_linux", "is_mac", "is_local", "is_remote", "is_service",
     "find_ipython", "find_shell", "is_python", "is_console", "is_terminal", "is_notebook", "find_notebook",
-    "inspect_file", "inspect_file_path", "inspect_module", "inspect_module_path",
+    "inspect_separator", "inspect_file", "inspect_file_path", "inspect_module", "inspect_module_path",
     "traceback_working", "traceback_working_module", "traceback_working_module_path",
     "traceback_depth", "traceback_depth_file", "traceback_depth_file_path", "traceback_depth_module", "traceback_depth_module_path",
     "traceback_origin", "traceback_origin_file", "traceback_origin_file_path", "traceback_origin_module", "traceback_origin_module_path",

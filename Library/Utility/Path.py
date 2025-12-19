@@ -9,11 +9,11 @@ from Library.Utility import contains, is_notebook, find_notebook
 def inspect_separator(builder: type[PurePath] = Path) -> str:
     return builder(".")._flavour.sep
 
-def inspect_file(file: str | None, header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+def inspect_file(file: PurePath | str | None, header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     sep: str = inspect_separator(builder=builder)
     file: str = file or ""
     if header is True:
-        file: PurePath = builder(sep) / file
+        file: PurePath = builder(sep) / builder(file)
     elif header is False:
         file: PurePath = builder(file.lstrip(sep))
     else:
