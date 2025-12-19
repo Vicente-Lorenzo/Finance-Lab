@@ -18,7 +18,7 @@ class BufferLoggingAPI(LoggingAPI):
 
     @staticmethod
     def _format_tag_(tag: str, separator: bool = False) -> str:
-        return tag
+        return str(tag)
 
     @classmethod
     def output(cls, verbose: VerboseLevel, log) -> None:

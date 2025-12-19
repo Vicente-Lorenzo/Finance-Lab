@@ -14,13 +14,13 @@ class ReportLoggingAPI(LoggingAPI):
         super()._setup_class_()
         cls.set_verbose_level(VerboseLevel.Silent, default=True)
         cls.set_threshold_level(VerboseLevel.Exception)
-        cls.disable_success_report()
+        cls.enable_success_report()
         cls.enable_failure_report()
         cls.enable_logging()
 
     @staticmethod
     def _format_tag_(tag: str, separator: bool = False) -> str:
-        return tag
+        return str(tag)
 
     @classmethod
     def is_success_report_enabled(cls) -> bool:
