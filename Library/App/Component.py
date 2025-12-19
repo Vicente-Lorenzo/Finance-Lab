@@ -32,7 +32,11 @@ class ComponentAPI(Component, ABC):
         self.style = parse_style(basestyle=self.style)
 
     def arguments(self) -> dict:
-        return {"id": self.key, "className": self.classname, "style": self.style}
+        kwargs = {}
+        if self.key: kwargs.update(key=self.key)
+        if self.classname: kwargs.update(className=self.classname)
+        if self.style: kwargs.update(style=self.style)
+        return kwargs
 
     @abstractmethod
     def build(self) -> Component:
@@ -101,18 +105,16 @@ class ButtonAPI(ComponentAPI):
     def arguments(self) -> dict:
         classstyle = {"border": f"1px solid {self.border}", "border-radius": self.radius}
         self.style = parse_style(basestyle=self.style, classstyle=classstyle)
-        return {
-            **super().arguments(),
-            "title": self.title,
-            "n_clicks": self.clicks,
-            "value": self.value,
-            "disabled": self.disabled,
-            "color": self.background,
-            "size": self.size,
-            "href": self.target,
-            "external_link": self.external,
-            "target": "_blank" if self.external else "_self"
-        }
+        kwargs = super().arguments()
+        if self.title: kwargs.update(title=self.title)
+        if self.clicks: kwargs.update(n_clicks=self.clicks)
+        if self.value: kwargs.update(value=self.value)
+        if self.disabled: kwargs.update(disabled=self.disabled)
+        if self.background: kwargs.update(color=self.background)
+        if self.size: kwargs.update(size=self.size)
+        if self.target: kwargs.update(href=self.target)
+        if self.external: kwargs.update(external_link=self.external, target="_blank")
+        return kwargs
 
     def build(self) -> Component:
         label = [element.build() for element in self.label]
@@ -153,11 +155,10 @@ class ButtonContainerAPI(ContainerAPI):
     def arguments(self) -> dict:
         classstyle = {"border": f"1px solid {self.border}", "border-radius": self.radius}
         self.style = parse_style(basestyle=self.style, classstyle=classstyle)
-        return {
-            **super().arguments(),
-            "size": self.size,
-            "vertical": self.vertical
-        }
+        kwargs = super().arguments()
+        kwargs.update(size=self.size)
+        kwargs.update(vertical=self.vertical)
+        return kwargs
 
     def build(self) -> Component:
         elements = [element.build() for element in self.elements]
