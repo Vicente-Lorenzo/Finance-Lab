@@ -204,7 +204,7 @@ class AppAPI:
             self._log_.debug(lambda: f"Page Linking: Merged Relative Page = {relative_endpoint}")
         else:
             self.index(endpoint=relative_endpoint, page=page)
-            self._log_.info(lambda: f"Page Linking: Linked Relative Page = {page}")
+            self._log_.info(lambda: f"Page Linking: Linked {page}")
         page.attach(parent=intermediate_parent)
 
     def _init_app_(self):
