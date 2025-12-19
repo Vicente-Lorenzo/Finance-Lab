@@ -30,11 +30,11 @@ def inspect_path(file: PurePath, footer: bool = None) -> str:
     else:
         return file
 
-def inspect_file_path(file: str | None, header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+def inspect_file_path(file: PurePath | str | None, header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> str:
     path: PurePath = inspect_file(file=file, header=header, resolve=resolve, builder=builder)
     return inspect_path(file=path, footer=footer)
 
-def inspect_module(file: str | None, header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+def inspect_module(file: PurePath | str | None, header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     path: PurePath = inspect_file(file=file, header=header, resolve=resolve, builder=builder)
     return path.parent if path.suffix else path
 
@@ -175,15 +175,16 @@ def traceback_regex_module_path(pattern: str, header: bool = None, footer: bool 
     traceback: str = traceback_regex(pattern=pattern)
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
-@dataclass(slots=True)
+@dataclass(kw_only=True)
 class PathAPI:
 
-    File: str = field(init=True, repr=True)
-    Module: Path = field(default=None, init=True, repr=True)
+    import pathlib
+    Path: str = field(init=True, repr=True)
+    Module: pathlib.Path = field(default=None, init=True, repr=True)
 
     def __post_init__(self):
         self.Module = self.Module or traceback_calling_module(resolve=True)
 
     @property
-    def Path(self) -> Path:
-        return self.Module / self.File
+    def File(self) -> pathlib.Path:
+        return self.Module / self.Path
