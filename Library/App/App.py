@@ -180,8 +180,7 @@ class AppAPI:
                     app=self,
                     path=inspect_path(intermediate_alias),
                     description="Resource Not Indexed",
-                    indexed=False,
-                    layout=self.NOT_INDEXED_LAYOUT
+                    indexed=False
                 )
                 self._log_.debug(lambda: f"Page Linking: Created Intermediate Page = {intermediate_endpoint}")
             intermediate_page.anchor = intermediate_anchor
