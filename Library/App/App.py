@@ -524,17 +524,23 @@ class AppAPI:
     def _clean_cache_callback_(self, clicks):
         if clicks is None: raise PreventUpdate
         self._log_.debug(lambda: "Clean Cache Callback: Cleaning Cache")
-        return {}, {}
+        memory = {}
+        session = {}
+        return memory, session
 
     @callback(
+        dash.Output(MEMORY_STORAGE_ID, "data", allow_duplicate=True),
+        dash.Output(SESSION_STORAGE_ID, "data", allow_duplicate=True),
         dash.Output(LOCAL_STORAGE_ID, "data", allow_duplicate=True),
         dash.Input(_CLEAN_DATA_BUTTON_ID_, "n_clicks"),
         prevent_initial_call=True
     )
     def _clean_data_callback_(self, clicks):
         if clicks is None: raise PreventUpdate
+        memory, session = self._clean_cache_callback_(clicks=clicks)
         self._log_.debug(lambda: "Clean Data Callback: Cleaning Data")
-        return {}
+        local = {}
+        return memory, session, local
 
     @callback(
         dash.Output(_TERMINAL_COLLAPSE_ID_, "is_open", allow_duplicate=True),
