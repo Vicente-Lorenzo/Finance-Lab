@@ -1,4 +1,8 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from typing_extensions import Self
+if TYPE_CHECKING: from Library.App import AppAPI
 
 from Library.Logging import HandlerLoggingAPI
 from Library.Utility import Component
@@ -6,7 +10,7 @@ from Library.Utility import Component
 class PageAPI:
 
     def __init__(self,
-                 app,
+                 app: AppAPI,
                  path: str,
                  button: str = None,
                  description: str = None,
@@ -15,7 +19,7 @@ class PageAPI:
 
         self._log_: HandlerLoggingAPI = HandlerLoggingAPI(self.__class__.__name__)
 
-        self.app = app
+        self.app: AppAPI = app
         self.path: str = path
         self.button: str = button
         self.description: str = description
@@ -31,7 +35,7 @@ class PageAPI:
         self._navigation_: Component | None = None
 
     def build(self) -> Component:
-        return self.app.DEVELOPMENT_LAYOUT
+        return self.app.NOT_INDEXED_LAYOUT
 
     @property
     def anchor(self) -> str:
