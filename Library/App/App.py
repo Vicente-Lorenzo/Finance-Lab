@@ -19,23 +19,17 @@ def callback(*args, **kwargs):
 
 class AppAPI:
 
-    _LAYOUT_ID_: dict = {"type": "div", "index": "app"}
-    _HEADER_ID_: dict = {"type": "div", "index": "header"}
-    _SIDEBAR_ID_: dict = {"type": "div", "index": "sidebar"}
-    _CONTENT_ID_: dict = {"type": "div", "index": "content"}
-    _FOOTER_ID_: dict = {"type": "div", "index": "footer"}
-    _HIDDEN_ID_: dict = {"type": "div", "index": "hidden"}
-
     _PAGE_LOCATION_ID_: dict = {"type": "location", "index": "page"}
     _PAGE_SELECTED_ID_: dict = {"type": "div", "index": "selected"}
     _PAGE_NAVIGATION_ID_: dict = {"type": "div", "index": "navigation"}
+    _PAGE_CONTENT_ID_: dict = {"type": "div", "index": "content"}
     _PAGE_BACKWARD_ID_: dict = {"type": "button", "index": "backward"}
     _PAGE_REFRESH_ID_: dict = {"type": "button", "index": "refresh"}
     _PAGE_FORWARD_ID_: dict = {"type": "button", "index": "forward"}
 
     _SIDEBAR_BUTTON_ID_: dict = {"type": "button", "index": "sidebar"}
     _SIDEBAR_COLLAPSE_ID_: dict = {"type": "collapse", "index": "sidebar"}
-    _SIDEBAR_CONTENT_ID_: dict = {"type": "div", "index": "sidebar-content"}
+    _SIDEBAR_CONTENT_ID_: dict = {"type": "div", "index": "sidebar"}
     _CONTACTS_ARROW_ID_: dict = {"type": "span", "index": "contacts"}
     _CONTACTS_BUTTON_ID_: dict = {"type": "button", "index": "contacts"}
     _CONTACTS_CONTENT_ID_: dict = {"type": "div", "index": "contacts"}
@@ -305,20 +299,18 @@ class AppAPI:
                     ButtonAPI(key=self._PAGE_FORWARD_ID_, stylename="bi bi-arrow-right")
                 ], stylename="header-history-block").build()
             ], className="header-control-block")
-        ], id=self._HEADER_ID_, className="header")
+        ], className="header")
 
-    def _init_sidebar_(self) -> Component:
-        return dbc.Collapse(
-            html.Div(
-                html.Div(id=self._SIDEBAR_CONTENT_ID_, className="sidebar-content"),
-                id=self._SIDEBAR_ID_,
-                className="sidebar"
-            ), id=self._SIDEBAR_COLLAPSE_ID_, is_open=False)
-
-    def _init_content_(self) -> Component:
-        return html.Div([
-            self.LOADING_LAYOUT
-        ], id=self._CONTENT_ID_, className="content")
+    def _init_content_(self):
+        return html.Div(children=[
+                dbc.Collapse(children=[html.Div(children=[
+                    self.DEVELOPMENT_LAYOUT
+                ], id=self._SIDEBAR_CONTENT_ID_, className="sidebar-content")
+                ], id=self._SIDEBAR_COLLAPSE_ID_, is_open=False, className="sidebar-collapse"),
+                html.Div(children=[
+                    self.LOADING_LAYOUT
+                ], id=self._PAGE_CONTENT_ID_, className="page-content"),
+        ], className="content")
 
     def _init_footer_(self) -> Component:
         return html.Div([
@@ -358,7 +350,7 @@ class AppAPI:
             dbc.Collapse(dbc.Card(dbc.CardBody([
                 html.Pre([], id=self._TERMINAL_CONTENT_ID_)
             ]), className="footer-panel footer-panel-right", color="dark", inverse=True), id=self._TERMINAL_COLLAPSE_ID_, is_open=False)
-        ], id=self._FOOTER_ID_, className="footer")
+        ], className="footer")
 
     def _init_hidden_(self) -> Component:
         return html.Div([
@@ -368,14 +360,12 @@ class AppAPI:
             dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session", data=dict()),
             dcc.Store(id=self.LOCAL_STORAGE_ID, storage_type="local", data=dict()),
             dcc.Location(id=self._PAGE_LOCATION_ID_, refresh=False)
-        ], id=self._HIDDEN_ID_)
+        ])
 
     def _init_layouts_(self):
 
         header = self._init_header_()
         self._log_.debug(lambda: "Loaded Header Layout")
-        sidebar = self._init_sidebar_()
-        self._log_.debug(lambda: "Loaded Sidebar Layout")
         content = self._init_content_()
         self._log_.debug(lambda: "Loaded Content Layout")
         footer = self._init_footer_()
@@ -383,11 +373,9 @@ class AppAPI:
         hidden = self._init_hidden_()
         self._log_.debug(lambda: "Loaded Hidden Layout")
 
-        self.app.layout = html.Div(
-            [header, sidebar, content, footer, hidden],
-            id=self._LAYOUT_ID_,
-            className="app"
-        )
+        self.app.layout = html.Div(children=[
+            header, content, footer, hidden
+        ], className="app")
 
     def _init_callbacks_(self):
 
@@ -409,27 +397,51 @@ class AppAPI:
         dash.Output(_PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
         dash.Output(_PAGE_SELECTED_ID_, "children", allow_duplicate=True),
         dash.Output(_PAGE_NAVIGATION_ID_, "children", allow_duplicate=True),
-        dash.Output(_CONTENT_ID_, "children", allow_duplicate=True),
+        dash.Output(_PAGE_CONTENT_ID_, "children", allow_duplicate=True),
         dash.Input(_PAGE_LOCATION_ID_, "pathname"),
+        dash.State(_PAGE_SELECTED_ID_, "children"),
+        dash.State(_PAGE_NAVIGATION_ID_, "children"),
+        dash.State(_PAGE_CONTENT_ID_, "children"),
         prevent_initial_call=False
     )
-    def _update_location_callback_(self, path: str):
+    def _update_location_callback_(self, path: str, description: Component, navigation: Component, content: Component):
+        if path is None: raise PreventUpdate
         self._log_.debug(lambda: f"Location Callback: Received Path = {path}")
         anchor = self.anchorize(path=path, relative=False)
         self._log_.debug(lambda: f"Location Callback: Parsed Anchor = {anchor}")
         endpoint = self.endpointize(path=path, relative=False)
         self._log_.debug(lambda: f"Location Callback: Parsed Endpoint = {endpoint}")
+        if path == anchor: anchor = dash.no_update
         page = self.locate(endpoint=endpoint)
         if page is not None:
             self._log_.debug(lambda: f"Location Callback: Page Found")
-            description = page.description if not self.description and page.description else dash.no_update
-            navigation = page.navigation if page.navigation else dash.no_update
-            content = page.layout
+            if description is page.description:
+                description = dash.no_update
+            elif self.description or not page.description:
+                description = dash.no_update
+            else:
+                self._log_.debug(lambda: f"Location Callback: Updating Description")
+                description = page.description
+            if navigation is page.navigation:
+                navigation = dash.no_update
+            elif not page.navigation:
+                navigation = dash.no_update
+            else:
+                self._log_.debug(lambda: f"Location Callback: Updating Navigation")
+                navigation = page.navigation
+            if content is page.layout:
+                content = dash.no_update
+            else:
+                self._log_.debug(lambda: f"Location Callback: Updating Content")
+                content = page.layout
         else:
             self._log_.debug(lambda: f"Location Callback: Page Not Found")
             description = dash.no_update
             navigation = dash.no_update
             content = self.NOT_FOUND_LAYOUT
+        if all([update is dash.no_update for update in [anchor, description, navigation, content]]):
+            self._log_.debug(lambda: f"Location Callback: No Updates Required")
+            raise PreventUpdate
         return anchor, description, navigation, content
 
     @callback(
@@ -477,11 +489,12 @@ class AppAPI:
         path = history.Forward()
         return path if path else dash.no_update
 
-    @staticmethod
-    def _collapsable_button_callback_(was_open: bool, classname: str):
+    def _collapse_button_callback_(self, name: str, was_open: bool, classname: str = None):
         is_open = not was_open
-        if is_open: classname = classname.replace("down", "up")
+        if not classname: return is_open
+        elif is_open: classname = classname.replace("down", "up")
         else: classname = classname.replace("up", "down")
+        self._log_.debug(lambda: f"{name} Callback: {'Expanding' if is_open else 'Collapsing'}")
         return is_open, classname
 
     @callback(
@@ -492,7 +505,7 @@ class AppAPI:
     )
     def _sidebar_button_callback_(self, clicks, was_open):
         if clicks is None: raise PreventUpdate
-        return not was_open
+        return self._collapse_button_callback_(name="Sidebar", was_open=was_open)
 
     @callback(
         dash.Output(_CONTACTS_COLLAPSE_ID_, "is_open", allow_duplicate=True),
@@ -504,9 +517,7 @@ class AppAPI:
     )
     def _contacts_button_callback_(self, clicks, was_open: bool, classname: str):
         if clicks is None: raise PreventUpdate
-        is_open, classname = self._collapsable_button_callback_(was_open=was_open, classname=classname)
-        self._log_.debug(lambda: f"Contacts Callback: {'Expanding' if is_open else 'Collapsing'}")
-        return is_open, classname
+        return self._collapse_button_callback_(name="Contacts", was_open=was_open, classname=classname)
 
     @callback(
         dash.Output(MEMORY_STORAGE_ID, "data", allow_duplicate=True),
@@ -539,9 +550,7 @@ class AppAPI:
     )
     def _terminal_button_callback_(self, clicks, was_open: bool, classname: str):
         if clicks is None: raise PreventUpdate
-        is_open, classname = self._collapsable_button_callback_(was_open=was_open, classname=classname)
-        self._log_.debug(lambda: f"Terminal Callback: {'Expanding' if is_open else 'Collapsing'}")
-        return is_open, classname
+        return self._collapse_button_callback_(name="Terminal", was_open=was_open, classname=classname)
 
     @callback(
         dash.Output(_TERMINAL_CONTENT_ID_, "children", allow_duplicate=True),

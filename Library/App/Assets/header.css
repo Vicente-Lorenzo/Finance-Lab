@@ -7,6 +7,7 @@
     border-bottom: 1px solid #ccc;
     padding: 5px 5px 5px 5px;
     margin: 0 0 0 0;
+    z-index: 10;
 }
 
 .header-information-block {
