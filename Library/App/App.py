@@ -363,7 +363,6 @@ class AppAPI:
         ])
 
     def _init_layouts_(self):
-
         header = self._init_header_()
         self._log_.debug(lambda: "Loaded Header Layout")
         content = self._init_content_()
@@ -372,13 +371,10 @@ class AppAPI:
         self._log_.debug(lambda: "Loaded Footer Layout")
         hidden = self._init_hidden_()
         self._log_.debug(lambda: "Loaded Hidden Layout")
-
-        self.app.layout = html.Div(children=[
-            header, content, footer, hidden
-        ], className="app")
+        self.app.layout = html.Div(children=[header, content, footer, hidden], className="app")
+        self._log_.debug(lambda: "Loaded App Layout")
 
     def _init_callbacks_(self):
-
         for cls in reversed(type(self).mro()):
             if cls is object:
                 continue
