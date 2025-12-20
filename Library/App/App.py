@@ -19,6 +19,10 @@ def callback(*args, **kwargs):
 
 class AppAPI:
 
+    _SIDEBAR_BUTTON_ID_: dict = {"type": "button", "index": "sidebar"}
+    _SIDEBAR_COLLAPSE_ID_: dict = {"type": "collapse", "index": "sidebar"}
+    _SIDEBAR_CONTENT_ID_: dict = {"type": "div", "index": "sidebar"}
+
     _PAGE_LOCATION_ID_: dict = {"type": "location", "index": "page"}
     _PAGE_SELECTED_ID_: dict = {"type": "div", "index": "selected"}
     _PAGE_NAVIGATION_ID_: dict = {"type": "div", "index": "navigation"}
@@ -27,17 +31,16 @@ class AppAPI:
     _PAGE_REFRESH_ID_: dict = {"type": "button", "index": "refresh"}
     _PAGE_FORWARD_ID_: dict = {"type": "button", "index": "forward"}
 
-    _SIDEBAR_BUTTON_ID_: dict = {"type": "button", "index": "sidebar"}
-    _SIDEBAR_COLLAPSE_ID_: dict = {"type": "collapse", "index": "sidebar"}
-    _SIDEBAR_CONTENT_ID_: dict = {"type": "div", "index": "sidebar"}
     _CONTACTS_ARROW_ID_: dict = {"type": "span", "index": "contacts"}
     _CONTACTS_BUTTON_ID_: dict = {"type": "button", "index": "contacts"}
     _CONTACTS_CONTENT_ID_: dict = {"type": "div", "index": "contacts"}
     _CONTACTS_COLLAPSE_ID_: dict = {"type": "collapse", "index": "contacts"}
+
     _TERMINAL_ARROW_ID_: dict = {"type": "span", "index": "terminal"}
     _TERMINAL_BUTTON_ID_: dict = {"type": "button", "index": "terminal"}
     _TERMINAL_CONTENT_ID_: dict = {"type": "div", "index": "terminal"}
     _TERMINAL_COLLAPSE_ID_: dict = {"type": "collapse", "index": "terminal"}
+
     _CLEAN_CACHE_BUTTON_ID_: dict = {"type": "button", "index": "clean-cache"}
     _CLEAN_DATA_BUTTON_ID_: dict = {"type": "button", "index": "clean-data"}
 
