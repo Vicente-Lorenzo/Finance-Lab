@@ -116,7 +116,7 @@ class PageAPI:
             dcc.Store(id=self.MEMORY_STORAGE_ID, storage_type="memory", data={}),
             dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session", data={}),
             dcc.Store(id=self.LOCAL_STORAGE_ID, storage_type="local", data={}),
-        ], className="page-hidden")
+        ])
 
     def _init_layout_(self) -> None:
         self._sidebar_ = self._sidebar_ or self.sidebar()
@@ -125,7 +125,7 @@ class PageAPI:
         self._log_.debug(lambda: f"Loaded Content Layout")
         hidden = self._init_hidden_()
         self._log_.debug(lambda: f"Loaded Hidden Layout")
-        self._content_ = html.Div(children=[content, hidden], className="page-content")
+        self._content_ = html.Div(children=[content, hidden])
 
     def init(self) -> None:
         if self._initialized_: return
