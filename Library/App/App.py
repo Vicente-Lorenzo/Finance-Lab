@@ -9,46 +9,39 @@ from Library.App import *
 from Library.Utility.HTML import *
 from Library.Utility.Path import *
 
-def callback(*args, **kwargs):
-    def decorator(func):
-        func._callback_ = True
-        func._callback_args_ = args
-        func._callback_kwargs_ = kwargs
-        return func
-    return decorator
-
 class AppAPI:
 
-    _SIDEBAR_BUTTON_ID_: dict = {"type": "button", "index": "sidebar"}
-    _SIDEBAR_COLLAPSE_ID_: dict = {"type": "collapse", "index": "sidebar"}
-    _SIDEBAR_CONTENT_ID_: dict = {"type": "div", "index": "sidebar"}
+    _LOCATION_ID_: dict = None
+    _DESCRIPTION_ID_: dict = None
+    _NAVIGATION_ID_: dict = None
+    _CONTENT_ID_: dict = None
 
-    _PAGE_LOCATION_ID_: dict = {"type": "location", "index": "page"}
-    _PAGE_SELECTED_ID_: dict = {"type": "div", "index": "selected"}
-    _PAGE_NAVIGATION_ID_: dict = {"type": "div", "index": "navigation"}
-    _PAGE_CONTENT_ID_: dict = {"type": "div", "index": "content"}
-    _PAGE_BACKWARD_ID_: dict = {"type": "button", "index": "backward"}
-    _PAGE_REFRESH_ID_: dict = {"type": "button", "index": "refresh"}
-    _PAGE_FORWARD_ID_: dict = {"type": "button", "index": "forward"}
+    _SIDEBAR_BUTTON_ID_: dict = None
+    _SIDEBAR_COLLAPSE_ID_: dict = None
+    _SIDEBAR_ID_: dict = None
 
-    _CONTACTS_ARROW_ID_: dict = {"type": "span", "index": "contacts"}
-    _CONTACTS_BUTTON_ID_: dict = {"type": "button", "index": "contacts"}
-    _CONTACTS_CONTENT_ID_: dict = {"type": "div", "index": "contacts"}
-    _CONTACTS_COLLAPSE_ID_: dict = {"type": "collapse", "index": "contacts"}
+    _HISTORY_BACKWARD_ID_: dict = None
+    _HISTORY_REFRESH_ID_: dict = None
+    _HISTORY_FORWARD_ID_: dict = None
 
-    _TERMINAL_ARROW_ID_: dict = {"type": "span", "index": "terminal"}
-    _TERMINAL_BUTTON_ID_: dict = {"type": "button", "index": "terminal"}
-    _TERMINAL_CONTENT_ID_: dict = {"type": "div", "index": "terminal"}
-    _TERMINAL_COLLAPSE_ID_: dict = {"type": "collapse", "index": "terminal"}
+    _CONTACTS_ARROW_ID_: dict = None
+    _CONTACTS_BUTTON_ID_: dict = None
+    _CONTACTS_COLLAPSE_ID_: dict = None
+    _CONTACTS_ID_: dict = None
 
-    _CLEAN_CACHE_BUTTON_ID_: dict = {"type": "button", "index": "clean-cache"}
-    _CLEAN_DATA_BUTTON_ID_: dict = {"type": "button", "index": "clean-data"}
+    _TERMINAL_ARROW_ID_: dict = None
+    _TERMINAL_BUTTON_ID_: dict = None
+    _TERMINAL_COLLAPSE_ID_: dict = None
+    _TERMINAL_ID_: dict = None
 
-    INTERVAL_ID: dict = {"type": "interval", "index": "interval"}
-    HISTORY_STORAGE_ID: dict = {"type": "storage", "index": "history"}
-    MEMORY_STORAGE_ID: dict = {"type": "storage", "index": "memory"}
-    SESSION_STORAGE_ID: dict = {"type": "storage", "index": "session"}
-    LOCAL_STORAGE_ID: dict = {"type": "storage", "index": "local"}
+    _CLEAN_CACHE_BUTTON_ID_: dict = None
+    _CLEAN_DATA_BUTTON_ID_: dict = None
+
+    INTERVAL_ID: dict = None
+    HISTORY_STORAGE_ID: dict = None
+    MEMORY_STORAGE_ID: dict = None
+    SESSION_STORAGE_ID: dict = None
+    LOCAL_STORAGE_ID: dict = None
 
     NOT_FOUND_LAYOUT: Component = None
     LOADING_LAYOUT: Component = None
@@ -71,7 +64,8 @@ class AppAPI:
                  anchor: str = None,
                  debug: bool = False):
 
-        self._log_: HandlerLoggingAPI = HandlerLoggingAPI(self.__class__.__name__)
+        self._log_: HandlerLoggingAPI = HandlerLoggingAPI(AppAPI.__name__)
+        self._ids_: set = set()
         self._pages_: dict[str, PageAPI] = {}
 
         self.name: str = name
@@ -125,6 +119,9 @@ class AppAPI:
         self.assets: str = inspect_path(self.module / "Assets")
         self._log_.debug(lambda: f"Defined Assets = {self.assets}")
 
+        self._init_ids_()
+        self._log_.debug(lambda: "Initialized IDs")
+
         self._init_app_()
         self._log_.info(lambda: "Initialized App")
 
@@ -134,11 +131,18 @@ class AppAPI:
         self._init_navigation_()
         self._log_.debug(lambda: "Initialized Navigation")
 
-        self._init_layouts_()
+        self._init_layout_()
         self._log_.info(lambda: "Initialized Layout")
 
         self._init_callbacks_()
         self._log_.info(lambda: "Initialized Callbacks")
+
+    def identify(self, type: str, name: str, page: str = "global") -> dict:
+        cid = {"app": self.__class__.__name__, "page": page, "type": type, "name": name}
+        key = (cid["app"], cid["page"], cid["type"], cid["name"])
+        if key in self._ids_: raise RuntimeError(f"Duplicate Dash ID detected: {cid}")
+        self._ids_.add(key)
+        return cid
 
     def resolve(self, path: PurePath | str, relative: bool, footer: bool = None) -> str:
         path: PurePath = inspect_file(path, header=False, builder=PurePosixPath)
@@ -188,7 +192,8 @@ class AppAPI:
                 self._log_.debug(lambda: f"Page Linking: Created Intermediate Page = {intermediate_endpoint}")
             intermediate_page.anchor = intermediate_anchor
             intermediate_page.endpoint = intermediate_endpoint
-            self.index(endpoint=intermediate_endpoint, page=intermediate_page)
+            intermediate_page.init()
+            self.index(endpoint=intermediate_page.endpoint, page=intermediate_page)
             self._log_.debug(lambda: f"Page Linking: Linked Intermediate Page = {intermediate_endpoint}")
             intermediate_page.attach(parent=intermediate_parent)
             intermediate_parent = intermediate_page
@@ -199,9 +204,43 @@ class AppAPI:
             page.merge(existing)
             self._log_.debug(lambda: f"Page Linking: Merged Relative Page = {relative_endpoint}")
         else:
-            self.index(endpoint=relative_endpoint, page=page)
+            self.index(endpoint=page.endpoint, page=page)
             self._log_.info(lambda: f"Page Linking: Linked {page}")
         page.attach(parent=intermediate_parent)
+        page.init()
+
+    def _init_ids_(self):
+        self._LOCATION_ID_: dict = self.identify(type="location", name="url")
+        self._DESCRIPTION_ID_: dict = self.identify(type="div", name="description")
+        self._NAVIGATION_ID_: dict = self.identify(type="navigator", name="navigation")
+        self._CONTENT_ID_: dict = self.identify(type="div", name="content")
+
+        self._SIDEBAR_BUTTON_ID_: dict = self.identify(type="button", name="sidebar")
+        self._SIDEBAR_COLLAPSE_ID_: dict = self.identify(type="collapse", name="sidebar")
+        self._SIDEBAR_ID_: dict = self.identify(type="div", name="sidebar")
+
+        self._HISTORY_BACKWARD_ID_: dict = self.identify(type="button", name="backward")
+        self._HISTORY_REFRESH_ID_: dict = self.identify(type="button", name="refresh")
+        self._HISTORY_FORWARD_ID_: dict = self.identify(type="button", name="forward")
+
+        self._CONTACTS_ARROW_ID_: dict = self.identify(type="icon", name="contacts")
+        self._CONTACTS_BUTTON_ID_: dict = self.identify(type="button", name="contacts")
+        self._CONTACTS_COLLAPSE_ID_: dict = self.identify(type="collapse", name="contacts")
+        self._CONTACTS_ID_: dict = self.identify(type="card", name="contacts")
+
+        self._TERMINAL_ARROW_ID_: dict = self.identify(type="icon", name="terminal")
+        self._TERMINAL_BUTTON_ID_: dict = self.identify(type="button", name="terminal")
+        self._TERMINAL_COLLAPSE_ID_: dict = self.identify(type="collapse", name="terminal")
+        self._TERMINAL_ID_: dict = self.identify(type="card", name="terminal")
+
+        self._CLEAN_CACHE_BUTTON_ID_: dict = self.identify(type="button", name="clean")
+        self._CLEAN_DATA_BUTTON_ID_: dict = self.identify(type="button", name="reset")
+
+        self.INTERVAL_ID: dict = self.identify(type="interval", name="1000ms")
+        self.HISTORY_STORAGE_ID: dict = self.identify(type="storage", name="history")
+        self.MEMORY_STORAGE_ID: dict = self.identify(type="storage", name="memory")
+        self.SESSION_STORAGE_ID: dict = self.identify(type="storage", name="session")
+        self.LOCAL_STORAGE_ID: dict = self.identify(type="storage", name="local")
 
     def _init_app_(self):
         self.app = dash.Dash(
@@ -262,43 +301,43 @@ class AppAPI:
         for endpoint, page in self._pages_.items():
 
             if not page.children and page.parent is not None:
-                page.navigation = page.parent.navigation
+                page._navigation_ = page.parent._navigation_
                 continue
 
             navigation_items: list = []
 
             if page.parent is not None:
-                navigation_items.append(dbc.ButtonGroup(dbc.Button(f"⭰ {page.parent.button}", href=page.parent._anchor_, className="header-navigation-button"), className="header-navigation-group"))
+                navigation_items.append(dbc.ButtonGroup(dbc.Button(f"⭰ {page.parent.button}", href=page.parent.anchor, className="header-navigation-button"), className="header-navigation-group"))
 
             for member in page.family:
                 navigation_group: list = [
-                    dbc.Button(member.button, href=member._anchor_, className="header-navigation-button"),
-                    new_tab_button(href=member._anchor_, className="header-navigation-button-tab")
+                    dbc.Button(member.button, href=member.anchor, className="header-navigation-button"),
+                    new_tab_button(href=member.anchor, className="header-navigation-button-tab")
                 ]
                 if member.children:
                     dropdown_group = []
                     for subchild in member.children:
                         dropdown_group.append(dbc.DropdownMenuItem([
-                            dbc.Button(subchild.button, href=subchild._anchor_, className="header-navigation-dropdown-button"),
-                            new_tab_button(href=subchild._anchor_, className="header-navigation-dropdown-button-tab")
+                            dbc.Button(subchild.button, href=subchild.anchor, className="header-navigation-dropdown-button"),
+                            new_tab_button(href=subchild.anchor, className="header-navigation-dropdown-button-tab")
                         ], className="header-navigation-dropdown-group"))
                     navigation_group.append(dbc.DropdownMenu(dropdown_group, direction="down", className="header-navigation-dropdown"))
                 navigation_items.append(dbc.ButtonGroup(navigation_group, className="header-navigation-group"))
-            page.navigation = dbc.Navbar(navigation_items, className="header-navigation-bar")
+            page._navigation_ = dbc.Navbar(navigation_items, className="header-navigation-bar")
 
     def _init_header_(self) -> Component:
         return html.Div([
             html.Div([
                 html.Div([html.Img(src=self.app.get_asset_url("logo.png"), className="header-image")], className="header-logo"),
                 html.Div([html.H1(self.name, className="header-title"), html.H4(self.team, className="header-team")], className="header-title-team"),
-                html.Div([self.description], id=self._PAGE_SELECTED_ID_, className="header-description")
+                html.Div([self.description], id=self._DESCRIPTION_ID_, className="header-description")
             ], className="header-information-block"),
             html.Div([
-                html.Div(None, id=self._PAGE_NAVIGATION_ID_, className="header-navigation-block"),
+                html.Div(None, id=self._NAVIGATION_ID_, className="header-navigation-block"),
                 ButtonContainerAPI(background="primary", border="white", elements=[
-                    ButtonAPI(key=self._PAGE_BACKWARD_ID_, stylename="bi bi-arrow-left"),
-                    ButtonAPI(key=self._PAGE_REFRESH_ID_, stylename="bi bi-arrow-repeat"),
-                    ButtonAPI(key=self._PAGE_FORWARD_ID_, stylename="bi bi-arrow-right")
+                    ButtonAPI(key=self._HISTORY_BACKWARD_ID_, stylename="bi bi-arrow-left"),
+                    ButtonAPI(key=self._HISTORY_REFRESH_ID_, stylename="bi bi-arrow-repeat"),
+                    ButtonAPI(key=self._HISTORY_FORWARD_ID_, stylename="bi bi-arrow-right")
                 ], stylename="header-history-block").build()
             ], className="header-control-block")
         ], className="header")
@@ -307,11 +346,11 @@ class AppAPI:
         return html.Div(children=[
                 dbc.Collapse(children=[html.Div(children=[
                     self.DEVELOPMENT_LAYOUT
-                ], id=self._SIDEBAR_CONTENT_ID_, className="sidebar-content")
+                ], id=self._SIDEBAR_ID_, className="sidebar-content")
                 ], id=self._SIDEBAR_COLLAPSE_ID_, is_open=False, className="sidebar-collapse"),
                 html.Div(children=[
                     self.LOADING_LAYOUT
-                ], id=self._PAGE_CONTENT_ID_, className="page-content"),
+                ], id=self._CONTENT_ID_, className="page-content"),
         ], className="content")
 
     def _init_footer_(self) -> Component:
@@ -350,7 +389,7 @@ class AppAPI:
                 html.Div([html.B("Contact: "), html.A(self.contact, href=f"mailto:{self.contact}")])
             ]), className="footer-panel footer-panel-left"), id=self._CONTACTS_COLLAPSE_ID_, is_open=False),
             dbc.Collapse(dbc.Card(dbc.CardBody([
-                html.Pre([], id=self._TERMINAL_CONTENT_ID_)
+                html.Pre([], id=self._TERMINAL_ID_)
             ]), className="footer-panel footer-panel-right", color="dark", inverse=True), id=self._TERMINAL_COLLAPSE_ID_, is_open=False)
         ], className="footer")
 
@@ -361,10 +400,10 @@ class AppAPI:
             dcc.Store(id=self.MEMORY_STORAGE_ID, storage_type="memory", data=dict()),
             dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session", data=dict()),
             dcc.Store(id=self.LOCAL_STORAGE_ID, storage_type="local", data=dict()),
-            dcc.Location(id=self._PAGE_LOCATION_ID_, refresh=False)
-        ])
+            dcc.Location(id=self._LOCATION_ID_, refresh=False)
+        ], className="hidden")
 
-    def _init_layouts_(self):
+    def _init_layout_(self) -> None:
         header = self._init_header_()
         self._log_.debug(lambda: "Loaded Header Layout")
         content = self._init_content_()
@@ -376,7 +415,7 @@ class AppAPI:
         self.app.layout = html.Div(children=[header, content, footer, hidden], className="app")
         self._log_.debug(lambda: "Loaded App Layout")
 
-    def _init_callbacks_(self):
+    def _init_callbacks_(self) -> None:
         for cls in reversed(type(self).mro()):
             if cls is object:
                 continue
@@ -386,32 +425,36 @@ class AppAPI:
                 if not getattr(func, "_callback_", False):
                     continue
                 bound = getattr(self, name)
-                callback_args = getattr(func, "_callback_args_")
-                callback_kwargs = getattr(func, "_callback_kwargs_")
+                callback_args: list = getattr(func, "_callback_args_")
+                callback_kwargs: dict = getattr(func, "_callback_kwargs_")
+                callback_args = [arg.build(app=self) if isinstance(arg, Trigger) else arg for arg in callback_args]
+                callback_kwargs.setdefault("prevent_initial_call", True)
                 self.app.callback(*callback_args, **callback_kwargs)(bound)
                 self._log_.debug(lambda: f"Loaded Callback: {name}")
 
     @callback(
-        dash.Output(_PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
-        dash.Output(_PAGE_SELECTED_ID_, "children", allow_duplicate=True),
-        dash.Output(_PAGE_NAVIGATION_ID_, "children", allow_duplicate=True),
-        dash.Output(_PAGE_CONTENT_ID_, "children", allow_duplicate=True),
-        dash.Input(_PAGE_LOCATION_ID_, "pathname"),
-        dash.State(_PAGE_SELECTED_ID_, "children"),
-        dash.State(_PAGE_NAVIGATION_ID_, "children"),
-        dash.State(_PAGE_CONTENT_ID_, "children"),
+        Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
+        Output("_DESCRIPTION_ID_", "children", allow_duplicate=True),
+        Output("_NAVIGATION_ID_", "children", allow_duplicate=True),
+        Output("_SIDEBAR_ID_", "children", allow_duplicate=True),
+        Output("_CONTENT_ID_", "children", allow_duplicate=True),
+        Input("_LOCATION_ID_", "pathname"),
+        State("_DESCRIPTION_ID_", "children"),
+        State("_NAVIGATION_ID_", "children"),
+        State("_SIDEBAR_ID_", "children"),
+        State("_CONTENT_ID_", "children"),
         prevent_initial_call=False
     )
-    def _update_location_callback_(self, path: str, description: Component, navigation: Component, content: Component):
+    def _update_location_callback_(self, path: str, description: Component, navigation: Component, sidebar: Component, content: Component):
         if path is None: raise PreventUpdate
         self._log_.debug(lambda: f"Location Callback: Received Path = {path}")
         anchor = self.anchorize(path=path, relative=False)
         self._log_.debug(lambda: f"Location Callback: Parsed Anchor = {anchor}")
         endpoint = self.endpointize(path=path, relative=False)
         self._log_.debug(lambda: f"Location Callback: Parsed Endpoint = {endpoint}")
-        if path == anchor: anchor = dash.no_update
         page = self.locate(endpoint=endpoint)
         if page is not None:
+            if path == page.anchor: anchor = dash.no_update
             self._log_.debug(lambda: f"Location Callback: Page Found")
             if description is page.description:
                 description = dash.no_update
@@ -420,33 +463,38 @@ class AppAPI:
             else:
                 self._log_.debug(lambda: f"Location Callback: Updating Description")
                 description = page.description
-            if navigation is page.navigation:
+            if navigation is page._navigation_:
                 navigation = dash.no_update
-            elif not page.navigation:
+            elif not page._navigation_:
                 navigation = dash.no_update
             else:
                 self._log_.debug(lambda: f"Location Callback: Updating Navigation")
-                navigation = page.navigation
-            if content is page.layout:
+                navigation = page._navigation_
+            if sidebar  is page._sidebar_:
+                sidebar = dash.no_update
+            else:
+                self._log_.debug(lambda: f"Location Callback: Updating Sidebar")
+                sidebar = page._sidebar_
+            if content is page._content_:
                 content = dash.no_update
             else:
                 self._log_.debug(lambda: f"Location Callback: Updating Content")
-                content = page.layout
+                content = page._content_
         else:
             self._log_.debug(lambda: f"Location Callback: Page Not Found")
             description = dash.no_update
             navigation = dash.no_update
+            sidebar = self.NOT_FOUND_LAYOUT
             content = self.NOT_FOUND_LAYOUT
-        if all([update is dash.no_update for update in [anchor, description, navigation, content]]):
+        if all([update is dash.no_update for update in [anchor, description, navigation, sidebar, content]]):
             self._log_.debug(lambda: f"Location Callback: No Updates Required")
             raise PreventUpdate
-        return anchor, description, navigation, content
+        return anchor, description, navigation, sidebar, content
 
     @callback(
-        dash.Output(HISTORY_STORAGE_ID, "data", allow_duplicate=True),
-        dash.Input(_PAGE_LOCATION_ID_, "pathname"),
-        dash.State(HISTORY_STORAGE_ID, "data"),
-        prevent_initial_call=True
+        Output("HISTORY_STORAGE_ID", "data", allow_duplicate=True),
+        Input("_LOCATION_ID_", "pathname"),
+        State("HISTORY_STORAGE_ID", "data"),
     )
     def _update_history_callback_(self, path, history):
         history = HistorySessionAPI(**history)
@@ -454,10 +502,9 @@ class AppAPI:
         return history.dict()
 
     @callback(
-        dash.Output(_PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
-        dash.Input(_PAGE_BACKWARD_ID_, "n_clicks"),
-        dash.State(HISTORY_STORAGE_ID, "data"),
-        prevent_initial_call=True
+        Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
+        Input("_HISTORY_BACKWARD_ID_", "n_clicks"),
+        State("HISTORY_STORAGE_ID", "data"),
     )
     def _backward_history_callback_(self, clicks, history):
         if clicks is None: raise PreventUpdate
@@ -466,20 +513,18 @@ class AppAPI:
         return path if path else dash.no_update
 
     @callback(
-        dash.Output(_PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
-        dash.Input(_PAGE_REFRESH_ID_, "n_clicks"),
-        dash.State(_PAGE_LOCATION_ID_, "pathname"),
-        prevent_initial_call=True
+        Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
+        Input("_HISTORY_REFRESH_ID_", "n_clicks"),
+        State("_LOCATION_ID_", "pathname"),
     )
     def _refresh_history_callback_(self, clicks, path):
         if clicks is None: raise PreventUpdate
         return path
 
     @callback(
-        dash.Output(_PAGE_LOCATION_ID_, "pathname", allow_duplicate=True),
-        dash.Input(_PAGE_FORWARD_ID_, "n_clicks"),
-        dash.State(HISTORY_STORAGE_ID, "data"),
-        prevent_initial_call=True
+        Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
+        Input("_HISTORY_FORWARD_ID_", "n_clicks"),
+        State("HISTORY_STORAGE_ID", "data"),
     )
     def _forward_history_callback_(self, clicks, history):
         if clicks is None: raise PreventUpdate
@@ -489,39 +534,36 @@ class AppAPI:
 
     def _collapse_button_callback_(self, name: str, was_open: bool, classname: str = None):
         is_open = not was_open
+        self._log_.debug(lambda: f"{name} Callback: {'Expanding' if is_open else 'Collapsing'}")
         if not classname: return is_open
         elif is_open: classname = classname.replace("down", "up")
         else: classname = classname.replace("up", "down")
-        self._log_.debug(lambda: f"{name} Callback: {'Expanding' if is_open else 'Collapsing'}")
         return is_open, classname
 
     @callback(
-        dash.Output(_SIDEBAR_COLLAPSE_ID_, "is_open"),
-        dash.Input(_SIDEBAR_BUTTON_ID_, "n_clicks"),
-        dash.State(_SIDEBAR_COLLAPSE_ID_, "is_open"),
-        prevent_initial_call=True
+        Output("_SIDEBAR_COLLAPSE_ID_", "is_open"),
+        Input("_SIDEBAR_BUTTON_ID_", "n_clicks"),
+        State("_SIDEBAR_COLLAPSE_ID_", "is_open"),
     )
     def _sidebar_button_callback_(self, clicks, was_open):
         if clicks is None: raise PreventUpdate
         return self._collapse_button_callback_(name="Sidebar", was_open=was_open)
 
     @callback(
-        dash.Output(_CONTACTS_COLLAPSE_ID_, "is_open", allow_duplicate=True),
-        dash.Output(_CONTACTS_ARROW_ID_, "className", allow_duplicate=True),
-        dash.Input(_CONTACTS_BUTTON_ID_, "n_clicks"),
-        dash.State(_CONTACTS_COLLAPSE_ID_, "is_open"),
-        dash.State(_CONTACTS_ARROW_ID_, "className"),
-        prevent_initial_call=True
+        Output("_CONTACTS_COLLAPSE_ID_", "is_open", allow_duplicate=True),
+        Output("_CONTACTS_ARROW_ID_", "className", allow_duplicate=True),
+        Input("_CONTACTS_BUTTON_ID_", "n_clicks"),
+        State("_CONTACTS_COLLAPSE_ID_", "is_open"),
+        State("_CONTACTS_ARROW_ID_", "className"),
     )
     def _contacts_button_callback_(self, clicks, was_open: bool, classname: str):
         if clicks is None: raise PreventUpdate
         return self._collapse_button_callback_(name="Contacts", was_open=was_open, classname=classname)
 
     @callback(
-        dash.Output(MEMORY_STORAGE_ID, "data", allow_duplicate=True),
-        dash.Output(SESSION_STORAGE_ID, "data", allow_duplicate=True),
-        dash.Input(_CLEAN_CACHE_BUTTON_ID_, "n_clicks"),
-        prevent_initial_call=True
+        Output("MEMORY_STORAGE_ID", "data", allow_duplicate=True),
+        Output("SESSION_STORAGE_ID", "data", allow_duplicate=True),
+        Input("_CLEAN_CACHE_BUTTON_ID_", "n_clicks"),
     )
     def _clean_cache_callback_(self, clicks):
         if clicks is None: raise PreventUpdate
@@ -531,11 +573,10 @@ class AppAPI:
         return memory, session
 
     @callback(
-        dash.Output(MEMORY_STORAGE_ID, "data", allow_duplicate=True),
-        dash.Output(SESSION_STORAGE_ID, "data", allow_duplicate=True),
-        dash.Output(LOCAL_STORAGE_ID, "data", allow_duplicate=True),
-        dash.Input(_CLEAN_DATA_BUTTON_ID_, "n_clicks"),
-        prevent_initial_call=True
+        Output("MEMORY_STORAGE_ID", "data", allow_duplicate=True),
+        Output("SESSION_STORAGE_ID", "data", allow_duplicate=True),
+        Output("LOCAL_STORAGE_ID", "data", allow_duplicate=True),
+        Input("_CLEAN_DATA_BUTTON_ID_", "n_clicks"),
     )
     def _clean_data_callback_(self, clicks):
         if clicks is None: raise PreventUpdate
@@ -545,22 +586,20 @@ class AppAPI:
         return memory, session, local
 
     @callback(
-        dash.Output(_TERMINAL_COLLAPSE_ID_, "is_open", allow_duplicate=True),
-        dash.Output(_TERMINAL_ARROW_ID_, "className", allow_duplicate=True),
-        dash.Input(_TERMINAL_BUTTON_ID_, "n_clicks"),
-        dash.State(_TERMINAL_COLLAPSE_ID_, "is_open"),
-        dash.State(_TERMINAL_ARROW_ID_, "className"),
-        prevent_initial_call=True
+        Output("_TERMINAL_COLLAPSE_ID_", "is_open", allow_duplicate=True),
+        Output("_TERMINAL_ARROW_ID_", "className", allow_duplicate=True),
+        Input("_TERMINAL_BUTTON_ID_", "n_clicks"),
+        State("_TERMINAL_COLLAPSE_ID_", "is_open"),
+        State("_TERMINAL_ARROW_ID_", "className"),
     )
     def _terminal_button_callback_(self, clicks, was_open: bool, classname: str):
         if clicks is None: raise PreventUpdate
         return self._collapse_button_callback_(name="Terminal", was_open=was_open, classname=classname)
 
     @callback(
-        dash.Output(_TERMINAL_CONTENT_ID_, "children", allow_duplicate=True),
-        dash.Input(INTERVAL_ID, "n_intervals"),
-        dash.State(_TERMINAL_CONTENT_ID_, "children"),
-        prevent_initial_call=True
+        Output("_TERMINAL_ID_", "children", allow_duplicate=True),
+        Input("INTERVAL_ID", "n_intervals"),
+        State("_TERMINAL_ID_", "children"),
     )
     def _terminal_stream_callback_(self, _, terminal):
         logs = self._log_.web.stream()

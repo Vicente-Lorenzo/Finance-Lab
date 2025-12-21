@@ -1,23 +1,32 @@
 from __future__ import annotations
 
+from dash import html, dcc
 from typing import TYPE_CHECKING
 from typing_extensions import Self
-if TYPE_CHECKING: from Library.App import AppAPI
+if TYPE_CHECKING: from Library.App import *
 
 from Library.Logging import HandlerLoggingAPI
 from Library.Utility import Component
 
 class PageAPI:
 
+    MEMORY_STORAGE_ID: dict = None
+    SESSION_STORAGE_ID: dict = None
+    LOCAL_STORAGE_ID: dict = None
+
     def __init__(self,
                  app: AppAPI,
                  path: str,
+                 anchor: str = None,
+                 endpoint: str = None,
                  button: str = None,
                  description: str = None,
                  indexed: bool = True,
-                 layout: Component = None):
+                 content: Component = None,
+                 sidebar: Component = None,
+                 navigation: Component = None):
 
-        self._log_: HandlerLoggingAPI = HandlerLoggingAPI(self.__class__.__name__)
+        self._log_: HandlerLoggingAPI = HandlerLoggingAPI(PageAPI.__name__)
 
         self.app: AppAPI = app
         self.path: str = path
@@ -25,30 +34,33 @@ class PageAPI:
         self.description: str = description
         self.indexed: bool = indexed
 
-        self._anchor_: str | None = None
-        self._endpoint_: str | None = None
+        self._anchor_: str = anchor
+        self._endpoint_: str = endpoint
+
+        self._sidebar_: Component = sidebar
+        self._content_: Component = content
+        self._navigation_: Component = navigation
 
         self._parent_: PageAPI | None = None
         self._children_: list[PageAPI] = []
 
-        self._layout_: Component = layout or self.build()
-        self._navigation_: Component | None = None
+        self._initialized_: bool = False
 
-    def build(self) -> Component:
-        return self.app.NOT_INDEXED_LAYOUT
+    def identify(self, type: str, name: str) -> dict:
+        return self.app.identify(page=self.endpoint, type=type, name=name)
 
     @property
     def anchor(self) -> str:
         return self._anchor_
     @anchor.setter
-    def anchor(self, anchor: str) -> None:
-        self._anchor_ = anchor
+    def anchor(self, anchor: str):
+        self._anchor_ = self._anchor_ or anchor
     @property
     def endpoint(self) -> str:
         return self._endpoint_
     @endpoint.setter
-    def endpoint(self, endpoint: str) -> None:
-        self._endpoint_ = endpoint
+    def endpoint(self, endpoint: str):
+        self._endpoint_ = self._endpoint_ or endpoint
 
     @property
     def parent(self) -> Self:
@@ -59,16 +71,6 @@ class PageAPI:
     @property
     def family(self) -> list[Self]:
         return [self] + self.children
-
-    @property
-    def layout(self):
-        return self._layout_
-    @property
-    def navigation(self):
-        return self._navigation_
-    @navigation.setter
-    def navigation(self, navigation: Component) -> None:
-        self._navigation_ = navigation
 
     def attach(self, parent: Self):
         if parent is None:
@@ -97,6 +99,41 @@ class PageAPI:
         page._parent_ = None
         page._children_.clear()
         self._log_.info(lambda: f"Merged {page} (Old) into {self} (New)")
+
+    def _init_ids_(self) -> None:
+        self.MEMORY_STORAGE_ID: dict = self.identify(type="storage", name="memory")
+        self.SESSION_STORAGE_ID: dict = self.identify(type="storage", name="session")
+        self.LOCAL_STORAGE_ID: dict = self.identify(type="storage", name="local")
+
+    def sidebar(self) -> Component:
+        return self.app.NOT_INDEXED_LAYOUT
+
+    def content(self) -> Component:
+        return self.app.NOT_INDEXED_LAYOUT
+
+    def _init_hidden_(self) -> Component:
+        return html.Div([
+            dcc.Store(id=self.MEMORY_STORAGE_ID, storage_type="memory", data={}),
+            dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session", data={}),
+            dcc.Store(id=self.LOCAL_STORAGE_ID, storage_type="local", data={}),
+        ], className="page-hidden")
+
+    def _init_layout_(self) -> None:
+        self._sidebar_ = self._sidebar_ or self.sidebar()
+        self._log_.debug(lambda: f"Loaded Sidebar Layout")
+        content = self._content_ or self.content()
+        self._log_.debug(lambda: f"Loaded Content Layout")
+        hidden = self._init_hidden_()
+        self._log_.debug(lambda: f"Loaded Hidden Layout")
+        self._content_ = html.Div(children=[content, hidden], className="page-content")
+
+    def init(self) -> None:
+        if self._initialized_: return
+        self._init_ids_()
+        self._log_.info(lambda: f"Initialized IDs: {self}")
+        self._init_layout_()
+        self._log_.info(lambda: f"Initialized Layout: {self}")
+        self._initialized_ = True
 
     def __repr__(self):
         return f"{self.description} @ {self.endpoint}"

@@ -19,7 +19,7 @@
 }
 
 .sidebar-collapse.show {
-    width: clamp(280px, 40%, 520px);
+    width: 40%;
 }
 
 .sidebar-collapse > .sidebar-content {
