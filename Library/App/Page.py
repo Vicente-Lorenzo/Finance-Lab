@@ -37,8 +37,8 @@ class PageAPI:
         self._anchor_: str = anchor
         self._endpoint_: str = endpoint
 
-        self._sidebar_: Component = sidebar
-        self._content_: Component = content
+        self._sidebar_: Component | list[Component] = sidebar
+        self._content_: Component | list[Component] = content
         self._navigation_: Component = navigation
 
         self._parent_: PageAPI | None = None
@@ -105,10 +105,10 @@ class PageAPI:
         self.SESSION_STORAGE_ID: dict = self.identify(type="storage", name="session")
         self.LOCAL_STORAGE_ID: dict = self.identify(type="storage", name="local")
 
-    def sidebar(self) -> Component:
+    def sidebar(self) -> Component | list[Component]:
         return self.app.NOT_INDEXED_LAYOUT
 
-    def content(self) -> Component:
+    def content(self) -> Component | list[Component]:
         return self.app.NOT_INDEXED_LAYOUT
 
     def _init_hidden_(self) -> Component:
@@ -119,13 +119,14 @@ class PageAPI:
         ])
 
     def _init_layout_(self) -> None:
-        self._sidebar_ = self._sidebar_ or self.sidebar()
+        sidebar = self._sidebar_ or self.sidebar()
         self._log_.debug(lambda: f"Loaded Sidebar Layout")
+        self._sidebar_ = [sidebar] if isinstance(sidebar, Component) else sidebar
         content = self._content_ or self.content()
         self._log_.debug(lambda: f"Loaded Content Layout")
         hidden = self._init_hidden_()
         self._log_.debug(lambda: f"Loaded Hidden Layout")
-        self._content_ = html.Div(children=[content, hidden])
+        self._content_ = [content, hidden] if isinstance(content, Component) else [*content, hidden]
 
     def init(self) -> None:
         if self._initialized_: return

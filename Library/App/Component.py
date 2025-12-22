@@ -168,8 +168,9 @@ class ButtonContainerAPI(ContainerAPI):
 class PaginatorAPI(ButtonContainerAPI):
 
     classname: str = field(default="paginator")
-    label: str = field(default_factory=str)
+    label: str | list[ComponentAPI] = field(default_factory=list)
     target: str = field(default_factory=str)
+    invert: bool = field(default=False)
 
     def __post_init__(self):
         internal = ButtonAPI(
@@ -185,5 +186,5 @@ class PaginatorAPI(ButtonContainerAPI):
             external=True,
             stylename="external bi bi-box-arrow-up-right"
         )
-        self.elements = [internal, external]
+        self.elements = [internal, external] if not self.invert else [external, internal]
         super().__post_init__()

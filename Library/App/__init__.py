@@ -24,6 +24,7 @@ from Library.App.Callback import (
 )
 from Library.App.History import HistorySessionAPI
 from Library.App.Page import PageAPI
+from Library.App.Form import FormAPI
 from Library.App.App import AppAPI
 
 __all__ = [
@@ -35,5 +36,6 @@ __all__ = [
     "callback", "Trigger", "Output", "Input", "State",
     "HistorySessionAPI",
     "PageAPI",
+    "FormAPI",
     "AppAPI"
 ]
