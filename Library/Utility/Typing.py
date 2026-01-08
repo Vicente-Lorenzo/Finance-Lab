@@ -1,4 +1,158 @@
-def cast(cast_value, cast_type, cast_default):
+import inspect
+
+MISSING = object()
+
+def isclass(obj: object) -> bool:
+    return isinstance(obj, type)
+
+def iscallable(obj: object) -> bool:
+    return callable(obj)
+
+def ismethod(obj: object) -> bool:
+    v = obj.__func__ if isinstance(obj, (classmethod, staticmethod)) else obj
+    return inspect.isroutine(v)
+
+def isproperty(obj: object) -> bool:
+    return isinstance(obj, property)
+
+def getclass(obj: object) -> type:
+    return obj if isclass(obj) else type(obj)
+
+def getmro(obj: object) -> tuple[type, ...]:
+    cls = getclass(obj)
+    return cls.__mro__
+
+def getslots(cls: object, *, mro: bool) -> tuple[str, ...]:
+    cls = getclass(cls)
+    classes = getmro(cls) if mro else (cls,)
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for c in classes:
+        slots = c.__dict__.get("__slots__")
+        if slots is None:
+            continue
+        names = (slots,) if isinstance(slots, str) else tuple(slots)
+        for n in names:
+            if isinstance(n, str) and n not in ("__dict__", "__weakref__") and n not in seen:
+                seen.add(n)
+                ordered.append(n)
+    return tuple(ordered)
+
+def hasmember(obj: object, name: str, *, mro: bool = False, slots: bool = True) -> bool:
+    if not isclass(obj):
+        d = getattr(obj, "__dict__", None)
+        if isinstance(d, dict) and name in d:
+            return True
+        if slots:
+            cls = type(obj)
+            if name in getslots(cls, mro=mro):
+                try:
+                    object.__getattribute__(obj, name)
+                    return True
+                except AttributeError:
+                    pass
+        obj = type(obj)
+    classes = getmro(obj) if mro else (obj,)
+    for c in classes:
+        if name in c.__dict__:
+            if not slots and name in getslots(c, mro=False):
+                return False
+            return True
+    return False
+
+def getmember(obj: object, name: str, *, mro: bool, slots: bool) -> object:
+    d = getattr(obj, "__dict__", None)
+    if isinstance(d, dict) and name in d:
+        return d[name]
+    if slots:
+        cls = type(obj)
+        if name in getslots(cls, mro=mro):
+            try:
+                return object.__getattribute__(obj, name)
+            except AttributeError:
+                return MISSING
+    return MISSING
+
+def hasattribute(obj: object, name: str, *, mro: bool = False, slots: bool = True) -> bool:
+    if isclass(obj):
+        classes = getmro(obj) if mro else (obj,)
+        for c in classes:
+            if name in c.__dict__:
+                v = c.__dict__[name]
+                if ismethod(v) or isproperty(v):
+                    return False
+                if not slots and name in getslots(c, mro=False):
+                    return False
+                return True
+        return False
+    v = getmember(obj, name, slots=slots, mro=mro)
+    return v is not MISSING and not iscallable(v)
+
+def getattribute(obj: object, name: str, default = None, *, mro: bool = False, slots: bool = True):
+    if isclass(obj):
+        classes = getmro(obj) if mro else (obj,)
+        for c in classes:
+            if name in c.__dict__:
+                v = c.__dict__[name]
+                if ismethod(v) or isproperty(v):
+                    return default
+                if not slots and name in getslots(c, mro=False):
+                    return default
+                return v
+        return default
+    v = getmember(obj, name, slots=slots, mro=mro)
+    if v is MISSING or iscallable(v):
+        return default
+    return v
+
+def hasmethod(obj: object, name: str, *, mro: bool = False, slots: bool = True) -> bool:
+    if not isclass(obj):
+        v = getmember(obj, name, slots=slots, mro=mro)
+        if v is not MISSING and iscallable(v):
+            return True
+        obj = type(obj)
+    classes = getmro(obj) if mro else (obj,)
+    for c in classes:
+        if name in c.__dict__ and ismethod(c.__dict__[name]):
+            return True
+    return False
+
+def getmethod(obj: object, name: str, default = None, *, slots: bool = True, mro: bool = False):
+    if not isclass(obj):
+        v = getmember(obj, name, slots=slots, mro=mro)
+        if v is not MISSING and iscallable(v):
+            return v
+        inst = obj
+        cls = type(obj)
+        classes = getmro(cls) if mro else (cls,)
+        for c in classes:
+            if name in c.__dict__ and ismethod(c.__dict__[name]):
+                member = c.__dict__[name]
+                return member.__get__(inst, cls) if hasattr(member, "__get__") else member
+        return default
+    classes = getmro(obj) if mro else (obj,)
+    for c in classes:
+        if name in c.__dict__ and ismethod(c.__dict__[name]):
+            return c.__dict__[name]
+    return default
+
+def hasproperty(obj: object, name: str, *, mro: bool = False) -> bool:
+    cls = getclass(obj)
+    classes = getmro(cls) if mro else (cls,)
+    for c in classes:
+        if name in c.__dict__ and isproperty(c.__dict__[name]):
+            return True
+    return False
+
+def getproperty(obj: object, name: str, default = None, *, mro: bool = False):
+    cls = getclass(obj)
+    classes = getmro(cls) if mro else (cls,)
+    for c in classes:
+        if name in c.__dict__ and isproperty(c.__dict__[name]):
+            return c.__dict__[name]
+    return default
+
+def cast(cast_value, cast_type: type, cast_default):
     try:
         return cast_value if isinstance(cast_value, cast_type) else cast_type(cast_value)
     except (TypeError, ValueError):
@@ -8,9 +162,11 @@ def equals(a: float, b: float, rel: float = 1e-12, abs_: float = 1e-12) -> bool:
     return abs(a - b) <= max(rel * max(1.0, abs(a), abs(b)), abs_)
 
 def contains(text: str, substrings: str | tuple | list, case_sensitive: bool = False) -> bool:
-    if isinstance(substrings, str): substrings = [substrings]
-    if isinstance(substrings, tuple): substrings = list(substrings)
+    if isinstance(substrings, str):
+        subs: list[str] = [substrings]
+    else:
+        subs = list(substrings)
     if not case_sensitive:
         text = text.lower()
-        substrings = [s.lower() for s in substrings]
-    return any(sub in text for sub in substrings)
+        subs = [s.lower() for s in subs]
+    return any(sub in text for sub in subs)
