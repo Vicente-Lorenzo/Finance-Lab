@@ -1,7 +1,5 @@
 import inspect
 
-MISSING = object()
-
 def isclass(obj: object) -> bool:
     return isinstance(obj, type)
 
@@ -38,6 +36,10 @@ def getslots(cls: object, *, mro: bool) -> tuple[str, ...]:
                 ordered.append(n)
     return tuple(ordered)
 
+def getclasses(obj: object, *, mro: bool) -> tuple[type, ...]:
+    cls = getclass(obj)
+    return getmro(cls) if mro else (cls,)
+
 def hasmember(obj: object, name: str, *, mro: bool = False, slots: bool = True) -> bool:
     if not isclass(obj):
         d = getattr(obj, "__dict__", None)
@@ -52,31 +54,29 @@ def hasmember(obj: object, name: str, *, mro: bool = False, slots: bool = True) 
                 except AttributeError:
                     pass
         obj = type(obj)
-    classes = getmro(obj) if mro else (obj,)
-    for c in classes:
+    for c in getclasses(obj, mro=mro):
         if name in c.__dict__:
             if not slots and name in getslots(c, mro=False):
                 return False
             return True
     return False
 
-def getmember(obj: object, name: str, *, mro: bool, slots: bool) -> object:
+def getmember(obj: object, name: str, *, mro: bool, slots: bool) -> tuple[bool, object]:
     d = getattr(obj, "__dict__", None)
     if isinstance(d, dict) and name in d:
-        return d[name]
+        return True, d[name]
     if slots:
         cls = type(obj)
         if name in getslots(cls, mro=mro):
             try:
-                return object.__getattribute__(obj, name)
+                return True, object.__getattribute__(obj, name)
             except AttributeError:
-                return MISSING
-    return MISSING
+                pass
+    return False, None
 
 def hasattribute(obj: object, name: str, *, mro: bool = False, slots: bool = True) -> bool:
     if isclass(obj):
-        classes = getmro(obj) if mro else (obj,)
-        for c in classes:
+        for c in getclasses(obj, mro=mro):
             if name in c.__dict__:
                 v = c.__dict__[name]
                 if ismethod(v) or isproperty(v):
@@ -85,13 +85,12 @@ def hasattribute(obj: object, name: str, *, mro: bool = False, slots: bool = Tru
                     return False
                 return True
         return False
-    v = getmember(obj, name, slots=slots, mro=mro)
-    return v is not MISSING and not iscallable(v)
+    found, v = getmember(obj, name, slots=slots, mro=mro)
+    return found and not iscallable(v)
 
 def getattribute(obj: object, name: str, default = None, *, mro: bool = False, slots: bool = True):
     if isclass(obj):
-        classes = getmro(obj) if mro else (obj,)
-        for c in classes:
+        for c in getclasses(obj, mro=mro):
             if name in c.__dict__:
                 v = c.__dict__[name]
                 if ismethod(v) or isproperty(v):
@@ -100,54 +99,47 @@ def getattribute(obj: object, name: str, default = None, *, mro: bool = False, s
                     return default
                 return v
         return default
-    v = getmember(obj, name, slots=slots, mro=mro)
-    if v is MISSING or iscallable(v):
+    found, v = getmember(obj, name, slots=slots, mro=mro)
+    if not found or iscallable(v):
         return default
     return v
 
 def hasmethod(obj: object, name: str, *, mro: bool = False, slots: bool = True) -> bool:
     if not isclass(obj):
-        v = getmember(obj, name, slots=slots, mro=mro)
-        if v is not MISSING and iscallable(v):
+        found, v = getmember(obj, name, slots=slots, mro=mro)
+        if found and iscallable(v):
             return True
         obj = type(obj)
-    classes = getmro(obj) if mro else (obj,)
-    for c in classes:
+    for c in getclasses(obj, mro=mro):
         if name in c.__dict__ and ismethod(c.__dict__[name]):
             return True
     return False
 
 def getmethod(obj: object, name: str, default = None, *, slots: bool = True, mro: bool = False):
     if not isclass(obj):
-        v = getmember(obj, name, slots=slots, mro=mro)
-        if v is not MISSING and iscallable(v):
+        found, v = getmember(obj, name, slots=slots, mro=mro)
+        if found and iscallable(v):
             return v
         inst = obj
         cls = type(obj)
-        classes = getmro(cls) if mro else (cls,)
-        for c in classes:
+        for c in getclasses(cls, mro=mro):
             if name in c.__dict__ and ismethod(c.__dict__[name]):
                 member = c.__dict__[name]
                 return member.__get__(inst, cls) if hasattr(member, "__get__") else member
         return default
-    classes = getmro(obj) if mro else (obj,)
-    for c in classes:
+    for c in getclasses(obj, mro=mro):
         if name in c.__dict__ and ismethod(c.__dict__[name]):
             return c.__dict__[name]
     return default
 
 def hasproperty(obj: object, name: str, *, mro: bool = False) -> bool:
-    cls = getclass(obj)
-    classes = getmro(cls) if mro else (cls,)
-    for c in classes:
+    for c in getclasses(obj, mro=mro):
         if name in c.__dict__ and isproperty(c.__dict__[name]):
             return True
     return False
 
 def getproperty(obj: object, name: str, default = None, *, mro: bool = False):
-    cls = getclass(obj)
-    classes = getmro(cls) if mro else (cls,)
-    for c in classes:
+    for c in getclasses(obj, mro=mro):
         if name in c.__dict__ and isproperty(c.__dict__[name]):
             return c.__dict__[name]
     return default
