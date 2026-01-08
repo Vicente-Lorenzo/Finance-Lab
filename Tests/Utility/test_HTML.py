@@ -1,4 +1,5 @@
 import dash.html as html
+
 from Library.Utility.HTML import htmlize, stylize
 
 def test_text():
