@@ -167,6 +167,8 @@ class ButtonContainerAPI(ContainerAPI):
 @dataclass(kw_only=True)
 class PaginatorAPI(ButtonContainerAPI):
 
+    ikey: dict = field(default_factory=dict)
+    ekey: dict = field(default_factory=dict)
     classname: str = field(default="paginator")
     label: str | list[ComponentAPI] = field(default_factory=list)
     target: str = field(default_factory=str)
@@ -174,6 +176,7 @@ class PaginatorAPI(ButtonContainerAPI):
 
     def __post_init__(self):
         internal = ButtonAPI(
+            key=self.ikey,
             target=self.target,
             title="Open Page",
             external=False,
@@ -181,6 +184,7 @@ class PaginatorAPI(ButtonContainerAPI):
             stylename="internal"
         )
         external = ButtonAPI(
+            key=self.ekey,
             target=self.target,
             title="Open Page (New Tab)",
             external=True,
