@@ -6,6 +6,18 @@ from Library.Utility.HTML import (
     htmlize
 )
 from Library.Utility.Typing import (
+    isclass,
+    iscallable,
+    ismethod,
+    isproperty,
+    getclass,
+    getmro,
+    getslots,
+    getclasses,
+    hasmember, getmember,
+    hasattribute, getattribute,
+    hasmethod, getmethod,
+    hasproperty, getproperty,
     cast,
     equals,
     contains
@@ -78,6 +90,8 @@ __all__ = [
     "gantt",
     "image",
     "Component", "stylize", "htmlize",
+    "isclass", "iscallable", "ismethod", "isproperty", "getclass", "getmro", "getslots", "getclasses",
+    "hasmember", "getmember", "hasattribute", "getattribute", "hasmethod", "getmethod", "hasproperty", "getproperty",
     "cast", "equals", "contains",
     "datetime_to_string", "string_to_datetime", "datetime_to_timestamp", "timestamp_to_datetime", "datetime_to_iso", "iso_to_datetime", "seconds_to_string",
     "find_user", "is_windows", "is_linux", "is_mac", "is_local", "is_remote", "is_service",
