@@ -17,11 +17,11 @@ def callback(callback_js: bool, *callback_args, **callback_kwargs):
         return func
     return decorator
 
-def serverside_callback(*callback_args, **callback_kwargs):
-    return callback(False, *callback_args, **callback_kwargs)
-
 def clientside_callback(*callback_args, **callback_kwargs):
     return callback(True, *callback_args, **callback_kwargs)
+
+def serverside_callback(*callback_args, **callback_kwargs):
+    return callback(False, *callback_args, **callback_kwargs)
 
 class Trigger(ABC):
     def __init__(self, component: str | dict, property: str):
