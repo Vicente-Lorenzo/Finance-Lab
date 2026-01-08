@@ -5,7 +5,7 @@ from re import Pattern, compile, search
 
 from Library.Utility import contains, is_notebook, find_notebook
 
-def inspect_separator(builder: type[PurePath] = Path) -> str:
+def inspect_separator(*, builder: type[PurePath] = Path) -> str:
     return builder(".")._flavour.sep
 
 def inspect_file(file: PurePath | str | None, *, header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
