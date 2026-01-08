@@ -128,7 +128,7 @@ class PageAPI:
         self._log_.debug(lambda: f"Loaded Hidden Layout")
         self._content_ = [content, hidden] if isinstance(content, Component) else [*content, hidden]
 
-    def init(self) -> None:
+    def _init_(self) -> None:
         if self._initialized_: return
         self._init_ids_()
         self._log_.info(lambda: f"Initialized IDs: {self}")

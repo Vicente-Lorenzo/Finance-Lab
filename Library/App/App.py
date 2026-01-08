@@ -213,7 +213,7 @@ class AppAPI:
         page.attach(parent=intermediate_parent)
         page._init_()
 
-    def _init_ids_(self):
+    def _init_ids_(self) -> None:
         self._LOCATION_ID_: dict = self.register(type="location", name="url")
         self._DESCRIPTION_ID_: dict = self.register(type="div", name="description")
         self._NAVIGATION_ID_: dict = self.register(type="navigator", name="navigation")
@@ -435,7 +435,7 @@ class AppAPI:
                         self._log_.info(lambda: f"Loaded Client-Side Callback: {name}")
                     else:
                         self.app.callback(*callback_args, **callback_kwargs)(bound)
-                        self._log_.debug(lambda: f"Loaded Server-Side Callback: {name}")
+                        self._log_.info(lambda: f"Loaded Server-Side Callback: {name}")
 
     @serverside_callback(
         Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
