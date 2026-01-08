@@ -8,6 +8,7 @@ from Library.Logging import *
 from Library.App import *
 from Library.Utility.HTML import *
 from Library.Utility.Path import *
+from Library.Utility.Typing import *
 
 class AppAPI:
 
@@ -49,7 +50,7 @@ class AppAPI:
     DEVELOPMENT_LAYOUT: Component = None
     NOT_INDEXED_LAYOUT: Component = None
 
-    def __init__(self,
+    def __init__(self, *,
                  name: str = "<Insert App Name>",
                  title: str = "<Insert App Title>",
                  team: str = "<Insert Team Name>",
@@ -62,7 +63,7 @@ class AppAPI:
                  domain: str = None,
                  proxy: str = None,
                  anchor: str = None,
-                 debug: bool = False):
+                 debug: bool = False) -> None:
 
         self._log_: HandlerLoggingAPI = HandlerLoggingAPI(AppAPI.__name__)
         self._ids_: set = set()
@@ -137,8 +138,11 @@ class AppAPI:
         self._init_callbacks_()
         self._log_.info(lambda: "Initialized Callbacks")
 
-    def identify(self, type: str, name: str, page: str = "global") -> dict:
-        cid = {"app": self.__class__.__name__, "page": page, "type": type, "name": name}
+    def identify(self, *, page: str = "global", type: str, name: str) -> dict:
+        return {"app": self.__class__.__name__, "page": page, "type": type, "name": name}
+
+    def register(self, *, page: str = "global", type: str, name: str) -> dict:
+        cid = self.identify(page=page, type=type, name=name)
         key = (cid["app"], cid["page"], cid["type"], cid["name"])
         if key in self._ids_: raise RuntimeError(f"Duplicate Dash ID detected: {cid}")
         self._ids_.add(key)
@@ -152,10 +156,10 @@ class AppAPI:
         self._log_.debug(lambda: f"Resolve Path: Resolved = {resolve}")
         return resolve
 
-    def anchorize(self, path: PurePath | str, relative: bool = True):
+    def anchorize(self, path: PurePath | str, relative: bool = True) -> str:
         return self.resolve(path, relative=relative, footer=False)
 
-    def endpointize(self, path: PurePath | str, relative: bool = True):
+    def endpointize(self, path: PurePath | str, relative: bool = True) -> str:
         return self.resolve(path, relative=relative, footer=True)
 
     def locate(self, endpoint: str) -> PageAPI | None:
@@ -164,7 +168,7 @@ class AppAPI:
     def index(self, endpoint: str, page: PageAPI) -> None:
         self._pages_[endpoint] = page
 
-    def link(self, page: PageAPI):
+    def link(self, page: PageAPI) -> None:
         relative_path: PurePath = inspect_file(page.path, header=True, builder=PurePosixPath)
         self._log_.debug(lambda: f"Page Linking: Relative Path = {relative_path}")
         relative_anchor = self.anchorize(path=relative_path, relative=True)
@@ -192,7 +196,7 @@ class AppAPI:
                 self._log_.debug(lambda: f"Page Linking: Created Intermediate Page = {intermediate_endpoint}")
             intermediate_page.anchor = intermediate_anchor
             intermediate_page.endpoint = intermediate_endpoint
-            intermediate_page.init()
+            intermediate_page._init_()
             self.index(endpoint=intermediate_page.endpoint, page=intermediate_page)
             self._log_.debug(lambda: f"Page Linking: Linked Intermediate Page = {intermediate_endpoint}")
             intermediate_page.attach(parent=intermediate_parent)
@@ -207,48 +211,43 @@ class AppAPI:
             self.index(endpoint=page.endpoint, page=page)
             self._log_.info(lambda: f"Page Linking: Linked {page}")
         page.attach(parent=intermediate_parent)
-        page.init()
+        page._init_()
 
     def _init_ids_(self):
-        self._LOCATION_ID_: dict = self.identify(type="location", name="url")
-        self._DESCRIPTION_ID_: dict = self.identify(type="div", name="description")
-        self._NAVIGATION_ID_: dict = self.identify(type="navigator", name="navigation")
-        self._CONTENT_ID_: dict = self.identify(type="div", name="content")
+        self._LOCATION_ID_: dict = self.register(type="location", name="url")
+        self._DESCRIPTION_ID_: dict = self.register(type="div", name="description")
+        self._NAVIGATION_ID_: dict = self.register(type="navigator", name="navigation")
+        self._CONTENT_ID_: dict = self.register(type="div", name="content")
+        self._SIDEBAR_BUTTON_ID_: dict = self.register(type="button", name="sidebar")
+        self._SIDEBAR_COLLAPSE_ID_: dict = self.register(type="collapse", name="sidebar")
+        self._SIDEBAR_ID_: dict = self.register(type="div", name="sidebar")
+        self._HISTORY_BACKWARD_ID_: dict = self.register(type="button", name="backward")
+        self._HISTORY_REFRESH_ID_: dict = self.register(type="button", name="refresh")
+        self._HISTORY_FORWARD_ID_: dict = self.register(type="button", name="forward")
+        self._CONTACTS_ARROW_ID_: dict = self.register(type="icon", name="contacts")
+        self._CONTACTS_BUTTON_ID_: dict = self.register(type="button", name="contacts")
+        self._CONTACTS_COLLAPSE_ID_: dict = self.register(type="collapse", name="contacts")
+        self._CONTACTS_ID_: dict = self.register(type="card", name="contacts")
+        self._TERMINAL_ARROW_ID_: dict = self.register(type="icon", name="terminal")
+        self._TERMINAL_BUTTON_ID_: dict = self.register(type="button", name="terminal")
+        self._TERMINAL_COLLAPSE_ID_: dict = self.register(type="collapse", name="terminal")
+        self._TERMINAL_ID_: dict = self.register(type="card", name="terminal")
+        self._CLEAN_CACHE_BUTTON_ID_: dict = self.register(type="button", name="clean")
+        self._CLEAN_DATA_BUTTON_ID_: dict = self.register(type="button", name="reset")
+        self.INTERVAL_ID: dict = self.register(type="interval", name="1000ms")
+        self.HISTORY_STORAGE_ID: dict = self.register(type="storage", name="history")
+        self.MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory")
+        self.SESSION_STORAGE_ID: dict = self.register(type="storage", name="session")
+        self.LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local")
+        self.ids()
 
-        self._SIDEBAR_BUTTON_ID_: dict = self.identify(type="button", name="sidebar")
-        self._SIDEBAR_COLLAPSE_ID_: dict = self.identify(type="collapse", name="sidebar")
-        self._SIDEBAR_ID_: dict = self.identify(type="div", name="sidebar")
-
-        self._HISTORY_BACKWARD_ID_: dict = self.identify(type="button", name="backward")
-        self._HISTORY_REFRESH_ID_: dict = self.identify(type="button", name="refresh")
-        self._HISTORY_FORWARD_ID_: dict = self.identify(type="button", name="forward")
-
-        self._CONTACTS_ARROW_ID_: dict = self.identify(type="icon", name="contacts")
-        self._CONTACTS_BUTTON_ID_: dict = self.identify(type="button", name="contacts")
-        self._CONTACTS_COLLAPSE_ID_: dict = self.identify(type="collapse", name="contacts")
-        self._CONTACTS_ID_: dict = self.identify(type="card", name="contacts")
-
-        self._TERMINAL_ARROW_ID_: dict = self.identify(type="icon", name="terminal")
-        self._TERMINAL_BUTTON_ID_: dict = self.identify(type="button", name="terminal")
-        self._TERMINAL_COLLAPSE_ID_: dict = self.identify(type="collapse", name="terminal")
-        self._TERMINAL_ID_: dict = self.identify(type="card", name="terminal")
-
-        self._CLEAN_CACHE_BUTTON_ID_: dict = self.identify(type="button", name="clean")
-        self._CLEAN_DATA_BUTTON_ID_: dict = self.identify(type="button", name="reset")
-
-        self.INTERVAL_ID: dict = self.identify(type="interval", name="1000ms")
-        self.HISTORY_STORAGE_ID: dict = self.identify(type="storage", name="history")
-        self.MEMORY_STORAGE_ID: dict = self.identify(type="storage", name="memory")
-        self.SESSION_STORAGE_ID: dict = self.identify(type="storage", name="session")
-        self.LOCAL_STORAGE_ID: dict = self.identify(type="storage", name="local")
-
-    def _init_app_(self):
+    def _init_app_(self) -> None:
         self.app = dash.Dash(
             name=self.name,
             title=self.title,
             update_title=self.update,
             assets_folder=self.assets,
-            url_base_pathname=self.endpoint,
+            requests_pathname_prefix=self.endpoint,
             external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
             suppress_callback_exceptions=True,
             prevent_initial_callbacks=True
@@ -342,7 +341,7 @@ class AppAPI:
             ], className="header-control-block")
         ], className="header")
 
-    def _init_content_(self):
+    def _init_content_(self) -> Component:
         return html.Div(children=[
                 dbc.Collapse(children=[html.Div(children=[
                     self.DEVELOPMENT_LAYOUT
@@ -416,23 +415,29 @@ class AppAPI:
         self._log_.debug(lambda: "Loaded App Layout")
 
     def _init_callbacks_(self) -> None:
-        for cls in reversed(type(self).mro()):
-            if cls is object:
-                continue
-            for name, func in cls.__dict__.items():
-                if not callable(func):
+        for context in [self] + list(self._pages_.values()):
+            for cls in reversed(getmro(context)):
+                if cls is object:
                     continue
-                if not getattr(func, "_callback_", False):
-                    continue
-                bound = getattr(self, name)
-                callback_args: list = getattr(func, "_callback_args_")
-                callback_kwargs: dict = getattr(func, "_callback_kwargs_")
-                callback_args = [arg.build(app=self) if isinstance(arg, Trigger) else arg for arg in callback_args]
-                callback_kwargs.setdefault("prevent_initial_call", True)
-                self.app.callback(*callback_args, **callback_kwargs)(bound)
-                self._log_.debug(lambda: f"Loaded Callback: {name}")
+                for name, func in cls.__dict__.items():
+                    if not iscallable(func):
+                        continue
+                    if not getattr(func, "_callback_", False):
+                        continue
+                    bound = getattr(context, name)
+                    callback_js: list = getattr(func, "_callback_js_")
+                    callback_args: list = getattr(func, "_callback_args_")
+                    callback_kwargs: dict = getattr(func, "_callback_kwargs_")
+                    callback_args = [arg.build(context=context) if isinstance(arg, Trigger) else arg for arg in callback_args]
+                    callback_kwargs.setdefault("prevent_initial_call", True)
+                    if callback_js:
+                        self.app.clientside_callback(bound(), *callback_args, **callback_kwargs)
+                        self._log_.info(lambda: f"Loaded Client-Side Callback: {name}")
+                    else:
+                        self.app.callback(*callback_args, **callback_kwargs)(bound)
+                        self._log_.debug(lambda: f"Loaded Server-Side Callback: {name}")
 
-    @callback(
+    @serverside_callback(
         Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
         Output("_DESCRIPTION_ID_", "children", allow_duplicate=True),
         Output("_NAVIGATION_ID_", "children", allow_duplicate=True),
@@ -491,7 +496,7 @@ class AppAPI:
             raise PreventUpdate
         return anchor, description, navigation, sidebar, content
 
-    @callback(
+    @serverside_callback(
         Output("HISTORY_STORAGE_ID", "data", allow_duplicate=True),
         Input("_LOCATION_ID_", "pathname"),
         State("HISTORY_STORAGE_ID", "data"),
@@ -501,7 +506,7 @@ class AppAPI:
         history.Register(path)
         return history.dict()
 
-    @callback(
+    @serverside_callback(
         Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
         Input("_HISTORY_BACKWARD_ID_", "n_clicks"),
         State("HISTORY_STORAGE_ID", "data"),
@@ -512,7 +517,7 @@ class AppAPI:
         path = history.Backward()
         return path if path else dash.no_update
 
-    @callback(
+    @serverside_callback(
         Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
         Input("_HISTORY_REFRESH_ID_", "n_clicks"),
         State("_LOCATION_ID_", "pathname"),
@@ -521,7 +526,7 @@ class AppAPI:
         if clicks is None: raise PreventUpdate
         return path
 
-    @callback(
+    @serverside_callback(
         Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
         Input("_HISTORY_FORWARD_ID_", "n_clicks"),
         State("HISTORY_STORAGE_ID", "data"),
@@ -540,7 +545,7 @@ class AppAPI:
         else: classname = classname.replace("up", "down")
         return is_open, classname
 
-    @callback(
+    @serverside_callback(
         Output("_SIDEBAR_COLLAPSE_ID_", "is_open"),
         Input("_SIDEBAR_BUTTON_ID_", "n_clicks"),
         State("_SIDEBAR_COLLAPSE_ID_", "is_open"),
@@ -549,7 +554,7 @@ class AppAPI:
         if clicks is None: raise PreventUpdate
         return self._collapse_button_callback_(name="Sidebar", was_open=was_open)
 
-    @callback(
+    @serverside_callback(
         Output("_CONTACTS_COLLAPSE_ID_", "is_open", allow_duplicate=True),
         Output("_CONTACTS_ARROW_ID_", "className", allow_duplicate=True),
         Input("_CONTACTS_BUTTON_ID_", "n_clicks"),
@@ -560,7 +565,7 @@ class AppAPI:
         if clicks is None: raise PreventUpdate
         return self._collapse_button_callback_(name="Contacts", was_open=was_open, classname=classname)
 
-    @callback(
+    @serverside_callback(
         Output("MEMORY_STORAGE_ID", "data", allow_duplicate=True),
         Output("SESSION_STORAGE_ID", "data", allow_duplicate=True),
         Input("_CLEAN_CACHE_BUTTON_ID_", "n_clicks"),
@@ -572,7 +577,7 @@ class AppAPI:
         session = {}
         return memory, session
 
-    @callback(
+    @serverside_callback(
         Output("MEMORY_STORAGE_ID", "data", allow_duplicate=True),
         Output("SESSION_STORAGE_ID", "data", allow_duplicate=True),
         Output("LOCAL_STORAGE_ID", "data", allow_duplicate=True),
@@ -585,7 +590,7 @@ class AppAPI:
         local = {}
         return memory, session, local
 
-    @callback(
+    @serverside_callback(
         Output("_TERMINAL_COLLAPSE_ID_", "is_open", allow_duplicate=True),
         Output("_TERMINAL_ARROW_ID_", "className", allow_duplicate=True),
         Input("_TERMINAL_BUTTON_ID_", "n_clicks"),
@@ -596,7 +601,7 @@ class AppAPI:
         if clicks is None: raise PreventUpdate
         return self._collapse_button_callback_(name="Terminal", was_open=was_open, classname=classname)
 
-    @callback(
+    @serverside_callback(
         Output("_TERMINAL_ID_", "children", allow_duplicate=True),
         Input("INTERVAL_ID", "n_intervals"),
         State("_TERMINAL_ID_", "children"),
@@ -607,7 +612,10 @@ class AppAPI:
         terminal.extend(logs)
         return terminal
 
-    def pages(self):
+    def ids(self) -> None:
+        pass
+
+    def pages(self) -> None:
         pass
 
     def run(self):
