@@ -10,20 +10,23 @@ from Library.Utility import Component
 class FormAPI(PageAPI):
 
     ACTION_BUTTON_ID: dict = None
+    BACKWARD_INTERNAL_ID: dict = None
+    BACKWARD_EXTERNAL_ID: dict = None
+    FORWARD_INTERNAL_ID: dict = None
+    FORWARD_EXTERNAL_ID: dict = None
 
-    def __init__(
-        self,
-        app: AppAPI,
-        path: str,
-        button: str = None,
-        description: str = None,
-        indexed: bool = True,
-        content: Component = None,
-        sidebar: Component = None,
-        navigation: Component = None,
-        backward: str = None,
-        forward: str = None,
-        action: str = None):
+    def __init__(self, *,
+                 app: AppAPI,
+                 path: str,
+                 button: str = None,
+                 description: str = None,
+                 indexed: bool = True,
+                 content: Component = None,
+                 sidebar: Component = None,
+                 navigation: Component = None,
+                 backward: str | bool = False,
+                 forward: str | bool = False,
+                 action: str = None) -> None:
 
         super().__init__(
             app=app,
@@ -36,31 +39,43 @@ class FormAPI(PageAPI):
             navigation=navigation,
         )
 
-        self.backward: str = backward
-        self.forward: str = forward
+        self.backward: str | bool = backward
+        self.forward: str | bool = forward
         self.action: str = action
 
     def _init_ids_(self) -> None:
+        self.ACTION_BUTTON_ID = self.register(type="button", name="action")
+        self.BACKWARD_INTERNAL_ID = self.register(type="button", name="internal-backward")
+        self.BACKWARD_EXTERNAL_ID = self.register(type="button", name="external-backward")
+        self.FORWARD_INTERNAL_ID = self.register(type="button", name="internal-forward")
+        self.FORWARD_EXTERNAL_ID = self.register(type="button", name="external-forward")
         super()._init_ids_()
-        if self.action: self.ACTION_BUTTON_ID = self.identify(type="button", name="action")
 
-    def form(self) -> Component | list[Component]:
-        return super().content()
-
-    def content(self) -> Component | list[Component]:
+    def _init_buttons_(self) -> Component | list[Component]:
         buttons = []
-        if self.backward: buttons.append(PaginatorAPI(label=[
-            IconAPI(icon="bi bi-chevron-left"),
-            TextAPI(text="  Back")
-        ], invert=False, target=self.app.anchorize(self.backward)).build())
-        if self.action: buttons.append(ButtonAPI(label=[
-            TextAPI(text=self.action),
-        ], key=self.ACTION_BUTTON_ID).build())
-        if self.forward: buttons.append(PaginatorAPI(label=[
-            TextAPI(text="Next  "),
-            IconAPI(icon="bi bi-chevron-right")
-        ], invert=True, target=self.app.anchorize(self.forward)).build())
+        if self.backward:
+            target: str = self.app.anchorize(path=self.backward, relative=True) if isinstance(self.backward, str) else None
+            buttons.append(PaginatorAPI(ikey=self.BACKWARD_INTERNAL_ID, ekey=self.BACKWARD_EXTERNAL_ID, label=[
+                IconAPI(icon="bi bi-chevron-left"),
+                TextAPI(text="  Back")
+            ], invert=False, target=target).build())
+        if self.action:
+            buttons.append(ButtonAPI(label=[
+                TextAPI(text=self.action),
+            ], key=self.ACTION_BUTTON_ID).build())
+        if self.forward:
+            target: str = self.app.anchorize(path=self.forward, relative=True) if isinstance(self.forward, str) else None
+            buttons.append(PaginatorAPI(ikey=self.FORWARD_INTERNAL_ID, ekey=self.FORWARD_EXTERNAL_ID, label=[
+                TextAPI(text="Next  "),
+                IconAPI(icon="bi bi-chevron-right")
+            ], invert=True, target=target).build())
+        return buttons
 
-        form = html.Div(self.form(), className="form-page-content")
+    def _init_layout_(self) -> None:
+        super()._init_layout_()
+        *content, hidden = self._content_
+        buttons = self._init_buttons_()
+        self._log_.debug(lambda: f"Loaded Buttons Layout")
+        content = html.Div(*content, className="form-page-content")
         buttons = html.Div(buttons,className="form-page-buttons")
-        return [form, buttons]
+        self._content_ = [content, buttons, hidden]
