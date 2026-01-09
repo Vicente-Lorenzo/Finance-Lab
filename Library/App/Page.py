@@ -14,7 +14,7 @@ class PageAPI:
     SESSION_STORAGE_ID: dict = None
     LOCAL_STORAGE_ID: dict = None
 
-    def __init__(self,
+    def __init__(self, *,
                  app: AppAPI,
                  path: str,
                  anchor: str = None,
@@ -24,7 +24,7 @@ class PageAPI:
                  indexed: bool = True,
                  content: Component = None,
                  sidebar: Component = None,
-                 navigation: Component = None):
+                 navigation: Component = None) -> None:
 
         self._log_: HandlerLoggingAPI = HandlerLoggingAPI(PageAPI.__name__)
 
@@ -46,20 +46,25 @@ class PageAPI:
 
         self._initialized_: bool = False
 
-    def identify(self, type: str, name: str) -> dict:
-        return self.app.identify(page=self.endpoint, type=type, name=name)
+    def identify(self, *, page: str = None, type: str, name: str) -> dict:
+        if not page: page = self.endpoint
+        return self.app.identify(page=page, type=type, name=name)
+
+    def register(self, *, page: str = None, type: str, name: str) -> dict:
+        if not page: page = self.endpoint
+        return self.app.register(page=page, type=type, name=name)
 
     @property
     def anchor(self) -> str:
         return self._anchor_
     @anchor.setter
-    def anchor(self, anchor: str):
+    def anchor(self, anchor: str) -> None:
         self._anchor_ = self._anchor_ or anchor
     @property
     def endpoint(self) -> str:
         return self._endpoint_
     @endpoint.setter
-    def endpoint(self, endpoint: str):
+    def endpoint(self, endpoint: str) -> None:
         self._endpoint_ = self._endpoint_ or endpoint
 
     @property
@@ -72,7 +77,7 @@ class PageAPI:
     def family(self) -> list[Self]:
         return [self] + self.children
 
-    def attach(self, parent: Self):
+    def attach(self, parent: Self) -> None:
         if parent is None:
             return
         if self._parent_ is parent:
@@ -87,7 +92,7 @@ class PageAPI:
             parent._children_.append(self)
         self._log_.info(lambda: f"Attached {parent} (Parent) to {self} (Child)")
 
-    def merge(self, page: Self):
+    def merge(self, page: Self) -> None:
         parent = page._parent_
         self._parent_ = parent
         if parent:
@@ -101,15 +106,10 @@ class PageAPI:
         self._log_.info(lambda: f"Merged {page} (Old) into {self} (New)")
 
     def _init_ids_(self) -> None:
-        self.MEMORY_STORAGE_ID: dict = self.identify(type="storage", name="memory")
-        self.SESSION_STORAGE_ID: dict = self.identify(type="storage", name="session")
-        self.LOCAL_STORAGE_ID: dict = self.identify(type="storage", name="local")
-
-    def sidebar(self) -> Component | list[Component]:
-        return self.app.NOT_INDEXED_LAYOUT
-
-    def content(self) -> Component | list[Component]:
-        return self.app.NOT_INDEXED_LAYOUT
+        self.MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory")
+        self.SESSION_STORAGE_ID: dict = self.register(type="storage", name="session")
+        self.LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local")
+        self.ids()
 
     def _init_hidden_(self) -> Component:
         return html.Div([
@@ -135,6 +135,15 @@ class PageAPI:
         self._init_layout_()
         self._log_.info(lambda: f"Initialized Layout: {self}")
         self._initialized_ = True
+
+    def ids(self) -> None:
+        pass
+
+    def sidebar(self) -> Component | list[Component]:
+        return self.app.NOT_INDEXED_LAYOUT
+
+    def content(self) -> Component | list[Component]:
+        return self.app.NOT_INDEXED_LAYOUT
 
     def __repr__(self):
         return f"{self.description} @ {self.endpoint}"

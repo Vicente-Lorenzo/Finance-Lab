@@ -14,12 +14,12 @@ class LayoutAPI(Component, ABC):
 
 class DefaultLayoutAPI(LayoutAPI):
 
-    def __init__(self,
+    def __init__(self, *,
                  image: str = None,
                  title: str = None,
                  description: str = None,
                  details: str = None,
-                 classname: str = None):
+                 classname: str = None) -> None:
         super().__init__()
         self._image_: str = image
         self._title_: str = title
