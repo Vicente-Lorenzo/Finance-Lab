@@ -360,11 +360,14 @@ class AppAPI:
                     label=[IconAPI(icon="bi bi-layout-sidebar-inset")],
                     background="primary", border="white"
                 ).build(),
-                ButtonAPI(id=self._CONTACTS_BUTTON_ID_, label=[
-                    IconAPI(icon="bi bi-caret-down-fill", id=self._CONTACTS_ARROW_ID_),
-                    TextAPI(text="  Contacts  "),
-                    IconAPI(icon="bi bi-question-circle")
-                ], background="primary", border="white").build(),
+                ButtonAPI(
+                    id=self._CONTACTS_BUTTON_ID_,
+                    label=[
+                        IconAPI(icon="bi bi-caret-down-fill", id=self._CONTACTS_ARROW_ID_),
+                        TextAPI(text="  Contacts  "),
+                        IconAPI(icon="bi bi-question-circle")
+                    ], background="primary", border="white"
+                ).build(),
             ], className="footer-left"),
             html.Div([
                 ButtonAPI(
