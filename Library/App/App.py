@@ -334,9 +334,9 @@ class AppAPI:
             html.Div([
                 html.Div(None, id=self._NAVIGATION_ID_, className="header-navigation-block"),
                 ButtonContainerAPI(background="primary", border="white", elements=[
-                    ButtonAPI(key=self._HISTORY_BACKWARD_ID_, stylename="bi bi-arrow-left"),
-                    ButtonAPI(key=self._HISTORY_REFRESH_ID_, stylename="bi bi-arrow-repeat"),
-                    ButtonAPI(key=self._HISTORY_FORWARD_ID_, stylename="bi bi-arrow-right")
+                    ButtonAPI(id=self._HISTORY_BACKWARD_ID_, stylename="bi bi-arrow-left"),
+                    ButtonAPI(id=self._HISTORY_REFRESH_ID_, stylename="bi bi-arrow-repeat"),
+                    ButtonAPI(id=self._HISTORY_FORWARD_ID_, stylename="bi bi-arrow-right")
                 ], stylename="header-history-block").build()
             ], className="header-control-block")
         ], className="header")
@@ -356,30 +356,30 @@ class AppAPI:
         return html.Div([
             html.Div([
                 ButtonAPI(
-                    key=self._SIDEBAR_BUTTON_ID_,
+                    id=self._SIDEBAR_BUTTON_ID_,
                     label=[IconAPI(icon="bi bi-layout-sidebar-inset")],
                     background="primary", border="white"
                 ).build(),
-                ButtonAPI(key=self._CONTACTS_BUTTON_ID_, label=[
-                    IconAPI(icon="bi bi-caret-down-fill", key=self._CONTACTS_ARROW_ID_),
+                ButtonAPI(id=self._CONTACTS_BUTTON_ID_, label=[
+                    IconAPI(icon="bi bi-caret-down-fill", id=self._CONTACTS_ARROW_ID_),
                     TextAPI(text="  Contacts  "),
                     IconAPI(icon="bi bi-question-circle")
                 ], background="primary", border="white").build(),
             ], className="footer-left"),
             html.Div([
                 ButtonAPI(
-                    key=self._CLEAN_CACHE_BUTTON_ID_,
+                    id=self._CLEAN_CACHE_BUTTON_ID_,
                     label=[IconAPI(icon="bi bi-trash"), TextAPI(text="  Clean Cache  ")],
                     background="primary", border="white"
                 ).build(),
                 ButtonAPI(
-                    key=self._CLEAN_DATA_BUTTON_ID_,
+                    id=self._CLEAN_DATA_BUTTON_ID_,
                     label=[IconAPI(icon="bi bi-database-x"), TextAPI(text="  Clean Data  ")],
                     background="primary", border="white"
                 ).build(),
                 ButtonAPI(
-                    key=self._TERMINAL_BUTTON_ID_,
-                    label=[IconAPI(icon="bi bi-terminal"), TextAPI(text="  Terminal  "), IconAPI(icon="bi bi-caret-down-fill", key=self._TERMINAL_ARROW_ID_)],
+                    id=self._TERMINAL_BUTTON_ID_,
+                    label=[IconAPI(icon="bi bi-terminal"), TextAPI(text="  Terminal  "), IconAPI(icon="bi bi-caret-down-fill", id=self._TERMINAL_ARROW_ID_)],
                     background="primary", border="white"
                 ).build(),
             ], className="footer-right"),

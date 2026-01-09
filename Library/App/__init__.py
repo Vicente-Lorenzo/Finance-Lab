@@ -1,5 +1,5 @@
 from Library.App.Component import (
-    parse_key,
+    parse_id,
     parse_classname,
     parse_style,
     ComponentAPI,
@@ -30,7 +30,7 @@ from Library.App.Callback import (
 from Library.App.App import AppAPI
 
 __all__ = [
-    "parse_key", "parse_classname", "parse_style",
+    "parse_id", "parse_classname", "parse_style",
     "ComponentAPI", "IconAPI", "TextAPI",
     "ButtonAPI", "IconButtonAPI", "ButtonContainerAPI",
     "PaginatorAPI",

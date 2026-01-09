@@ -55,20 +55,20 @@ class FormAPI(PageAPI):
         buttons = []
         if self.backward:
             target: str = self.app.anchorize(path=self.backward, relative=True) if isinstance(self.backward, str) else None
-            buttons.append(PaginatorAPI(ikey=self.BACKWARD_INTERNAL_ID, ekey=self.BACKWARD_EXTERNAL_ID, label=[
+            buttons.append(PaginatorAPI(iid=self.BACKWARD_INTERNAL_ID, eid=self.BACKWARD_EXTERNAL_ID, label=[
                 IconAPI(icon="bi bi-chevron-left"),
                 TextAPI(text="  Back")
-            ], invert=False, target=target).build())
+            ], invert=False, href=target).build())
         if self.action:
             buttons.append(ButtonAPI(label=[
                 TextAPI(text=self.action),
-            ], key=self.ACTION_BUTTON_ID).build())
+            ], id=self.ACTION_BUTTON_ID).build())
         if self.forward:
             target: str = self.app.anchorize(path=self.forward, relative=True) if isinstance(self.forward, str) else None
-            buttons.append(PaginatorAPI(ikey=self.FORWARD_INTERNAL_ID, ekey=self.FORWARD_EXTERNAL_ID, label=[
+            buttons.append(PaginatorAPI(iid=self.FORWARD_INTERNAL_ID, eid=self.FORWARD_EXTERNAL_ID, label=[
                 TextAPI(text="Next  "),
                 IconAPI(icon="bi bi-chevron-right")
-            ], invert=True, target=target).build())
+            ], invert=True, href=target).build())
         return buttons
 
     def _init_layout_(self) -> None:

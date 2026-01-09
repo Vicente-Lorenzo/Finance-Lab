@@ -5,8 +5,8 @@ from dataclasses import dataclass, field
 
 from Library.Utility import Component
 
-def parse_key(key: dict = None) -> dict:
-    return key or {}
+def parse_id(id: dict = None) -> dict:
+    return id or {}
 
 def parse_classname(basename: str = None, classname: str = None, stylename: str = None) -> str:
     basename: str = basename or ""
@@ -20,20 +20,20 @@ def parse_style(basestyle: dict = None, classstyle: dict = None) -> dict:
 @dataclass(kw_only=True)
 class ComponentAPI(Component, ABC):
 
-    key: dict = field(default_factory=dict)
+    id: dict = field(default_factory=dict)
     basename: str = field(default="component")
     classname: str = field(default_factory=str)
     stylename: str = field(default_factory=str)
     style: dict = field(default_factory=dict)
 
     def __post_init__(self):
-        self.key = parse_key(key=self.key)
+        self.id = parse_id(id=self.id)
         self.classname = parse_classname(basename=self.basename, classname=self.classname, stylename=self.stylename)
         self.style = parse_style(basestyle=self.style)
 
     def arguments(self) -> dict:
         kwargs = {}
-        if self.key: kwargs.update(id=self.key)
+        if self.id: kwargs.update(id=self.id)
         if self.classname: kwargs.update(className=self.classname)
         if self.style: kwargs.update(style=self.style)
         return kwargs
@@ -95,7 +95,7 @@ class ButtonAPI(ComponentAPI):
     border: str = field(default="black")
     radius: str = field(default="6px")
     size: str = field(default="md")
-    target: str = field(default_factory=str)
+    href: str = field(default_factory=str)
     external: bool = field(default=False)
 
     def __post_init__(self):
@@ -112,7 +112,7 @@ class ButtonAPI(ComponentAPI):
         if self.disabled: kwargs.update(disabled=self.disabled)
         if self.background: kwargs.update(color=self.background)
         if self.size: kwargs.update(size=self.size)
-        if self.target: kwargs.update(href=self.target)
+        if self.href: kwargs.update(href=self.href)
         if self.external: kwargs.update(external_link=self.external, target="_blank")
         return kwargs
 
@@ -167,25 +167,25 @@ class ButtonContainerAPI(ContainerAPI):
 @dataclass(kw_only=True)
 class PaginatorAPI(ButtonContainerAPI):
 
-    ikey: dict = field(default_factory=dict)
-    ekey: dict = field(default_factory=dict)
+    iid: dict = field(default_factory=dict)
+    eid: dict = field(default_factory=dict)
     classname: str = field(default="paginator")
     label: str | list[ComponentAPI] = field(default_factory=list)
-    target: str = field(default_factory=str)
+    href: str = field(default_factory=str)
     invert: bool = field(default=False)
 
     def __post_init__(self):
         internal = ButtonAPI(
-            key=self.ikey,
-            target=self.target,
+            id=self.iid,
+            href=self.href,
             title="Open Page",
             external=False,
             label=self.label,
             stylename="internal"
         )
         external = ButtonAPI(
-            key=self.ekey,
-            target=self.target,
+            id=self.eid,
+            href=self.href,
             title="Open Page (New Tab)",
             external=True,
             stylename="external bi bi-box-arrow-up-right"
