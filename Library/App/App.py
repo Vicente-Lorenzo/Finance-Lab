@@ -13,17 +13,19 @@ from Library.Utility.Typing import *
 class AppAPI:
 
     _LOCATION_ID_: dict = None
-    _DESCRIPTION_ID_: dict = None
-    _NAVIGATION_ID_: dict = None
-    _CONTENT_ID_: dict = None
+    _LOCATION_BACKWARD_ID_: dict = None
+    _LOCATION_REFRESH_ID_: dict = None
+    _LOCATION_FORWARD_ID_: dict = None
+    LOCATION_STORAGE_ID: dict = None
 
+    _NAVIGATION_ID_: dict = None
+    NAVIGATION_STORAGE_ID: dict = None
+
+    _DESCRIPTION_ID_: dict = None
+    _CONTENT_ID_: dict = None
     _SIDEBAR_BUTTON_ID_: dict = None
     _SIDEBAR_COLLAPSE_ID_: dict = None
     _SIDEBAR_ID_: dict = None
-
-    _HISTORY_BACKWARD_ID_: dict = None
-    _HISTORY_REFRESH_ID_: dict = None
-    _HISTORY_FORWARD_ID_: dict = None
 
     _CONTACTS_ARROW_ID_: dict = None
     _CONTACTS_BUTTON_ID_: dict = None
@@ -41,7 +43,6 @@ class AppAPI:
     _CALLBACK_SINK_ID_: dict = None
 
     INTERVAL_ID: dict = None
-    LOCATION_STORAGE_ID: dict = None
     MEMORY_STORAGE_ID: dict = None
     SESSION_STORAGE_ID: dict = None
     LOCAL_STORAGE_ID: dict = None
@@ -223,9 +224,9 @@ class AppAPI:
         self._SIDEBAR_BUTTON_ID_: dict = self.register(type="button", name="sidebar")
         self._SIDEBAR_COLLAPSE_ID_: dict = self.register(type="collapse", name="sidebar")
         self._SIDEBAR_ID_: dict = self.register(type="div", name="sidebar")
-        self._HISTORY_BACKWARD_ID_: dict = self.register(type="button", name="backward")
-        self._HISTORY_REFRESH_ID_: dict = self.register(type="button", name="refresh")
-        self._HISTORY_FORWARD_ID_: dict = self.register(type="button", name="forward")
+        self._LOCATION_BACKWARD_ID_: dict = self.register(type="button", name="backward")
+        self._LOCATION_REFRESH_ID_: dict = self.register(type="button", name="refresh")
+        self._LOCATION_FORWARD_ID_: dict = self.register(type="button", name="forward")
         self._CONTACTS_ARROW_ID_: dict = self.register(type="icon", name="contacts")
         self._CONTACTS_BUTTON_ID_: dict = self.register(type="button", name="contacts")
         self._CONTACTS_COLLAPSE_ID_: dict = self.register(type="collapse", name="contacts")
@@ -238,7 +239,8 @@ class AppAPI:
         self._CLEAN_DATA_BUTTON_ID_: dict = self.register(type="button", name="reset")
         self._CALLBACK_SINK_ID_: dict = self.register(type="div", name="sink")
         self.INTERVAL_ID: dict = self.register(type="interval", name="1000ms")
-        self.LOCATION_STORAGE_ID: dict = self.register(type="storage", name="history")
+        self.LOCATION_STORAGE_ID: dict = self.register(type="storage", name="location")
+        self.NAVIGATION_STORAGE_ID: dict = self.register(type="storage", name="navigation")
         self.MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory")
         self.SESSION_STORAGE_ID: dict = self.register(type="storage", name="session")
         self.LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local")
@@ -337,10 +339,10 @@ class AppAPI:
             html.Div([
                 html.Div(None, id=self._NAVIGATION_ID_, className="header-navigation-block"),
                 ButtonContainerAPI(background="primary", border="white", elements=[
-                    ButtonAPI(id=self._HISTORY_BACKWARD_ID_, stylename="bi bi-arrow-left"),
-                    ButtonAPI(id=self._HISTORY_REFRESH_ID_, stylename="bi bi-arrow-repeat"),
-                    ButtonAPI(id=self._HISTORY_FORWARD_ID_, stylename="bi bi-arrow-right")
-                ], stylename="header-history-block").build()
+                    ButtonAPI(id=self._LOCATION_BACKWARD_ID_, stylename="bi bi-arrow-left"),
+                    ButtonAPI(id=self._LOCATION_REFRESH_ID_, stylename="bi bi-arrow-repeat"),
+                    ButtonAPI(id=self._LOCATION_FORWARD_ID_, stylename="bi bi-arrow-right")
+                ], stylename="header-location-block").build()
             ], className="header-control-block")
         ], className="header")
 
@@ -508,12 +510,10 @@ class AppAPI:
         Input("_LOCATION_ID_", "pathname"),
         State("LOCATION_STORAGE_ID", "data"),
     )
-    def _update_history_callback_(self, path: str, history: dict):
-        if path is None:
-            raise PreventUpdate
-        location = LocationAPI(**history)
-        if location.current() == path:
-            raise PreventUpdate
+    def _update_location_callback_(self, path: str, location: dict):
+        if path is None: raise PreventUpdate
+        location = LocationAPI(**location)
+        if location.current() == path: raise PreventUpdate
         if location.backward(step=False) == path:
             location.backward(step=True)
             return location.dict()
@@ -526,23 +526,21 @@ class AppAPI:
     @serverside_callback(
         Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
         Output("LOCATION_STORAGE_ID", "data", allow_duplicate=True),
-        Input("_HISTORY_BACKWARD_ID_", "n_clicks"),
+        Input("_LOCATION_BACKWARD_ID_", "n_clicks"),
         State("LOCATION_STORAGE_ID", "data"),
     )
-    def _backward_history_callback_(self, clicks, history):
-        if clicks is None:
-            raise PreventUpdate
-        location = LocationAPI(**history)
+    def _backward_location_callback_(self, clicks, location):
+        if clicks is None: raise PreventUpdate
+        location = LocationAPI(**location)
         path = location.backward(step=True)
-        if not path:
-            raise PreventUpdate
+        if not path: raise PreventUpdate
         return path, location.dict()
 
     @clientside_callback(
         Output("_CALLBACK_SINK_ID_", "children"),
-        Input("_HISTORY_REFRESH_ID_", "n_clicks"),
+        Input("_LOCATION_REFRESH_ID_", "n_clicks"),
     )
-    def _refresh_history_callback_(self):
+    def _refresh_location_callback_(self):
         return """
         function(n) {
             if (!n) return window.dash_clientside.no_update;
@@ -554,16 +552,14 @@ class AppAPI:
     @serverside_callback(
         Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
         Output("LOCATION_STORAGE_ID", "data", allow_duplicate=True),
-        Input("_HISTORY_FORWARD_ID_", "n_clicks"),
+        Input("_LOCATION_FORWARD_ID_", "n_clicks"),
         State("LOCATION_STORAGE_ID", "data"),
     )
-    def _forward_history_callback_(self, clicks, history):
-        if clicks is None:
-            raise PreventUpdate
-        location = LocationAPI(**history)
+    def _forward_location_callback_(self, clicks, location):
+        if clicks is None: raise PreventUpdate
+        location = LocationAPI(**location)
         path = location.forward(step=True)
-        if not path:
-            raise PreventUpdate
+        if not path: raise PreventUpdate
         return path, location.dict()
 
     def _collapse_button_callback_(self, name: str, was_open: bool, classname: str = None):

@@ -145,7 +145,7 @@
     transition: opacity 0.50s ease !important;
 }
 
-.header-history-block {
+.header-location-block {
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
