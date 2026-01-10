@@ -1,4 +1,4 @@
-from Library.Logging import HandlerAPI
+from Library.Logging import HandlerLoggingAPI
 from Library.Warehouse import *
 
 class MarketWarehouseAPI:
@@ -12,7 +12,7 @@ class MarketWarehouseAPI:
         self.symbol = symbol
         self.timeframe = timeframe
 
-        self._log_ = HandlerAPI(
+        self._log_ = HandlerLoggingAPI(
             Broker=self.broker,
             Symbol=self.symbol,
             Timeframe=self.timeframe,

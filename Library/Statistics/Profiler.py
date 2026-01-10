@@ -11,8 +11,8 @@ from Library.Utility import datetime_to_string
 def profiler(func: Callable):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        from Library.Logging import HandlerAPI
-        log = HandlerAPI()
+        from Library.Logging import HandlerLoggingAPI
+        log = HandlerLoggingAPI()
         timestamp = datetime_to_string(datetime.now(), "%Y%m%d-%H%M%S")
         with cProfile.Profile() as pr:
             result = func(*args, **kwargs)

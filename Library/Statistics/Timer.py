@@ -6,25 +6,25 @@ from dataclasses import dataclass, field
 from Library.Dataclass import DataclassAPI
 from Library.Utility import seconds_to_string
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(kw_only=True)
 class Timer(DataclassAPI):
-    Start: float = field(default=None, init=True, repr=False)
-    Stop: float = field(default=None, init=True, repr=False)
+    _start_: float = field(default=None, init=True, repr=False)
+    _stop_: float = field(default=None, init=True, repr=False)
 
     def start(self):
-        self.Start = perf_counter()
+        self._start_ = perf_counter()
     def stop(self):
-        self.Stop = perf_counter()
+        self._stop_ = perf_counter()
     def delta(self):
-        return self.Stop - self.Start
+        return self._stop_ - self._start_
     def result(self):
         return seconds_to_string(self.delta())
 
 def timer(func: Callable):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        from Library.Logging import HandlerAPI
-        log = HandlerAPI()
+        from Library.Logging import HandlerLoggingAPI
+        log = HandlerLoggingAPI()
         t = Timer()
         t.start()
         result = func(*args, **kwargs)
