@@ -2,7 +2,9 @@ from os import getcwd
 from sys import _getframe
 from pathlib import PurePath, Path
 from re import Pattern, compile, search
+from dataclasses import dataclass, field, InitVar
 
+from Library.Dataclass import DataclassAPI
 from Library.Utility import contains, is_notebook, find_notebook
 
 def inspect_separator(*, builder: type[PurePath] = Path) -> str:
@@ -174,23 +176,30 @@ def traceback_regex_module_path(pattern: str, *, header: bool = None, footer: bo
     traceback: str = traceback_regex(pattern=pattern)
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
-class PathAPI:
+@dataclass(kw_only=True)
+class PathAPI(DataclassAPI):
 
-    def __init__(self, path: str | Path, module: str | Path = None):
+    path: InitVar[str | Path] = field(init=True, repr=True)
+    module: InitVar[str | Path] = field(default=None, init=True, repr=True)
+
+    _path_ : Path = field(default=None, init=False, repr=False)
+    _module_: Path = field(default=None, init=False, repr=False)
+
+    def __post_init__(self, path: str | Path, module: str | Path = None):
         if isinstance(path, str):
-            self.path: str = path
+            self._path_ = inspect_file(path)
         else:
-            self.path: str = inspect_path(path)
+            self._path_ = path
         if module is None:
-            self.module: Path = traceback_current_module(resolve=True)
+            self._module_: Path = traceback_current_module(resolve=True)
         elif isinstance(module, str):
-            self.module: Path = inspect_module(module, resolve=True)
+            self._module_: Path = inspect_module(module, resolve=True)
         else:
-            self.module: Path = module
+            self._module_: Path = module
 
     @property
     def file(self) -> Path:
-        return self.module / self.path
+        return self._module_ / self._path_
 
     def __repr__(self):
         return inspect_path(self.file)
