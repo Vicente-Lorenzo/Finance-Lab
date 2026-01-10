@@ -3,38 +3,39 @@ from Library.Dataclass import DataclassAPI
 
 @dataclass(kw_only=True)
 class LocationAPI(DataclassAPI):
-    _index_: int = field(default=-1, init=True, repr=True)
-    _stack_: list[str] = field(default_factory=list, init=True, repr=True)
+
+    index: int = field(default=-1, init=True, repr=True)
+    stack: list[str] = field(default_factory=list, init=True, repr=True)
 
     def current(self) -> str | None:
-        if 0 <= self._index_ < len(self._stack_):
-            return self._stack_[self._index_]
+        if 0 <= self.index < len(self.stack):
+            return self.stack[self.index]
         return None
 
     def register(self, path: str) -> None:
-        if self._index_ == -1:
-            self._stack_ = [path]
-            self._index_ = 0
+        if self.index == -1:
+            self.stack = [path]
+            self.index = 0
             return
         if self.current() == path:
             return
-        if self._index_ < len(self._stack_) - 1:
-            self._stack_ = self._stack_[: self._index_ + 1]
-        self._stack_.append(path)
-        self._index_ = len(self._stack_) - 1
+        if self.index < len(self.stack) - 1:
+            self.stack = self.stack[: self.index + 1]
+        self.stack.append(path)
+        self.index = len(self.stack) - 1
 
     def backward(self, *, step: bool = False) -> str | None:
-        if self._index_ <= 0:
+        if self.index <= 0:
             return None
         if not step:
-            return self._stack_[self._index_ - 1]
-        self._index_ -= 1
-        return self._stack_[self._index_]
+            return self.stack[self.index - 1]
+        self.index -= 1
+        return self.stack[self.index]
 
     def forward(self, *, step: bool = False) -> str | None:
-        if self._index_ < 0 or self._index_ >= len(self._stack_) - 1:
+        if self.index < 0 or self.index >= len(self.stack) - 1:
             return None
         if not step:
-            return self._stack_[self._index_ + 1]
-        self._index_ += 1
-        return self._stack_[self._index_]
+            return self.stack[self.index + 1]
+        self.index += 1
+        return self.stack[self.index]
