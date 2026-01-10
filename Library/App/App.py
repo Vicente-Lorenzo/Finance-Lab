@@ -12,6 +12,12 @@ from Library.Utility.Typing import *
 
 class AppAPI:
 
+    _DESCRIPTION_ID_: dict = None
+    _CONTENT_ID_: dict = None
+    _SIDEBAR_BUTTON_ID_: dict = None
+    _SIDEBAR_COLLAPSE_ID_: dict = None
+    _SIDEBAR_ID_: dict = None
+
     _LOCATION_ID_: dict = None
     _LOCATION_BACKWARD_ID_: dict = None
     _LOCATION_REFRESH_ID_: dict = None
@@ -20,12 +26,6 @@ class AppAPI:
 
     _NAVIGATION_ID_: dict = None
     NAVIGATION_STORAGE_ID: dict = None
-
-    _DESCRIPTION_ID_: dict = None
-    _CONTENT_ID_: dict = None
-    _SIDEBAR_BUTTON_ID_: dict = None
-    _SIDEBAR_COLLAPSE_ID_: dict = None
-    _SIDEBAR_ID_: dict = None
 
     _CONTACTS_ARROW_ID_: dict = None
     _CONTACTS_BUTTON_ID_: dict = None
@@ -217,16 +217,18 @@ class AppAPI:
         page._init_()
 
     def _init_ids_(self) -> None:
-        self._LOCATION_ID_: dict = self.register(type="location", name="url")
         self._DESCRIPTION_ID_: dict = self.register(type="div", name="description")
-        self._NAVIGATION_ID_: dict = self.register(type="navigator", name="navigation")
         self._CONTENT_ID_: dict = self.register(type="div", name="content")
         self._SIDEBAR_BUTTON_ID_: dict = self.register(type="button", name="sidebar")
         self._SIDEBAR_COLLAPSE_ID_: dict = self.register(type="collapse", name="sidebar")
         self._SIDEBAR_ID_: dict = self.register(type="div", name="sidebar")
+        self._LOCATION_ID_: dict = self.register(type="location", name="url")
         self._LOCATION_BACKWARD_ID_: dict = self.register(type="button", name="backward")
         self._LOCATION_REFRESH_ID_: dict = self.register(type="button", name="refresh")
         self._LOCATION_FORWARD_ID_: dict = self.register(type="button", name="forward")
+        self.LOCATION_STORAGE_ID: dict = self.register(type="storage", name="location")
+        self._NAVIGATION_ID_: dict = self.register(type="navigator", name="navigation")
+        self.NAVIGATION_STORAGE_ID: dict = self.register(type="storage", name="navigation")
         self._CONTACTS_ARROW_ID_: dict = self.register(type="icon", name="contacts")
         self._CONTACTS_BUTTON_ID_: dict = self.register(type="button", name="contacts")
         self._CONTACTS_COLLAPSE_ID_: dict = self.register(type="collapse", name="contacts")
@@ -239,8 +241,6 @@ class AppAPI:
         self._CLEAN_DATA_BUTTON_ID_: dict = self.register(type="button", name="reset")
         self._CALLBACK_SINK_ID_: dict = self.register(type="div", name="sink")
         self.INTERVAL_ID: dict = self.register(type="interval", name="1000ms")
-        self.LOCATION_STORAGE_ID: dict = self.register(type="storage", name="location")
-        self.NAVIGATION_STORAGE_ID: dict = self.register(type="storage", name="navigation")
         self.MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory")
         self.SESSION_STORAGE_ID: dict = self.register(type="storage", name="session")
         self.LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local")
