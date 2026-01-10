@@ -15,7 +15,8 @@ from Library.App.Layout import (
     LayoutAPI,
     DefaultLayoutAPI
 )
-from Library.App.History import HistorySessionAPI
+from Library.App import Session
+from Library.App.Session import *
 from Library.App.Page import PageAPI
 from Library.App.Form import FormAPI
 from Library.App.Callback import (
@@ -35,7 +36,7 @@ __all__ = [
     "ButtonAPI", "IconButtonAPI", "ButtonContainerAPI",
     "PaginatorAPI",
     "LayoutAPI", "DefaultLayoutAPI",
-    "HistorySessionAPI",
+    *Session.__all__,
     "PageAPI",
     "FormAPI",
     "callback", "clientside_callback", "serverside_callback",

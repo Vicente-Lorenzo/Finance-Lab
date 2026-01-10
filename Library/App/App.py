@@ -38,8 +38,10 @@ class AppAPI:
     _CLEAN_CACHE_BUTTON_ID_: dict = None
     _CLEAN_DATA_BUTTON_ID_: dict = None
 
+    _CALLBACK_SINK_ID_: dict = None
+
     INTERVAL_ID: dict = None
-    HISTORY_STORAGE_ID: dict = None
+    LOCATION_STORAGE_ID: dict = None
     MEMORY_STORAGE_ID: dict = None
     SESSION_STORAGE_ID: dict = None
     LOCAL_STORAGE_ID: dict = None
@@ -179,7 +181,7 @@ class AppAPI:
         intermediate_parent: PageAPI = self.locate(endpoint=self.endpointize(path=intermediate_alias, relative=True))
         for part in relative_path.parts[1:-1]:
             intermediate_path: PurePath = inspect_file(part, header=True, builder=PurePosixPath)
-            intermediate_alias = intermediate_alias / intermediate_path.name
+            intermediate_alias /= intermediate_path.name
             self._log_.debug(lambda: f"Page Linking: Intermediate Path = {intermediate_alias}")
             intermediate_anchor = self.anchorize(path=intermediate_alias, relative=True)
             self._log_.debug(lambda: f"Page Linking: Intermediate Anchor = {intermediate_anchor}")
@@ -234,8 +236,9 @@ class AppAPI:
         self._TERMINAL_ID_: dict = self.register(type="card", name="terminal")
         self._CLEAN_CACHE_BUTTON_ID_: dict = self.register(type="button", name="clean")
         self._CLEAN_DATA_BUTTON_ID_: dict = self.register(type="button", name="reset")
+        self._CALLBACK_SINK_ID_: dict = self.register(type="div", name="sink")
         self.INTERVAL_ID: dict = self.register(type="interval", name="1000ms")
-        self.HISTORY_STORAGE_ID: dict = self.register(type="storage", name="history")
+        self.LOCATION_STORAGE_ID: dict = self.register(type="storage", name="history")
         self.MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory")
         self.SESSION_STORAGE_ID: dict = self.register(type="storage", name="session")
         self.LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local")
@@ -254,7 +257,7 @@ class AppAPI:
         )
 
     def _init_pages_(self) -> None:
-        self.NOT_FOUND_LAYOUT: Component = DefaultLayoutAPI(
+        self.NOT_FOUND_LAYOUT = DefaultLayoutAPI(
             image=self.app.get_asset_url("404.png"),
             title="Resource Not Found",
             description="Unable to find the resource you are looking for.",
@@ -397,8 +400,9 @@ class AppAPI:
 
     def _init_hidden_(self) -> Component:
         return html.Div([
+            html.Div(id=self._CALLBACK_SINK_ID_),
             dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
-            dcc.Store(id=self.HISTORY_STORAGE_ID, storage_type="session", data=HistorySessionAPI().dict()),
+            dcc.Store(id=self.LOCATION_STORAGE_ID, storage_type="session", data=LocationAPI().dict()),
             dcc.Store(id=self.MEMORY_STORAGE_ID, storage_type="memory", data=dict()),
             dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session", data=dict()),
             dcc.Store(id=self.LOCAL_STORAGE_ID, storage_type="local", data=dict()),
@@ -500,45 +504,67 @@ class AppAPI:
         return anchor, description, navigation, sidebar, content
 
     @serverside_callback(
-        Output("HISTORY_STORAGE_ID", "data", allow_duplicate=True),
+        Output("LOCATION_STORAGE_ID", "data", allow_duplicate=True),
         Input("_LOCATION_ID_", "pathname"),
-        State("HISTORY_STORAGE_ID", "data"),
+        State("LOCATION_STORAGE_ID", "data"),
     )
-    def _update_history_callback_(self, path, history):
-        history = HistorySessionAPI(**history)
-        history.Register(path)
-        return history.dict()
+    def _update_history_callback_(self, path: str, history: dict):
+        if path is None:
+            raise PreventUpdate
+        location = LocationAPI(**history)
+        if location.current() == path:
+            raise PreventUpdate
+        if location.backward(step=False) == path:
+            location.backward(step=True)
+            return location.dict()
+        if location.forward(step=False) == path:
+            location.forward(step=True)
+            return location.dict()
+        location.register(path)
+        return location.dict()
 
     @serverside_callback(
         Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
+        Output("LOCATION_STORAGE_ID", "data", allow_duplicate=True),
         Input("_HISTORY_BACKWARD_ID_", "n_clicks"),
-        State("HISTORY_STORAGE_ID", "data"),
+        State("LOCATION_STORAGE_ID", "data"),
     )
     def _backward_history_callback_(self, clicks, history):
-        if clicks is None: raise PreventUpdate
-        history = HistorySessionAPI(**history)
-        path = history.Backward()
-        return path if path else dash.no_update
+        if clicks is None:
+            raise PreventUpdate
+        location = LocationAPI(**history)
+        path = location.backward(step=True)
+        if not path:
+            raise PreventUpdate
+        return path, location.dict()
 
-    @serverside_callback(
-        Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
+    @clientside_callback(
+        Output("_CALLBACK_SINK_ID_", "children"),
         Input("_HISTORY_REFRESH_ID_", "n_clicks"),
-        State("_LOCATION_ID_", "pathname"),
     )
-    def _refresh_history_callback_(self, clicks, path):
-        if clicks is None: raise PreventUpdate
-        return path
+    def _refresh_history_callback_(self):
+        return """
+        function(n) {
+            if (!n) return window.dash_clientside.no_update;
+            window.location.reload();
+            return "";
+        }
+        """
 
     @serverside_callback(
         Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
+        Output("LOCATION_STORAGE_ID", "data", allow_duplicate=True),
         Input("_HISTORY_FORWARD_ID_", "n_clicks"),
-        State("HISTORY_STORAGE_ID", "data"),
+        State("LOCATION_STORAGE_ID", "data"),
     )
     def _forward_history_callback_(self, clicks, history):
-        if clicks is None: raise PreventUpdate
-        history = HistorySessionAPI(**history)
-        path = history.Forward()
-        return path if path else dash.no_update
+        if clicks is None:
+            raise PreventUpdate
+        location = LocationAPI(**history)
+        path = location.forward(step=True)
+        if not path:
+            raise PreventUpdate
+        return path, location.dict()
 
     def _collapse_button_callback_(self, name: str, was_open: bool, classname: str = None):
         is_open = not was_open
