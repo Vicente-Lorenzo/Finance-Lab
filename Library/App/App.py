@@ -22,10 +22,10 @@ class AppAPI:
     _LOCATION_BACKWARD_ID_: dict = None
     _LOCATION_REFRESH_ID_: dict = None
     _LOCATION_FORWARD_ID_: dict = None
-    LOCATION_STORAGE_ID: dict = None
+    _LOCATION_STORAGE_ID_: dict = None
 
     _NAVIGATION_ID_: dict = None
-    NAVIGATION_STORAGE_ID: dict = None
+    _NAVIGATION_STORAGE_ID_: dict = None
 
     _CONTACTS_ARROW_ID_: dict = None
     _CONTACTS_BUTTON_ID_: dict = None
@@ -222,13 +222,13 @@ class AppAPI:
         self._SIDEBAR_BUTTON_ID_: dict = self.register(type="button", name="sidebar")
         self._SIDEBAR_COLLAPSE_ID_: dict = self.register(type="collapse", name="sidebar")
         self._SIDEBAR_ID_: dict = self.register(type="div", name="sidebar")
-        self._LOCATION_ID_: dict = self.register(type="location", name="url")
+        self._LOCATION_ID_: dict = self.register(type="location", name="location")
         self._LOCATION_BACKWARD_ID_: dict = self.register(type="button", name="backward")
         self._LOCATION_REFRESH_ID_: dict = self.register(type="button", name="refresh")
         self._LOCATION_FORWARD_ID_: dict = self.register(type="button", name="forward")
-        self.LOCATION_STORAGE_ID: dict = self.register(type="storage", name="location")
-        self._NAVIGATION_ID_: dict = self.register(type="navigator", name="navigation")
-        self.NAVIGATION_STORAGE_ID: dict = self.register(type="storage", name="navigation")
+        self._LOCATION_STORAGE_ID_: dict = self.register(type="storage", name="location")
+        self._NAVIGATION_ID_: dict = self.register(type="div", name="navigation")
+        self._NAVIGATION_STORAGE_ID_: dict = self.register(type="storage", name="navigation")
         self._CONTACTS_ARROW_ID_: dict = self.register(type="icon", name="contacts")
         self._CONTACTS_BUTTON_ID_: dict = self.register(type="button", name="contacts")
         self._CONTACTS_COLLAPSE_ID_: dict = self.register(type="collapse", name="contacts")
@@ -404,7 +404,8 @@ class AppAPI:
         return html.Div([
             html.Div(id=self._CALLBACK_SINK_ID_),
             dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
-            dcc.Store(id=self.LOCATION_STORAGE_ID, storage_type="session", data=LocationAPI().dict()),
+            dcc.Store(id=self._LOCATION_STORAGE_ID_, storage_type="session", data=LocationAPI().dict()),
+            dcc.Store(id=self._NAVIGATION_STORAGE_ID_, storage_type="session", data=NavigationAPI().dict()),
             dcc.Store(id=self.MEMORY_STORAGE_ID, storage_type="memory", data=dict()),
             dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session", data=dict()),
             dcc.Store(id=self.LOCAL_STORAGE_ID, storage_type="local", data=dict()),
@@ -447,93 +448,93 @@ class AppAPI:
                         self._log_.info(lambda: f"Loaded Server-Side Callback: {name}")
 
     @serverside_callback(
-        Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
-        Output("_DESCRIPTION_ID_", "children", allow_duplicate=True),
-        Output("_NAVIGATION_ID_", "children", allow_duplicate=True),
-        Output("_SIDEBAR_ID_", "children", allow_duplicate=True),
-        Output("_CONTENT_ID_", "children", allow_duplicate=True),
+        Output("_LOCATION_ID_", "pathname"),
+        Output("_DESCRIPTION_ID_", "children"),
+        Output("_NAVIGATION_ID_", "children"),
+        Output("_SIDEBAR_ID_", "children"),
+        Output("_CONTENT_ID_", "children"),
+        Output("_LOCATION_STORAGE_ID_", "data"),
         Input("_LOCATION_ID_", "pathname"),
         State("_DESCRIPTION_ID_", "children"),
         State("_NAVIGATION_ID_", "children"),
         State("_SIDEBAR_ID_", "children"),
         State("_CONTENT_ID_", "children"),
+        State("_LOCATION_STORAGE_ID_", "data"),
         prevent_initial_call=False
     )
-    def _update_location_callback_(self, path: str, description: Component, navigation: Component, sidebar: Component, content: Component):
+    def _update_location_callback_(self, path: str, description: Component, navigation: Component, sidebar: Component, content: Component, location: dict):
         if path is None: raise PreventUpdate
-        self._log_.debug(lambda: f"Location Callback: Received Path = {path}")
+        self._log_.debug(lambda: f"Update Location Callback: Received Path = {path}")
         anchor = self.anchorize(path=path, relative=False)
-        self._log_.debug(lambda: f"Location Callback: Parsed Anchor = {anchor}")
+        self._log_.debug(lambda: f"Update Location Callback: Parsed Anchor = {anchor}")
         endpoint = self.endpointize(path=path, relative=False)
-        self._log_.debug(lambda: f"Location Callback: Parsed Endpoint = {endpoint}")
+        self._log_.debug(lambda: f"Update Location Callback: Parsed Endpoint = {endpoint}")
+        location = LocationAPI(**location)
+        if location.current() == anchor:
+            self._log_.debug(lambda: "Update Location Callback: Current Page Detected")
+        elif location.backward(step=False) == anchor:
+            self._log_.debug(lambda: "Update Location Callback: Backward Page Detected")
+            location.backward(step=True)
+        elif location.forward(step=False) == anchor:
+            self._log_.debug(lambda: "Update Location Callback: Forward Detected")
+            location.forward(step=True)
+        else:
+            location.register(anchor)
+            self._log_.debug(lambda: "Update Location Callback: Registered Page")
         page = self.locate(endpoint=endpoint)
+        anchor = dash.no_update if path == anchor else anchor
         if page is not None:
-            if path == page.anchor: anchor = dash.no_update
-            self._log_.debug(lambda: f"Location Callback: Page Found")
+            self._log_.debug(lambda: f"Update Location Callback: Page Found")
             if description is page.description:
                 description = dash.no_update
             elif self.description or not page.description:
                 description = dash.no_update
             else:
-                self._log_.debug(lambda: f"Location Callback: Updating Description")
+                self._log_.debug(lambda: f"Update Location Callback: Updating Description")
                 description = page.description
             if navigation is page._navigation_:
                 navigation = dash.no_update
             elif not page._navigation_:
                 navigation = dash.no_update
             else:
-                self._log_.debug(lambda: f"Location Callback: Updating Navigation")
+                self._log_.debug(lambda: f"Update Location Callback: Updating Navigation")
                 navigation = page._navigation_
-            if sidebar  is page._sidebar_:
+            if sidebar is page._sidebar_:
                 sidebar = dash.no_update
             else:
-                self._log_.debug(lambda: f"Location Callback: Updating Sidebar")
+                self._log_.debug(lambda: f"Update Location Callback: Updating Sidebar")
                 sidebar = page._sidebar_
             if content is page._content_:
                 content = dash.no_update
             else:
-                self._log_.debug(lambda: f"Location Callback: Updating Content")
+                self._log_.debug(lambda: f"Update Location Callback: Updating Content")
                 content = page._content_
         else:
-            self._log_.debug(lambda: f"Location Callback: Page Not Found")
+            self._log_.debug(lambda: f"Update Location Callback: Page Not Found")
             description = dash.no_update
             navigation = dash.no_update
             sidebar = self.NOT_FOUND_LAYOUT
             content = self.NOT_FOUND_LAYOUT
         if all([update is dash.no_update for update in [anchor, description, navigation, sidebar, content]]):
-            self._log_.debug(lambda: f"Location Callback: No Updates Required")
+            self._log_.debug(lambda: f"Update Location Callback: No Updates Required")
             raise PreventUpdate
-        return anchor, description, navigation, sidebar, content
+        return anchor, description, navigation, sidebar, content, location.dict()
 
     @serverside_callback(
-        Output("LOCATION_STORAGE_ID", "data", allow_duplicate=True),
-        Input("_LOCATION_ID_", "pathname"),
-        State("LOCATION_STORAGE_ID", "data"),
-    )
-    def _update_location_callback_(self, path: str, location: dict):
-        if path is None: raise PreventUpdate
-        location = LocationAPI(**location)
-        if location.current() == path: raise PreventUpdate
-        if location.backward(step=False) == path:
-            location.backward(step=True)
-            return location.dict()
-        if location.forward(step=False) == path:
-            location.forward(step=True)
-            return location.dict()
-        location.register(path)
-        return location.dict()
-
-    @serverside_callback(
-        Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
-        Output("LOCATION_STORAGE_ID", "data", allow_duplicate=True),
+        Output("_LOCATION_ID_", "pathname"),
+        Output("_LOCATION_STORAGE_ID_", "data"),
         Input("_LOCATION_BACKWARD_ID_", "n_clicks"),
-        State("LOCATION_STORAGE_ID", "data"),
+        State("_LOCATION_STORAGE_ID_", "data"),
     )
-    def _backward_location_callback_(self, clicks, location):
+    def _backward_location_callback_(self, clicks: int, location: dict):
         if clicks is None: raise PreventUpdate
+        self._log_.debug(lambda: f"Backward Location Callback: Clicks = {clicks}")
         location = LocationAPI(**location)
         path = location.backward(step=True)
-        if not path: raise PreventUpdate
+        if not path:
+            self._log_.debug(lambda: "Backward Location Callback: No backward path available")
+            raise PreventUpdate
+        self._log_.debug(lambda: f"Backward Location Callback: Navigating to {path}")
         return path, location.dict()
 
     @clientside_callback(
@@ -550,17 +551,50 @@ class AppAPI:
         """
 
     @serverside_callback(
-        Output("_LOCATION_ID_", "pathname", allow_duplicate=True),
-        Output("LOCATION_STORAGE_ID", "data", allow_duplicate=True),
+        Output("_LOCATION_ID_", "pathname"),
+        Output("_LOCATION_STORAGE_ID_", "data"),
         Input("_LOCATION_FORWARD_ID_", "n_clicks"),
-        State("LOCATION_STORAGE_ID", "data"),
+        State("_LOCATION_STORAGE_ID_", "data"),
     )
-    def _forward_location_callback_(self, clicks, location):
+    def _forward_location_callback_(self, clicks: int, location: dict):
         if clicks is None: raise PreventUpdate
+        self._log_.debug(lambda: f"Forward Location Callback: Clicks = {clicks}")
         location = LocationAPI(**location)
         path = location.forward(step=True)
-        if not path: raise PreventUpdate
+        if not path:
+            self._log_.debug(lambda: "Forward Location Callback: No forward path available")
+            raise PreventUpdate
+        self._log_.debug(lambda: f"Forward Location Callback: Navigating to {path}")
         return path, location.dict()
+
+    @clientside_callback(
+        Output("_CALLBACK_SINK_ID_", "children"),
+        Input("_NAVIGATION_STORAGE_ID_", "data"),
+    )
+    def _navigation_navigator_callback_(self):
+        return """
+        function(nav) {
+            if (!nav || !nav.path || !nav.index) {
+                return window.dash_clientside.no_update;
+            }
+            if (!window.__lastNavIndex) window.__lastNavIndex = 0;
+            if (nav.index <= window.__lastNavIndex) {
+                return window.dash_clientside.no_update;
+            }
+            window.__lastNavIndex = nav.index;
+            if (nav.external) {
+                window.open(nav.path, "_blank", "noopener,noreferrer");
+                return "";
+            }
+            if (nav.replace) {
+                window.history.replaceState({}, "", nav.path);
+            } else {
+                window.history.pushState({}, "", nav.path);
+            }
+            window.dispatchEvent(new PopStateEvent("popstate"));
+            return "";
+        }
+        """
 
     def _collapse_button_callback_(self, name: str, was_open: bool, classname: str = None):
         is_open = not was_open
@@ -575,27 +609,27 @@ class AppAPI:
         Input("_SIDEBAR_BUTTON_ID_", "n_clicks"),
         State("_SIDEBAR_COLLAPSE_ID_", "is_open"),
     )
-    def _sidebar_button_callback_(self, clicks, was_open):
+    def _sidebar_button_callback_(self, clicks: int, was_open: bool):
         if clicks is None: raise PreventUpdate
         return self._collapse_button_callback_(name="Sidebar", was_open=was_open)
 
     @serverside_callback(
-        Output("_CONTACTS_COLLAPSE_ID_", "is_open", allow_duplicate=True),
-        Output("_CONTACTS_ARROW_ID_", "className", allow_duplicate=True),
+        Output("_CONTACTS_COLLAPSE_ID_", "is_open"),
+        Output("_CONTACTS_ARROW_ID_", "className"),
         Input("_CONTACTS_BUTTON_ID_", "n_clicks"),
         State("_CONTACTS_COLLAPSE_ID_", "is_open"),
         State("_CONTACTS_ARROW_ID_", "className"),
     )
-    def _contacts_button_callback_(self, clicks, was_open: bool, classname: str):
+    def _contacts_button_callback_(self, clicks: int, was_open: bool, classname: str):
         if clicks is None: raise PreventUpdate
         return self._collapse_button_callback_(name="Contacts", was_open=was_open, classname=classname)
 
     @serverside_callback(
-        Output("MEMORY_STORAGE_ID", "data", allow_duplicate=True),
-        Output("SESSION_STORAGE_ID", "data", allow_duplicate=True),
+        Output("MEMORY_STORAGE_ID", "data"),
+        Output("SESSION_STORAGE_ID", "data"),
         Input("_CLEAN_CACHE_BUTTON_ID_", "n_clicks"),
     )
-    def _clean_cache_callback_(self, clicks):
+    def _clean_cache_callback_(self, clicks: int):
         if clicks is None: raise PreventUpdate
         self._log_.debug(lambda: "Clean Cache Callback: Cleaning Cache")
         memory = {}
@@ -603,12 +637,12 @@ class AppAPI:
         return memory, session
 
     @serverside_callback(
-        Output("MEMORY_STORAGE_ID", "data", allow_duplicate=True),
-        Output("SESSION_STORAGE_ID", "data", allow_duplicate=True),
-        Output("LOCAL_STORAGE_ID", "data", allow_duplicate=True),
+        Output("MEMORY_STORAGE_ID", "data"),
+        Output("SESSION_STORAGE_ID", "data"),
+        Output("LOCAL_STORAGE_ID", "data"),
         Input("_CLEAN_DATA_BUTTON_ID_", "n_clicks"),
     )
-    def _clean_data_callback_(self, clicks):
+    def _clean_data_callback_(self, clicks: int):
         if clicks is None: raise PreventUpdate
         memory, session = self._clean_cache_callback_(clicks=clicks)
         self._log_.debug(lambda: "Clean Data Callback: Cleaning Data")
@@ -616,22 +650,22 @@ class AppAPI:
         return memory, session, local
 
     @serverside_callback(
-        Output("_TERMINAL_COLLAPSE_ID_", "is_open", allow_duplicate=True),
-        Output("_TERMINAL_ARROW_ID_", "className", allow_duplicate=True),
+        Output("_TERMINAL_COLLAPSE_ID_", "is_open"),
+        Output("_TERMINAL_ARROW_ID_", "className"),
         Input("_TERMINAL_BUTTON_ID_", "n_clicks"),
         State("_TERMINAL_COLLAPSE_ID_", "is_open"),
         State("_TERMINAL_ARROW_ID_", "className"),
     )
-    def _terminal_button_callback_(self, clicks, was_open: bool, classname: str):
+    def _terminal_button_callback_(self, clicks: int, was_open: bool, classname: str):
         if clicks is None: raise PreventUpdate
         return self._collapse_button_callback_(name="Terminal", was_open=was_open, classname=classname)
 
     @serverside_callback(
-        Output("_TERMINAL_ID_", "children", allow_duplicate=True),
+        Output("_TERMINAL_ID_", "children"),
         Input("INTERVAL_ID", "n_intervals"),
         State("_TERMINAL_ID_", "children"),
     )
-    def _terminal_stream_callback_(self, _, terminal):
+    def _terminal_stream_callback_(self, _, terminal: list[Component]):
         logs = self._log_.web.stream()
         if not logs: raise PreventUpdate
         terminal.extend(logs)

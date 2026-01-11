@@ -153,7 +153,7 @@ class ButtonContainerAPI(ContainerAPI):
         super().__post_init__()
 
     def arguments(self) -> dict:
-        classstyle = {"border": f"1px solid {self.border}", "border-radius": self.radius}
+        classstyle = {"border": f"1px solid {self.border}", "borderRadius": self.radius}
         self.style = parse_style(basestyle=self.style, classstyle=classstyle)
         kwargs = super().arguments()
         kwargs.update(size=self.size)
