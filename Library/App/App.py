@@ -481,11 +481,13 @@ class AppAPI:
         else:
             location.register(anchor)
             self._log_.debug(lambda: "Update Location Callback: Registered Page")
-        page = self.locate(endpoint=endpoint)
-        anchor = dash.no_update if path == anchor else anchor
-        if page is not None:
+        if path == anchor:
+            anchor = dash.no_update
+        else:
+            self._log_.debug(lambda: f"Update Location Callback: Updating Location")
+        if (page := self.locate(endpoint=endpoint)) is not None:
             self._log_.debug(lambda: f"Update Location Callback: Page Found")
-            if description is page.description:
+            if description == page.description:
                 description = dash.no_update
             elif self.description or not page.description:
                 description = dash.no_update
@@ -566,35 +568,6 @@ class AppAPI:
             raise PreventUpdate
         self._log_.debug(lambda: f"Forward Location Callback: Navigating to {path}")
         return path, location.dict()
-
-    @clientside_callback(
-        Output("_CALLBACK_SINK_ID_", "children"),
-        Input("_NAVIGATION_STORAGE_ID_", "data"),
-    )
-    def _navigation_navigator_callback_(self):
-        return """
-        function(nav) {
-            if (!nav || !nav.path || !nav.index) {
-                return window.dash_clientside.no_update;
-            }
-            if (!window.__lastNavIndex) window.__lastNavIndex = 0;
-            if (nav.index <= window.__lastNavIndex) {
-                return window.dash_clientside.no_update;
-            }
-            window.__lastNavIndex = nav.index;
-            if (nav.external) {
-                window.open(nav.path, "_blank", "noopener,noreferrer");
-                return "";
-            }
-            if (nav.replace) {
-                window.history.replaceState({}, "", nav.path);
-            } else {
-                window.history.pushState({}, "", nav.path);
-            }
-            window.dispatchEvent(new PopStateEvent("popstate"));
-            return "";
-        }
-        """
 
     def _collapse_button_callback_(self, name: str, was_open: bool, classname: str = None):
         is_open = not was_open

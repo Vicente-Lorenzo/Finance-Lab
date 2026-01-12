@@ -3,10 +3,10 @@ from __future__ import annotations
 from dash import html, dcc
 from typing import TYPE_CHECKING
 from typing_extensions import Self
-if TYPE_CHECKING: from Library.App import *
+if TYPE_CHECKING: from Library.App import AppAPI
 
+from Library.App.Component import Component
 from Library.Logging import HandlerLoggingAPI
-from Library.Utility import Component
 
 class PageAPI:
 
@@ -121,12 +121,12 @@ class PageAPI:
     def _init_layout_(self) -> None:
         sidebar = self._sidebar_ or self.sidebar()
         self._log_.debug(lambda: f"Loaded Sidebar Layout")
-        self._sidebar_ = [sidebar] if isinstance(sidebar, Component) else sidebar
         content = self._content_ or self.content()
         self._log_.debug(lambda: f"Loaded Content Layout")
         hidden = self._init_hidden_()
         self._log_.debug(lambda: f"Loaded Hidden Layout")
         self._content_ = [content, hidden] if isinstance(content, Component) else [*content, hidden]
+        self._sidebar_ = [sidebar] if isinstance(sidebar, Component) else sidebar
 
     def _init_(self) -> None:
         if self._initialized_: return
