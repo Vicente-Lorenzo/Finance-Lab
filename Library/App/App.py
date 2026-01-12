@@ -4,8 +4,8 @@ from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from pathlib import PurePosixPath
 
-from Library.Logging import *
 from Library.App import *
+from Library.Logging import *
 from Library.Utility.HTML import *
 from Library.Utility.Path import *
 from Library.Utility.Typing import *
@@ -25,7 +25,7 @@ class AppAPI:
     _LOCATION_STORAGE_ID_: dict = None
 
     _NAVIGATION_ID_: dict = None
-    _NAVIGATION_STORAGE_ID_: dict = None
+    NAVIGATION_STORAGE_ID: dict = None
 
     _CONTACTS_ARROW_ID_: dict = None
     _CONTACTS_BUTTON_ID_: dict = None
@@ -40,7 +40,7 @@ class AppAPI:
     _CLEAN_CACHE_BUTTON_ID_: dict = None
     _CLEAN_DATA_BUTTON_ID_: dict = None
 
-    _CALLBACK_SINK_ID_: dict = None
+    CALLBACK_SINK_ID: dict = None
 
     INTERVAL_ID: dict = None
     MEMORY_STORAGE_ID: dict = None
@@ -228,7 +228,7 @@ class AppAPI:
         self._LOCATION_FORWARD_ID_: dict = self.register(type="button", name="forward")
         self._LOCATION_STORAGE_ID_: dict = self.register(type="storage", name="location")
         self._NAVIGATION_ID_: dict = self.register(type="div", name="navigation")
-        self._NAVIGATION_STORAGE_ID_: dict = self.register(type="storage", name="navigation")
+        self.NAVIGATION_STORAGE_ID: dict = self.register(type="storage", name="navigation")
         self._CONTACTS_ARROW_ID_: dict = self.register(type="icon", name="contacts")
         self._CONTACTS_BUTTON_ID_: dict = self.register(type="button", name="contacts")
         self._CONTACTS_COLLAPSE_ID_: dict = self.register(type="collapse", name="contacts")
@@ -239,7 +239,7 @@ class AppAPI:
         self._TERMINAL_ID_: dict = self.register(type="card", name="terminal")
         self._CLEAN_CACHE_BUTTON_ID_: dict = self.register(type="button", name="clean")
         self._CLEAN_DATA_BUTTON_ID_: dict = self.register(type="button", name="reset")
-        self._CALLBACK_SINK_ID_: dict = self.register(type="div", name="sink")
+        self.CALLBACK_SINK_ID: dict = self.register(type="div", name="sink")
         self.INTERVAL_ID: dict = self.register(type="interval", name="1000ms")
         self.MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory")
         self.SESSION_STORAGE_ID: dict = self.register(type="storage", name="session")
@@ -402,10 +402,10 @@ class AppAPI:
 
     def _init_hidden_(self) -> Component:
         return html.Div([
-            html.Div(id=self._CALLBACK_SINK_ID_),
+            html.Div(id=self.CALLBACK_SINK_ID),
             dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
             dcc.Store(id=self._LOCATION_STORAGE_ID_, storage_type="session", data=LocationAPI().dict()),
-            dcc.Store(id=self._NAVIGATION_STORAGE_ID_, storage_type="session", data=NavigationAPI().dict()),
+            dcc.Store(id=self.NAVIGATION_STORAGE_ID, storage_type="session", data=NavigationAPI().dict()),
             dcc.Store(id=self.MEMORY_STORAGE_ID, storage_type="memory", data=dict()),
             dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session", data=dict()),
             dcc.Store(id=self.LOCAL_STORAGE_ID, storage_type="local", data=dict()),
@@ -484,7 +484,7 @@ class AppAPI:
         if path == anchor:
             anchor = dash.no_update
         else:
-            self._log_.debug(lambda: f"Update Location Callback: Updating Location")
+            self._log_.debug(lambda: f"Update Location Callback: Updating Anchor")
         if (page := self.locate(endpoint=endpoint)) is not None:
             self._log_.debug(lambda: f"Update Location Callback: Page Found")
             if description == page.description:
@@ -522,6 +522,32 @@ class AppAPI:
             raise PreventUpdate
         return anchor, description, navigation, sidebar, content, location.dict()
 
+    @clientside_callback(
+        Output("CALLBACK_SINK_ID", "children", allow_duplicate=True),
+        Input("NAVIGATION_STORAGE_ID", "data")
+    )
+    def _update_navigation_callback_(self):
+        return """
+        function(nav) {
+            if (!nav || !nav.href || nav.index == null) {
+                return window.dash_clientside.no_update;
+            }
+            const last = (window.__lastNavIndex__ ?? -1);
+            if (nav.index <= last) {
+                return window.dash_clientside.no_update;
+            }
+            window.__lastNavIndex__ = nav.index;
+            const href = nav.href;
+            if (nav.external) {
+                window.open(href, "_blank", "noopener,noreferrer");
+                return "";
+            }
+            window.history.pushState({}, "", href);
+            window.dispatchEvent(new PopStateEvent("popstate"));
+            return "";
+        }
+        """
+
     @serverside_callback(
         Output("_LOCATION_ID_", "pathname"),
         Output("_LOCATION_STORAGE_ID_", "data"),
@@ -540,7 +566,7 @@ class AppAPI:
         return path, location.dict()
 
     @clientside_callback(
-        Output("_CALLBACK_SINK_ID_", "children"),
+        Output("CALLBACK_SINK_ID", "children"),
         Input("_LOCATION_REFRESH_ID_", "n_clicks"),
     )
     def _refresh_location_callback_(self):
