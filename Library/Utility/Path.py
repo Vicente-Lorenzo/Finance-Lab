@@ -1,3 +1,4 @@
+import sys
 from os import getcwd
 from sys import _getframe
 from pathlib import PurePath, Path
@@ -174,6 +175,25 @@ def traceback_regex_module(pattern: str, *, header: bool = None, resolve: bool =
 
 def traceback_regex_module_path(pattern: str, *, header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> str:
     traceback: str = traceback_regex(pattern=pattern)
+    return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
+
+def traceback_package(*, package: str) -> str:
+    return sys.modules[package].__file__
+
+def traceback_package_file(package: str, *, header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+    traceback: str = traceback_package(package=package)
+    return inspect_file(file=traceback, header=header, resolve=resolve, builder=builder)
+
+def traceback_package_file_path(package: str, *, header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+    traceback: str = traceback_package(package=package)
+    return inspect_file_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
+
+def traceback_package_module(package: str, *, header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
+    traceback: str = traceback_package(package=package)
+    return inspect_module(file=traceback, header=header, resolve=resolve, builder=builder)
+
+def traceback_package_module_path(package: str, *, header: bool = None, footer: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> str:
+    traceback: str = traceback_package(package=package)
     return inspect_module_path(file=traceback, header=header, footer=footer, resolve=resolve, builder=builder)
 
 @dataclass(kw_only=True)
