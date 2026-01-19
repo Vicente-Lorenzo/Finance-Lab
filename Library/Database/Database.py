@@ -103,7 +103,10 @@ class DatabaseAPI(ABC):
         return self.schema is not None
 
     def tabled(self) -> bool:
-        return self.table is not None and self.STRUCTURE is not None
+        return self.table is not None
+
+    def structured(self) -> bool:
+        return self.STRUCTURE is not None
 
     def commit(self):
         if self.connected():
@@ -254,7 +257,7 @@ class DatabaseAPI(ABC):
                 self._schema_()
                 subtimer.stop()
                 self._log_.info(lambda: f"Schema Migration ({subtimer.result()})")
-            if self.tabled():
+            if self.tabled() and self.structured():
                 subtimer = Timer()
                 subtimer.start()
                 self._table_()
