@@ -15,7 +15,7 @@ class OracleAPI(DatabaseAPI):
         # oracledb.DB_TYPE_TIMESTAMP: pl.Datetime,
     }
 
-    def __init__(self,
+    def __init__(self, *,
                  host: str = "localhost",
                  port: int = 1521,
                  user: str = "ORCL",
@@ -24,7 +24,8 @@ class OracleAPI(DatabaseAPI):
                  database: str = None,
                  schema: str = None,
                  table: str = None,
-                 migrate: bool = False):
+                 migrate: bool = False,
+                 autocommit: bool = True):
 
         super().__init__(
             host=host,
@@ -35,7 +36,8 @@ class OracleAPI(DatabaseAPI):
             database=database,
             schema=schema,
             table=table,
-            migrate=migrate
+            migrate=migrate,
+            autocommit=autocommit
         )
 
     def _connect_(self, admin: bool):
@@ -50,5 +52,5 @@ class OracleAPI(DatabaseAPI):
             password=self.password,
             dsn=dsn
         )
-        connection.autocommit = False
+        connection.autocommit = self.autocommit
         return connection

@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from Library.Logging import HandlerLoggingAPI
 from Library.Dataclass import DataclassAPI
 from Library.Database import QueryAPI
-from Library.Utility import PathAPI
+from Library.Utility import PathAPI, traceback_package
 from Library.Statistics import Timer
 
 class DatabaseAPI(ABC):
@@ -30,22 +30,27 @@ class DatabaseAPI(ABC):
 
     DESCRIPTION_DATATYPE_MAPPING: dict = None
 
-    CHECK_DATABASE_QUERY = QueryAPI(PathAPI("Check/Database.sql"))
-    CHECK_SCHEMA_QUERY = QueryAPI(PathAPI("Check/Schema.sql"))
-    CHECK_TABLE_QUERY = QueryAPI(PathAPI("Check/Table.sql"))
-    CHECK_STRUCTURE_QUERY = QueryAPI(PathAPI("Check/Structure.sql"))
-
-    CREATE_DATABASE_QUERY = QueryAPI(PathAPI("Create/Database.sql"))
-    CREATE_SCHEMA_QUERY = QueryAPI(PathAPI("Create/Schema.sql"))
-    CREATE_TABLE_QUERY = QueryAPI(PathAPI("Create/Table.sql"))
-
-    DELETE_DATABASE_QUERY = QueryAPI(PathAPI("Delete/Database.sql"))
-    DELETE_SCHEMA_QUERY = QueryAPI(PathAPI("Delete/Schema.sql"))
-    DELETE_TABLE_QUERY = QueryAPI(PathAPI("Delete/Table.sql"))
-
     STRUCTURE: dict = None
 
-    def __init__(self,
+    def __init_subclass__(cls, **kwargs) -> None:
+        super().__init_subclass__(**kwargs)
+        if DatabaseAPI not in cls.__bases__: return
+        module: str = traceback_package(package=cls.__module__)
+
+        cls.CHECK_DATABASE_QUERY = QueryAPI(PathAPI(path="Check/Database.sql", module=module))
+        cls.CHECK_SCHEMA_QUERY = QueryAPI(PathAPI(path="Check/Schema.sql", module=module))
+        cls.CHECK_TABLE_QUERY = QueryAPI(PathAPI(path="Check/Table.sql", module=module))
+        cls.CHECK_STRUCTURE_QUERY = QueryAPI(PathAPI(path="Check/Structure.sql", module=module))
+
+        cls.CREATE_DATABASE_QUERY = QueryAPI(PathAPI(path="Create/Database.sql", module=module))
+        cls.CREATE_SCHEMA_QUERY = QueryAPI(PathAPI(path="Create/Schema.sql", module=module))
+        cls.CREATE_TABLE_QUERY = QueryAPI(PathAPI(path="Create/Table.sql", module=module))
+
+        cls.DELETE_DATABASE_QUERY = QueryAPI(PathAPI(path="Delete/Database.sql", module=module))
+        cls.DELETE_SCHEMA_QUERY = QueryAPI(PathAPI(path="Delete/Schema.sql", module=module))
+        cls.DELETE_TABLE_QUERY = QueryAPI(PathAPI(path="Delete/Table.sql", module=module))
+
+    def __init__(self, *,
                  host: str,
                  port: int,
                  user: str,
@@ -54,21 +59,23 @@ class DatabaseAPI(ABC):
                  database: str,
                  schema: str,
                  table: str,
-                 migrate: bool):
+                 migrate: bool,
+                 autocommit: bool) -> None:
 
-        self.host = host
-        self.port = port
-        self.user = user
-        self.password = password
-        self.admin = admin
-        self.migrate = migrate
+        self.host: str = host
+        self.port: int = port
+        self.user: str = user
+        self.password: str = password
+        self.admin: bool = admin
+        self.migrate: bool = migrate
+        self.autocommit: bool = autocommit
 
-        self.defaults = {}
-        self.database = database
+        self.defaults: dict = {}
+        self.database: str = database
         if self.databased(): self.defaults["database"] = database
-        self.schema = schema
+        self.schema: str = schema
         if self.schemed(): self.defaults["schema"] = schema
-        self.table = table
+        self.table: str = table
         if self.tabled(): self.defaults["table"] = table
 
         self.connection = None

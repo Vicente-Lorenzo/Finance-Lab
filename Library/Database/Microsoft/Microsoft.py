@@ -17,7 +17,7 @@ class MicrosoftAPI(DatabaseAPI):
         Decimal: pl.Float64
     }
 
-    def __init__(self,
+    def __init__(self, *,
                  host: str = "localhost",
                  port: int = 1433,
                  user: str = "master",
@@ -26,7 +26,8 @@ class MicrosoftAPI(DatabaseAPI):
                  database: str = None,
                  schema: str = None,
                  table: str = None,
-                 migrate: bool = False):
+                 migrate: bool = False,
+                 autocommit: bool = True):
 
         super().__init__(
             host=host,
@@ -37,7 +38,8 @@ class MicrosoftAPI(DatabaseAPI):
             database=database,
             schema=schema,
             table=table,
-            migrate=migrate
+            migrate=migrate,
+            autocommit=autocommit
         )
 
     def _connect_(self, admin: bool):
@@ -49,5 +51,5 @@ class MicrosoftAPI(DatabaseAPI):
             password=self.password,
             database=database
         )
-        connection.autocommit(admin)
+        connection.autocommit(self.autocommit)
         return connection
