@@ -83,6 +83,11 @@ from Library.Utility.Path import (
     traceback_regex_file_path,
     traceback_regex_module,
     traceback_regex_module_path,
+    traceback_package,
+    traceback_package_file,
+    traceback_package_file_path,
+    traceback_package_module,
+    traceback_package_module_path,
     PathAPI
 )
 
@@ -103,5 +108,6 @@ __all__ = [
     "traceback_current", "traceback_current_file", "traceback_current_file_path", "traceback_current_module", "traceback_current_module_path",
     "traceback_calling", "traceback_calling_file", "traceback_calling_file_path", "traceback_calling_module", "traceback_calling_module_path",
     "traceback_regex", "traceback_regex_file", "traceback_regex_file_path", "traceback_regex_module", "traceback_regex_module_path",
+    "traceback_package", "traceback_package_file", "traceback_package_file_path", "traceback_package_module", "traceback_package_module_path",
     "PathAPI"
 ]
