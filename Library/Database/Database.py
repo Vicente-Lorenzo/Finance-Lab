@@ -1,11 +1,6 @@
-import polars as pl
-pl.Config.set_tbl_cols(-1)
-pl.Config.set_tbl_rows(-1)
-pl.Config.set_tbl_width_chars(-1)
-pl.Config.set_fmt_str_lengths(1000)
-pl.Config.set_fmt_table_cell_list_len(-1)
 from abc import ABC, abstractmethod
 
+from Library.DataFrame import pl
 from Library.Logging import HandlerLoggingAPI
 from Library.Dataclass import DataclassAPI
 from Library.Database import QueryAPI

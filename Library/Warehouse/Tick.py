@@ -1,5 +1,4 @@
-import polars as pl
-
+from Library.DataFrame import pl
 from Library.Dataclass import *
 from Library.Database import PostgresAPI
 

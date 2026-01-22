@@ -1,7 +1,7 @@
-import polars as pl
-
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
+
+from Library.DataFrame import pl
 
 def image(df: pl.DataFrame) -> BytesIO:
     df_str = str(df)

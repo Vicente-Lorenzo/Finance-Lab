@@ -1,5 +1,4 @@
-import polars as pl
-
+from Library.DataFrame import pl
 from Library.Robots.Analyst import SeriesAPI
 
 class MarketAPI:

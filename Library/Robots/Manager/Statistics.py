@@ -1,8 +1,8 @@
 import math
-import polars as pl
 
 from datetime import date, timedelta
 
+from Library.DataFrame import pl
 from Library.Database import DatabaseAPI
 from Library.Classes import TradeType, Account, Trade
 from Library.Robots.Manager import EPSILON

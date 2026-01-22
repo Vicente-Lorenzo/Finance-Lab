@@ -1,6 +1,6 @@
 import psycopg2
-import polars as pl
 
+from Library.DataFrame import pl
 from Library.Database import DatabaseAPI
 
 class PostgresAPI(DatabaseAPI):

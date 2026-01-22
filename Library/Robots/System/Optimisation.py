@@ -3,7 +3,6 @@ import itertools
 import threading
 
 import numpy as np
-import polars as pl
 
 from tqdm import tqdm
 from typing import Type, Callable
@@ -12,6 +11,7 @@ from concurrent.futures import as_completed, ThreadPoolExecutor
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
+from Library.DataFrame import pl
 from Library.Classes import *
 from Library.Parameters import Parameters
 from Library.Utils import timer, image, gantt

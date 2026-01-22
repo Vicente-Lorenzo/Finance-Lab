@@ -1,9 +1,8 @@
-import polars as pl
-
 from typing import Type
 from abc import ABC, abstractmethod
 from threading import Thread
 
+from Library.DataFrame import pl
 from Library.Logging import HandlerAPI
 from Library.Classes import Account, Symbol, Position, Trade, Bar, Tick
 from Library.Parameters import Parameters

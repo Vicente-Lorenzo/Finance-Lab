@@ -1,8 +1,8 @@
 # import pymssql
-import polars as pl
 from datetime import date, datetime
 from decimal import Decimal
 
+from Library.DataFrame import pl
 from Library.Database import DatabaseAPI
 
 class MicrosoftAPI(DatabaseAPI):

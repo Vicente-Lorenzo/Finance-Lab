@@ -1,5 +1,4 @@
 import copy
-import polars as pl
 
 from time import localtime
 from datetime import date, datetime, timedelta
@@ -7,6 +6,7 @@ from itertools import count
 from queue import Queue
 from typing import Type, Iterator, Callable
 
+from Library.DataFrame import pl
 from Library.Classes import *
 from Library.Database import DatabaseAPI
 from Library.Parameters import ParametersAPI, Parameters

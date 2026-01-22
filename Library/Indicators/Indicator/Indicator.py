@@ -1,6 +1,6 @@
-import polars as pl
-
 from abc import ABC, abstractmethod
+
+from Library.DataFrame import pl
 
 class IndicatorAPI(ABC):
     
