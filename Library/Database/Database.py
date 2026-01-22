@@ -54,6 +54,7 @@ class DatabaseAPI(ABC):
                  database: str,
                  schema: str,
                  table: str,
+                 legacy: bool,
                  migrate: bool,
                  autocommit: bool) -> None:
 
@@ -62,6 +63,7 @@ class DatabaseAPI(ABC):
         self.user: str = user
         self.password: str = password
         self.admin: bool = admin
+        self.legacy: bool = legacy
         self.migrate: bool = migrate
         self.autocommit: bool = autocommit
 
@@ -297,7 +299,7 @@ class DatabaseAPI(ABC):
             df = self.format(data=rows, schema=schema)
             timer.stop()
             self._log_.debug(lambda: f"Fetch Operation ({timer.result()}): {len(df)} data points")
-            return df
+            return df.to_pandas() if self.legacy else df
         except Exception as e:
             self.rollback()
             self._log_.error(lambda: "Failed at Fetch Operation")

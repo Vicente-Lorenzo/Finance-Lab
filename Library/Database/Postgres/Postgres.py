@@ -29,6 +29,7 @@ class PostgresAPI(DatabaseAPI):
                  database: str = None,
                  schema: str = None,
                  table: str = None,
+                 legacy: bool = False,
                  migrate: bool = False,
                  autocommit: bool = True):
 
@@ -41,6 +42,7 @@ class PostgresAPI(DatabaseAPI):
             database=database,
             schema=schema,
             table=table,
+            legacy=legacy,
             migrate=migrate,
             autocommit=autocommit
         )

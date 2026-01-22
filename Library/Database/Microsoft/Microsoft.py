@@ -26,6 +26,7 @@ class MicrosoftAPI(DatabaseAPI):
                  database: str = None,
                  schema: str = None,
                  table: str = None,
+                 legacy: bool = False,
                  migrate: bool = False,
                  autocommit: bool = True):
 
@@ -38,6 +39,7 @@ class MicrosoftAPI(DatabaseAPI):
             database=database,
             schema=schema,
             table=table,
+            legacy=legacy,
             migrate=migrate,
             autocommit=autocommit
         )
