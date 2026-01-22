@@ -1,9 +1,6 @@
 import sys
 import numpy as np
-np.set_printoptions(
-    threshold=sys.maxsize,
-    linewidth=sys.maxsize
-)
+np.set_printoptions(threshold=sys.maxsize, linewidth=sys.maxsize)
 import pandas as pd
 pd.options.display.max_rows = None
 pd.options.display.max_columns = None
