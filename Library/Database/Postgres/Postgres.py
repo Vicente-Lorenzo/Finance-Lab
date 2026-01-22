@@ -1,4 +1,4 @@
-import psycopg2
+import psycopg
 
 from Library.DataFrame import pl
 from Library.Database import DatabaseAPI
@@ -49,7 +49,7 @@ class PostgresAPI(DatabaseAPI):
 
     def _connect_(self, admin: bool):
         database = "postgres" if admin else (self.database or None)
-        connection = psycopg2.connect(
+        connection = psycopg.connect(
             host=self._host_,
             port=self._port_,
             user=self._user_,

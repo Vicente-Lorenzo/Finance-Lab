@@ -5,16 +5,16 @@ channels:
 dependencies:
     - python=3.10
     - pytest
-    - tqdm
-    - pytorch
     - numpy
     - pandas
     - polars
-    - ta-lib
-    - pillow
-    - jupyter
-    - psycopg2
     - matplotlib
+    - pytorch
+    - tqdm
+    - pillow
+    - ta-lib
+    - jupyter
+    - psycopg[binary,pool]
     - xlwings
     - yfinance
     - dash
