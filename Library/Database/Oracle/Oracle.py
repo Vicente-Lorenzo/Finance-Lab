@@ -45,14 +45,14 @@ class OracleAPI(DatabaseAPI):
     def _connect_(self, admin: bool):
         database = "ORCL" if admin else (self.database or None)
         dsn = oracledb.makedsn(
-            host=self.host,
-            port=self.port,
+            host=self._host_,
+            port=self._port_,
             service_name=database
         )
         connection = oracledb.connect(
-            user=self.user,
-            password=self.password,
+            user=self._user_,
+            password=self._password_,
             dsn=dsn
         )
-        connection.autocommit = self.autocommit
+        connection.autocommit = self._autocommit_
         return connection

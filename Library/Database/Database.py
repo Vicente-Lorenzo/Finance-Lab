@@ -58,28 +58,28 @@ class DatabaseAPI(ABC):
                  migrate: bool,
                  autocommit: bool) -> None:
 
-        self.host: str = host
-        self.port: int = port
-        self.user: str = user
-        self.password: str = password
-        self.admin: bool = admin
-        self.legacy: bool = legacy
-        self.migrate: bool = migrate
-        self.autocommit: bool = autocommit
+        self._host_: str = host
+        self._port_: int = port
+        self._user_: str = user
+        self._password_: str = password
+        self._admin_: bool = admin
+        self._legacy_: bool = legacy
+        self._migrate_: bool = migrate
+        self._autocommit_: bool = autocommit
 
-        self.defaults: dict = {}
+        self._defaults_: dict = {}
         self.database: str = database
-        if self.databased(): self.defaults["database"] = database
+        if self.databased(): self._defaults_["database"] = database
         self.schema: str = schema
-        if self.schemed(): self.defaults["schema"] = schema
+        if self.schemed(): self._defaults_["schema"] = schema
         self.table: str = table
-        if self.tabled(): self.defaults["table"] = table
+        if self.tabled(): self._defaults_["table"] = table
 
-        self.connection = None
-        self.cursor = None
+        self._connection_ = None
+        self._cursor_ = None
 
         self._log_ = HandlerLoggingAPI(
-            **self.defaults,
+            **self._defaults_,
             Class=self.__class__.__name__
         )
 
@@ -88,10 +88,10 @@ class DatabaseAPI(ABC):
         raise NotImplementedError
 
     def connected(self) -> bool:
-        return self.connection is not None
+        return self._connection_ is not None
 
     def cursored(self) -> bool:
-        return self.cursor is not None
+        return self._cursor_ is not None
 
     def databased(self) -> bool:
         return self.database is not None
@@ -109,7 +109,7 @@ class DatabaseAPI(ABC):
         if self.connected():
             timer = Timer()
             timer.start()
-            self.connection.commit()
+            self._connection_.commit()
             timer.stop()
             self._log_.debug(lambda: f"Commit Operation ({timer.result()})")
         return self
@@ -118,7 +118,7 @@ class DatabaseAPI(ABC):
         if self.connected():
             timer = Timer()
             timer.start()
-            self.connection.rollback()
+            self._connection_.rollback()
             timer.stop()
             self._log_.debug(lambda: f"Rollback Operation ({timer.result()})")
         return self
@@ -131,10 +131,10 @@ class DatabaseAPI(ABC):
                 self.disconnect()
             timer = Timer()
             timer.start()
-            self.connection = self._connect_(admin=admin or self.admin)
-            self.cursor = self.connection.cursor()
+            self._connection_ = self._connect_(admin=admin or self._admin_)
+            self._cursor_ = self._connection_.cursor()
             timer.stop()
-            self._log_.info(lambda: f"Connected to {self.host}:{self.port} ({timer.result()})")
+            self._log_.info(lambda: f"Connected to {self._host_}:{self._port_} ({timer.result()})")
             return self
         except Exception as e:
             self._log_.error(lambda: f"Failed at Connect Operation")
@@ -142,7 +142,7 @@ class DatabaseAPI(ABC):
             raise e
 
     def __enter__(self):
-        return self.migration() if self.migrate else self.connect()
+        return self.migration() if self._migrate_ else self.connect()
 
     def disconnect(self):
         try:
@@ -151,13 +151,13 @@ class DatabaseAPI(ABC):
             timer = Timer()
             timer.start()
             if self.cursored():
-                self.cursor.close()
-                self.cursor = None
+                self._cursor_.close()
+                self._cursor_ = None
             if self.connected():
-                self.connection.close()
-                self.connection = None
+                self._connection_.close()
+                self._connection_ = None
             timer.stop()
-            self._log_.info(lambda: f"Disconnected from {self.host}:{self.port} ({timer.result()})")
+            self._log_.info(lambda: f"Disconnected from {self._host_}:{self._port_} ({timer.result()})")
             return self
         except Exception as e:
             self._log_.error(lambda: f"Failed at Disconnect Operation")
@@ -192,7 +192,7 @@ class DatabaseAPI(ABC):
         return pl.DataFrame(data=data, schema=schema or self.STRUCTURE, orient="row")
 
     def _query_(self, query: QueryAPI, **kwargs) -> str:
-        return query(**{**self.defaults, **kwargs})
+        return query(**{**self._defaults_, **kwargs})
 
     def _database_(self):
         self._log_.debug(lambda: f"Checking Database: {self.database}")
@@ -283,10 +283,10 @@ class DatabaseAPI(ABC):
             raise e
 
     def execute(self, query: QueryAPI, *args, **kwargs):
-        return self._execute_(lambda: self.cursor.execute(self._query_(query, **kwargs), args if args else None))
+        return self._execute_(lambda: self._cursor_.execute(self._query_(query, **kwargs), args if args else None))
 
     def executemany(self, query: QueryAPI, *args, **kwargs):
-        return self._execute_(lambda: self.cursor.executemany(self._query_(query, **kwargs), args if args else None))
+        return self._execute_(lambda: self._cursor_.executemany(self._query_(query, **kwargs), args if args else None))
 
     def _fetch_(self, fetch) -> pl.DataFrame:
         try:
@@ -295,24 +295,24 @@ class DatabaseAPI(ABC):
             timer.start()
             rows = fetch()
             rows = (rows if any(isinstance(row, tuple) for row in rows) else [rows]) if rows else []
-            schema = {desc[0]: self.DESCRIPTION_DATATYPE_MAPPING.get(desc[1]) for desc in self.cursor.description} if self.cursor.description else {}
+            schema = {desc[0]: self.DESCRIPTION_DATATYPE_MAPPING.get(desc[1]) for desc in self._cursor_.description} if self._cursor_.description else {}
             df = self.format(data=rows, schema=schema)
             timer.stop()
             self._log_.debug(lambda: f"Fetch Operation ({timer.result()}): {len(df)} data points")
-            return df.to_pandas() if self.legacy else df
+            return df.to_pandas() if self._legacy_ else df
         except Exception as e:
             self.rollback()
             self._log_.error(lambda: "Failed at Fetch Operation")
             raise e
 
     def fetchone(self) -> pl.DataFrame:
-        return self._fetch_(lambda: self.cursor.fetchone())
+        return self._fetch_(lambda: self._cursor_.fetchone())
 
     def fetchmany(self, n: int) -> pl.DataFrame:
-        return self._fetch_(lambda: self.cursor.fetchmany(n))
+        return self._fetch_(lambda: self._cursor_.fetchmany(n))
 
     def fetchall(self) -> pl.DataFrame:
-        return self._fetch_(lambda: self.cursor.fetchall())
+        return self._fetch_(lambda: self._cursor_.fetchall())
 
     def __del__(self):
         self.__exit__(None, None, None)
