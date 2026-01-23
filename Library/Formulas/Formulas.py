@@ -10,6 +10,6 @@ def formula(func):
             if result is None or (hasattr(result, "__len__") and len(result) == 0):
                 return "Error: No Data"
             return result
-        except:
+        except Exception as e:
             return f"Error: {e}"
     return wrapper
