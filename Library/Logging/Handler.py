@@ -94,7 +94,7 @@ class HandlerLoggingAPI:
                 self.__enter__()
                 self.debug(lambda: f"Initiated @ {func.__name__}")
                 return func(*args, **kwargs)
-            except Exception as e:
+            except:
                 self.exception(lambda: f"Failed @ {func.__name__}")
                 self.exception(lambda: ''.join(traceback.format_exception(e))[:-1])
                 raise
