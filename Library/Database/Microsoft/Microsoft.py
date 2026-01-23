@@ -1,13 +1,16 @@
 # import pymssql
-from datetime import date, datetime
+from typing import Callable
 from decimal import Decimal
+from datetime import date, datetime
 
 from Library.DataFrame import pl
 from Library.Database import DatabaseAPI
 
 class MicrosoftAPI(DatabaseAPI):
 
-    DESCRIPTION_DATATYPE_MAPPING = {
+    _PARAMETER_TOKEN_: Callable[[int], str] = staticmethod(lambda i: "%s")
+
+    _DESCRIPTION_DATATYPE_MAPPING_ = {
         int: pl.Int64,
         float: pl.Float64,
         bool: pl.Boolean,

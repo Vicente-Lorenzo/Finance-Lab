@@ -4,7 +4,7 @@ from Library.Database import PostgresAPI
 
 class TradeDatabaseAPI(PostgresAPI):
 
-    STRUCTURE: dict = {
+    _STRUCTURE_: dict = {
         TradeAPI.ID.PositionID: pl.Int32(),
         TradeAPI.ID.TradeID: pl.Int32(),
         TradeAPI.ID.PositionType: pl.Enum([position.name for position in PositionType]),

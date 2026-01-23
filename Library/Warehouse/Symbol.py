@@ -4,7 +4,7 @@ from Library.Database import PostgresAPI
 
 class SymbolDatabaseAPI(PostgresAPI):
 
-    STRUCTURE: dict = {
+    _STRUCTURE_: dict = {
         SymbolAPI.ID.BaseAssetType: pl.Enum([currency.name for currency in AssetType]),
         SymbolAPI.ID.QuoteAssetType: pl.Enum([currency.name for currency in AssetType]),
         SymbolAPI.ID.Digits: pl.Int32(),

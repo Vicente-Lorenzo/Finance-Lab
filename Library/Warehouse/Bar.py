@@ -4,7 +4,7 @@ from Library.Database import PostgresAPI
 
 class BarDatabaseAPI(PostgresAPI):
 
-    STRUCTURE: dict = {
+    _STRUCTURE_: dict = {
         BarAPI.ID.Timestamp.DateTime: pl.Datetime(),
 
         BarAPI.ID.GapTick.Timestamp.DateTime: pl.Datetime(),

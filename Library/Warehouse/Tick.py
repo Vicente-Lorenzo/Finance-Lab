@@ -4,7 +4,7 @@ from Library.Database import PostgresAPI
 
 class TickDatabaseAPI(PostgresAPI):
 
-    STRUCTURE: dict = {
+    _STRUCTURE_: dict = {
         TickAPI.ID.Timestamp.DateTime: pl.Datetime(),
         TickAPI.ID.Ask.Price: pl.Float64(),
         TickAPI.ID.Bid.Price: pl.Float64(),

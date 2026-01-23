@@ -1,3 +1,4 @@
+from typing import Callable
 from abc import ABC, abstractmethod
 
 from Library.DataFrame import pl
@@ -9,23 +10,25 @@ from Library.Statistics import Timer
 
 class DatabaseAPI(ABC):
 
-    CHECK_DATATYPE_MAPPING = {
+    _PARAMETER_TOKEN_: Callable[[int], str] = None
+
+    _CHECK_DATATYPE_MAPPING_ = {
         pl.Datetime: "timestamp without time zone",
         pl.Enum: "character varying",
         pl.Int32: "integer",
         pl.Float64: "double precision"
     }
 
-    CREATE_DATATYPE_MAPPING = {
+    _CREATE_DATATYPE_MAPPING_ = {
         pl.Datetime: "TIMESTAMP",
         pl.Enum: "VARCHAR",
         pl.Int32: "INTEGER",
         pl.Float64: "DOUBLE PRECISION"
     }
 
-    DESCRIPTION_DATATYPE_MAPPING: dict = None
+    _DESCRIPTION_DATATYPE_MAPPING_: dict = None
 
-    STRUCTURE: dict = None
+    _STRUCTURE_: dict = None
 
     def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
@@ -103,7 +106,7 @@ class DatabaseAPI(ABC):
         return self.table is not None
 
     def structured(self) -> bool:
-        return self.STRUCTURE is not None
+        return self._STRUCTURE_ is not None
 
     def commit(self):
         if self.connected():
@@ -189,10 +192,11 @@ class DatabaseAPI(ABC):
             data = [data.dict()]
         else:
             data = None
-        return pl.DataFrame(data=data, schema=schema or self.STRUCTURE, orient="row")
+        return pl.DataFrame(data=data, schema=schema or self._STRUCTURE_, orient="row")
 
-    def _query_(self, query: QueryAPI, **kwargs) -> str:
-        return query(**{**self._defaults_, **kwargs})
+    def _query_(self, query: QueryAPI, *args, **kwargs) -> tuple[str, tuple | None]:
+        kwargs = {**self._defaults_, **kwargs}
+        return query(self._PARAMETER_TOKEN_, *args, **kwargs)
 
     def _database_(self):
         self._log_.debug(lambda: f"Checking Database: {self.database}")
@@ -220,7 +224,7 @@ class DatabaseAPI(ABC):
         self.commit()
         if not check.is_empty():
             self._log_.debug(lambda: f"Checking Structure: {self.table}")
-            structure = ", ".join(f"('{name}', '{self.CHECK_DATATYPE_MAPPING[type(dtype)]}')" for name, dtype in self.STRUCTURE.items())
+            structure = ", ".join(f"('{name}', '{self._CHECK_DATATYPE_MAPPING_[type(dtype)]}')" for name, dtype in self._STRUCTURE_.items())
             diff = self.execute(self.CHECK_STRUCTURE_QUERY, definitions=structure).fetchall()
             self.commit()
             if diff.is_empty(): return
@@ -229,7 +233,7 @@ class DatabaseAPI(ABC):
             self.commit()
             self._log_.info(lambda: f"Deleted Table: {self.table}")
         self._log_.warning(lambda: f"Missing Table: {self.table}")
-        create = ", ".join(f'"{name}" {self.CREATE_DATATYPE_MAPPING[type(dtype)]}' for name, dtype in self.STRUCTURE.items())
+        create = ", ".join(f'"{name}" {self._CREATE_DATATYPE_MAPPING_[type(dtype)]}' for name, dtype in self._STRUCTURE_.items())
         self.execute(self.CREATE_TABLE_QUERY, definitions=create)
         self.commit()
         self._log_.info(lambda: f"Created Table: {self.table}")
@@ -266,6 +270,7 @@ class DatabaseAPI(ABC):
         except Exception as e:
             self.rollback()
             self._log_.error(lambda: "Failed at Migration Operation")
+            self._log_.exception(lambda: str(e))
             raise e
 
     def _execute_(self, execute):
@@ -280,13 +285,23 @@ class DatabaseAPI(ABC):
         except Exception as e:
             self.rollback()
             self._log_.error(lambda: "Failed at Execute Operation")
+            self._log_.exception(lambda: str(e))
             raise e
 
     def execute(self, query: QueryAPI, *args, **kwargs):
-        return self._execute_(lambda: self._cursor_.execute(self._query_(query, **kwargs), args if args else None))
+        query, parameters = self._query_(query, *args, **kwargs)
+        if parameters is not None: return self._execute_(lambda: self._cursor_.execute(query, parameters))
+        else: return self._execute_(lambda: self._cursor_.execute(query))
 
     def executemany(self, query: QueryAPI, *args, **kwargs):
-        return self._execute_(lambda: self._cursor_.executemany(self._query_(query, **kwargs), args if args else None))
+        if not args:
+            e = ValueError("Expecting an Iterable (list or tuple) of Positional Parameters (tuple)")
+            self._log_.error("Failed at Executemany Operation")
+            self._log_.exception(lambda: str(e))
+            raise e
+        parameters = args[0]
+        query, _ = self._query_(query, **kwargs)
+        return self._execute_(lambda: self._cursor_.executemany(query, parameters))
 
     def _fetch_(self, fetch) -> pl.DataFrame:
         try:
@@ -295,7 +310,7 @@ class DatabaseAPI(ABC):
             timer.start()
             rows = fetch()
             rows = (rows if any(isinstance(row, tuple) for row in rows) else [rows]) if rows else []
-            schema = {desc[0]: self.DESCRIPTION_DATATYPE_MAPPING.get(desc[1]) for desc in self._cursor_.description} if self._cursor_.description else {}
+            schema = {desc[0]: self._DESCRIPTION_DATATYPE_MAPPING_.get(desc[1]) for desc in self._cursor_.description} if self._cursor_.description else {}
             df = self.format(data=rows, schema=schema)
             timer.stop()
             self._log_.debug(lambda: f"Fetch Operation ({timer.result()}): {len(df)} data points")
@@ -303,6 +318,7 @@ class DatabaseAPI(ABC):
         except Exception as e:
             self.rollback()
             self._log_.error(lambda: "Failed at Fetch Operation")
+            self._log_.exception(lambda: str(e))
             raise e
 
     def fetchone(self) -> pl.DataFrame:

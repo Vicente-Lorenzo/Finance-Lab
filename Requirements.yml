@@ -14,7 +14,7 @@ dependencies:
     - pillow
     - ta-lib
     - jupyter
-    - psycopg[binary,pool]
+    - psycopg[binary]
     - xlwings
     - yfinance
     - dash

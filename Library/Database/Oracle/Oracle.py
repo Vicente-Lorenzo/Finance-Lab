@@ -1,11 +1,14 @@
 # import oracledb
+from typing import Callable
 
 # from Library.DataFrame import pl
 from Library.Database import DatabaseAPI
 
 class OracleAPI(DatabaseAPI):
 
-    DESCRIPTION_DATATYPE_MAPPING = {
+    _PARAMETER_TOKEN_: Callable[[int], str] = staticmethod(lambda i: f":{i}")
+
+    _DESCRIPTION_DATATYPE_MAPPING_ = {
         # oracledb.DB_TYPE_NUMBER: pl.Float64,
         # oracledb.DB_TYPE_VARCHAR: pl.Utf8,
         # oracledb.DB_TYPE_CHAR: pl.Utf8,

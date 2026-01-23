@@ -1,11 +1,14 @@
 import psycopg
+from typing import Callable
 
 from Library.DataFrame import pl
 from Library.Database import DatabaseAPI
 
 class PostgresAPI(DatabaseAPI):
 
-    DESCRIPTION_DATATYPE_MAPPING = {
+    _PARAMETER_TOKEN_: Callable[[int], str] = staticmethod(lambda i: "%s")
+
+    _DESCRIPTION_DATATYPE_MAPPING_ = {
         16: pl.Boolean,
         21: pl.Int16,
         23: pl.Int32,
