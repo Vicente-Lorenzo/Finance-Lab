@@ -11,23 +11,9 @@ from Library.Statistics import Timer
 class DatabaseAPI(ABC):
 
     _PARAMETER_TOKEN_: Callable[[int], str] = None
-
-    _CHECK_DATATYPE_MAPPING_ = {
-        pl.Datetime: "timestamp without time zone",
-        pl.Enum: "character varying",
-        pl.Int32: "integer",
-        pl.Float64: "double precision"
-    }
-
-    _CREATE_DATATYPE_MAPPING_ = {
-        pl.Datetime: "TIMESTAMP",
-        pl.Enum: "VARCHAR",
-        pl.Int32: "INTEGER",
-        pl.Float64: "DOUBLE PRECISION"
-    }
-
+    _CHECK_DATATYPE_MAPPING_: dict = None
+    _CREATE_DATATYPE_MAPPING_: dict = None
     _DESCRIPTION_DATATYPE_MAPPING_: dict = None
-
     _STRUCTURE_: dict = None
 
     def __init_subclass__(cls, **kwargs) -> None:
@@ -85,6 +71,14 @@ class DatabaseAPI(ABC):
             **self._defaults_,
             Class=self.__class__.__name__
         )
+
+    @abstractmethod
+    def _check_(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _create_(self):
+        raise NotImplementedError
 
     @abstractmethod
     def _connect_(self, admin: bool):
@@ -224,8 +218,8 @@ class DatabaseAPI(ABC):
         self.commit()
         if not check.is_empty():
             self._log_.debug(lambda: f"Checking Structure: {self.table}")
-            structure = ", ".join(f"('{name}', '{self._CHECK_DATATYPE_MAPPING_[type(dtype)]}')" for name, dtype in self._STRUCTURE_.items())
-            diff = self.execute(self.CHECK_STRUCTURE_QUERY, definitions=structure).fetchall()
+            definitions = self._check_()
+            diff = self.execute(self.CHECK_STRUCTURE_QUERY, definitions=definitions).fetchall()
             self.commit()
             if diff.is_empty(): return
             self._log_.warning(lambda: f"Mismatched Structure: {self.table}")
@@ -233,8 +227,8 @@ class DatabaseAPI(ABC):
             self.commit()
             self._log_.info(lambda: f"Deleted Table: {self.table}")
         self._log_.warning(lambda: f"Missing Table: {self.table}")
-        create = ", ".join(f'"{name}" {self._CREATE_DATATYPE_MAPPING_[type(dtype)]}' for name, dtype in self._STRUCTURE_.items())
-        self.execute(self.CREATE_TABLE_QUERY, definitions=create)
+        definitions = self._create_()
+        self.execute(self.CREATE_TABLE_QUERY, definitions=definitions)
         self.commit()
         self._log_.info(lambda: f"Created Table: {self.table}")
 

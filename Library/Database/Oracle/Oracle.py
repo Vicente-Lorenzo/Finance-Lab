@@ -45,6 +45,19 @@ class OracleAPI(DatabaseAPI):
             autocommit=autocommit
         )
 
+    def _check_(self):
+        parts = []
+        for name, dtype in self._STRUCTURE_.items():
+            t = self._CHECK_DATATYPE_MAPPING_[type(dtype)]
+            parts.append(f"SELECT '{name}' AS column_name, '{t}' AS data_type FROM dual")
+        return "\nUNION ALL\n".join(parts)
+
+    def _create_(self):
+        return ",\n    ".join(
+            f'"{name}" {self._CREATE_DATATYPE_MAPPING_[type(dtype)]}'
+            for name, dtype in self._STRUCTURE_.items()
+        )
+
     def _connect_(self, admin: bool):
         database = "ORCL" if admin else (self.database or None)
         dsn = oracledb.makedsn(

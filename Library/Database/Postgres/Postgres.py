@@ -50,6 +50,18 @@ class PostgresAPI(DatabaseAPI):
             autocommit=autocommit
         )
 
+    def _check_(self):
+        return ",\n    ".join(
+            f"('{name}', '{self._CHECK_DATATYPE_MAPPING_[type(dtype)]}')"
+            for name, dtype in self._STRUCTURE_.items()
+        )
+
+    def _create_(self):
+        return ",\n    ".join(
+            f'"{name}" {self._CREATE_DATATYPE_MAPPING_[type(dtype)]}'
+            for name, dtype in self._STRUCTURE_.items()
+        )
+
     def _connect_(self, admin: bool):
         database = "postgres" if admin else (self.database or None)
         connection = psycopg.connect(
