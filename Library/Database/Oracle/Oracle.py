@@ -35,7 +35,6 @@ class OracleAPI(DatabaseAPI):
         pl.Datetime: "TIMESTAMP",
         pl.Duration: "INTERVAL DAY TO SECOND",
 
-        pl.Tuple: "VARCHAR2",
         pl.List: "VARCHAR2",
         pl.Array: "VARCHAR2",
         pl.Field: "VARCHAR2",
@@ -74,7 +73,6 @@ class OracleAPI(DatabaseAPI):
         pl.Datetime: "TIMESTAMP",
         pl.Duration: "INTERVAL DAY TO SECOND",
 
-        pl.Tuple: "VARCHAR2(4000)",
         pl.List: "VARCHAR2(4000)",
         pl.Array: "VARCHAR2(4000)",
         pl.Field: "VARCHAR2(4000)",

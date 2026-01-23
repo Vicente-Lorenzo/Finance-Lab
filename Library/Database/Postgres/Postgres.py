@@ -35,7 +35,6 @@ class PostgresAPI(DatabaseAPI):
         pl.Datetime: "timestamp without time zone",
         pl.Duration: "interval",
 
-        pl.Tuple: "character varying",
         pl.List: "character varying",
         pl.Array: "character varying",
         pl.Field: "character varying",
@@ -74,7 +73,6 @@ class PostgresAPI(DatabaseAPI):
         pl.Datetime: "TIMESTAMP",
         pl.Duration: "INTERVAL",
 
-        pl.Tuple: "VARCHAR",
         pl.List: "VARCHAR",
         pl.Array: "VARCHAR",
         pl.Field: "VARCHAR",

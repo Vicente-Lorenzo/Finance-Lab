@@ -38,7 +38,6 @@ class MicrosoftAPI(DatabaseAPI):
         pl.Datetime: "datetime2",
         pl.Duration: "bigint",
 
-        pl.Tuple: "nvarchar",
         pl.List: "nvarchar",
         pl.Array: "nvarchar",
         pl.Field: "nvarchar",
@@ -77,7 +76,6 @@ class MicrosoftAPI(DatabaseAPI):
         pl.Datetime: "DATETIME2",
         pl.Duration: "BIGINT",
 
-        pl.Tuple: "NVARCHAR(MAX)",
         pl.List: "NVARCHAR(MAX)",
         pl.Array: "NVARCHAR(MAX)",
         pl.Field: "NVARCHAR(MAX)",
