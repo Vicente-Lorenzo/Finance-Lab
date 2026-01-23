@@ -57,7 +57,7 @@ class RealtimeSystemAPI(SystemAPI):
             self._pipe = win32file.CreateFile(f"\\\\.\\pipe\\{self._broker}\\{self._symbol}\\{self._timeframe}\\{self._iid}",
                                               win32file.GENERIC_READ | win32file.GENERIC_WRITE, 0, None,
                                               win32file.OPEN_EXISTING, 0, None)
-        except Exception as e:
+        except:
             self._log.error(lambda: str(e))
             raise
         return super().__enter__()

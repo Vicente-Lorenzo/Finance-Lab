@@ -133,7 +133,7 @@ class DatabaseAPI(ABC):
             timer.stop()
             self._log_.info(lambda: f"Connected to {self._host_}:{self._port_} ({timer.result()})")
             return self
-        except Exception as e:
+        except:
             self._log_.error(lambda: f"Failed at Connect Operation")
             self._log_.exception(lambda: str(e))
             raise
@@ -156,7 +156,7 @@ class DatabaseAPI(ABC):
             timer.stop()
             self._log_.info(lambda: f"Disconnected from {self._host_}:{self._port_} ({timer.result()})")
             return self
-        except Exception as e:
+        except:
             self._log_.error(lambda: f"Failed at Disconnect Operation")
             self._log_.exception(lambda: str(e))
             raise
@@ -261,7 +261,7 @@ class DatabaseAPI(ABC):
             timer.stop()
             self._log_.info(lambda: f"Migration Operation ({timer.result()})")
             return self
-        except Exception as e:
+        except:
             self.rollback()
             self._log_.error(lambda: "Failed at Migration Operation")
             self._log_.exception(lambda: str(e))
@@ -276,7 +276,7 @@ class DatabaseAPI(ABC):
             timer.stop()
             self._log_.debug(lambda: f"Execute Operation ({timer.result()})")
             return self
-        except Exception as e:
+        except:
             self.rollback()
             self._log_.error(lambda: "Failed at Execute Operation")
             self._log_.exception(lambda: str(e))
@@ -290,7 +290,7 @@ class DatabaseAPI(ABC):
     def executemany(self, query: QueryAPI, *args, **kwargs):
         if not args:
             e = ValueError("Expecting an Iterable (list or tuple) of Positional Parameters (tuple)")
-            self._log_.error("Failed at Executemany Operation")
+            self._log_.error(lambda: "Failed at Execute Many Operation")
             self._log_.exception(lambda: str(e))
             raise
         parameters = args[0]
@@ -312,7 +312,7 @@ class DatabaseAPI(ABC):
             timer.stop()
             self._log_.debug(lambda: f"Fetch Operation ({timer.result()}): {len(df)} data points")
             return df.to_pandas() if self._legacy_ else df
-        except Exception as e:
+        except:
             self.rollback()
             self._log_.error(lambda: "Failed at Fetch Operation")
             self._log_.exception(lambda: str(e))
@@ -328,4 +328,5 @@ class DatabaseAPI(ABC):
         return self._fetch_(lambda: self._cursor_.fetchall())
 
     def __del__(self):
-        self.__exit__(None, None, None)
+        try: self.disconnect()
+        except: pass
