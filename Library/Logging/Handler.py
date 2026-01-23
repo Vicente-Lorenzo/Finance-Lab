@@ -97,7 +97,7 @@ class HandlerLoggingAPI:
             except Exception as e:
                 self.exception(lambda: f"Failed @ {func.__name__}")
                 self.exception(lambda: ''.join(traceback.format_exception(e))[:-1])
-                raise e
+                raise
             finally:
                 self.debug(lambda: f"Terminated @ {func.__name__}")
                 self.__exit__(None, None, None)

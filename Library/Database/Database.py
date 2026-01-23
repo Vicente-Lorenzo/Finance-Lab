@@ -136,7 +136,7 @@ class DatabaseAPI(ABC):
         except Exception as e:
             self._log_.error(lambda: f"Failed at Connect Operation")
             self._log_.exception(lambda: str(e))
-            raise e
+            raise
 
     def __enter__(self):
         return self.migration() if self._migrate_ else self.connect()
@@ -159,7 +159,7 @@ class DatabaseAPI(ABC):
         except Exception as e:
             self._log_.error(lambda: f"Failed at Disconnect Operation")
             self._log_.exception(lambda: str(e))
-            raise e
+            raise
 
     def __exit__(self, exception_type, exception_value, exception_traceback):
         if exception_type or exception_value or exception_traceback:
@@ -265,7 +265,7 @@ class DatabaseAPI(ABC):
             self.rollback()
             self._log_.error(lambda: "Failed at Migration Operation")
             self._log_.exception(lambda: str(e))
-            raise e
+            raise
 
     def _execute_(self, execute):
         try:
@@ -280,7 +280,7 @@ class DatabaseAPI(ABC):
             self.rollback()
             self._log_.error(lambda: "Failed at Execute Operation")
             self._log_.exception(lambda: str(e))
-            raise e
+            raise
 
     def execute(self, query: QueryAPI, *args, **kwargs):
         query, parameters = self._query_(query, *args, **kwargs)
@@ -292,7 +292,7 @@ class DatabaseAPI(ABC):
             e = ValueError("Expecting an Iterable (list or tuple) of Positional Parameters (tuple)")
             self._log_.error("Failed at Executemany Operation")
             self._log_.exception(lambda: str(e))
-            raise e
+            raise
         parameters = args[0]
         query, _ = self._query_(query, **kwargs)
         return self._execute_(lambda: self._cursor_.executemany(query, parameters))
@@ -313,7 +313,7 @@ class DatabaseAPI(ABC):
             self.rollback()
             self._log_.error(lambda: "Failed at Fetch Operation")
             self._log_.exception(lambda: str(e))
-            raise e
+            raise
 
     def fetchone(self) -> pl.DataFrame:
         return self._fetch_(lambda: self._cursor_.fetchone())

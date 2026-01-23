@@ -59,7 +59,7 @@ class RealtimeSystemAPI(SystemAPI):
                                               win32file.OPEN_EXISTING, 0, None)
         except Exception as e:
             self._log.error(lambda: str(e))
-            raise e
+            raise
         return super().__enter__()
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
