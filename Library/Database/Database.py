@@ -304,7 +304,10 @@ class DatabaseAPI(ABC):
             timer.start()
             rows = fetch()
             rows = (rows if any(isinstance(row, tuple) for row in rows) else [rows]) if rows else []
-            schema = {desc[0]: self._DESCRIPTION_DATATYPE_MAPPING_.get(desc[1]) for desc in self._cursor_.description} if self._cursor_.description else {}
+            schema = {
+                desc[0]: self._DESCRIPTION_DATATYPE_MAPPING_.get(desc[1], pl.Utf8)
+                for desc in self._cursor_.description
+            } if self._cursor_.description else {}
             df = self.format(data=rows, schema=schema)
             timer.stop()
             self._log_.debug(lambda: f"Fetch Operation ({timer.result()}): {len(df)} data points")
