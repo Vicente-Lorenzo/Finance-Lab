@@ -10,6 +10,84 @@ class MicrosoftAPI(DatabaseAPI):
 
     _PARAMETER_TOKEN_: Callable[[int], str] = staticmethod(lambda i: "%s")
 
+    _CHECK_DATATYPE_MAPPING_: dict = {
+        pl.Binary: "varbinary",
+        pl.Boolean: "bit",
+
+        pl.Int8: "smallint",
+        pl.Int16: "smallint",
+        pl.Int32: "int",
+        pl.Int64: "bigint",
+        pl.Int128: "decimal",
+
+        pl.UInt8: "int",
+        pl.UInt16: "int",
+        pl.UInt32: "bigint",
+        pl.UInt64: "decimal",
+
+        pl.Float32: "real",
+        pl.Float64: "float",
+        pl.Decimal: "decimal",
+
+        pl.Utf8: "nvarchar",
+        pl.String: "nvarchar",
+
+        pl.Date: "date",
+        pl.Time: "time",
+        pl.Datetime: "datetime2",
+        pl.Duration: "bigint",
+
+        pl.Tuple: "nvarchar",
+        pl.List: "nvarchar",
+        pl.Array: "nvarchar",
+        pl.Field: "nvarchar",
+        pl.Struct: "nvarchar",
+
+        pl.Enum: "nvarchar",
+        pl.Categorical: "nvarchar",
+        pl.Categories: "nvarchar",
+        pl.Object: "nvarchar",
+    }
+
+    _CREATE_DATATYPE_MAPPING_: dict = {
+        pl.Binary: "VARBINARY(MAX)",
+        pl.Boolean: "BIT",
+
+        pl.Int8: "SMALLINT",
+        pl.Int16: "SMALLINT",
+        pl.Int32: "INT",
+        pl.Int64: "BIGINT",
+        pl.Int128: "DECIMAL(38, 0)",
+
+        pl.UInt8: "INT",
+        pl.UInt16: "INT",
+        pl.UInt32: "BIGINT",
+        pl.UInt64: "DECIMAL(20, 0)",
+
+        pl.Float32: "REAL",
+        pl.Float64: "FLOAT",
+        pl.Decimal: "DECIMAL(38, 18)",
+
+        pl.Utf8: "NVARCHAR(MAX)",
+        pl.String: "NVARCHAR(MAX)",
+
+        pl.Date: "DATE",
+        pl.Time: "TIME",
+        pl.Datetime: "DATETIME2",
+        pl.Duration: "BIGINT",
+
+        pl.Tuple: "NVARCHAR(MAX)",
+        pl.List: "NVARCHAR(MAX)",
+        pl.Array: "NVARCHAR(MAX)",
+        pl.Field: "NVARCHAR(MAX)",
+        pl.Struct: "NVARCHAR(MAX)",
+
+        pl.Enum: "NVARCHAR(MAX)",
+        pl.Categorical: "NVARCHAR(MAX)",
+        pl.Categories: "NVARCHAR(MAX)",
+        pl.Object: "NVARCHAR(MAX)",
+    }
+
     _DESCRIPTION_DATATYPE_MAPPING_ = {
         int: pl.Int64,
         float: pl.Float64,

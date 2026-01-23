@@ -8,6 +8,84 @@ class PostgresAPI(DatabaseAPI):
 
     _PARAMETER_TOKEN_: Callable[[int], str] = staticmethod(lambda i: "%s")
 
+    _CHECK_DATATYPE_MAPPING_: dict = {
+        pl.Binary: "bytea",
+        pl.Boolean: "boolean",
+
+        pl.Int8: "smallint",
+        pl.Int16: "smallint",
+        pl.Int32: "integer",
+        pl.Int64: "bigint",
+        pl.Int128: "numeric",
+
+        pl.UInt8: "integer",
+        pl.UInt16: "integer",
+        pl.UInt32: "bigint",
+        pl.UInt64: "numeric",
+
+        pl.Float32: "real",
+        pl.Float64: "double precision",
+        pl.Decimal: "numeric",
+
+        pl.Utf8: "character varying",
+        pl.String: "character varying",
+
+        pl.Date: "date",
+        pl.Time: "time without time zone",
+        pl.Datetime: "timestamp without time zone",
+        pl.Duration: "interval",
+
+        pl.Tuple: "character varying",
+        pl.List: "character varying",
+        pl.Array: "character varying",
+        pl.Field: "character varying",
+        pl.Struct: "character varying",
+
+        pl.Enum: "character varying",
+        pl.Categorical: "character varying",
+        pl.Categories: "character varying",
+        pl.Object: "character varying",
+    }
+
+    _CREATE_DATATYPE_MAPPING_: dict = {
+        pl.Binary: "BYTEA",
+        pl.Boolean: "BOOLEAN",
+
+        pl.Int8: "SMALLINT",
+        pl.Int16: "SMALLINT",
+        pl.Int32: "INTEGER",
+        pl.Int64: "BIGINT",
+        pl.Int128: "NUMERIC",
+
+        pl.UInt8: "INTEGER",
+        pl.UInt16: "INTEGER",
+        pl.UInt32: "BIGINT",
+        pl.UInt64: "NUMERIC",
+
+        pl.Float32: "REAL",
+        pl.Float64: "DOUBLE PRECISION",
+        pl.Decimal: "NUMERIC",
+
+        pl.Utf8: "VARCHAR",
+        pl.String: "VARCHAR",
+
+        pl.Date: "DATE",
+        pl.Time: "TIME",
+        pl.Datetime: "TIMESTAMP",
+        pl.Duration: "INTERVAL",
+
+        pl.Tuple: "VARCHAR",
+        pl.List: "VARCHAR",
+        pl.Array: "VARCHAR",
+        pl.Field: "VARCHAR",
+        pl.Struct: "VARCHAR",
+
+        pl.Enum: "VARCHAR",
+        pl.Categorical: "VARCHAR",
+        pl.Categories: "VARCHAR",
+        pl.Object: "VARCHAR",
+    }
+
     _DESCRIPTION_DATATYPE_MAPPING_ = {
         16: pl.Boolean,
         21: pl.Int16,
