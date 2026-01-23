@@ -292,7 +292,7 @@ class DatabaseAPI(ABC):
             e = ValueError("Expecting an Iterable (list or tuple) of Positional Parameters (tuple)")
             self._log_.error(lambda: "Failed at Execute Many Operation")
             self._log_.exception(lambda: str(e))
-            raise
+            raise e
         parameters = args[0]
         query, _ = self._query_(query, **kwargs)
         return self._execute_(lambda: self._cursor_.executemany(query, parameters))
