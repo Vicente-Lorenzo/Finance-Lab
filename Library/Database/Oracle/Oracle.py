@@ -86,14 +86,35 @@ class OracleAPI(DatabaseAPI):
         pl.Object: "VARCHAR2(4000)",
     }
 
-    _DESCRIPTION_DATATYPE_MAPPING_ = {
-        # oracledb.DB_TYPE_NUMBER: pl.Float64,
+    _DESCRIPTION_DATATYPE_MAPPING_: dict = {
+        # oracledb.DB_TYPE_BLOB: pl.Binary,
+        # oracledb.DB_TYPE_RAW: pl.Binary,
+        # oracledb.DB_TYPE_LONG_RAW: pl.Binary,
+        # oracledb.DB_TYPE_BOOLEAN: pl.Boolean,
+
+        # oracledb.DB_TYPE_NUMBER: pl.Decimal,
+        # oracledb.DB_TYPE_BINARY_FLOAT: pl.Float32,
+        # oracledb.DB_TYPE_BINARY_DOUBLE: pl.Float64,
+
         # oracledb.DB_TYPE_VARCHAR: pl.Utf8,
-        # oracledb.DB_TYPE_CHAR: pl.Utf8,
         # oracledb.DB_TYPE_NVARCHAR: pl.Utf8,
+        # oracledb.DB_TYPE_CHAR: pl.Utf8,
         # oracledb.DB_TYPE_NCHAR: pl.Utf8,
+        # oracledb.DB_TYPE_LONG: pl.Utf8,
+        # oracledb.DB_TYPE_CLOB: pl.Utf8,
+        # oracledb.DB_TYPE_NCLOB: pl.Utf8,
+
         # oracledb.DB_TYPE_DATE: pl.Datetime,
         # oracledb.DB_TYPE_TIMESTAMP: pl.Datetime,
+        # oracledb.DB_TYPE_TIMESTAMP_TZ: pl.Datetime,
+        # oracledb.DB_TYPE_TIMESTAMP_LTZ: pl.Datetime,
+
+        # oracledb.DB_TYPE_INTERVAL_DS: pl.Duration,
+        # oracledb.DB_TYPE_INTERVAL_YM: pl.Utf8,
+
+        # oracledb.DB_TYPE_JSON: pl.Utf8,
+        # oracledb.DB_TYPE_ROWID: pl.Utf8,
+        # oracledb.DB_TYPE_UROWID: pl.Utf8,
     }
 
     def __init__(self, *,

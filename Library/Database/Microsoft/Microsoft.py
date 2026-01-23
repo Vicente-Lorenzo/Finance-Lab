@@ -1,7 +1,8 @@
 # import pymssql
+from uuid import UUID
 from typing import Callable
 from decimal import Decimal
-from datetime import date, datetime
+from datetime import date, time, datetime
 
 from Library.DataFrame import pl
 from Library.Database import DatabaseAPI
@@ -88,14 +89,25 @@ class MicrosoftAPI(DatabaseAPI):
         pl.Object: "NVARCHAR(MAX)",
     }
 
-    _DESCRIPTION_DATATYPE_MAPPING_ = {
-        int: pl.Int64,
-        float: pl.Float64,
+    _DESCRIPTION_DATATYPE_MAPPING_: dict = {
+        bytes: pl.Binary,
+        bytearray: pl.Binary,
         bool: pl.Boolean,
+
+        int: pl.Int64,
+
+        float: pl.Float64,
+        Decimal: pl.Decimal,
+
         str: pl.Utf8,
+
         date: pl.Date,
+        time: pl.Time,
         datetime: pl.Datetime,
-        Decimal: pl.Float64
+
+        UUID: pl.Utf8,
+
+        object: pl.Utf8,
     }
 
     def __init__(self, *,

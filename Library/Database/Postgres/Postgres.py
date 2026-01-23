@@ -86,19 +86,39 @@ class PostgresAPI(DatabaseAPI):
         pl.Object: "VARCHAR",
     }
 
-    _DESCRIPTION_DATATYPE_MAPPING_ = {
+    _DESCRIPTION_DATATYPE_MAPPING_: dict = {
+        17: pl.Binary,
         16: pl.Boolean,
+
         21: pl.Int16,
         23: pl.Int32,
+        26: pl.Int32,
         20: pl.Int64,
+
         700: pl.Float32,
         701: pl.Float64,
-        1700: pl.Float64,
+        1700: pl.Decimal,
+
+        19: pl.Utf8,
         25: pl.Utf8,
+        1042: pl.Utf8,
         1043: pl.Utf8,
+
         1082: pl.Date,
+        1083: pl.Time,
         1114: pl.Datetime,
-        1184: pl.Datetime
+        1184: pl.Datetime,
+        1186: pl.Duration,
+
+        114: pl.Utf8,
+        3802: pl.Utf8,
+        2950: pl.Utf8,
+        142: pl.Utf8,
+        1560: pl.Utf8,
+        1562: pl.Utf8,
+        869: pl.Utf8,
+        650: pl.Utf8,
+        705: pl.Utf8,  # unknown
     }
 
     def __init__(self, *,
