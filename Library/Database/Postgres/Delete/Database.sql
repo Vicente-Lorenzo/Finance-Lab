@@ -1,1 +1,1 @@
-DROP DATABASE IF EXISTS "{database}";
+DROP DATABASE "::database::";

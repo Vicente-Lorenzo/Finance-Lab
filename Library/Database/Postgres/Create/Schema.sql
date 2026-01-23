@@ -1,1 +1,1 @@
-CREATE SCHEMA IF NOT EXISTS "{schema}";
+CREATE SCHEMA "::schema::";

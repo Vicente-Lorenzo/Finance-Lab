@@ -1,3 +1,3 @@
 SELECT 1
 FROM information_schema.tables
-WHERE table_schema = '{schema}' AND table_name   = '{table}';
+WHERE table_schema = '::schema::' AND table_name = '::table::';

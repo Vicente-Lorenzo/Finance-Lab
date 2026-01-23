@@ -1,11 +1,11 @@
 WITH expected_structure(column_name, data_type) AS (
-    VALUES {definitions}
+    VALUES ::definitions::
 ),
 actual_structure AS (
     SELECT column_name, data_type
     FROM information_schema.columns
-    WHERE table_schema = '{schema}'
-      AND table_name   = '{table}'
+    WHERE table_schema = '::schema::'
+      AND table_name   = '::table::'
 )
 SELECT
     e.column_name AS expected_column_name,

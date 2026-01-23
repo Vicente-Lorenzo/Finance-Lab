@@ -1,1 +1,3 @@
-CREATE TABLE IF NOT EXISTS "{schema}"."{table}" ({definitions});
+CREATE TABLE "::schema::"."::table::" (
+    ::definitions::
+);

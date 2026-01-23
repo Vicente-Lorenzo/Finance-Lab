@@ -1,1 +1,1 @@
-DROP SCHEMA IF EXISTS "{schema}" CASCADE;
+DROP SCHEMA "::schema::" CASCADE;
