@@ -21,18 +21,18 @@ class DatabaseAPI(ABC):
         if DatabaseAPI not in cls.__bases__: return
         module: str = traceback_package(package=cls.__module__)
 
-        cls.CHECK_DATABASE_QUERY = QueryAPI(PathAPI(path="Check/Database.sql", module=module))
-        cls.CHECK_SCHEMA_QUERY = QueryAPI(PathAPI(path="Check/Schema.sql", module=module))
-        cls.CHECK_TABLE_QUERY = QueryAPI(PathAPI(path="Check/Table.sql", module=module))
-        cls.CHECK_STRUCTURE_QUERY = QueryAPI(PathAPI(path="Check/Structure.sql", module=module))
+        cls._CHECK_DATABASE_QUERY_ = QueryAPI(PathAPI(path="Check/Database.sql", module=module))
+        cls._CHECK_SCHEMA_QUERY_ = QueryAPI(PathAPI(path="Check/Schema.sql", module=module))
+        cls._CHECK_TABLE_QUERY_ = QueryAPI(PathAPI(path="Check/Table.sql", module=module))
+        cls._CHECK_STRUCTURE_QUERY_ = QueryAPI(PathAPI(path="Check/Structure.sql", module=module))
 
-        cls.CREATE_DATABASE_QUERY = QueryAPI(PathAPI(path="Create/Database.sql", module=module))
-        cls.CREATE_SCHEMA_QUERY = QueryAPI(PathAPI(path="Create/Schema.sql", module=module))
-        cls.CREATE_TABLE_QUERY = QueryAPI(PathAPI(path="Create/Table.sql", module=module))
+        cls._CREATE_DATABASE_QUERY_ = QueryAPI(PathAPI(path="Create/Database.sql", module=module))
+        cls._CREATE_SCHEMA_QUERY_ = QueryAPI(PathAPI(path="Create/Schema.sql", module=module))
+        cls._CREATE_TABLE_QUERY_ = QueryAPI(PathAPI(path="Create/Table.sql", module=module))
 
-        cls.DELETE_DATABASE_QUERY = QueryAPI(PathAPI(path="Delete/Database.sql", module=module))
-        cls.DELETE_SCHEMA_QUERY = QueryAPI(PathAPI(path="Delete/Schema.sql", module=module))
-        cls.DELETE_TABLE_QUERY = QueryAPI(PathAPI(path="Delete/Table.sql", module=module))
+        cls._DELETE_DATABASE_QUERY_ = QueryAPI(PathAPI(path="Delete/Database.sql", module=module))
+        cls._DELETE_SCHEMA_QUERY_ = QueryAPI(PathAPI(path="Delete/Schema.sql", module=module))
+        cls._DELETE_TABLE_QUERY_ = QueryAPI(PathAPI(path="Delete/Table.sql", module=module))
 
     def __init__(self, *,
                  host: str,
@@ -194,41 +194,41 @@ class DatabaseAPI(ABC):
 
     def _database_(self):
         self._log_.debug(lambda: f"Checking Database: {self.database}")
-        check = self.execute(self.CHECK_DATABASE_QUERY).fetchall()
+        check = self.execute(self._CHECK_DATABASE_QUERY_).fetchall()
         self.commit()
         if not check.is_empty(): return
         self._log_.warning(lambda: f"Missing Database: {self.database}")
-        self.execute(self.CREATE_DATABASE_QUERY)
+        self.execute(self._CREATE_DATABASE_QUERY_)
         self.commit()
         self._log_.info(lambda: f"Created Database: {self.database}")
 
     def _schema_(self):
         self._log_.debug(lambda: f"Checking Schema: {self.schema}")
-        check = self.execute(self.CHECK_SCHEMA_QUERY).fetchall()
+        check = self.execute(self._CHECK_SCHEMA_QUERY_).fetchall()
         self.commit()
         if not check.is_empty(): return
         self._log_.warning(lambda: f"Missing Schema: {self.schema}")
-        self.execute(self.CREATE_SCHEMA_QUERY)
+        self.execute(self._CREATE_SCHEMA_QUERY_)
         self.commit()
         self._log_.info(lambda: f"Created Schema: {self.schema}")
 
     def _table_(self):
         self._log_.debug(lambda: f"Checking Table: {self.table}")
-        check = self.execute(self.CHECK_TABLE_QUERY).fetchall()
+        check = self.execute(self._CHECK_TABLE_QUERY_).fetchall()
         self.commit()
         if not check.is_empty():
             self._log_.debug(lambda: f"Checking Structure: {self.table}")
             definitions = self._check_()
-            diff = self.execute(self.CHECK_STRUCTURE_QUERY, definitions=definitions).fetchall()
+            diff = self.execute(self._CHECK_STRUCTURE_QUERY_, definitions=definitions).fetchall()
             self.commit()
             if diff.is_empty(): return
             self._log_.warning(lambda: f"Mismatched Structure: {self.table}")
-            self.execute(self.DELETE_TABLE_QUERY)
+            self.execute(self._DELETE_TABLE_QUERY_)
             self.commit()
             self._log_.info(lambda: f"Deleted Table: {self.table}")
         self._log_.warning(lambda: f"Missing Table: {self.table}")
         definitions = self._create_()
-        self.execute(self.CREATE_TABLE_QUERY, definitions=definitions)
+        self.execute(self._CREATE_TABLE_QUERY_, definitions=definitions)
         self.commit()
         self._log_.info(lambda: f"Created Table: {self.table}")
 
