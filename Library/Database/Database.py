@@ -1,3 +1,4 @@
+import atexit
 from typing import Callable
 from abc import ABC, abstractmethod
 
@@ -67,6 +68,7 @@ class DatabaseAPI(ABC):
         self._connection_ = None
         self._transaction_ = None
         self._cursor_ = None
+        self._guard_ = None
 
         self._log_ = HandlerLoggingAPI(self.__class__.__name__, **self._defaults_)
 
@@ -105,6 +107,9 @@ class DatabaseAPI(ABC):
 
     def structured(self) -> bool:
         return self._STRUCTURE_ is not None
+
+    def guarded(self) -> bool:
+        return self._guard_ is not None
 
     def commit(self):
         if not self.connected():
@@ -149,6 +154,10 @@ class DatabaseAPI(ABC):
             self._connection_ = self._connect_(admin=admin or self._admin_)
             self._transaction_ = False
             self._cursor_ = self._connection_.cursor()
+            if not self.guarded():
+                self._guard_ = self.disconnect
+                try: atexit.register(self._guard_)
+                except: pass
             timer.stop()
             self._log_.info(lambda: f"Connected to {self._host_}:{self._port_} ({timer.result()})")
             return self
@@ -173,6 +182,10 @@ class DatabaseAPI(ABC):
                 self._connection_.close()
                 self._connection_ = None
             timer.stop()
+            if self.guarded():
+                try: atexit.unregister(self._guard_)
+                except: pass
+                self._guard_ = None
             self._log_.info(lambda: f"Disconnected from {self._host_}:{self._port_} ({timer.result()})")
             return self
         except Exception as e:
