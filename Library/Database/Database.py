@@ -318,8 +318,15 @@ class DatabaseAPI(ABC):
             self.connect()
             timer = Timer()
             timer.start()
-            rows = fetch()
-            rows = (rows if any(isinstance(row, tuple) for row in rows) else [rows]) if rows else []
+            result = fetch()
+            if result is None:
+                rows = []
+            elif isinstance(result, list):
+                rows = result
+            elif isinstance(result, tuple):
+                rows = [result]
+            else:
+                rows = list(result)
             schema = {
                 desc[0]: self._DESCRIPTION_DATATYPE_MAPPING_.get(desc[1], pl.Utf8)
                 for desc in self._cursor_.description
