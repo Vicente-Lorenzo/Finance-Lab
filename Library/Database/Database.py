@@ -65,12 +65,10 @@ class DatabaseAPI(ABC):
         if self.tabled(): self._defaults_["table"] = table
 
         self._connection_ = None
+        self._transaction_ = None
         self._cursor_ = None
 
-        self._log_ = HandlerLoggingAPI(
-            **self._defaults_,
-            Class=self.__class__.__name__
-        )
+        self._log_ = HandlerLoggingAPI(self.__class__.__name__, **self._defaults_)
 
     @abstractmethod
     def _check_(self):
@@ -86,6 +84,12 @@ class DatabaseAPI(ABC):
 
     def connected(self) -> bool:
         return self._connection_ is not None
+
+    def autocommited(self) -> bool:
+        return self._autocommit_ is True
+
+    def transitioned(self) -> bool:
+        return self._transaction_ is True
 
     def cursored(self) -> bool:
         return self._cursor_ is not None
@@ -103,21 +107,35 @@ class DatabaseAPI(ABC):
         return self._STRUCTURE_ is not None
 
     def commit(self):
-        if self.connected():
+        if not self.connected():
+            self._log_.warning(lambda: "Skipped Commit Operation: Not Connected")
+        elif self.autocommited():
+            self._log_.warning(lambda: "Skipped Commit Operation: Autocommit Enabled")
+        elif not self.transitioned():
+            self._log_.warning(lambda: "Skipped Commit Operation: No Open Transaction")
+        else:
             timer = Timer()
             timer.start()
             self._connection_.commit()
+            self._transaction_ = False
             timer.stop()
-            self._log_.debug(lambda: f"Commit Operation ({timer.result()})")
+            self._log_.debug(lambda: f"Commit Operation: Closed Transaction ({timer.result()})")
         return self
 
     def rollback(self):
-        if self.connected():
+        if not self.connected():
+            self._log_.warning(lambda: "Skipped Rollback Operation: Not Connected")
+        elif self.autocommited():
+            self._log_.warning(lambda: "Skipped Rollback Operation: Autocommit Enabled")
+        elif not self.transitioned():
+            self._log_.warning(lambda: "Skipped Rollback Operation: No Open Transaction")
+        else:
             timer = Timer()
             timer.start()
             self._connection_.rollback()
+            self._transaction_ = False
             timer.stop()
-            self._log_.debug(lambda: f"Rollback Operation ({timer.result()})")
+            self._log_.debug(lambda: f"Rollback Operation: Closed Transaction ({timer.result()})")
         return self
 
     def connect(self, admin: bool = False):
@@ -129,6 +147,7 @@ class DatabaseAPI(ABC):
             timer = Timer()
             timer.start()
             self._connection_ = self._connect_(admin=admin or self._admin_)
+            self._transaction_ = False
             self._cursor_ = self._connection_.cursor()
             timer.stop()
             self._log_.info(lambda: f"Connected to {self._host_}:{self._port_} ({timer.result()})")
@@ -195,7 +214,6 @@ class DatabaseAPI(ABC):
     def _database_(self):
         self._log_.debug(lambda: f"Checking Database: {self.database}")
         check = self.execute(self._CHECK_DATABASE_QUERY_).fetchall()
-        self.commit()
         if not check.is_empty(): return
         self._log_.warning(lambda: f"Missing Database: {self.database}")
         self.execute(self._CREATE_DATABASE_QUERY_)
@@ -205,7 +223,6 @@ class DatabaseAPI(ABC):
     def _schema_(self):
         self._log_.debug(lambda: f"Checking Schema: {self.schema}")
         check = self.execute(self._CHECK_SCHEMA_QUERY_).fetchall()
-        self.commit()
         if not check.is_empty(): return
         self._log_.warning(lambda: f"Missing Schema: {self.schema}")
         self.execute(self._CREATE_SCHEMA_QUERY_)
@@ -215,12 +232,10 @@ class DatabaseAPI(ABC):
     def _table_(self):
         self._log_.debug(lambda: f"Checking Table: {self.table}")
         check = self.execute(self._CHECK_TABLE_QUERY_).fetchall()
-        self.commit()
         if not check.is_empty():
             self._log_.debug(lambda: f"Checking Structure: {self.table}")
             definitions = self._check_()
             diff = self.execute(self._CHECK_STRUCTURE_QUERY_, definitions=definitions).fetchall()
-            self.commit()
             if diff.is_empty(): return
             self._log_.warning(lambda: f"Mismatched Structure: {self.table}")
             self.execute(self._DELETE_TABLE_QUERY_)
@@ -273,6 +288,7 @@ class DatabaseAPI(ABC):
             timer = Timer()
             timer.start()
             execute()
+            self._transaction_ = True
             timer.stop()
             self._log_.debug(lambda: f"Execute Operation ({timer.result()})")
             return self
