@@ -220,9 +220,10 @@ class DatabaseAPI(ABC):
             data = None
         return pl.DataFrame(data=data, schema=schema or self._STRUCTURE_, orient="row")
 
-    def _query_(self, query: QueryAPI, *args, **kwargs) -> tuple[str, tuple | None]:
+    def _query_(self, query: QueryAPI, **kwargs):
         kwargs = {**self._defaults_, **kwargs}
-        return query(self._PARAMETER_TOKEN_, *args, **kwargs)
+        sql, configuration = query.compile(self._PARAMETER_TOKEN_, **kwargs)
+        return sql, configuration, kwargs
 
     def _database_(self):
         self._log_.debug(lambda: f"Checking Database: {self.database}")
@@ -312,19 +313,23 @@ class DatabaseAPI(ABC):
             raise
 
     def execute(self, query: QueryAPI, *args, **kwargs):
-        query, parameters = self._query_(query, *args, **kwargs)
-        if parameters is not None: return self._execute_(lambda: self._cursor_.execute(query, parameters))
-        else: return self._execute_(lambda: self._cursor_.execute(query))
+        sql, configuration, kwargs = self._query_(query, **kwargs)
+        parameters = query.bind(configuration, *args, **kwargs) if configuration else None
+        if parameters is not None: return self._execute_(lambda: self._cursor_.execute(sql, parameters))
+        else: return self._execute_(lambda: self._cursor_.execute(sql))
 
-    def executemany(self, query: QueryAPI, *args, **kwargs):
-        if not args:
-            e = ValueError("Expecting an Iterable (list or tuple) of Positional Parameters (tuple)")
+    def executemany(self, query: QueryAPI, batch, **kwargs):
+        if not batch or not isinstance(batch, (list, tuple)):
+            e = ValueError("Failed at Execute Many Operation: Expecting batch as list/tuple of tuples or list/tuple of dicts")
             self._log_.error(lambda: "Failed at Execute Many Operation")
             self._log_.exception(lambda: str(e))
             raise e
-        parameters = args[0]
-        query, _ = self._query_(query, **kwargs)
-        return self._execute_(lambda: self._cursor_.executemany(query, parameters))
+        sql, configuration, kwargs = self._query_(query, **kwargs)
+        parameters = []
+        for row in batch:
+            if isinstance(row, dict): parameters.append(query.bind(configuration, **{**kwargs, **row}))
+            else: parameters.append(query.bind(configuration, *row, **kwargs))
+        return self._execute_(lambda: self._cursor_.executemany(sql, parameters))
 
     def _fetch_(self, fetch) -> pl.DataFrame:
         try:
