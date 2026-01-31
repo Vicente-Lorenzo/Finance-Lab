@@ -9,7 +9,7 @@ def find_user():
     try:
         return getpass.getuser()
     except (OSError, KeyError, ImportError):
-        return os.environ.get("USER") or os.environ.get("USERNAME")
+        return find_env_var("USER", case_sensitive=True) or find_env_var("USERNAME", case_sensitive=True)
 
 def is_windows():
     return sys.platform.startswith("win")
@@ -62,7 +62,7 @@ def find_notebook():
     ipython = find_ipython()
     return ipython.user_ns["__session__"]
 
-def find_env_var(key: str, case_sensitive: bool = True) -> str | None:
+def find_env_var(key: str, *, case_sensitive: bool = True) -> str | None:
     if key in os.environ:
         return os.environ[key]
     if case_sensitive:
@@ -76,7 +76,7 @@ def find_env_var(key: str, case_sensitive: bool = True) -> str | None:
             return env_value
     return None
 
-def match_env_vars(keyword: str, case_sensitive: bool = True) -> dict[str, str]:
+def match_env_vars(*, keyword: str, case_sensitive: bool = True) -> dict[str, str]:
     matches: dict[str, str] = {}
     keyword = keyword if case_sensitive else keyword.lower()
     for env_key, env_value in os.environ.items():
@@ -92,7 +92,7 @@ def match_env_vars(keyword: str, case_sensitive: bool = True) -> dict[str, str]:
             matches[env_key] = env_value
     return matches
 
-def find_host_port(host: str = "localhost", port_min: int = 1024, port_max: int = 65535) -> int | tuple[str, int]:
+def find_host_port(*, host: str = "localhost", port_min: int = 1024, port_max: int = 65535) -> int | tuple[str, int]:
     if not (0 <= port_min <= 65535):
         raise ValueError(f"Invalid min port range: [0, 65535]")
     if not (0 <= port_max <= 65535):
