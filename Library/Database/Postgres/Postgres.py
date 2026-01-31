@@ -20,6 +20,7 @@ class PostgresDatabaseAPI(DatabaseAPI):
         pl.UInt8: "integer",
         pl.UInt16: "integer",
         pl.UInt32: "bigint",
+        pl.UInt64: "numeric",
 
         pl.Float32: "real",
         pl.Float64: "double precision",
