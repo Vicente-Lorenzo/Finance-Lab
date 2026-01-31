@@ -86,9 +86,9 @@ class MicrosoftDatabaseAPI(DatabaseAPI):
         104: pl.Boolean,
 
         48: pl.UInt8,
-        52: pl.UInt16,
-        56: pl.UInt32,
-        127: pl.UInt64,
+        52: pl.Int16,
+        56: pl.Int32,
+        127: pl.Int64,
 
         59: pl.Float32,
         62: pl.Float64,
