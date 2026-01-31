@@ -1,8 +1,8 @@
 from Library.DataFrame import pl
 from Library.Dataclass import *
-from Library.Database import PostgresAPI
+from Library.Database import PostgresDatabaseAPI
 
-class TradeDatabaseAPI(PostgresAPI):
+class TradeDatabaseAPI(PostgresDatabaseAPI):
 
     _STRUCTURE_: dict = {
         TradeAPI.ID.PositionID: pl.Int32(),

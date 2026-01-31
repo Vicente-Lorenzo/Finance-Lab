@@ -1,8 +1,8 @@
 from Library.DataFrame import pl
 from Library.Dataclass import *
-from Library.Database import PostgresAPI
+from Library.Database import PostgresDatabaseAPI
 
-class BarDatabaseAPI(PostgresAPI):
+class BarDatabaseAPI(PostgresDatabaseAPI):
 
     _STRUCTURE_: dict = {
         BarAPI.ID.Timestamp.DateTime: pl.Datetime(),

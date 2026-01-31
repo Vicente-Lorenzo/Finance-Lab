@@ -351,7 +351,7 @@ class DatabaseAPI(ABC):
         for row in batch:
             if isinstance(row, dict): parameters.append(query.bind(configuration, **{**kwargs, **row}))
             else: parameters.append(query.bind(configuration, *row, **kwargs))
-        timer = self._execute_(lambda: self._cursor_.execute(sql, parameters))
+        timer = self._execute_(lambda: self._cursor_.executemany(sql, parameters))
         self._log_.info(lambda: f"Execute Many Operation: Executed ({timer.result()})")
         return self
 

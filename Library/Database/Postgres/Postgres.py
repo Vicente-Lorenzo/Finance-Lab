@@ -4,7 +4,7 @@ from typing import Callable
 from Library.DataFrame import pl
 from Library.Database import DatabaseAPI
 
-class PostgresAPI(DatabaseAPI):
+class PostgresDatabaseAPI(DatabaseAPI):
 
     _PARAMETER_TOKEN_: Callable[[int], str] = staticmethod(lambda i: "%s")
 
@@ -16,19 +16,17 @@ class PostgresAPI(DatabaseAPI):
         pl.Int16: "smallint",
         pl.Int32: "integer",
         pl.Int64: "bigint",
-        pl.Int128: "numeric",
 
         pl.UInt8: "integer",
         pl.UInt16: "integer",
         pl.UInt32: "bigint",
-        pl.UInt64: "numeric",
 
         pl.Float32: "real",
         pl.Float64: "double precision",
         pl.Decimal: "numeric",
 
-        pl.Utf8: "character varying",
         pl.String: "character varying",
+        pl.Utf8: "character varying",
 
         pl.Date: "date",
         pl.Time: "time without time zone",
@@ -42,8 +40,7 @@ class PostgresAPI(DatabaseAPI):
 
         pl.Enum: "character varying",
         pl.Categorical: "character varying",
-        pl.Categories: "character varying",
-        pl.Object: "character varying",
+        pl.Object: "character varying"
     }
 
     _CREATE_DATATYPE_MAPPING_: dict = {
@@ -54,7 +51,6 @@ class PostgresAPI(DatabaseAPI):
         pl.Int16: "SMALLINT",
         pl.Int32: "INTEGER",
         pl.Int64: "BIGINT",
-        pl.Int128: "NUMERIC",
 
         pl.UInt8: "INTEGER",
         pl.UInt16: "INTEGER",
@@ -65,8 +61,8 @@ class PostgresAPI(DatabaseAPI):
         pl.Float64: "DOUBLE PRECISION",
         pl.Decimal: "NUMERIC",
 
-        pl.Utf8: "VARCHAR",
         pl.String: "VARCHAR",
+        pl.Utf8: "VARCHAR",
 
         pl.Date: "DATE",
         pl.Time: "TIME",
@@ -80,8 +76,7 @@ class PostgresAPI(DatabaseAPI):
 
         pl.Enum: "VARCHAR",
         pl.Categorical: "VARCHAR",
-        pl.Categories: "VARCHAR",
-        pl.Object: "VARCHAR",
+        pl.Object: "VARCHAR"
     }
 
     _DESCRIPTION_DATATYPE_MAPPING_: dict = {
@@ -90,33 +85,34 @@ class PostgresAPI(DatabaseAPI):
 
         21: pl.Int16,
         23: pl.Int32,
-        26: pl.Int32,
         20: pl.Int64,
+
+        26: pl.UInt32,
 
         700: pl.Float32,
         701: pl.Float64,
         1700: pl.Decimal,
 
-        19: pl.Utf8,
-        25: pl.Utf8,
-        1042: pl.Utf8,
-        1043: pl.Utf8,
+        19: pl.String,
+        25: pl.String,
+        1042: pl.String,
+        1043: pl.String,
+        114: pl.String,
+        3802: pl.String,
+        2950: pl.String,
+        142: pl.String,
+        1560: pl.String,
+        1562: pl.String,
+        869: pl.String,
+        650: pl.String,
+        705: pl.String,
 
         1082: pl.Date,
         1083: pl.Time,
+        1266: pl.Time,
         1114: pl.Datetime,
         1184: pl.Datetime,
-        1186: pl.Duration,
-
-        114: pl.Utf8,
-        3802: pl.Utf8,
-        2950: pl.Utf8,
-        142: pl.Utf8,
-        1560: pl.Utf8,
-        1562: pl.Utf8,
-        869: pl.Utf8,
-        650: pl.Utf8,
-        705: pl.Utf8,  # unknown
+        1186: pl.Duration
     }
 
     def __init__(self, *,

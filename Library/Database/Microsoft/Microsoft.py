@@ -1,13 +1,10 @@
 # import pymssql
-from uuid import UUID
 from typing import Callable
-from decimal import Decimal
-from datetime import date, time, datetime
 
 from Library.DataFrame import pl
 from Library.Database import DatabaseAPI
 
-class MicrosoftAPI(DatabaseAPI):
+class MicrosoftDatabaseAPI(DatabaseAPI):
 
     _PARAMETER_TOKEN_: Callable[[int], str] = staticmethod(lambda i: "%s")
 
@@ -19,7 +16,6 @@ class MicrosoftAPI(DatabaseAPI):
         pl.Int16: "smallint",
         pl.Int32: "int",
         pl.Int64: "bigint",
-        pl.Int128: "decimal",
 
         pl.UInt8: "int",
         pl.UInt16: "int",
@@ -30,8 +26,8 @@ class MicrosoftAPI(DatabaseAPI):
         pl.Float64: "float",
         pl.Decimal: "decimal",
 
-        pl.Utf8: "nvarchar",
         pl.String: "nvarchar",
+        pl.Utf8: "nvarchar",
 
         pl.Date: "date",
         pl.Time: "time",
@@ -45,8 +41,7 @@ class MicrosoftAPI(DatabaseAPI):
 
         pl.Enum: "nvarchar",
         pl.Categorical: "nvarchar",
-        pl.Categories: "nvarchar",
-        pl.Object: "nvarchar",
+        pl.Object: "nvarchar"
     }
 
     _CREATE_DATATYPE_MAPPING_: dict = {
@@ -57,7 +52,6 @@ class MicrosoftAPI(DatabaseAPI):
         pl.Int16: "SMALLINT",
         pl.Int32: "INT",
         pl.Int64: "BIGINT",
-        pl.Int128: "DECIMAL(38, 0)",
 
         pl.UInt8: "INT",
         pl.UInt16: "INT",
@@ -68,8 +62,8 @@ class MicrosoftAPI(DatabaseAPI):
         pl.Float64: "FLOAT",
         pl.Decimal: "DECIMAL(38, 18)",
 
-        pl.Utf8: "NVARCHAR(MAX)",
         pl.String: "NVARCHAR(MAX)",
+        pl.Utf8: "NVARCHAR(MAX)",
 
         pl.Date: "DATE",
         pl.Time: "TIME",
@@ -83,29 +77,43 @@ class MicrosoftAPI(DatabaseAPI):
 
         pl.Enum: "NVARCHAR(MAX)",
         pl.Categorical: "NVARCHAR(MAX)",
-        pl.Categories: "NVARCHAR(MAX)",
-        pl.Object: "NVARCHAR(MAX)",
+        pl.Object: "NVARCHAR(MAX)"
     }
 
     _DESCRIPTION_DATATYPE_MAPPING_: dict = {
-        bytes: pl.Binary,
-        bytearray: pl.Binary,
-        bool: pl.Boolean,
+        165: pl.Binary,
+        173: pl.Binary,
+        104: pl.Boolean,
 
-        int: pl.Int64,
+        48: pl.UInt8,
+        52: pl.UInt16,
+        56: pl.UInt32,
+        127: pl.UInt64,
 
-        float: pl.Float64,
-        Decimal: pl.Decimal,
+        59: pl.Float32,
+        62: pl.Float64,
 
-        str: pl.Utf8,
+        60: pl.Decimal,
+        106: pl.Decimal,
+        108: pl.Decimal,
+        122: pl.Decimal,
 
-        date: pl.Date,
-        time: pl.Time,
-        datetime: pl.Datetime,
+        1: pl.String,
+        20: pl.String,
+        35: pl.String,
+        99: pl.String,
+        167: pl.String,
+        175: pl.String,
+        231: pl.String,
+        239: pl.String,
+        241: pl.String,
 
-        UUID: pl.Utf8,
-
-        object: pl.Utf8,
+        40: pl.Date,
+        41: pl.Time,
+        42: pl.Datetime,
+        43: pl.Datetime,
+        58: pl.Datetime,
+        0: pl.Duration
     }
 
     def __init__(self, *,

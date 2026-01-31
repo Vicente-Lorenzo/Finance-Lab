@@ -4,7 +4,7 @@ from typing import Callable
 from Library.DataFrame import pl
 from Library.Database import DatabaseAPI
 
-class OracleAPI(DatabaseAPI):
+class OracleDatabaseAPI(DatabaseAPI):
 
     _PARAMETER_TOKEN_: Callable[[int], str] = staticmethod(lambda i: f":{i}")
 
@@ -16,7 +16,6 @@ class OracleAPI(DatabaseAPI):
         pl.Int16: "NUMBER",
         pl.Int32: "NUMBER",
         pl.Int64: "NUMBER",
-        pl.Int128: "NUMBER",
 
         pl.UInt8: "NUMBER",
         pl.UInt16: "NUMBER",
@@ -27,8 +26,8 @@ class OracleAPI(DatabaseAPI):
         pl.Float64: "FLOAT",
         pl.Decimal: "NUMBER",
 
-        pl.Utf8: "VARCHAR2",
         pl.String: "VARCHAR2",
+        pl.Utf8: "VARCHAR2",
 
         pl.Date: "DATE",
         pl.Time: "INTERVAL DAY TO SECOND",
@@ -42,8 +41,7 @@ class OracleAPI(DatabaseAPI):
 
         pl.Enum: "VARCHAR2",
         pl.Categorical: "VARCHAR2",
-        pl.Categories: "VARCHAR2",
-        pl.Object: "VARCHAR2",
+        pl.Object: "VARCHAR2"
     }
 
     _CREATE_DATATYPE_MAPPING_: dict = {
@@ -54,7 +52,6 @@ class OracleAPI(DatabaseAPI):
         pl.Int16: "NUMBER(5)",
         pl.Int32: "NUMBER(10)",
         pl.Int64: "NUMBER(19)",
-        pl.Int128: "NUMBER(38)",
 
         pl.UInt8: "NUMBER(3)",
         pl.UInt16: "NUMBER(5)",
@@ -65,8 +62,8 @@ class OracleAPI(DatabaseAPI):
         pl.Float64: "FLOAT(53)",
         pl.Decimal: "NUMBER(38, 18)",
 
-        pl.Utf8: "VARCHAR2(4000)",
         pl.String: "VARCHAR2(4000)",
+        pl.Utf8: "VARCHAR2(4000)",
 
         pl.Date: "DATE",
         pl.Time: "INTERVAL DAY TO SECOND",
@@ -80,8 +77,7 @@ class OracleAPI(DatabaseAPI):
 
         pl.Enum: "VARCHAR2(4000)",
         pl.Categorical: "VARCHAR2(4000)",
-        pl.Categories: "VARCHAR2(4000)",
-        pl.Object: "VARCHAR2(4000)",
+        pl.Object: "VARCHAR2(4000)"
     }
 
     _DESCRIPTION_DATATYPE_MAPPING_: dict = {
@@ -94,13 +90,13 @@ class OracleAPI(DatabaseAPI):
         # oracledb.DB_TYPE_BINARY_FLOAT: pl.Float32,
         # oracledb.DB_TYPE_BINARY_DOUBLE: pl.Float64,
 
-        # oracledb.DB_TYPE_VARCHAR: pl.Utf8,
-        # oracledb.DB_TYPE_NVARCHAR: pl.Utf8,
-        # oracledb.DB_TYPE_CHAR: pl.Utf8,
-        # oracledb.DB_TYPE_NCHAR: pl.Utf8,
-        # oracledb.DB_TYPE_LONG: pl.Utf8,
-        # oracledb.DB_TYPE_CLOB: pl.Utf8,
-        # oracledb.DB_TYPE_NCLOB: pl.Utf8,
+        # oracledb.DB_TYPE_VARCHAR: pl.String,
+        # oracledb.DB_TYPE_NVARCHAR: pl.String,
+        # oracledb.DB_TYPE_CHAR: pl.String,
+        # oracledb.DB_TYPE_NCHAR: pl.String,
+        # oracledb.DB_TYPE_LONG: pl.String,
+        # oracledb.DB_TYPE_CLOB: pl.String,
+        # oracledb.DB_TYPE_NCLOB: pl.String,
 
         # oracledb.DB_TYPE_DATE: pl.Datetime,
         # oracledb.DB_TYPE_TIMESTAMP: pl.Datetime,
@@ -108,11 +104,11 @@ class OracleAPI(DatabaseAPI):
         # oracledb.DB_TYPE_TIMESTAMP_LTZ: pl.Datetime,
 
         # oracledb.DB_TYPE_INTERVAL_DS: pl.Duration,
-        # oracledb.DB_TYPE_INTERVAL_YM: pl.Utf8,
+        # oracledb.DB_TYPE_INTERVAL_YM: pl.String,
 
-        # oracledb.DB_TYPE_JSON: pl.Utf8,
-        # oracledb.DB_TYPE_ROWID: pl.Utf8,
-        # oracledb.DB_TYPE_UROWID: pl.Utf8,
+        # oracledb.DB_TYPE_JSON: pl.String,
+        # oracledb.DB_TYPE_ROWID: pl.String,
+        # oracledb.DB_TYPE_UROWID: pl.String,
     }
 
     def __init__(self, *,

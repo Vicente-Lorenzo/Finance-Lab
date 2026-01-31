@@ -1,8 +1,8 @@
 from Library.DataFrame import pl
 from Library.Dataclass import *
-from Library.Database import PostgresAPI
+from Library.Database import PostgresDatabaseAPI
 
-class TickDatabaseAPI(PostgresAPI):
+class TickDatabaseAPI(PostgresDatabaseAPI):
 
     _STRUCTURE_: dict = {
         TickAPI.ID.Timestamp.DateTime: pl.Datetime(),

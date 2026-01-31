@@ -1,8 +1,8 @@
 from Library.DataFrame import pl
 from Library.Dataclass import *
-from Library.Database import PostgresAPI
+from Library.Database import PostgresDatabaseAPI
 
-class SymbolDatabaseAPI(PostgresAPI):
+class SymbolDatabaseAPI(PostgresDatabaseAPI):
 
     _STRUCTURE_: dict = {
         SymbolAPI.ID.BaseAssetType: pl.Enum([currency.name for currency in AssetType]),
