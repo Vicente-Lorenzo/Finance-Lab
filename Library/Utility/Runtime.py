@@ -1,23 +1,23 @@
+import os
+import sys
+import socket
+import getpass
+from IPython import get_ipython
 from functools import lru_cache
 
 def find_user():
     try:
-        import getpass
         return getpass.getuser()
     except (OSError, KeyError, ImportError):
-        import os
         return os.environ.get("USER") or os.environ.get("USERNAME")
 
 def is_windows():
-    import sys
     return sys.platform.startswith("win")
 
 def is_linux():
-    import sys
     return sys.platform.startswith("linux")
 
 def is_mac():
-    import sys
     return sys.platform.startswith("darwin")
 
 def is_local():
@@ -31,7 +31,6 @@ def is_service():
 
 @lru_cache(maxsize=1)
 def find_ipython():
-    from IPython import get_ipython
     ipython = get_ipython()
     return ipython
 
@@ -62,3 +61,46 @@ def is_console():
 def find_notebook():
     ipython = find_ipython()
     return ipython.user_ns["__session__"]
+
+def find_env_var(key: str, case_sensitive: bool = True) -> str | None:
+    if key in os.environ:
+        return os.environ[key]
+    if case_sensitive:
+        return None
+    for variant in (key.lower(), key.upper(), key.capitalize(), key.title()):
+        if variant in os.environ:
+            return os.environ[variant]
+    key = key.lower()
+    for env_key, env_value in os.environ.items():
+        if env_key.lower() == key:
+            return env_value
+    return None
+
+def match_env_vars(keyword: str, case_sensitive: bool = True) -> dict[str, str]:
+    matches: dict[str, str] = {}
+    keyword = keyword if case_sensitive else keyword.lower()
+    for env_key, env_value in os.environ.items():
+        if case_sensitive:
+            key_match = keyword in env_key
+        else:
+            key_match = keyword in env_key.lower()
+        if case_sensitive:
+            value_match = keyword in env_value
+        else:
+            value_match = keyword in env_value.lower()
+        if key_match and value_match:
+            matches[env_key] = env_value
+    return matches
+
+def find_host_port(host: str = "localhost", port_min: int = 1024, port_max: int = 65535) -> int | tuple[str, int]:
+    if not (0 <= port_min <= 65535):
+        raise ValueError(f"Invalid min port range: [0, 65535]")
+    if not (0 <= port_max <= 65535):
+        raise ValueError(f"Invalid max port range: [0, 65535]")
+    if port_min > port_max:
+        raise ValueError(f"Invalid port range: min port cannot be larger than max port")
+    for port in range(port_min, port_max + 1):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            rc = probe.connect_ex((host, port))
+            if rc != 0: return port
+    raise RuntimeError(f"No free port found in range [{port_min}, {port_max}] on {host}")
