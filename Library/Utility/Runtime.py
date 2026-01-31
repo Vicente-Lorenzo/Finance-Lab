@@ -9,7 +9,7 @@ def find_user():
     try:
         return getpass.getuser()
     except (OSError, KeyError, ImportError):
-        return find_env_var("USER", case_sensitive=True) or find_env_var("USERNAME", case_sensitive=True)
+        return find_env_var("USER", case_sensitive=False) or find_env_var("USERNAME", case_sensitive=False)
 
 def is_windows():
     return sys.platform.startswith("win")
