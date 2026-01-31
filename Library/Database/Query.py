@@ -1,5 +1,6 @@
 import re
 from typing import Callable
+
 from Library.Utility import PathAPI
 
 class QueryAPI:
