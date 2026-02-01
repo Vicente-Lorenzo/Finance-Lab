@@ -16,4 +16,5 @@
 *.log
 *.html
 
+*Test.py
 *Research.ipynb
