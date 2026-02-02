@@ -12,7 +12,6 @@ class WorkflowManagerFrontendAPI(AppAPI):
             name="Workflow Manager",
             title="Workflow Manager",
             team="Exotics Trading Team",
-            anchor="services/proxy/8090",
             port=8050,
             debug=True
         )
