@@ -31,18 +31,19 @@ class Trigger(ABC):
     def build(self, context: AppAPI | PageAPI) -> tuple[dict, str]:
         trigger: str = self.__class__.__name__
         if isinstance(self.component, dict):
-            self.component = context.identify(**self.component)
+            component = context.identify(**self.component)
             load: str = "Hardcode Dict"
         elif isinstance(self.component, str) and hasattribute(context, self.component):
-            self.component = getattribute(context, self.component)
+            component = getattribute(context, self.component)
             load: str = "Page Attribute" if isinstance(context, PageAPI) else "Global Attribute"
         elif isinstance(self.component, str) and isinstance(context, PageAPI) and hasattribute(context.app, self.component):
-            self.component = getattribute(context.app, self.component)
+            component = getattribute(context.app, self.component)
             load: str = "Global Attribute"
         else:
+            component = self.component
             load: str = "Hardcode String"
-        context._log_.debug(lambda: f"Loaded {load} ({trigger}): {self.component} @ {self.property}")
-        return self.component, self.property
+        context._log_.debug(lambda: f"Loaded {load} ({trigger}): {component} @ {self.property}")
+        return component, self.property
 
 class Output(Trigger):
     def __init__(self, component: str | dict, property: str, allow_duplicate: bool = True):
