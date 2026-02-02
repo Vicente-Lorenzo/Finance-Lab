@@ -12,49 +12,49 @@ from Library.Utility.Typing import *
 
 class AppAPI:
 
-    _DESCRIPTION_ID_: dict = None
-    _CONTENT_ID_: dict = None
-    _SIDEBAR_BUTTON_ID_: dict = None
-    _SIDEBAR_COLLAPSE_ID_: dict = None
-    _SIDEBAR_ID_: dict = None
+    _DESCRIPTION_ID_: dict
+    _CONTENT_ID_: dict
+    _SIDEBAR_BUTTON_ID_: dict
+    _SIDEBAR_COLLAPSE_ID_: dict
+    _SIDEBAR_ID_: dict
 
-    _LOCATION_ID_: dict = None
-    _BACKWARD_BUTTON_ID_: dict = None
-    _BACKWARD_TRIGGER_ID_: dict = None
-    _REFRESH_BUTTON_ID_: dict = None
-    _REFRESH_TRIGGER_ID_: dict = None
-    _FORWARD_BUTTON_ID_: dict = None
-    _FORWARD_TRIGGER_ID_: dict = None
-    _LOCATION_STORAGE_ID_: dict = None
+    _LOCATION_ID_: dict
+    _BACKWARD_BUTTON_ID_: dict
+    _BACKWARD_TRIGGER_ID_: dict
+    _REFRESH_BUTTON_ID_: dict
+    _REFRESH_TRIGGER_ID_: dict
+    _FORWARD_BUTTON_ID_: dict
+    _FORWARD_TRIGGER_ID_: dict
+    _LOCATION_STORAGE_ID_: dict
 
-    _NAVIGATION_ID_: dict = None
-    NAVIGATION_STORAGE_ID: dict = None
+    _NAVIGATION_ID_: dict
+    NAVIGATION_STORAGE_ID: dict
 
-    _CONTACTS_ARROW_ID_: dict = None
-    _CONTACTS_BUTTON_ID_: dict = None
-    _CONTACTS_COLLAPSE_ID_: dict = None
-    _CONTACTS_ID_: dict = None
+    _CONTACTS_ARROW_ID_: dict
+    _CONTACTS_BUTTON_ID_: dict
+    _CONTACTS_COLLAPSE_ID_: dict
+    _CONTACTS_ID_: dict
 
-    _TERMINAL_ARROW_ID_: dict = None
-    _TERMINAL_BUTTON_ID_: dict = None
-    _TERMINAL_COLLAPSE_ID_: dict = None
-    _TERMINAL_ID_: dict = None
+    _TERMINAL_ARROW_ID_: dict
+    _TERMINAL_BUTTON_ID_: dict
+    _TERMINAL_COLLAPSE_ID_: dict
+    _TERMINAL_ID_: dict
 
-    _CLEAN_CACHE_BUTTON_ID_: dict = None
-    _CLEAN_DATA_BUTTON_ID_: dict = None
+    _CLEAN_CACHE_BUTTON_ID_: dict
+    _CLEAN_DATA_BUTTON_ID_: dict
 
-    CALLBACK_SINK_ID: dict = None
+    CALLBACK_SINK_ID: dict
 
-    INTERVAL_ID: dict = None
-    MEMORY_STORAGE_ID: dict = None
-    SESSION_STORAGE_ID: dict = None
-    LOCAL_STORAGE_ID: dict = None
+    INTERVAL_ID: dict
+    MEMORY_STORAGE_ID: dict
+    SESSION_STORAGE_ID: dict
+    LOCAL_STORAGE_ID: dict
 
-    NOT_FOUND_LAYOUT: Component = None
-    LOADING_LAYOUT: Component = None
-    MAINTENANCE_LAYOUT: Component = None
-    DEVELOPMENT_LAYOUT: Component = None
-    NOT_INDEXED_LAYOUT: Component = None
+    NOT_FOUND_LAYOUT: Component
+    LOADING_LAYOUT: Component
+    MAINTENANCE_LAYOUT: Component
+    DEVELOPMENT_LAYOUT: Component
+    NOT_INDEXED_LAYOUT: Component
 
     def __init__(self, *,
                  name: str = "<Insert App Name>",
