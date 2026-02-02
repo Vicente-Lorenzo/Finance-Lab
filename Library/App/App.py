@@ -69,7 +69,8 @@ class AppAPI:
                  domain: str = None,
                  proxy: str = None,
                  anchor: str = None,
-                 debug: bool = False) -> None:
+                 debug: bool = False,
+                 terminal: int = 1000) -> None:
 
         self._log_: HandlerLoggingAPI = HandlerLoggingAPI(AppAPI.__name__)
         self._ids_: set = set()
@@ -120,6 +121,8 @@ class AppAPI:
 
         self.debug: bool = debug
         self._log_.debug(lambda: f"Defined Debug = {self.debug}")
+        self.terminal: int = terminal
+        self._log_.debug(lambda: f"Defined Terminal = {self.terminal}")
 
         self.module: PurePath = traceback_current_module(resolve=True)
         self._log_.debug(lambda: f"Defined Calling = {self.module}")
@@ -696,8 +699,9 @@ class AppAPI:
     def _terminal_stream_callback_(self, _, terminal: list[Component]):
         logs = self._log_.web.stream()
         if not logs: raise PreventUpdate
+        terminal = terminal or []
         terminal.extend(logs)
-        return terminal
+        return terminal[-self.terminal:]
 
     def ids(self) -> None:
         pass
