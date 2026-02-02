@@ -675,7 +675,6 @@ class AppAPI:
         self._log_.debug(lambda: "Clean Data Callback: Cleaned Data")
         button.trigger()
         self._log_.debug(lambda: "Clean Data Callback: Refreshing Page")
-        print(button)
         return memory, session, local, button.dict()
 
     @serverside_callback(
