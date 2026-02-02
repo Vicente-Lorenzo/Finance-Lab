@@ -19,9 +19,12 @@ class AppAPI:
     _SIDEBAR_ID_: dict = None
 
     _LOCATION_ID_: dict = None
-    _LOCATION_BACKWARD_ID_: dict = None
-    _LOCATION_REFRESH_ID_: dict = None
-    _LOCATION_FORWARD_ID_: dict = None
+    _BACKWARD_BUTTON_ID_: dict = None
+    _BACKWARD_TRIGGER_ID_: dict = None
+    _REFRESH_BUTTON_ID_: dict = None
+    _REFRESH_TRIGGER_ID_: dict = None
+    _FORWARD_BUTTON_ID_: dict = None
+    _FORWARD_TRIGGER_ID_: dict = None
     _LOCATION_STORAGE_ID_: dict = None
 
     _NAVIGATION_ID_: dict = None
@@ -223,9 +226,12 @@ class AppAPI:
         self._SIDEBAR_COLLAPSE_ID_: dict = self.register(type="collapse", name="sidebar")
         self._SIDEBAR_ID_: dict = self.register(type="div", name="sidebar")
         self._LOCATION_ID_: dict = self.register(type="location", name="location")
-        self._LOCATION_BACKWARD_ID_: dict = self.register(type="button", name="backward")
-        self._LOCATION_REFRESH_ID_: dict = self.register(type="button", name="refresh")
-        self._LOCATION_FORWARD_ID_: dict = self.register(type="button", name="forward")
+        self._BACKWARD_BUTTON_ID_: dict = self.register(type="button", name="backward-button")
+        self._BACKWARD_TRIGGER_ID_ = self.register(type="storage", name="backward-trigger")
+        self._REFRESH_BUTTON_ID_: dict = self.register(type="button", name="refresh-button")
+        self._REFRESH_TRIGGER_ID_ = self.register(type="storage", name="refresh-trigger")
+        self._FORWARD_BUTTON_ID_: dict = self.register(type="button", name="forward-button")
+        self._FORWARD_TRIGGER_ID_ = self.register(type="storage", name="forward-trigger")
         self._LOCATION_STORAGE_ID_: dict = self.register(type="storage", name="location")
         self._NAVIGATION_ID_: dict = self.register(type="div", name="navigation")
         self.NAVIGATION_STORAGE_ID: dict = self.register(type="storage", name="navigation")
@@ -338,10 +344,10 @@ class AppAPI:
             ], className="header-information-block"),
             html.Div([
                 html.Div(None, id=self._NAVIGATION_ID_, className="header-navigation-block"),
-                ButtonContainerAPI(background="primary", border="white", elements=[
-                    ButtonAPI(id=self._LOCATION_BACKWARD_ID_, stylename="bi bi-arrow-left"),
-                    ButtonAPI(id=self._LOCATION_REFRESH_ID_, stylename="bi bi-arrow-repeat"),
-                    ButtonAPI(id=self._LOCATION_FORWARD_ID_, stylename="bi bi-arrow-right")
+                *ButtonContainerAPI(background="primary", border="white", elements=[
+                    ButtonAPI(id=self._BACKWARD_BUTTON_ID_, stylename="bi bi-arrow-left", trigger=self._BACKWARD_TRIGGER_ID_),
+                    ButtonAPI(id=self._REFRESH_BUTTON_ID_, stylename="bi bi-arrow-repeat", trigger=self._REFRESH_TRIGGER_ID_),
+                    ButtonAPI(id=self._FORWARD_BUTTON_ID_, stylename="bi bi-arrow-right", trigger=self._FORWARD_TRIGGER_ID_)
                 ], stylename="header-location-block").build()
             ], className="header-control-block")
         ], className="header")
@@ -360,12 +366,12 @@ class AppAPI:
     def _init_footer_(self) -> Component:
         return html.Div([
             html.Div([
-                ButtonAPI(
+                *ButtonAPI(
                     id=self._SIDEBAR_BUTTON_ID_,
                     label=[IconAPI(icon="bi bi-layout-sidebar-inset")],
                     background="primary", border="white"
                 ).build(),
-                ButtonAPI(
+                *ButtonAPI(
                     id=self._CONTACTS_BUTTON_ID_,
                     label=[
                         IconAPI(icon="bi bi-caret-down-fill", id=self._CONTACTS_ARROW_ID_),
@@ -375,17 +381,17 @@ class AppAPI:
                 ).build(),
             ], className="footer-left"),
             html.Div([
-                ButtonAPI(
+                *ButtonAPI(
                     id=self._CLEAN_CACHE_BUTTON_ID_,
                     label=[IconAPI(icon="bi bi-trash"), TextAPI(text="  Clean Cache  ")],
                     background="primary", border="white"
                 ).build(),
-                ButtonAPI(
+                *ButtonAPI(
                     id=self._CLEAN_DATA_BUTTON_ID_,
                     label=[IconAPI(icon="bi bi-database-x"), TextAPI(text="  Clean Data  ")],
                     background="primary", border="white"
                 ).build(),
-                ButtonAPI(
+                *ButtonAPI(
                     id=self._TERMINAL_BUTTON_ID_,
                     label=[IconAPI(icon="bi bi-terminal"), TextAPI(text="  Terminal  "), IconAPI(icon="bi bi-caret-down-fill", id=self._TERMINAL_ARROW_ID_)],
                     background="primary", border="white"
@@ -469,17 +475,17 @@ class AppAPI:
         self._log_.debug(lambda: f"Update Location Callback: Parsed Anchor = {anchor}")
         endpoint = self.endpointize(path=path, relative=False)
         self._log_.debug(lambda: f"Update Location Callback: Parsed Endpoint = {endpoint}")
-        location = LocationAPI(**location)
+        location = LocationAPI(**location or {})
         if location.current() == anchor:
             self._log_.debug(lambda: "Update Location Callback: Current Page Detected")
         elif location.backward(step=False) == anchor:
             self._log_.debug(lambda: "Update Location Callback: Backward Page Detected")
             location.backward(step=True)
         elif location.forward(step=False) == anchor:
-            self._log_.debug(lambda: "Update Location Callback: Forward Detected")
+            self._log_.debug(lambda: "Update Location Callback: Forward Page Detected")
             location.forward(step=True)
         else:
-            location.register(anchor)
+            location.register(path=anchor)
             self._log_.debug(lambda: "Update Location Callback: Registered Page")
         if path == anchor:
             anchor = dash.no_update
@@ -551,13 +557,13 @@ class AppAPI:
     @serverside_callback(
         Output("_LOCATION_ID_", "pathname"),
         Output("_LOCATION_STORAGE_ID_", "data"),
-        Input("_LOCATION_BACKWARD_ID_", "n_clicks"),
-        State("_LOCATION_STORAGE_ID_", "data"),
+        Input("_BACKWARD_BUTTON_ID_", "n_clicks"),
+        State("_LOCATION_STORAGE_ID_", "data")
     )
     def _backward_location_callback_(self, clicks: int, location: dict):
         if clicks is None: raise PreventUpdate
         self._log_.debug(lambda: f"Backward Location Callback: Clicks = {clicks}")
-        location = LocationAPI(**location)
+        location = LocationAPI(**location or {})
         path = location.backward(step=True)
         if not path:
             self._log_.debug(lambda: "Backward Location Callback: No backward path available")
@@ -567,12 +573,22 @@ class AppAPI:
 
     @clientside_callback(
         Output("CALLBACK_SINK_ID", "children"),
-        Input("_LOCATION_REFRESH_ID_", "n_clicks"),
+        Input("_REFRESH_BUTTON_ID_", "n_clicks"),
+        Input("_REFRESH_TRIGGER_ID_", "data"),
     )
     def _refresh_location_callback_(self):
         return """
-        function(n) {
-            if (!n) return window.dash_clientside.no_update;
+        function(clicks, trigger) {
+            const clicked = (clicks != null && clicks > 0);
+            const idx = (trigger && trigger.index != null) ? trigger.index : 0;
+            const last = (window.__lastRefreshIndex__ ?? 0);
+            const triggered = (idx > last);
+            if (!clicked && !triggered) {
+                return window.dash_clientside.no_update;
+            }
+            if (triggered) {
+                window.__lastRefreshIndex__ = idx;
+            }
             window.location.reload();
             return "";
         }
@@ -581,13 +597,13 @@ class AppAPI:
     @serverside_callback(
         Output("_LOCATION_ID_", "pathname"),
         Output("_LOCATION_STORAGE_ID_", "data"),
-        Input("_LOCATION_FORWARD_ID_", "n_clicks"),
-        State("_LOCATION_STORAGE_ID_", "data"),
+        Input("_FORWARD_BUTTON_ID_", "n_clicks"),
+        State("_LOCATION_STORAGE_ID_", "data")
     )
     def _forward_location_callback_(self, clicks: int, location: dict):
         if clicks is None: raise PreventUpdate
         self._log_.debug(lambda: f"Forward Location Callback: Clicks = {clicks}")
-        location = LocationAPI(**location)
+        location = LocationAPI(**location or {})
         path = location.forward(step=True)
         if not path:
             self._log_.debug(lambda: "Forward Location Callback: No forward path available")
@@ -606,7 +622,7 @@ class AppAPI:
     @serverside_callback(
         Output("_SIDEBAR_COLLAPSE_ID_", "is_open"),
         Input("_SIDEBAR_BUTTON_ID_", "n_clicks"),
-        State("_SIDEBAR_COLLAPSE_ID_", "is_open"),
+        State("_SIDEBAR_COLLAPSE_ID_", "is_open")
     )
     def _sidebar_button_callback_(self, clicks: int, was_open: bool):
         if clicks is None: raise PreventUpdate
@@ -617,7 +633,7 @@ class AppAPI:
         Output("_CONTACTS_ARROW_ID_", "className"),
         Input("_CONTACTS_BUTTON_ID_", "n_clicks"),
         State("_CONTACTS_COLLAPSE_ID_", "is_open"),
-        State("_CONTACTS_ARROW_ID_", "className"),
+        State("_CONTACTS_ARROW_ID_", "className")
     )
     def _contacts_button_callback_(self, clicks: int, was_open: bool, classname: str):
         if clicks is None: raise PreventUpdate
@@ -626,34 +642,48 @@ class AppAPI:
     @serverside_callback(
         Output("MEMORY_STORAGE_ID", "data"),
         Output("SESSION_STORAGE_ID", "data"),
+        Output("_REFRESH_TRIGGER_ID_", "data"),
         Input("_CLEAN_CACHE_BUTTON_ID_", "n_clicks"),
+        State("_REFRESH_TRIGGER_ID_", "data")
     )
-    def _clean_cache_callback_(self, clicks: int):
+    def _clean_cache_callback_(self, clicks: int, trigger: dict):
         if clicks is None: raise PreventUpdate
+        button = TriggerAPI(**trigger or {})
         self._log_.debug(lambda: "Clean Cache Callback: Cleaning Cache")
         memory = {}
         session = {}
-        return memory, session
+        self._log_.debug(lambda: "Clean Cache Callback: Cleaned Data")
+        button.trigger()
+        self._log_.debug(lambda: "Clean Cache Callback: Refreshing Page")
+        return memory, session, button.dict()
 
     @serverside_callback(
         Output("MEMORY_STORAGE_ID", "data"),
         Output("SESSION_STORAGE_ID", "data"),
         Output("LOCAL_STORAGE_ID", "data"),
+        Output("_REFRESH_TRIGGER_ID_", "data"),
         Input("_CLEAN_DATA_BUTTON_ID_", "n_clicks"),
+        State("_REFRESH_TRIGGER_ID_", "data")
     )
-    def _clean_data_callback_(self, clicks: int):
+    def _clean_data_callback_(self, clicks: int, trigger: dict):
         if clicks is None: raise PreventUpdate
-        memory, session = self._clean_cache_callback_(clicks=clicks)
+        button = TriggerAPI(**trigger or {})
         self._log_.debug(lambda: "Clean Data Callback: Cleaning Data")
+        memory = {}
+        session = {}
         local = {}
-        return memory, session, local
+        self._log_.debug(lambda: "Clean Data Callback: Cleaned Data")
+        button.trigger()
+        self._log_.debug(lambda: "Clean Data Callback: Refreshing Page")
+        print(button)
+        return memory, session, local, button.dict()
 
     @serverside_callback(
         Output("_TERMINAL_COLLAPSE_ID_", "is_open"),
         Output("_TERMINAL_ARROW_ID_", "className"),
         Input("_TERMINAL_BUTTON_ID_", "n_clicks"),
         State("_TERMINAL_COLLAPSE_ID_", "is_open"),
-        State("_TERMINAL_ARROW_ID_", "className"),
+        State("_TERMINAL_ARROW_ID_", "className")
     )
     def _terminal_button_callback_(self, clicks: int, was_open: bool, classname: str):
         if clicks is None: raise PreventUpdate
@@ -662,7 +692,7 @@ class AppAPI:
     @serverside_callback(
         Output("_TERMINAL_ID_", "children"),
         Input("INTERVAL_ID", "n_intervals"),
-        State("_TERMINAL_ID_", "children"),
+        State("_TERMINAL_ID_", "children")
     )
     def _terminal_stream_callback_(self, _, terminal: list[Component]):
         logs = self._log_.web.stream()

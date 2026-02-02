@@ -1,9 +1,12 @@
+from Library.App import Session
+from Library.App.Session import *
 from Library.App.Component import (
     parse_id,
     parse_classname,
     parse_style,
     ComponentAPI,
     ContainerAPI,
+    flatten_components,
     IconAPI,
     TextAPI,
     ButtonAPI,
@@ -15,8 +18,6 @@ from Library.App.Layout import (
     LayoutAPI,
     DefaultLayoutAPI
 )
-from Library.App import Session
-from Library.App.Session import *
 from Library.App.Page import PageAPI
 from Library.App.Form import FormAPI
 from Library.App.Callback import (
@@ -32,7 +33,8 @@ from Library.App.App import AppAPI
 
 __all__ = [
     "parse_id", "parse_classname", "parse_style",
-    "ComponentAPI", "IconAPI", "TextAPI",
+    "ComponentAPI", "ContainerAPI", "flatten_components",
+    "IconAPI", "TextAPI",
     "ButtonAPI", "IconButtonAPI", "ButtonContainerAPI",
     "PaginatorAPI",
     "LayoutAPI", "DefaultLayoutAPI",

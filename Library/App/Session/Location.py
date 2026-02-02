@@ -12,7 +12,7 @@ class LocationAPI(DataclassAPI):
             return self.stack[self.index]
         return None
 
-    def register(self, path: str) -> None:
+    def register(self, *, path: str) -> None:
         if self.index == -1:
             self.stack = [path]
             self.index = 0

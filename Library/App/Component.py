@@ -1,8 +1,9 @@
-from dash import html
+from dash import html, dcc
 import dash_bootstrap_components as dbc
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
+from Library.App import TriggerAPI
 from Library.Utility import Component
 
 def parse_id(id: dict = None) -> dict:
@@ -39,8 +40,11 @@ class ComponentAPI(Component, ABC):
         return kwargs
 
     @abstractmethod
-    def build(self) -> Component:
+    def build(self) -> list[Component]:
         raise NotImplementedError
+
+    def __repr__(self):
+        return repr(self.build())
 
 @dataclass(kw_only=True)
 class ContainerAPI(ComponentAPI, ABC):
@@ -54,6 +58,12 @@ class ContainerAPI(ComponentAPI, ABC):
         else: self.elements = []
         super().__post_init__()
 
+def flatten_components(elements: list[ComponentAPI]) -> list[Component]:
+    flat = []
+    for element in elements:
+        flat.extend(element.build())
+    return flat
+
 @dataclass(kw_only=True)
 class IconAPI(ComponentAPI):
 
@@ -65,8 +75,8 @@ class IconAPI(ComponentAPI):
         self.stylename = self.icon
         super().__post_init__()
 
-    def build(self) -> Component:
-        return html.I(**self.arguments(), children=self.text)
+    def build(self) -> list[Component]:
+        return [html.I(**self.arguments(), children=self.text)]
 
 @dataclass(kw_only=True)
 class TextAPI(ComponentAPI):
@@ -79,8 +89,8 @@ class TextAPI(ComponentAPI):
         self.stylename = self.icon
         super().__post_init__()
 
-    def build(self) -> Component:
-        return html.Span(**self.arguments(), children=self.text)
+    def build(self) -> list[Component]:
+        return [html.Span(**self.arguments(), children=self.text)]
 
 @dataclass(kw_only=True)
 class ButtonAPI(ComponentAPI):
@@ -97,6 +107,7 @@ class ButtonAPI(ComponentAPI):
     size: str = field(default="md")
     href: str = field(default_factory=str)
     external: bool = field(default=False)
+    trigger: dict = field(default=None)
 
     def __post_init__(self):
         if isinstance(self.label, str): self.label = [TextAPI(text=self.label)]
@@ -116,9 +127,12 @@ class ButtonAPI(ComponentAPI):
         if self.external: kwargs.update(external_link=self.external, target="_blank")
         return kwargs
 
-    def build(self) -> Component:
-        label = [element.build() for element in self.label]
-        return dbc.Button(label, **self.arguments())
+    def build(self) -> list[Component]:
+        label = flatten_components(elements=self.label)
+        button = dbc.Button(label, **self.arguments())
+        if not self.trigger: return [button]
+        hidden = dcc.Store(id=self.trigger, storage_type="memory", data=TriggerAPI().dict())
+        return [button, hidden]
 
 @dataclass(kw_only=True)
 class IconButtonAPI(ButtonAPI):
@@ -160,9 +174,13 @@ class ButtonContainerAPI(ContainerAPI):
         kwargs.update(vertical=self.vertical)
         return kwargs
 
-    def build(self) -> Component:
-        elements = [element.build() for element in self.elements]
-        return dbc.ButtonGroup(elements, **self.arguments())
+    def build(self) -> list[Component]:
+        elements = flatten_components(elements=self.elements)
+        buttons = [c for c in elements if isinstance(c, dbc.Button)]
+        extras = [c for c in elements if not isinstance(c, dbc.Button)]
+        group = dbc.ButtonGroup(buttons, **self.arguments())
+        if not extras: return [group]
+        return [group, *extras]
 
 @dataclass(kw_only=True)
 class PaginatorAPI(ButtonContainerAPI):
