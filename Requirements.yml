@@ -1,21 +1,30 @@
 name: Trading
+
 channels:
     - defaults
     - conda-forge
+
 dependencies:
     - python=3.10
     - pytest
+    - tqdm
+
     - numpy
     - pandas
     - polars
-    - matplotlib
-    - pytorch
-    - tqdm
-    - pillow
-    - ta-lib
+
     - jupyter
+    - matplotlib
+
+    - pillow
+    - pytorch
     - psycopg[binary]
+
+    - ta-lib
+    - blpapi
     - xlwings
     - yfinance
+
     - dash
+    - fastapi
     - dash-bootstrap-components
