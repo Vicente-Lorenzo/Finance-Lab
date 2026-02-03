@@ -4,11 +4,15 @@ from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from pathlib import PurePosixPath
 
+from fastapi import FastAPI
+from fastapi.middleware.wsgi import WSGIMiddleware
+
 from Library.App import *
 from Library.Logging import *
 from Library.Utility.HTML import *
 from Library.Utility.Path import *
 from Library.Utility.Typing import *
+from Library.Utility.Runtime import *
 
 class AppAPI:
 
@@ -89,14 +93,15 @@ class AppAPI:
         self.update: str = update
         self._log_.debug(lambda: f"Defined Update = {self.update}")
 
-        protocol: str = protocol or "http"
-        self.protocol: str = inspect_file_path(protocol, builder=PurePosixPath)
-        self._log_.debug(lambda: f"Defined Protocol = {self.protocol}")
         host: str = host or "localhost"
         self.host: str = inspect_file_path(host, builder=PurePosixPath)
         self._log_.debug(lambda: f"Defined Host = {self.host}")
-        self.port: int = port or 8050
+        self.port: int = port or find_host_port(host=self.host, port_min=8050)
         self._log_.debug(lambda: f"Defined Port = {self.port}")
+
+        protocol: str = protocol or "http"
+        self.protocol: str = inspect_file_path(protocol, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Defined Protocol = {self.protocol}")
 
         host_address: str = f"{self.host}:{self.port}"
         self.host_address: str = inspect_file_path(host_address, builder=PurePosixPath)
@@ -261,6 +266,7 @@ class AppAPI:
             title=self.title,
             update_title=self.update,
             assets_folder=self.assets,
+            routes_pathname_prefix=self.endpoint,
             requests_pathname_prefix=self.endpoint,
             external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
             suppress_callback_exceptions=True,
@@ -718,3 +724,8 @@ class AppAPI:
             jupyter_mode="external",
             jupyter_server_url=self.domain_url
         )
+
+    def mount(self):
+        app = FastAPI()
+        app.mount("/", WSGIMiddleware(self.app.server))
+        return app
