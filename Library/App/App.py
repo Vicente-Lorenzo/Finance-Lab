@@ -80,59 +80,59 @@ class AppAPI:
         self._ids_: set = set()
         self._pages_: dict[str, PageAPI] = {}
 
-        self.name: str = name
-        self._log_.debug(lambda: f"Defined Name = {self.name}")
-        self.title: str = title
-        self._log_.debug(lambda: f"Defined Title = {self.title}")
-        self.team: str = team
-        self._log_.debug(lambda: f"Defined Team = {self.team}")
-        self.description: str = description
-        self._log_.debug(lambda: f"Defined Description = {self.description}")
-        self.contact: str = contact
-        self._log_.debug(lambda: f"Defined Contact = {self.contact}")
-        self.update: str = update
-        self._log_.debug(lambda: f"Defined Update = {self.update}")
+        self._name_: str = name
+        self._log_.debug(lambda: f"Defined Name = {self._name_}")
+        self._title_: str = title
+        self._log_.debug(lambda: f"Defined Title = {self._title_}")
+        self._team_: str = team
+        self._log_.debug(lambda: f"Defined Team = {self._team_}")
+        self._description_: str = description
+        self._log_.debug(lambda: f"Defined Description = {self._description_}")
+        self._contact_: str = contact
+        self._log_.debug(lambda: f"Defined Contact = {self._contact_}")
+        self._update_: str = update
+        self._log_.debug(lambda: f"Defined Update = {self._update_}")
 
         host: str = host or "localhost"
-        self.host: str = inspect_file_path(host, builder=PurePosixPath)
-        self._log_.debug(lambda: f"Defined Host = {self.host}")
-        self.port: int = port or find_host_port(host=self.host, port_min=8050)
-        self._log_.debug(lambda: f"Defined Port = {self.port}")
+        self._host_: str = inspect_file_path(host, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Defined Host = {self._host_}")
+        self._port_: int = port or find_host_port(host=self._host_, port_min=8050)
+        self._log_.debug(lambda: f"Defined Port = {self._port_}")
 
         protocol: str = protocol or "http"
-        self.protocol: str = inspect_file_path(protocol, builder=PurePosixPath)
-        self._log_.debug(lambda: f"Defined Protocol = {self.protocol}")
+        self._protocol_: str = inspect_file_path(protocol, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Defined Protocol = {self._protocol_}")
 
-        host_address: str = f"{self.host}:{self.port}"
-        self.host_address: str = inspect_file_path(host_address, builder=PurePosixPath)
-        self._log_.debug(lambda: f"Defined Host Address = {self.host_address}")
-        self.host_url: str = f"{self.protocol}://{self.host_address}"
-        self._log_.debug(lambda: f"Defined Host URL = {self.host_url}")
+        host_address: str = f"{self._host_}:{self._port_}"
+        self._host_address_: str = inspect_file_path(host_address, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Defined Host Address = {self._host_address_}")
+        self._host_url_: str = f"{self._protocol_}://{self._host_address_}"
+        self._log_.debug(lambda: f"Defined Host URL = {self._host_url_}")
 
-        domain_address: str = domain or self.host_address
-        self.domain_address: str = inspect_file_path(domain_address, builder=PurePosixPath)
-        self._log_.debug(lambda: f"Defined Domain Address = {self.domain_address}")
-        self.domain_url: str = f"{self.protocol}://{self.domain_address}"
-        self._log_.debug(lambda: f"Defined Domain URL = {self.domain_url}")
+        domain_address: str = domain or self._host_address_
+        self._domain_address_: str = inspect_file_path(domain_address, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Defined Domain Address = {self._domain_address_}")
+        self._domain_url_: str = f"{self._protocol_}://{self._domain_address_}"
+        self._log_.debug(lambda: f"Defined Domain URL = {self._domain_url_}")
 
-        self.proxy: str = proxy or f"{self.host_url}::{self.domain_url}"
-        self._log_.debug(lambda: f"Defined Proxy = {self.proxy}")
+        self._proxy_: str = proxy or f"{self._host_url_}::{self._domain_url_}"
+        self._log_.debug(lambda: f"Defined Proxy = {self._proxy_}")
 
         anchor: str = anchor or "/"
-        self.anchor: PurePath = inspect_file(anchor, header=True, builder=PurePosixPath)
-        self._log_.debug(lambda: f"Defined Anchor = {self.anchor}")
-        self.endpoint: str = inspect_file_path(anchor, header=True, footer=True, builder=PurePosixPath)
-        self._log_.debug(lambda: f"Defined Endpoint = {self.endpoint}")
+        self._anchor_: PurePath = inspect_file(anchor, header=True, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Defined Anchor = {self._anchor_}")
+        self._endpoint_: str = inspect_file_path(anchor, header=True, footer=True, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Defined Endpoint = {self._endpoint_}")
 
-        self.debug: bool = debug
-        self._log_.debug(lambda: f"Defined Debug = {self.debug}")
-        self.terminal: int = terminal
-        self._log_.debug(lambda: f"Defined Terminal = {self.terminal}")
+        self._debug_: bool = debug
+        self._log_.debug(lambda: f"Defined Debug = {self._debug_}")
+        self._terminal_: int = terminal
+        self._log_.debug(lambda: f"Defined Terminal = {self._terminal_}")
 
-        self.module: PurePath = traceback_current_module(resolve=True)
-        self._log_.debug(lambda: f"Defined Calling = {self.module}")
-        self.assets: str = inspect_path(self.module / "Assets")
-        self._log_.debug(lambda: f"Defined Assets = {self.assets}")
+        self._module_: PurePath = traceback_current_module(resolve=True)
+        self._log_.debug(lambda: f"Defined Calling = {self._module_}")
+        self._assets_: str = inspect_path(self._module_ / "Assets")
+        self._log_.debug(lambda: f"Defined Assets = {self._assets_}")
 
         self._init_ids_()
         self._log_.debug(lambda: "Initialized IDs")
@@ -165,7 +165,7 @@ class AppAPI:
     def resolve(self, path: PurePath | str, relative: bool, footer: bool = None) -> str:
         path: PurePath = inspect_file(path, header=False, builder=PurePosixPath)
         self._log_.debug(lambda: f"Resolve Path: Received = {path}")
-        path: PurePath = self.anchor / path if relative else path
+        path: PurePath = self._anchor_ / path if relative else path
         resolve: str = inspect_file_path(path, header=True, footer=footer, builder=PurePosixPath)
         self._log_.debug(lambda: f"Resolve Path: Resolved = {resolve}")
         return resolve
@@ -262,12 +262,12 @@ class AppAPI:
 
     def _init_app_(self) -> None:
         self.app = dash.Dash(
-            name=self.name,
-            title=self.title,
-            update_title=self.update,
-            assets_folder=self.assets,
-            routes_pathname_prefix=self.endpoint,
-            requests_pathname_prefix=self.endpoint,
+            name=self._name_,
+            title=self._title_,
+            update_title=self._update_,
+            assets_folder=self._assets_,
+            routes_pathname_prefix=self._endpoint_,
+            requests_pathname_prefix=self._endpoint_,
             external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
             suppress_callback_exceptions=True,
             prevent_initial_callbacks=True
@@ -348,8 +348,8 @@ class AppAPI:
         return html.Div([
             html.Div([
                 html.Div([html.Img(src=self.app.get_asset_url("logo.png"), className="header-image")], className="header-logo"),
-                html.Div([html.H1(self.name, className="header-title"), html.H4(self.team, className="header-team")], className="header-title-team"),
-                html.Div([self.description], id=self._DESCRIPTION_ID_, className="header-description")
+                html.Div([html.H1(self._name_, className="header-title"), html.H4(self._team_, className="header-team")], className="header-title-team"),
+                html.Div([self._description_], id=self._DESCRIPTION_ID_, className="header-description")
             ], className="header-information-block"),
             html.Div([
                 html.Div(None, id=self._NAVIGATION_ID_, className="header-navigation-block"),
@@ -407,8 +407,8 @@ class AppAPI:
                 ).build(),
             ], className="footer-right"),
             dbc.Collapse(dbc.Card(dbc.CardBody([
-                html.Div([html.B("Team: "), html.Span(self.team)]),
-                html.Div([html.B("Contact: "), html.A(self.contact, href=f"mailto:{self.contact}")])
+                html.Div([html.B("Team: "), html.Span(self._team_)]),
+                html.Div([html.B("Contact: "), html.A(self._contact_, href=f"mailto:{self._contact_}")])
             ]), className="footer-panel footer-panel-left"), id=self._CONTACTS_COLLAPSE_ID_, is_open=False),
             dbc.Collapse(dbc.Card(dbc.CardBody([
                 html.Pre([], id=self._TERMINAL_ID_)
@@ -504,7 +504,7 @@ class AppAPI:
             self._log_.debug(lambda: f"Update Location Callback: Page Found")
             if description == page.description:
                 description = dash.no_update
-            elif self.description or not page.description:
+            elif self._description_ or not page.description:
                 description = dash.no_update
             else:
                 self._log_.debug(lambda: f"Update Location Callback: Updating Description")
@@ -707,7 +707,7 @@ class AppAPI:
         if not logs: raise PreventUpdate
         terminal = terminal or []
         terminal.extend(logs)
-        return terminal[-self.terminal:]
+        return terminal[-self._terminal_:]
 
     def ids(self) -> None:
         pass
@@ -717,12 +717,12 @@ class AppAPI:
 
     def run(self):
         return self.app.run(
-            host=self.host,
-            port=self.port,
-            proxy=self.proxy,
-            debug=self.debug,
+            host=self._host_,
+            port=self._port_,
+            proxy=self._proxy_,
+            debug=self._debug_,
             jupyter_mode="external",
-            jupyter_server_url=self.domain_url
+            jupyter_server_url=self._domain_url_
         )
 
     def mount(self):
