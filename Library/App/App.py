@@ -1,7 +1,7 @@
 import dash
 from dash import dcc, html
-from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
+from dash.exceptions import PreventUpdate
 from pathlib import PurePosixPath
 
 from fastapi import FastAPI
