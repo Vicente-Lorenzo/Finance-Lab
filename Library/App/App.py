@@ -727,5 +727,5 @@ class AppAPI:
 
     def mount(self):
         app = FastAPI()
-        app.mount("/", WSGIMiddleware(self.app.server))
+        app.mount(self._endpoint_, WSGIMiddleware(self.app.server))
         return app
