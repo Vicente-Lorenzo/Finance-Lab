@@ -32,13 +32,13 @@ from Library.App.Callback import (
 from Library.App.App import AppAPI
 
 __all__ = [
+    *Session.__all__,
     "parse_id", "parse_classname", "parse_style",
     "ComponentAPI", "ContainerAPI", "flatten_components",
     "IconAPI", "TextAPI",
     "ButtonAPI", "IconButtonAPI", "ButtonContainerAPI",
     "PaginatorAPI",
     "LayoutAPI", "DefaultLayoutAPI",
-    *Session.__all__,
     "PageAPI",
     "FormAPI",
     "callback", "clientside_callback", "serverside_callback",
