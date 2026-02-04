@@ -135,24 +135,6 @@ class ButtonAPI(ComponentAPI):
         return [button, hidden]
 
 @dataclass(kw_only=True)
-class IconButtonAPI(ButtonAPI):
-
-    classname: str = field(default="icon-button")
-    icon: str = field(default_factory=str)
-    text: str = field(default_factory=str)
-    right: bool = field(default=True)
-    left: bool = field(default=True)
-
-    def __post_init__(self):
-        icon = IconAPI(icon=self.icon)
-        text = TextAPI(text=f" {self.text} ")
-        label = [text]
-        if self.left: label = [icon] + label
-        if self.right: label = label + [icon]
-        self.label = label
-        super().__post_init__()
-
-@dataclass(kw_only=True)
 class ButtonContainerAPI(ContainerAPI):
 
     classname: str = field(default="buttons")
@@ -181,18 +163,20 @@ class ButtonContainerAPI(ContainerAPI):
 
     def build(self) -> list[Component]:
         elements = flatten_components(elements=self.elements)
-        buttons = [c for c in elements if isinstance(c, dbc.Button)]
-        extras = [c for c in elements if not isinstance(c, dbc.Button)]
+        for element in elements:
+            print(element)
+        buttons = [c for c in elements if not isinstance(c, dcc.Store)]
+        hidden = [c for c in elements if isinstance(c, dcc.Store)]
         group = dbc.ButtonGroup(buttons, **self.arguments())
-        if not extras: return [group]
-        return [group, *extras]
+        if not hidden: return [group]
+        return [group, *hidden]
 
 @dataclass(kw_only=True)
 class PaginatorAPI(ButtonContainerAPI):
 
+    classname: str = field(default="paginator")
     iid: dict = field(default_factory=dict)
     eid: dict = field(default_factory=dict)
-    classname: str = field(default="paginator")
     label: str | list[ComponentAPI] = field(default_factory=list)
     href: str = field(default_factory=str)
     invert: bool = field(default=False)
@@ -215,3 +199,23 @@ class PaginatorAPI(ButtonContainerAPI):
         )
         self.elements = [internal, external] if not self.invert else [external, internal]
         super().__post_init__()
+
+@dataclass(kw_only=True)
+class NavigatorAPI(ContainerAPI):
+
+    classname: str = field(default="navigator")
+    invert: bool = field(default=False)
+
+    def __post_init__(self):
+        self.elements = self.elements if not self.invert else reversed(self.elements)
+        super().__post_init__()
+
+    def build(self) -> list[Component]:
+        elements = flatten_components(elements=self.elements)
+        for element in elements:
+            print(element)
+        buttons = [c for c in elements if not isinstance(c, dcc.Store)]
+        hidden = [c for c in elements if isinstance(c, dcc.Store)]
+        group = dbc.Navbar(buttons, **self.arguments())
+        if not hidden: return [group]
+        return [group, *hidden]
