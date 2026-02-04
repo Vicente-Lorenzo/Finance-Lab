@@ -135,24 +135,6 @@ class ButtonAPI(ComponentAPI):
         return [button, hidden]
 
 @dataclass(kw_only=True)
-class IconButtonAPI(ButtonAPI):
-
-    classname: str = field(default="icon-button")
-    icon: str = field(default_factory=str)
-    text: str = field(default_factory=str)
-    right: bool = field(default=True)
-    left: bool = field(default=True)
-
-    def __post_init__(self):
-        icon = IconAPI(icon=self.icon)
-        text = TextAPI(text=f" {self.text} ")
-        label = [text]
-        if self.left: label = [icon] + label
-        if self.right: label = label + [icon]
-        self.label = label
-        super().__post_init__()
-
-@dataclass(kw_only=True)
 class ButtonContainerAPI(ContainerAPI):
 
     classname: str = field(default="buttons")
