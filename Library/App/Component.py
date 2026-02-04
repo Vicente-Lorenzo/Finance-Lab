@@ -163,18 +163,18 @@ class ButtonContainerAPI(ContainerAPI):
 
     def build(self) -> list[Component]:
         elements = flatten_components(elements=self.elements)
-        buttons = [c for c in elements if isinstance(c, dbc.Button)]
-        extras = [c for c in elements if not isinstance(c, dbc.Button)]
+        buttons = [c for c in elements if not isinstance(c, dcc.Store)]
+        hidden = [c for c in elements if isinstance(c, dcc.Store)]
         group = dbc.ButtonGroup(buttons, **self.arguments())
-        if not extras: return [group]
-        return [group, *extras]
+        if not hidden: return [group]
+        return [group, *hidden]
 
 @dataclass(kw_only=True)
 class PaginatorAPI(ButtonContainerAPI):
 
+    classname: str = field(default="paginator")
     iid: dict = field(default_factory=dict)
     eid: dict = field(default_factory=dict)
-    classname: str = field(default="paginator")
     label: str | list[ComponentAPI] = field(default_factory=list)
     href: str = field(default_factory=str)
     invert: bool = field(default=False)

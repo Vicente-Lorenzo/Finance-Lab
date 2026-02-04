@@ -10,9 +10,9 @@ from Library.App.Component import (
     IconAPI,
     TextAPI,
     ButtonAPI,
-    IconButtonAPI,
     ButtonContainerAPI,
     PaginatorAPI,
+    NavigatorAPI
 )
 from Library.App.Layout import (
     LayoutAPI,
@@ -36,8 +36,8 @@ __all__ = [
     "parse_id", "parse_classname", "parse_style",
     "ComponentAPI", "ContainerAPI", "flatten_components",
     "IconAPI", "TextAPI",
-    "ButtonAPI", "IconButtonAPI", "ButtonContainerAPI",
-    "PaginatorAPI",
+    "ButtonAPI", "ButtonContainerAPI",
+    "PaginatorAPI", "NavigatorAPI",
     "LayoutAPI", "DefaultLayoutAPI",
     "PageAPI",
     "FormAPI",

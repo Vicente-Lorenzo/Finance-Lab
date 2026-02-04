@@ -354,9 +354,9 @@ class AppAPI:
             html.Div([
                 html.Div(None, id=self._NAVIGATION_ID_, className="header-navigation-block"),
                 *ButtonContainerAPI(background="primary", border="white", elements=[
-                    ButtonAPI(id=self._BACKWARD_BUTTON_ID_, stylename="bi bi-arrow-left", trigger=self._BACKWARD_TRIGGER_ID_),
-                    ButtonAPI(id=self._REFRESH_BUTTON_ID_, stylename="bi bi-arrow-repeat", trigger=self._REFRESH_TRIGGER_ID_),
-                    ButtonAPI(id=self._FORWARD_BUTTON_ID_, stylename="bi bi-arrow-right", trigger=self._FORWARD_TRIGGER_ID_)
+                    ButtonAPI(id=self._BACKWARD_BUTTON_ID_, label=[IconAPI(icon="bi bi-arrow-left")], trigger=self._BACKWARD_TRIGGER_ID_),
+                    ButtonAPI(id=self._REFRESH_BUTTON_ID_, label=[IconAPI(icon="bi bi-arrow-repeat")], trigger=self._REFRESH_TRIGGER_ID_),
+                    ButtonAPI(id=self._FORWARD_BUTTON_ID_, label=[IconAPI(icon="bi bi-arrow-right")], trigger=self._FORWARD_TRIGGER_ID_)
                 ], stylename="header-location-block").build()
             ], className="header-control-block")
         ], className="header")
