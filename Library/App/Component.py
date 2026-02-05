@@ -39,6 +39,28 @@ class ComponentAPI(Component, ABC):
         if self.style: kwargs.update(style=self.style)
         return kwargs
 
+    @staticmethod
+    def flatten(elements: list) -> list[Component]:
+        flat = []
+        for element in elements:
+            if isinstance(element, ComponentAPI):
+                flat.extend(element.build())
+            else:
+                flat.append(element)
+        return flat
+
+    @staticmethod
+    def organize(elements: list[Component]) -> tuple[list[Component], list[dcc.Store]]:
+        hidden = [c for c in elements if isinstance(c, dcc.Store)]
+        other = [c for c in elements if not isinstance(c, dcc.Store)]
+        return other, hidden
+
+    @staticmethod
+    def serialize(elements: list[Component] = None, hidden: list[dcc.Store] = None) -> list[Component]:
+        elements = elements or []
+        hidden = hidden or []
+        return [*elements, *hidden]
+
     @abstractmethod
     def build(self) -> list[Component]:
         raise NotImplementedError
@@ -58,12 +80,6 @@ class ContainerAPI(ComponentAPI, ABC):
         else: self.elements = []
         super().__post_init__()
 
-def flatten_components(elements: list[ComponentAPI]) -> list[Component]:
-    flat = []
-    for element in elements:
-        flat.extend(element.build())
-    return flat
-
 @dataclass(kw_only=True)
 class IconAPI(ComponentAPI):
 
@@ -76,7 +92,8 @@ class IconAPI(ComponentAPI):
         super().__post_init__()
 
     def build(self) -> list[Component]:
-        return [html.I(**self.arguments(), children=self.text)]
+        element = html.I(**self.arguments(), children=self.text)
+        return self.serialize(elements=[element])
 
 @dataclass(kw_only=True)
 class TextAPI(ComponentAPI):
@@ -90,7 +107,8 @@ class TextAPI(ComponentAPI):
         super().__post_init__()
 
     def build(self) -> list[Component]:
-        return [html.Span(**self.arguments(), children=self.text)]
+        element = html.Span(**self.arguments(), children=self.text)
+        return self.serialize(elements=[element])
 
 @dataclass(kw_only=True)
 class ButtonAPI(ComponentAPI):
@@ -117,22 +135,21 @@ class ButtonAPI(ComponentAPI):
         classstyle = {"border": f"1px solid {self.border}", "border-radius": self.radius}
         self.style = parse_style(basestyle=self.style, classstyle=classstyle)
         kwargs = super().arguments()
-        if self.title: kwargs.update(title=self.title)
-        if self.clicks: kwargs.update(n_clicks=self.clicks)
-        if self.value: kwargs.update(value=self.value)
-        if self.disabled: kwargs.update(disabled=self.disabled)
-        if self.background: kwargs.update(color=self.background)
-        if self.size: kwargs.update(size=self.size)
-        if self.href: kwargs.update(href=self.href)
-        if self.external: kwargs.update(external_link=self.external, target="_blank")
+        if self.title is not None: kwargs.update(title=self.title)
+        if self.clicks is not None: kwargs.update(n_clicks=self.clicks)
+        if self.value is not None: kwargs.update(value=self.value)
+        if self.disabled is not None: kwargs.update(disabled=self.disabled)
+        if self.background is not None: kwargs.update(color=self.background)
+        if self.size is not None: kwargs.update(size=self.size)
+        if self.href is not None: kwargs.update(href=self.href)
+        if self.external is not None: kwargs.update(external_link=self.external, target="_blank")
         return kwargs
 
     def build(self) -> list[Component]:
-        label = flatten_components(elements=self.label)
+        label = self.flatten(elements=self.label)
         button = dbc.Button(label, **self.arguments())
-        if not self.trigger: return [button]
-        hidden = dcc.Store(id=self.trigger, storage_type="memory", data=TriggerAPI().dict())
-        return [button, hidden]
+        hidden = [dcc.Store(id=self.trigger, storage_type="memory", data=TriggerAPI().dict())] if self.trigger else None
+        return self.serialize(elements=[button], hidden=hidden)
 
 @dataclass(kw_only=True)
 class ButtonContainerAPI(ContainerAPI):
@@ -157,17 +174,15 @@ class ButtonContainerAPI(ContainerAPI):
         classstyle = {"border": f"1px solid {self.border}", "border-radius": self.radius}
         self.style = parse_style(basestyle=self.style, classstyle=classstyle)
         kwargs = super().arguments()
-        kwargs.update(size=self.size)
-        kwargs.update(vertical=self.vertical)
+        if self.size is not None: kwargs.update(size=self.size)
+        if self.vertical is not None: kwargs.update(vertical=self.vertical)
         return kwargs
 
     def build(self) -> list[Component]:
-        elements = flatten_components(elements=self.elements)
-        buttons = [c for c in elements if not isinstance(c, dcc.Store)]
-        hidden = [c for c in elements if isinstance(c, dcc.Store)]
+        elements = self.flatten(elements=self.elements)
+        buttons, hidden = self.organize(elements=elements)
         group = dbc.ButtonGroup(buttons, **self.arguments())
-        if not hidden: return [group]
-        return [group, *hidden]
+        return self.serialize(elements=[group], hidden=hidden)
 
 @dataclass(kw_only=True)
 class PaginatorAPI(ButtonContainerAPI):
