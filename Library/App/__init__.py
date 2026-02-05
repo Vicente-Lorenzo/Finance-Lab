@@ -6,7 +6,6 @@ from Library.App.Component import (
     parse_style,
     ComponentAPI,
     ContainerAPI,
-    flatten_components,
     IconAPI,
     TextAPI,
     ButtonAPI,
@@ -34,7 +33,7 @@ from Library.App.App import AppAPI
 __all__ = [
     *Session.__all__,
     "parse_id", "parse_classname", "parse_style",
-    "ComponentAPI", "ContainerAPI", "flatten_components",
+    "ComponentAPI", "ContainerAPI",
     "IconAPI", "TextAPI",
     "ButtonAPI", "ButtonContainerAPI",
     "PaginatorAPI", "NavigatorAPI",

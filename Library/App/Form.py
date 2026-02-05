@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dash import html
+from dash import html, dcc
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: from Library.App import AppAPI
 
@@ -51,10 +51,10 @@ class FormAPI(PageAPI):
         self.FORWARD_EXTERNAL_ID = self.register(type="button", name="external-forward")
         super()._init_ids_()
 
-    def _init_buttons_(self) -> Component | list[Component]:
+    def _init_buttons_(self) -> list[Component]:
         buttons = []
         if self.backward:
-            target: str = self.app.anchorize(path=self.backward, relative=True) if isinstance(self.backward, str) else None
+            target: str = self._app_.anchorize(path=self.backward, relative=True) if isinstance(self.backward, str) else None
             buttons.append(PaginatorAPI(iid=self.BACKWARD_INTERNAL_ID, eid=self.BACKWARD_EXTERNAL_ID, label=[
                 IconAPI(icon="bi bi-chevron-left"),
                 TextAPI(text="  Back")
@@ -64,7 +64,7 @@ class FormAPI(PageAPI):
                 TextAPI(text=self.action),
             ], id=self.ACTION_BUTTON_ID).build())
         if self.forward:
-            target: str = self.app.anchorize(path=self.forward, relative=True) if isinstance(self.forward, str) else None
+            target: str = self._app_.anchorize(path=self.forward, relative=True) if isinstance(self.forward, str) else None
             buttons.append(PaginatorAPI(iid=self.FORWARD_INTERNAL_ID, eid=self.FORWARD_EXTERNAL_ID, label=[
                 TextAPI(text="Next  "),
                 IconAPI(icon="bi bi-chevron-right")
@@ -73,9 +73,10 @@ class FormAPI(PageAPI):
 
     def _init_layout_(self) -> None:
         super()._init_layout_()
-        *content, hidden = self._content_
+        content = [c for c in self._content_ if not isinstance(c, dcc.Store)]
+        hidden = [c for c in self._content_ if isinstance(c, dcc.Store)]
         buttons = self._init_buttons_()
         self._log_.debug(lambda: f"Loaded Buttons Layout")
-        content = html.Div(*content, className="form-page-content")
-        buttons = html.Div(buttons,className="form-page-buttons")
+        content = html.Div(children=content, className="form-page-content")
+        buttons = html.Div(children=buttons,className="form-page-buttons")
         self._content_ = [content, buttons, hidden]

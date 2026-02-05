@@ -183,7 +183,7 @@ class AppAPI:
         self._pages_[endpoint] = page
 
     def link(self, page: PageAPI) -> None:
-        relative_path: PurePath = inspect_file(page.path, header=True, builder=PurePosixPath)
+        relative_path: PurePath = inspect_file(page._path_, header=True, builder=PurePosixPath)
         self._log_.debug(lambda: f"Page Linking: Relative Path = {relative_path}")
         relative_anchor = self.anchorize(path=relative_path, relative=True)
         self._log_.debug(lambda: f"Page Linking: Relative Anchor = {relative_anchor}")
@@ -325,24 +325,7 @@ class AppAPI:
 
             navigation_items: list = []
 
-            if page.parent is not None:
-                navigation_items.append(dbc.ButtonGroup(dbc.Button(f"⭰ {page.parent.button}", href=page.parent.anchor, className="header-navigation-button"), className="header-navigation-group"))
-
-            for member in page.family:
-                navigation_group: list = [
-                    dbc.Button(member.button, href=member.anchor, className="header-navigation-button"),
-                    new_tab_button(href=member.anchor, className="header-navigation-button-tab")
-                ]
-                if member.children:
-                    dropdown_group = []
-                    for subchild in member.children:
-                        dropdown_group.append(dbc.DropdownMenuItem([
-                            dbc.Button(subchild.button, href=subchild.anchor, className="header-navigation-dropdown-button"),
-                            new_tab_button(href=subchild.anchor, className="header-navigation-dropdown-button-tab")
-                        ], className="header-navigation-dropdown-group"))
-                    navigation_group.append(dbc.DropdownMenu(dropdown_group, direction="down", className="header-navigation-dropdown"))
-                navigation_items.append(dbc.ButtonGroup(navigation_group, className="header-navigation-group"))
-            page._navigation_ = dbc.Navbar(navigation_items, className="header-navigation-bar")
+            page._navigation_ = NavigatorAPI(elements=items).build()
 
     def _init_header_(self) -> Component:
         return html.Div([
@@ -502,13 +485,13 @@ class AppAPI:
             self._log_.debug(lambda: f"Update Location Callback: Updating Anchor")
         if (page := self.locate(endpoint=endpoint)) is not None:
             self._log_.debug(lambda: f"Update Location Callback: Page Found")
-            if description == page.description:
+            if description == page._description_:
                 description = dash.no_update
-            elif self._description_ or not page.description:
+            elif self._description_ or not page._description_:
                 description = dash.no_update
             else:
                 self._log_.debug(lambda: f"Update Location Callback: Updating Description")
-                description = page.description
+                description = page._description_
             if navigation is page._navigation_:
                 navigation = dash.no_update
             elif not page._navigation_:

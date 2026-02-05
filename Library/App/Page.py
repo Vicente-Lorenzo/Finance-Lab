@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dash import html, dcc
+from dash import dcc
 from typing import TYPE_CHECKING
 from typing_extensions import Self
 if TYPE_CHECKING: from Library.App import AppAPI
@@ -22,37 +22,41 @@ class PageAPI:
                  button: str = None,
                  description: str = None,
                  indexed: bool = True,
-                 content: Component = None,
-                 sidebar: Component = None,
-                 navigation: Component = None) -> None:
+                 content: Component | list[Component] = None,
+                 sidebar: Component | list[Component] = None,
+                 navigation: Component | list[Component] = None) -> None:
 
         self._log_: HandlerLoggingAPI = HandlerLoggingAPI(PageAPI.__name__)
 
-        self.app: AppAPI = app
-        self.path: str = path
-        self.button: str = button
-        self.description: str = description
-        self.indexed: bool = indexed
+        self._app_: AppAPI = app
+        self._path_: str = path
+        self._button_: str = button
+        self._description_: str = description
+        self._indexed_: bool = indexed
 
         self._anchor_: str = anchor
         self._endpoint_: str = endpoint
 
-        self._sidebar_: Component | list[Component] = sidebar
-        self._content_: Component | list[Component] = content
-        self._navigation_: Component = navigation
+        self._sidebar_: list[Component] = self.normalize(sidebar)
+        self._content_: list[Component] = self.normalize(content)
+        self._navigation_: list[Component] = self.normalize(navigation)
 
         self._parent_: PageAPI | None = None
         self._children_: list[PageAPI] = []
 
         self._initialized_: bool = False
 
+    @staticmethod
+    def normalize(element: Component | list[Component]) -> list[Component]:
+        return [element] if isinstance(element, Component) else element
+
     def identify(self, *, page: str = None, type: str, name: str) -> dict:
         if not page: page = self.endpoint
-        return self.app.identify(page=page, type=type, name=name)
+        return self._app_.identify(page=page, type=type, name=name)
 
     def register(self, *, page: str = None, type: str, name: str) -> dict:
         if not page: page = self.endpoint
-        return self.app.register(page=page, type=type, name=name)
+        return self._app_.register(page=page, type=type, name=name)
 
     @property
     def anchor(self) -> str:
@@ -111,22 +115,24 @@ class PageAPI:
         self.LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local")
         self.ids()
 
-    def _init_hidden_(self) -> Component:
-        return html.Div([
-            dcc.Store(id=self.MEMORY_STORAGE_ID, storage_type="memory", data={}),
-            dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session", data={}),
-            dcc.Store(id=self.LOCAL_STORAGE_ID, storage_type="local", data={}),
-        ])
+    def _init_hidden_(self) -> list[Component]:
+        memory = dcc.Store(id=self.MEMORY_STORAGE_ID, storage_type="memory", data={})
+        session = dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session", data={})
+        local = dcc.Store(id=self.LOCAL_STORAGE_ID, storage_type="local", data={})
+        return self.normalize([memory, session, local])
 
     def _init_layout_(self) -> None:
-        sidebar = self._sidebar_ or self.sidebar()
-        self._log_.debug(lambda: f"Loaded Sidebar Layout")
-        content = self._content_ or self.content()
-        self._log_.debug(lambda: f"Loaded Content Layout")
         hidden = self._init_hidden_()
         self._log_.debug(lambda: f"Loaded Hidden Layout")
-        self._content_ = [content, hidden] if isinstance(content, Component) else [*content, hidden]
-        self._sidebar_ = [sidebar] if isinstance(sidebar, Component) else sidebar
+        content = self.normalize(self._content_ or self.content())
+        self._content_ = self.normalize([*content, *hidden])
+        self._log_.debug(lambda: f"Loaded Content Layout")
+        sidebar = self.normalize(self._sidebar_ or self.sidebar())
+        self._sidebar_ = self.normalize([*sidebar])
+        self._log_.debug(lambda: f"Loaded Sidebar Layout")
+        navigation = self.normalize(self._navigation_ or self.navigation())
+        self._navigation_ = self.normalize([*navigation])
+        self._log_.debug(lambda: f"Loaded Navigation Layout")
 
     def _init_(self) -> None:
         if self._initialized_: return
@@ -139,11 +145,14 @@ class PageAPI:
     def ids(self) -> None:
         pass
 
-    def sidebar(self) -> Component | list[Component]:
-        return self.app.NOT_INDEXED_LAYOUT
-
     def content(self) -> Component | list[Component]:
-        return self.app.NOT_INDEXED_LAYOUT
+        return self._app_.NOT_INDEXED_LAYOUT
+
+    def sidebar(self) -> Component | list[Component]:
+        return self._app_.NOT_INDEXED_LAYOUT
+
+    def navigation(self) -> Component | list[Component]:
+        return self.normalize([])
 
     def __repr__(self):
-        return f"{self.description} @ {self.endpoint}"
+        return f"{self._description_} @ {self.endpoint}"
