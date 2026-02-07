@@ -89,6 +89,7 @@ class MicrosoftDatabaseAPI(DatabaseAPI):
         52: pl.Int16,
         56: pl.Int32,
         127: pl.Int64,
+        3: pl.Int64,
 
         59: pl.Float32,
         62: pl.Float64,
@@ -110,6 +111,7 @@ class MicrosoftDatabaseAPI(DatabaseAPI):
 
         40: pl.Date,
         41: pl.Time,
+        2: pl.Datetime,
         42: pl.Datetime,
         43: pl.Datetime,
         58: pl.Datetime,
@@ -145,13 +147,13 @@ class MicrosoftDatabaseAPI(DatabaseAPI):
 
     def _check_(self):
         return ",\n    ".join(
-            f"('{name}', '{self._CHECK_DATATYPE_MAPPING_[type(dtype)]}')"
+            f"('{name}', '{self._CHECK_DATATYPE_MAPPING_[self._normalize_(dtype)]}')"
             for name, dtype in self._STRUCTURE_.items()
         )
 
     def _create_(self):
         return ",\n    ".join(
-            f'[{name}] {self._CREATE_DATATYPE_MAPPING_[type(dtype)]}'
+            f'[{name}] {self._CREATE_DATATYPE_MAPPING_[self._normalize_(dtype)]}'
             for name, dtype in self._STRUCTURE_.items()
         )
 

@@ -76,7 +76,8 @@ class AppAPI:
                  debug: bool = False,
                  terminal: int = 1000) -> None:
 
-        self._log_: HandlerLoggingAPI = HandlerLoggingAPI(AppAPI.__name__)
+        self._log_ = HandlerLoggingAPI(AppAPI.__name__)
+
         self._ids_: set = set()
         self._pages_: dict[str, PageAPI] = {}
 
@@ -183,7 +184,7 @@ class AppAPI:
         self._pages_[endpoint] = page
 
     def link(self, page: PageAPI) -> None:
-        relative_path: PurePath = inspect_file(page._path_, header=True, builder=PurePosixPath)
+        relative_path: PurePath = inspect_file(page.path, header=True, builder=PurePosixPath)
         self._log_.debug(lambda: f"Page Linking: Relative Path = {relative_path}")
         relative_anchor = self.anchorize(path=relative_path, relative=True)
         self._log_.debug(lambda: f"Page Linking: Relative Anchor = {relative_anchor}")
@@ -205,7 +206,9 @@ class AppAPI:
                     app=self,
                     path=inspect_path(intermediate_alias),
                     description="Resource Not Indexed",
-                    indexed=False
+                    backward=False,
+                    current=False,
+                    forward=False
                 )
                 self._log_.debug(lambda: f"Page Linking: Created Intermediate Page = {intermediate_endpoint}")
             intermediate_page.anchor = intermediate_anchor
@@ -307,40 +310,53 @@ class AppAPI:
         self.pages()
 
     def _init_navigation_(self) -> None:
-
-        def new_tab_button(href: str, className: str):
-            return html.A(
-                dbc.Button(html.I(className="bi bi-box-arrow-up-right"), className=f"{className}-b"),
-                href=href,
-                target="_blank",
-                title="Open in new tab",
-                className=f"{className}-a",
-            )
-
         for endpoint, page in self._pages_.items():
-
-            if not page.children and page.parent is not None:
-                page._navigation_ = page.parent._navigation_
+            if not page.parent and not page.children:
+                page._navigation_ = []
+                self._log_.debug(lambda: f"Init Navigation: Loaded Page = {endpoint} with No Navigation")
                 continue
-
-            navigation_items: list = []
-
+            if page.parent and not page.children:
+                page._navigation_ = page.parent._navigation_
+                self._log_.debug(lambda: f"Init Navigation: Loaded Page = {endpoint} with Parent Navigation")
+                continue
+            items: list = []
+            if page.parent and page.parent.backward:
+                backward = PaginatorAPI(label=[
+                    IconAPI(icon="bi bi-arrow-bar-left"),
+                    TextAPI(text=f"  {page.parent.button}")
+                ], href=page.parent.anchor)
+                items.append(backward)
+            for member in page.family if page.current else page.children:
+                current = PaginatorAPI(label=[
+                    TextAPI(text=member.button)
+                ], href=member.anchor)
+                subitems: list = []
+                for submember in (member for member in member.children if member.forward):
+                    forward = dbc.DropdownMenuItem(PaginatorAPI(label=[
+                        TextAPI(text=submember.button)
+                    ], href=submember.anchor).build())
+                    subitems.append(forward)
+                dropdown = dbc.DropdownMenu(subitems, direction="down")
+                current = dbc.ButtonGroup([*current.build(), dropdown])
+                items.append(current)
             page._navigation_ = NavigatorAPI(elements=items).build()
 
     def _init_header_(self) -> Component:
-        return html.Div([
-            html.Div([
-                html.Div([html.Img(src=self.app.get_asset_url("logo.png"), className="header-image")], className="header-logo"),
-                html.Div([html.H1(self._name_, className="header-title"), html.H4(self._team_, className="header-team")], className="header-title-team"),
-                html.Div([self._description_], id=self._DESCRIPTION_ID_, className="header-description")
+        return html.Div(children=[
+            html.Div(children=[
+                html.Div(children=[html.Img(src=self.app.get_asset_url("logo.png"), className="header-image")], className="header-logo"),
+                html.Div(children=[html.H1(self._name_, className="header-title"), html.H4(self._team_, className="header-team")], className="header-title-team"),
+                html.Div(children=[self._description_], id=self._DESCRIPTION_ID_, className="header-description")
             ], className="header-information-block"),
-            html.Div([
-                html.Div(None, id=self._NAVIGATION_ID_, className="header-navigation-block"),
-                *ButtonContainerAPI(background="primary", border="white", elements=[
-                    ButtonAPI(id=self._BACKWARD_BUTTON_ID_, label=[IconAPI(icon="bi bi-arrow-left")], trigger=self._BACKWARD_TRIGGER_ID_),
-                    ButtonAPI(id=self._REFRESH_BUTTON_ID_, label=[IconAPI(icon="bi bi-arrow-repeat")], trigger=self._REFRESH_TRIGGER_ID_),
-                    ButtonAPI(id=self._FORWARD_BUTTON_ID_, label=[IconAPI(icon="bi bi-arrow-right")], trigger=self._FORWARD_TRIGGER_ID_)
-                ], stylename="header-location-block").build()
+            html.Div(children=[
+                html.Div(children=[], id=self._NAVIGATION_ID_, className="header-navigation-block"),
+                html.Div(children=[
+                    *ButtonContainerAPI(elements=[
+                        ButtonAPI(id=self._BACKWARD_BUTTON_ID_, label=[IconAPI(icon="bi bi-arrow-left")], trigger=self._BACKWARD_TRIGGER_ID_),
+                        ButtonAPI(id=self._REFRESH_BUTTON_ID_, label=[IconAPI(icon="bi bi-arrow-repeat")], trigger=self._REFRESH_TRIGGER_ID_),
+                        ButtonAPI(id=self._FORWARD_BUTTON_ID_, label=[IconAPI(icon="bi bi-arrow-right")], trigger=self._FORWARD_TRIGGER_ID_)
+                    ], background="primary", border="white").build()
+                ], className="header-location-block")
             ], className="header-control-block")
         ], className="header")
 
@@ -356,8 +372,8 @@ class AppAPI:
         ], className="content")
 
     def _init_footer_(self) -> Component:
-        return html.Div([
-            html.Div([
+        return html.Div(children=[
+            html.Div(children=[
                 *ButtonAPI(
                     id=self._SIDEBAR_BUTTON_ID_,
                     label=[IconAPI(icon="bi bi-layout-sidebar-inset")],
@@ -372,7 +388,7 @@ class AppAPI:
                     ], background="primary", border="white"
                 ).build(),
             ], className="footer-left"),
-            html.Div([
+            html.Div(children=[
                 *ButtonAPI(
                     id=self._CLEAN_CACHE_BUTTON_ID_,
                     label=[IconAPI(icon="bi bi-trash"), TextAPI(text="  Clean Cache  ")],
@@ -390,8 +406,8 @@ class AppAPI:
                 ).build(),
             ], className="footer-right"),
             dbc.Collapse(dbc.Card(dbc.CardBody([
-                html.Div([html.B("Team: "), html.Span(self._team_)]),
-                html.Div([html.B("Contact: "), html.A(self._contact_, href=f"mailto:{self._contact_}")])
+                html.Div(children=[html.B("Team: "), html.Span(self._team_)]),
+                html.Div(children=[html.B("Contact: "), html.A(self._contact_, href=f"mailto:{self._contact_}")])
             ]), className="footer-panel footer-panel-left"), id=self._CONTACTS_COLLAPSE_ID_, is_open=False),
             dbc.Collapse(dbc.Card(dbc.CardBody([
                 html.Pre([], id=self._TERMINAL_ID_)
@@ -399,7 +415,7 @@ class AppAPI:
         ], className="footer")
 
     def _init_hidden_(self) -> Component:
-        return html.Div([
+        return html.Div(children=[
             html.Div(id=self.CALLBACK_SINK_ID),
             dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
             dcc.Store(id=self._LOCATION_STORAGE_ID_, storage_type="session", data=LocationAPI().dict()),
@@ -412,15 +428,16 @@ class AppAPI:
 
     def _init_layout_(self) -> None:
         header = self._init_header_()
-        self._log_.debug(lambda: "Loaded Header Layout")
+        self._log_.debug(lambda: "Init Layout: Loaded Header Layout")
         content = self._init_content_()
-        self._log_.debug(lambda: "Loaded Content Layout")
+        self._log_.debug(lambda: "Init Layout: Loaded Content Layout")
         footer = self._init_footer_()
-        self._log_.debug(lambda: "Loaded Footer Layout")
+        self._log_.debug(lambda: "Init Layout: Loaded Footer Layout")
         hidden = self._init_hidden_()
-        self._log_.debug(lambda: "Loaded Hidden Layout")
-        self.app.layout = html.Div(children=[header, content, footer, hidden], className="app")
-        self._log_.debug(lambda: "Loaded App Layout")
+        self._log_.debug(lambda: "Init Layout: Loaded Hidden Layout")
+        layout = html.Div(children=[header, content, footer, hidden], className="app")
+        self.app.layout = layout
+        self._log_.debug(lambda: "Init Layout: Loaded App Layout")
 
     def _init_callbacks_(self) -> None:
         for context in [self] + list(self._pages_.values()):
@@ -440,10 +457,10 @@ class AppAPI:
                     callback_kwargs.setdefault("prevent_initial_call", True)
                     if callback_js:
                         self.app.clientside_callback(bound(), *callback_args, **callback_kwargs)
-                        self._log_.info(lambda: f"Loaded Client-Side Callback: {name}")
+                        self._log_.info(lambda: f"Init Callbacks: Loaded Client-Side Callback: {name}")
                     else:
                         self.app.callback(*callback_args, **callback_kwargs)(bound)
-                        self._log_.info(lambda: f"Loaded Server-Side Callback: {name}")
+                        self._log_.info(lambda: f"Init Callbacks: Loaded Server-Side Callback: {name}")
 
     @serverside_callback(
         Output("_LOCATION_ID_", "pathname"),
@@ -485,13 +502,13 @@ class AppAPI:
             self._log_.debug(lambda: f"Update Location Callback: Updating Anchor")
         if (page := self.locate(endpoint=endpoint)) is not None:
             self._log_.debug(lambda: f"Update Location Callback: Page Found")
-            if description == page._description_:
+            if description == page.description:
                 description = dash.no_update
-            elif self._description_ or not page._description_:
+            elif self._description_ or not page.description:
                 description = dash.no_update
             else:
                 self._log_.debug(lambda: f"Update Location Callback: Updating Description")
-                description = page._description_
+                description = page.description
             if navigation is page._navigation_:
                 navigation = dash.no_update
             elif not page._navigation_:

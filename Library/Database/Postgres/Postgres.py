@@ -145,13 +145,13 @@ class PostgresDatabaseAPI(DatabaseAPI):
 
     def _check_(self):
         return ",\n    ".join(
-            f"('{name}', '{self._CHECK_DATATYPE_MAPPING_[type(dtype)]}')"
+            f"('{name}', '{self._CHECK_DATATYPE_MAPPING_[self._normalize_(dtype)]}')"
             for name, dtype in self._STRUCTURE_.items()
         )
 
     def _create_(self):
         return ",\n    ".join(
-            f'"{name}" {self._CREATE_DATATYPE_MAPPING_[type(dtype)]}'
+            f'"{name}" {self._CREATE_DATATYPE_MAPPING_[self._normalize_(dtype)]}'
             for name, dtype in self._STRUCTURE_.items()
         )
 

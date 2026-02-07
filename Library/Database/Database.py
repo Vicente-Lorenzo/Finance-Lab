@@ -72,6 +72,14 @@ class DatabaseAPI(ABC):
 
         self._log_ = HandlerLoggingAPI(self.__class__.__name__, **self._defaults_)
 
+    @staticmethod
+    def _normalize_(dtype):
+        if isinstance(dtype, type) and issubclass(dtype, pl.DataType):
+            return dtype
+        if isinstance(dtype, pl.DataType):
+            return dtype.__class__
+        raise TypeError(f"Not a valid Structure dtype: {dtype}")
+
     @abstractmethod
     def _check_(self):
         raise NotImplementedError

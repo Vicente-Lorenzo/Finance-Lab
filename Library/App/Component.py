@@ -212,3 +212,29 @@ class PaginatorAPI(ButtonContainerAPI):
         )
         self.elements = [internal, external] if not self.invert else [external, internal]
         super().__post_init__()
+
+@dataclass(kw_only=True)
+class NavigatorAPI(ContainerAPI):
+
+    classname: str = field(default="navigator")
+    background: str = field(default="white")
+    border: str = field(default="white")
+    radius: str = field(default="6px")
+    invert: bool = field(default=False)
+
+    def __post_init__(self):
+        self.elements = self.elements if not self.invert else list(reversed(self.elements))
+        super().__post_init__()
+
+    def arguments(self) -> dict:
+        classstyle = {"border": f"1px solid {self.border}", "border-radius": self.radius}
+        self.style = parse_style(basestyle=self.style, classstyle=classstyle)
+        kwargs = super().arguments()
+        if self.background is not None: kwargs.update(color=self.background)
+        return kwargs
+
+    def build(self) -> list[Component]:
+        elements = self.flatten(elements=self.elements)
+        buttons, hidden = self.organize(elements=elements)
+        navigation = dbc.Navbar(buttons, **self.arguments())
+        return self.serialize(elements=[navigation], hidden=hidden)

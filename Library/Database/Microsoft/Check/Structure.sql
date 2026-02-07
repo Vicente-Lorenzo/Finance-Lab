@@ -1,5 +1,8 @@
 WITH expected_structure(column_name, data_type) AS (
-    VALUES ::definitions::
+    SELECT v.column_name, v.data_type
+    FROM (VALUES
+    ::definitions::
+    ) AS v(column_name, data_type)
 ),
 actual_structure AS (
     SELECT column_name, data_type

@@ -141,13 +141,13 @@ class OracleDatabaseAPI(DatabaseAPI):
     def _check_(self):
         parts = []
         for name, dtype in self._STRUCTURE_.items():
-            t = self._CHECK_DATATYPE_MAPPING_[type(dtype)]
+            t = self._CHECK_DATATYPE_MAPPING_[self._normalize_(dtype)]
             parts.append(f"SELECT '{name}' AS column_name, '{t}' AS data_type FROM dual")
         return "\nUNION ALL\n".join(parts)
 
     def _create_(self):
         return ",\n    ".join(
-            f'"{name}" {self._CREATE_DATATYPE_MAPPING_[type(dtype)]}'
+            f'"{name}" {self._CREATE_DATATYPE_MAPPING_[self._normalize_(dtype)]}'
             for name, dtype in self._STRUCTURE_.items()
         )
 
