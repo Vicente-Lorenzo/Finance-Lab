@@ -21,18 +21,22 @@ class PageAPI:
                  endpoint: str = None,
                  button: str = None,
                  description: str = None,
-                 indexed: bool = True,
                  content: Component | list[Component] = None,
                  sidebar: Component | list[Component] = None,
-                 navigation: Component | list[Component] = None) -> None:
+                 navigation: Component | list[Component] = None,
+                 backward: bool = True,
+                 current: bool = False,
+                 forward: bool = True) -> None:
 
-        self._log_: HandlerLoggingAPI = HandlerLoggingAPI(PageAPI.__name__)
+        self._log_ = HandlerLoggingAPI(PageAPI.__name__)
 
         self._app_: AppAPI = app
-        self._path_: str = path
-        self._button_: str = button
-        self._description_: str = description
-        self._indexed_: bool = indexed
+        self.path: str = path
+        self.button: str = button
+        self.description: str = description
+        self.backward: bool = backward
+        self.current: bool = current
+        self.forward: bool = forward
 
         self._anchor_: str = anchor
         self._endpoint_: str = endpoint
@@ -146,13 +150,13 @@ class PageAPI:
         pass
 
     def content(self) -> Component | list[Component]:
-        return self._app_.NOT_INDEXED_LAYOUT
+        return self.normalize(self._app_.NOT_INDEXED_LAYOUT)
 
     def sidebar(self) -> Component | list[Component]:
-        return self._app_.NOT_INDEXED_LAYOUT
+        return self.normalize(self._app_.NOT_INDEXED_LAYOUT)
 
     def navigation(self) -> Component | list[Component]:
         return self.normalize([])
 
     def __repr__(self):
-        return f"{self._description_} @ {self.endpoint}"
+        return f"{self.description} @ {self.endpoint}"

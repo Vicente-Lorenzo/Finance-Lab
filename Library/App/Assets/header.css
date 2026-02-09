@@ -69,6 +69,11 @@
     margin: auto auto auto auto;
 }
 
+.header-navigation {
+    padding: 0 0 0 0;
+    margin: 0 0 0 25px;
+}
+
 .header-navigation-block {
     display: flex;
     flex-direction: row;
@@ -78,80 +83,13 @@
     margin: 0 0 0 0;
 }
 
-.header-navigation-bar {
-    cursor: pointer !important;
-    background-color: white !important;
-    padding: 0 0 0 0 !important;
-    margin: auto auto auto auto !important;
-}
-
-.header-navigation-button,
-.header-navigation-button-tab,
-.header-navigation-button-tab-b,
-.header-navigation-dropdown .btn {
-    background-color: white !important;
-    border: none !important;
-    color: black !important;
-    box-shadow: none !important;
-    padding: 10px 10px 10px 10px !important;
-    margin: 0 0 0 0 !important;
-}
-
-.header-navigation-group {
-    background-color: white !important;
-    border: 1px solid black !important;
-    border-radius: 6px !important;
-    padding: 0 0 0 0 !important;
-    margin: auto 15px auto 15px !important;
-}
-
-.header-navigation-button-tab-b i {
-    opacity: 0 !important;
-    transition: opacity 0.50s ease !important;
-}
-
-.header-navigation-group:hover .header-navigation-button-tab-b i {
-    opacity: 1 !important;
-    transition: opacity 0.50s ease !important;
-}
-
-.header-navigation-dropdown .dropdown-menu {
-    background-color: white !important;
-    border: 1px solid black !important;
-    border-radius: 6px !important;
-    padding: 0 0 0 0 !important;
-    margin: 2px 0 0 0 !important;
-    transform: translateX(calc(-100%));
-}
-
-.header-navigation-dropdown .dropdown-item {
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    padding: 4px 8px 4px 8px !important;
-    margin: 0 0 0 0 !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-}
-
-.header-navigation-dropdown .dropdown-item:hover .header-navigation-dropdown-button-tab-b i {
-    opacity: 1 !important;
-    transition: opacity 0.50s ease !important;
-}
-
-.header-navigation-dropdown .dropdown-item .header-navigation-dropdown-button-tab-b i {
-    opacity: 0 !important;
-    transition: opacity 0.50s ease !important;
-}
-
 .header-location-block {
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
     align-items: center;
     padding: 0 0 0 0;
-    margin: auto 10px auto 15px;
+    margin: 0 0 0 0;
 }
 
 .header-control-block {
@@ -160,5 +98,5 @@
     justify-content: flex-end;
     align-items: center;
     padding: 0 0 0 0;
-    margin: auto 5px auto auto;
+    margin: 0 0 0 0;
 }

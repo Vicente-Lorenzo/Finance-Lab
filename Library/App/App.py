@@ -319,27 +319,44 @@ class AppAPI:
                 page._navigation_ = page.parent._navigation_
                 self._log_.debug(lambda: f"Init Navigation: Loaded Page = {endpoint} with Parent Navigation")
                 continue
-            items: list = []
+            currents: list = []
             if page.parent and page.parent.backward:
-                backward = PaginatorAPI(label=[
-                    IconAPI(icon="bi bi-arrow-bar-left"),
-                    TextAPI(text=f"  {page.parent.button}")
-                ], href=page.parent.anchor)
-                items.append(backward)
-            for member in page.family if page.current else page.children:
-                current = PaginatorAPI(label=[
-                    TextAPI(text=member.button)
-                ], href=member.anchor)
-                subitems: list = []
-                for submember in (member for member in member.children if member.forward):
-                    forward = dbc.DropdownMenuItem(PaginatorAPI(label=[
-                        TextAPI(text=submember.button)
-                    ], href=submember.anchor).build())
-                    subitems.append(forward)
-                dropdown = dbc.DropdownMenu(subitems, direction="down")
-                current = dbc.ButtonGroup([*current.build(), dropdown])
-                items.append(current)
-            page._navigation_ = NavigatorAPI(elements=items).build()
+                backward = PaginatorAPI(
+                    href=page.parent.anchor,
+                    label=[IconAPI(icon="bi bi-arrow-bar-left"), TextAPI(text=f"  {page.parent.button}")],
+                    background="white",
+                    outline_color="black",
+                    outline_style="solid",
+                    outline_width="1px",
+                )
+                currents.append(NavigatorAPI(element=backward, stylename="header-navigation"))
+            members: list = page.family if page.current else page.children
+            for member in (m for m in members if m.forward):
+                forwards: list = []
+                submembers: list = member.family if member.current else member.children
+                for submember in (m for m in submembers if m.forward):
+                    forward = PaginatorAPI(
+                        href=submember.anchor,
+                        label=[TextAPI(text=submember.button)],
+                        background="white"
+                    )
+                    forwards.append(DropdownAPI(element=forward))
+                dropdown = DropdownContainerAPI(
+                    elements=forwards,
+                    background="white",
+                    align_end=True
+                ) if forwards else None
+                current = PaginatorAPI(
+                    href=member.anchor,
+                    label=[TextAPI(text=member.button)],
+                    dropdown=dropdown,
+                    background="white",
+                    outline_color="black",
+                    outline_style="solid",
+                    outline_width="1px",
+                )
+                currents.append(NavigatorAPI(element=current, stylename="header-navigation"))
+            page._navigation_ = NavigatorContainerAPI(elements=currents).build()
 
     def _init_header_(self) -> Component:
         return html.Div(children=[
@@ -355,7 +372,7 @@ class AppAPI:
                         ButtonAPI(id=self._BACKWARD_BUTTON_ID_, label=[IconAPI(icon="bi bi-arrow-left")], trigger=self._BACKWARD_TRIGGER_ID_),
                         ButtonAPI(id=self._REFRESH_BUTTON_ID_, label=[IconAPI(icon="bi bi-arrow-repeat")], trigger=self._REFRESH_TRIGGER_ID_),
                         ButtonAPI(id=self._FORWARD_BUTTON_ID_, label=[IconAPI(icon="bi bi-arrow-right")], trigger=self._FORWARD_TRIGGER_ID_)
-                    ], background="primary", border="white").build()
+                    ], background="primary").build()
                 ], className="header-location-block")
             ], className="header-control-block")
         ], className="header")
@@ -377,7 +394,7 @@ class AppAPI:
                 *ButtonAPI(
                     id=self._SIDEBAR_BUTTON_ID_,
                     label=[IconAPI(icon="bi bi-layout-sidebar-inset")],
-                    background="primary", border="white"
+                    background="primary"
                 ).build(),
                 *ButtonAPI(
                     id=self._CONTACTS_BUTTON_ID_,
@@ -385,24 +402,24 @@ class AppAPI:
                         IconAPI(icon="bi bi-caret-down-fill", id=self._CONTACTS_ARROW_ID_),
                         TextAPI(text="  Contacts  "),
                         IconAPI(icon="bi bi-question-circle")
-                    ], background="primary", border="white"
+                    ], background="primary"
                 ).build(),
             ], className="footer-left"),
             html.Div(children=[
                 *ButtonAPI(
                     id=self._CLEAN_CACHE_BUTTON_ID_,
                     label=[IconAPI(icon="bi bi-trash"), TextAPI(text="  Clean Cache  ")],
-                    background="primary", border="white"
+                    background="primary"
                 ).build(),
                 *ButtonAPI(
                     id=self._CLEAN_DATA_BUTTON_ID_,
                     label=[IconAPI(icon="bi bi-database-x"), TextAPI(text="  Clean Data  ")],
-                    background="primary", border="white"
+                    background="primary"
                 ).build(),
                 *ButtonAPI(
                     id=self._TERMINAL_BUTTON_ID_,
                     label=[IconAPI(icon="bi bi-terminal"), TextAPI(text="  Terminal  "), IconAPI(icon="bi bi-caret-down-fill", id=self._TERMINAL_ARROW_ID_)],
-                    background="primary", border="white"
+                    background="primary"
                 ).build(),
             ], className="footer-right"),
             dbc.Collapse(dbc.Card(dbc.CardBody([
