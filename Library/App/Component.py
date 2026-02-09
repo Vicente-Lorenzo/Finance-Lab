@@ -138,9 +138,26 @@ class TextAPI(ComponentAPI):
     icon: str = field(default=None)
     text: str = field(default=None)
 
+    font_weight: str | int | None = field(default=None)
+    font_color: str | None = field(default=None)
+    font_size: str | None = field(default=None)
+    font_family: str | None = field(default=None)
+
     def __post_init__(self):
         self.stylename = self.icon
         super().__post_init__()
+
+    def arguments(self) -> dict:
+        kwargs = super().arguments()
+        textstyle = {}
+        if self.font_weight is not None: textstyle.update(fontWeight=self.font_weight)
+        if self.font_color is not None: textstyle.update(color=self.font_color)
+        if self.font_size is not None: textstyle.update(fontSize=self.font_size)
+        if self.font_family is not None: textstyle.update(fontFamily=self.font_family)
+        if textstyle:
+            merged = parse_style(basestyle=self.style, classstyle=textstyle)
+            kwargs.update(style=merged)
+        return kwargs
 
     def build(self) -> list[Component]:
         element = html.Span(**self.arguments(), children=self.text)
