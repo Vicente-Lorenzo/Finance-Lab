@@ -39,6 +39,9 @@ class AppAPI:
     _CONTACTS_COLLAPSE_ID_: dict
     _CONTACTS_ID_: dict
 
+    _IMPORT_ID_: dict
+    _EXPORT_ID_: dict
+
     _TERMINAL_ARROW_ID_: dict
     _TERMINAL_BUTTON_ID_: dict
     _TERMINAL_COLLAPSE_ID_: dict
@@ -250,6 +253,8 @@ class AppAPI:
         self._CONTACTS_BUTTON_ID_: dict = self.register(type="button", name="contacts")
         self._CONTACTS_COLLAPSE_ID_: dict = self.register(type="collapse", name="contacts")
         self._CONTACTS_ID_: dict = self.register(type="card", name="contacts")
+        self._IMPORT_ID_: dict = self.register(type="button", name="import")
+        self._EXPORT_ID_: dict = self.register(type="button", name="export")
         self._TERMINAL_ARROW_ID_: dict = self.register(type="icon", name="terminal")
         self._TERMINAL_BUTTON_ID_: dict = self.register(type="button", name="terminal")
         self._TERMINAL_COLLAPSE_ID_: dict = self.register(type="collapse", name="terminal")
@@ -401,6 +406,22 @@ class AppAPI:
                     label=[
                         IconAPI(icon="bi bi-caret-down-fill", id=self._CONTACTS_ARROW_ID_),
                         TextAPI(text="  Contacts  "),
+                        IconAPI(icon="bi bi-question-circle")
+                    ], background="primary"
+                ).build(),
+                *ButtonAPI(
+                    id=self._IMPORT_ID_,
+                    label=[
+                        IconAPI(icon="bi bi-caret-down-fill"),
+                        TextAPI(text="  Import  "),
+                        IconAPI(icon="bi bi-question-circle")
+                    ], background="primary"
+                ).build(),
+                *ButtonAPI(
+                    id=self._EXPORT_ID_,
+                    label=[
+                        IconAPI(icon="bi bi-caret-down-fill"),
+                        TextAPI(text="  Export  "),
                         IconAPI(icon="bi bi-question-circle")
                     ], background="primary"
                 ).build(),
