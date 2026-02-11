@@ -1,4 +1,5 @@
 from abc import ABC
+from typing import Any
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 from dataclasses import dataclass, field
@@ -9,11 +10,12 @@ from Library.Utility import Component
 def parse_id(id: dict = None) -> dict:
     return id or {}
 
-def parse_classname(basename: str = None, classname: str = None, stylename: str = None) -> str:
+def parse_classname(basename: str = None, classname: str = None, typename: str = None, stylename: str = None) -> str:
     basename: str = basename or ""
     classname: str = classname or ""
+    typename: str = typename or ""
     stylename: str = stylename or ""
-    return f"{basename} {classname} {stylename}".strip()
+    return f"{basename} {classname} {typename} {stylename}".strip()
 
 def parse_style(basestyle: dict = None, classstyle: dict = None) -> dict:
     return {**(basestyle or {}), **(classstyle or {})}
@@ -21,11 +23,12 @@ def parse_style(basestyle: dict = None, classstyle: dict = None) -> dict:
 @dataclass(kw_only=True)
 class ComponentAPI(Component, ABC):
 
-    id: dict = field(default_factory=dict)
-    basename: str = field(default="component")
-    classname: str = field(default_factory=str)
-    stylename: str = field(default_factory=str)
-    style: dict = field(default_factory=dict)
+    id: dict | None = field(default_factory=dict)
+    basename: str | None = field(default="component")
+    classname: str | None = field(default_factory=str)
+    typename: str | None = field(default_factory=str)
+    stylename: str | None = field(default_factory=str)
+    style: dict | None = field(default_factory=dict)
 
     border_color: str | None = field(default=None)
     border_style: str | None = field(default=None)
@@ -50,12 +53,17 @@ class ComponentAPI(Component, ABC):
     margin_bottom: str | None = field(default=None)
     margin_left: str | None = field(default=None)
 
-    element: Component = field(default=None)
+    element: Component | Any = field(default=None)
     builder: type[Component] = field(default=html.Div)
 
     def __post_init__(self):
         self.id = parse_id(id=self.id)
-        self.classname = parse_classname(basename=self.basename, classname=self.classname, stylename=self.stylename)
+        self.classname = parse_classname(
+            basename=self.basename,
+            classname=self.classname,
+            typename=self.typename,
+            stylename=self.stylename
+        )
         self.style = parse_style(basestyle=self.style)
 
     def arguments(self) -> dict:
@@ -84,32 +92,37 @@ class ComponentAPI(Component, ABC):
         return kwargs
 
     @staticmethod
-    def flatten(elements: list) -> list[Component]:
-        flat = []
-        for element in elements:
-            if isinstance(element, ComponentAPI):
-                flat.extend(element.build())
+    def flatten(element: Component | list) -> list[Component]:
+        if isinstance(element, list):
+            element = element
+        else:
+            element = [element]
+        elements = []
+        for e in element:
+            if isinstance(e, ComponentAPI):
+                elements.extend(e.build())
             else:
-                flat.append(element)
-        return flat
+                elements.append(e)
+        return elements
 
     @staticmethod
-    def organize(elements: list[Component]) -> tuple[list[Component], list[dcc.Store]]:
-        hidden = [c for c in elements if isinstance(c, dcc.Store)]
-        other = [c for c in elements if not isinstance(c, dcc.Store)]
+    def organize(elements: list[Component]) -> tuple[list[Component], list[Component]]:
+        listing = (dcc.Store, dcc.Download)
+        hidden = [c for c in elements if isinstance(c, listing)]
+        other = [c for c in elements if not isinstance(c, listing)]
         return other, hidden
 
     @staticmethod
-    def serialize(elements: list[Component] = None, hidden: list[dcc.Store] = None) -> list[Component]:
+    def serialize(elements: list[Component] = None, hidden: list[Component] = None) -> list[Component]:
         elements = elements or []
         hidden = hidden or []
         return [*elements, *hidden]
 
     def build(self) -> list[Component]:
-        item = self.flatten(elements=[self.element])
-        item, hidden = self.organize(elements=item)
-        dropdown = self.builder(item, **self.arguments())
-        return self.serialize(elements=[dropdown], hidden=hidden)
+        elements = self.flatten(element=self.element if self.element is not None else [])
+        elements, hidden = self.organize(elements=elements)
+        component = self.builder(elements, **self.arguments()) if elements else self.builder(**self.arguments())
+        return self.serialize(elements=[component], hidden=hidden)
 
     def __repr__(self):
         return repr(self.build())
@@ -117,34 +130,34 @@ class ComponentAPI(Component, ABC):
 @dataclass(kw_only=True)
 class IconAPI(ComponentAPI):
 
-    classname: str = field(default="icon")
+    classname: str | None = field(default="icon")
+    builder: type[Component] = field(default=html.I)
 
     icon: str = field(default=None)
     text: str = field(default=None)
 
     def __post_init__(self):
-        self.stylename = self.icon
+        if self.icon is not None: self.stylename = self.icon
+        if self.text is not None: self.element = self.text
         super().__post_init__()
-
-    def build(self) -> list[Component]:
-        element = html.I(**self.arguments(), children=self.text)
-        return self.serialize(elements=[element])
 
 @dataclass(kw_only=True)
 class TextAPI(ComponentAPI):
 
-    classname: str = field(default="text")
+    classname: str | None = field(default="text")
+    builder: type[Component] = field(default=html.Span)
 
     icon: str = field(default=None)
     text: str = field(default=None)
 
-    font_weight: str | int | None = field(default=None)
-    font_color: str | None = field(default=None)
-    font_size: str | None = field(default=None)
-    font_family: str | None = field(default=None)
+    font_weight: str | int = field(default=None)
+    font_color: str = field(default=None)
+    font_size: str = field(default=None)
+    font_family: str = field(default=None)
 
     def __post_init__(self):
-        self.stylename = self.icon
+        if self.icon is not None: self.stylename = self.icon
+        if self.text is not None: self.element = self.text
         super().__post_init__()
 
     def arguments(self) -> dict:
@@ -155,18 +168,66 @@ class TextAPI(ComponentAPI):
         if self.font_size is not None: textstyle.update(fontSize=self.font_size)
         if self.font_family is not None: textstyle.update(fontFamily=self.font_family)
         if textstyle:
-            merged = parse_style(basestyle=self.style, classstyle=textstyle)
-            kwargs.update(style=merged)
+            self.style = parse_style(basestyle=self.style, classstyle=textstyle)
+            kwargs.update(style=self.style)
         return kwargs
 
-    def build(self) -> list[Component]:
-        element = html.Span(**self.arguments(), children=self.text)
-        return self.serialize(elements=[element])
+@dataclass(kw_only=True)
+class StorageAPI(ComponentAPI):
+
+    classname: str | None = field(default="store")
+    builder: type[Component] = field(default=dcc.Store)
+
+    data: dict = field(default=None)
+    autoclear: bool = field(default=None)
+    persistence: str = field(default=None)
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.classname = None
+
+    def arguments(self) -> dict:
+        kwargs = super().arguments()
+        if self.data is not None: kwargs.update(data=self.data)
+        if self.autoclear is not None: kwargs.update(clear_data=self.autoclear)
+        if self.persistence is not None: kwargs.update(storage_type=self.persistence)
+        return kwargs
+
+@dataclass(kw_only=True)
+class DownloadAPI(ComponentAPI):
+
+    classname: str | None = field(default="download")
+    builder: type[Component] = field(default=dcc.Download)
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.classname = None
+
+@dataclass(kw_only=True)
+class UploadAPI(ComponentAPI):
+
+    classname: str | None = field(default="upload")
+    builder: type[Component] = field(default=dcc.Upload)
+
+    accept: str = field(default=None)
+    multiple: bool = field(default=None)
+    disabled: bool = field(default=None)
+    minsize: int = field(default=None)
+    maxsize: int = field(default=None)
+
+    def arguments(self) -> dict:
+        kwargs = super().arguments()
+        if self.accept is not None: kwargs.update(accept=self.accept)
+        if self.multiple is not None: kwargs.update(multiple=self.multiple)
+        if self.disabled is not None: kwargs.update(disabled=self.disabled)
+        if self.minsize is not None: kwargs.update(min_size=self.minsize)
+        if self.maxsize is not None: kwargs.update(max_size=self.maxsize)
+        return kwargs
 
 @dataclass(kw_only=True)
 class ButtonAPI(ComponentAPI):
 
-    classname: str = field(default="button")
+    classname: str | None = field(default="button")
 
     label: list[ComponentAPI] = field(default_factory=list)
     title: str = field(default=None)
@@ -176,8 +237,9 @@ class ButtonAPI(ComponentAPI):
     disabled: bool = field(default=None)
     href: str = field(default=None)
     external: bool = field(default=None)
-    download: str = field(default=None)
-    trigger: dict = field(default=None)
+    download: DownloadAPI | dict = field(default=None)
+    upload: UploadAPI | dict = field(default=None)
+    trigger: StorageAPI | dict = field(default=None)
 
     def arguments(self) -> dict:
         kwargs = super().arguments()
@@ -188,16 +250,35 @@ class ButtonAPI(ComponentAPI):
         if self.disabled is not None: kwargs.update(disabled=self.disabled)
         if self.href is not None: kwargs.update(href=self.href)
         if self.external is not None: kwargs.update(external_link=self.external, target="_blank")
-        if self.download is not None: kwargs.update(download=self.download)
         if self.background is not None: kwargs.update(color=self.background)
         if self.size is not None: kwargs.update(size=self.size)
         return kwargs
 
     def build(self) -> list[Component]:
-        label = self.flatten(elements=self.label)
+        label = self.flatten(element=self.label)
         button = dbc.Button(label, **self.arguments())
-        hidden = [dcc.Store(id=self.trigger, storage_type="memory", data=TriggerAPI().dict())] if self.trigger else None
-        return self.serialize(elements=[button], hidden=hidden)
+        addons = []
+        if self.trigger:
+            if isinstance(self.trigger, dict):
+                addons.append(StorageAPI(id=self.trigger, data=TriggerAPI().dict()))
+            else:
+                addons.append(self.trigger)
+        if self.download:
+            if isinstance(self.download, dict):
+                addons.append(DownloadAPI(id=self.download))
+            else:
+                addons.append(self.download)
+        if self.upload:
+            if isinstance(self.upload, dict):
+                button = UploadAPI(id=self.upload, element=button)
+            else:
+                self.upload.element = button
+                button = self.upload
+        button = self.flatten(element=[button])
+        addons = self.flatten(element=addons)
+        button, hidden = self.organize(elements=button)
+        hidden = [*hidden, *addons]
+        return self.serialize(elements=button, hidden=hidden)
 
 @dataclass(kw_only=True)
 class ContainerAPI(ComponentAPI):
@@ -234,7 +315,7 @@ class ContainerAPI(ComponentAPI):
         return kwargs
 
     def build(self) -> list[Component]:
-        elements = self.flatten(elements=self.elements)
+        elements = self.flatten(element=self.elements)
         elements, hidden = self.organize(elements=elements)
         group = self.builder(elements, **self.arguments())
         return self.serialize(elements=[group], hidden=hidden)
@@ -242,7 +323,7 @@ class ContainerAPI(ComponentAPI):
 @dataclass(kw_only=True)
 class RowContainerAPI(ContainerAPI):
 
-    classname: str = field(default="row")
+    classname: str | None = field(default="row")
 
     builder: type[Component] = field(default=dbc.Row)
 
@@ -258,7 +339,7 @@ class RowContainerAPI(ContainerAPI):
 @dataclass(kw_only=True)
 class ColContainerAPI(ContainerAPI):
 
-    classname: str = field(default="col")
+    classname: str | None = field(default="col")
 
     builder: type[Component] = field(default=dbc.Col)
 
@@ -274,7 +355,7 @@ class ColContainerAPI(ContainerAPI):
 @dataclass(kw_only=True)
 class ButtonContainerAPI(ContainerAPI):
 
-    classname: str = field(default="buttons")
+    classname: str | None = field(default="buttons")
 
     builder: type[Component] = field(default=dbc.ButtonGroup)
 
@@ -289,8 +370,7 @@ class ButtonContainerAPI(ContainerAPI):
 @dataclass(kw_only=True)
 class DropdownAPI(ComponentAPI):
 
-    classname: str = field(default="dropdown")
-    element: ComponentAPI = field(default=None)
+    classname: str | None = field(default="dropdown")
     builder: type[Component] = field(default=dbc.DropdownMenuItem)
 
     header: bool = field(default=None)
@@ -309,7 +389,7 @@ class DropdownAPI(ComponentAPI):
 @dataclass(kw_only=True)
 class DropdownContainerAPI(ContainerAPI):
 
-    classname: str = field(default="dropdowns")
+    classname: str | None = field(default="dropdowns")
 
     direction: str = field(default="down")
     disabled: bool = field(default=None)
@@ -336,7 +416,7 @@ class DropdownContainerAPI(ContainerAPI):
 @dataclass(kw_only=True)
 class PaginatorAPI(ButtonContainerAPI):
 
-    classname: str = field(default="paginator")
+    classname: str | None = field(default="paginator")
 
     vertical: bool = field(default=None)
 
@@ -353,14 +433,15 @@ class PaginatorAPI(ButtonContainerAPI):
             title="Open Page",
             external=False,
             label=self.label,
-            stylename="internal"
+            typename="internal"
         )
         external = ButtonAPI(
             id=self.eid,
             href=self.href,
             title="Open Page (New Tab)",
             external=True,
-            stylename="external bi bi-box-arrow-up-right"
+            typename="external",
+            stylename="bi bi-box-arrow-up-right"
         )
         self.elements = [internal, external, self.dropdown] if self.dropdown is not None else [internal, external]
         super().__post_init__()
@@ -368,14 +449,13 @@ class PaginatorAPI(ButtonContainerAPI):
 @dataclass(kw_only=True)
 class NavigatorAPI(ComponentAPI):
 
-    classname: str = field(default="navigator")
-    element: ComponentAPI = field(default=None)
+    classname: str | None = field(default="navigator")
     builder: type[Component] = field(default=dbc.NavItem)
 
 @dataclass(kw_only=True)
 class NavigatorContainerAPI(ContainerAPI):
 
-    classname: str = field(default="navigator")
+    classname: str | None = field(default="navigator")
 
     elements: list[NavigatorAPI] = field(default_factory=list)
     builder: type[Component] = field(default=dbc.Nav)

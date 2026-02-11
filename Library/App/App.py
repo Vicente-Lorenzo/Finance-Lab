@@ -327,21 +327,21 @@ class AppAPI:
             currents: list = []
             if page.parent and page.parent.backward:
                 backward = PaginatorAPI(
-                    href=page.parent.anchor,
+                    href=page.parent.endpoint,
                     label=[IconAPI(icon="bi bi-arrow-bar-left"), TextAPI(text=f"  {page.parent.button}")],
                     background="white",
                     outline_color="black",
                     outline_style="solid",
                     outline_width="1px",
                 )
-                currents.append(NavigatorAPI(element=backward, stylename="header-navigation"))
+                currents.append(NavigatorAPI(element=backward, typename="header-navigation"))
             members: list = page.family if page.current else page.children
             for member in (m for m in members if m.forward):
                 forwards: list = []
                 submembers: list = member.family if member.current else member.children
                 for submember in (m for m in submembers if m.forward):
                     forward = PaginatorAPI(
-                        href=submember.anchor,
+                        href=submember.endpoint,
                         label=[TextAPI(text=submember.button)],
                         background="white"
                     )
@@ -352,7 +352,7 @@ class AppAPI:
                     align_end=True
                 ) if forwards else None
                 current = PaginatorAPI(
-                    href=member.anchor,
+                    href=member.endpoint,
                     label=[TextAPI(text=member.button)],
                     dropdown=dropdown,
                     background="white",
@@ -360,7 +360,7 @@ class AppAPI:
                     outline_style="solid",
                     outline_width="1px",
                 )
-                currents.append(NavigatorAPI(element=current, stylename="header-navigation"))
+                currents.append(NavigatorAPI(element=current, typename="header-navigation"))
             page._navigation_ = NavigatorContainerAPI(elements=currents).build()
 
     def _init_header_(self) -> Component:
@@ -396,52 +396,33 @@ class AppAPI:
     def _init_footer_(self) -> Component:
         return html.Div(children=[
             html.Div(children=[
-                *ButtonAPI(
-                    id=self._SIDEBAR_BUTTON_ID_,
-                    label=[IconAPI(icon="bi bi-layout-sidebar-inset")],
-                    background="primary"
+                *ButtonAPI(id=self._SIDEBAR_BUTTON_ID_, background="primary",
+                    label=[IconAPI(icon="bi bi-layout-sidebar-inset")]
+                ).build(),
+                *ButtonAPI(id=self._CONTACTS_BUTTON_ID_, background="primary",
+                    label=[IconAPI(icon="bi bi-caret-down-fill", id=self._CONTACTS_ARROW_ID_), TextAPI(text="  Contacts  "), IconAPI(icon="bi bi-question-circle")]
+                ).build(),
+                *ButtonAPI(upload=self._IMPORT_ID_, background="warning",
+                    label=[TextAPI(text="Import Snapshot  "), IconAPI(icon="bi bi-upload")]
                 ).build(),
                 *ButtonAPI(
-                    id=self._CONTACTS_BUTTON_ID_,
-                    label=[
-                        IconAPI(icon="bi bi-caret-down-fill", id=self._CONTACTS_ARROW_ID_),
-                        TextAPI(text="  Contacts  "),
-                        IconAPI(icon="bi bi-question-circle")
-                    ], background="primary"
-                ).build(),
-                *ButtonAPI(
-                    id=self._IMPORT_ID_,
-                    label=[
-                        IconAPI(icon="bi bi-caret-down-fill"),
-                        TextAPI(text="  Import  "),
-                        IconAPI(icon="bi bi-question-circle")
-                    ], background="primary"
-                ).build(),
-                *ButtonAPI(
-                    id=self._EXPORT_ID_,
-                    label=[
-                        IconAPI(icon="bi bi-caret-down-fill"),
-                        TextAPI(text="  Export  "),
-                        IconAPI(icon="bi bi-question-circle")
-                    ], background="primary"
-                ).build(),
+                    download=self._EXPORT_ID_, background="warning",
+                    label=[TextAPI(text="Export Snapshot  "), IconAPI(icon="bi bi-download")]
+                ).build()
             ], className="footer-left"),
             html.Div(children=[
                 *ButtonAPI(
-                    id=self._CLEAN_CACHE_BUTTON_ID_,
-                    label=[IconAPI(icon="bi bi-trash"), TextAPI(text="  Clean Cache  ")],
-                    background="primary"
+                    id=self._CLEAN_CACHE_BUTTON_ID_, background="danger",
+                    label=[IconAPI(icon="bi bi-trash"), TextAPI(text="  Clean Cache  ")]
                 ).build(),
                 *ButtonAPI(
-                    id=self._CLEAN_DATA_BUTTON_ID_,
-                    label=[IconAPI(icon="bi bi-database-x"), TextAPI(text="  Clean Data  ")],
-                    background="primary"
+                    id=self._CLEAN_DATA_BUTTON_ID_, background="danger",
+                    label=[IconAPI(icon="bi bi-database-x"), TextAPI(text="  Clean Data  ")]
                 ).build(),
                 *ButtonAPI(
-                    id=self._TERMINAL_BUTTON_ID_,
-                    label=[IconAPI(icon="bi bi-terminal"), TextAPI(text="  Terminal  "), IconAPI(icon="bi bi-caret-down-fill", id=self._TERMINAL_ARROW_ID_)],
-                    background="primary"
-                ).build(),
+                    id=self._TERMINAL_BUTTON_ID_, background="primary",
+                    label=[IconAPI(icon="bi bi-terminal"), TextAPI(text="  Terminal  "), IconAPI(icon="bi bi-caret-down-fill", id=self._TERMINAL_ARROW_ID_)]
+                ).build()
             ], className="footer-right"),
             dbc.Collapse(dbc.Card(dbc.CardBody([
                 html.Div(children=[html.B("Team: "), html.Span(self._team_)]),
