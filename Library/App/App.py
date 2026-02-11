@@ -1,3 +1,5 @@
+import json
+import base64
 import dash
 from dash import dcc, html
 import dash_bootstrap_components as dbc
@@ -40,7 +42,9 @@ class AppAPI:
     _CONTACTS_ID_: dict
 
     _IMPORT_ID_: dict
+    _IMPORT_UPLOAD_ID_: dict
     _EXPORT_ID_: dict
+    _EXPORT_DOWNLOAD_ID_: dict
 
     _TERMINAL_ARROW_ID_: dict
     _TERMINAL_BUTTON_ID_: dict
@@ -156,12 +160,13 @@ class AppAPI:
         self._init_callbacks_()
         self._log_.info(lambda: "Initialized Callbacks")
 
-    def identify(self, *, page: str = "global", type: str, name: str) -> dict:
-        return {"app": self.__class__.__name__, "page": page, "type": type, "name": name}
+    def identify(self, *, page: str = None, type: str, name: str, portable: bool | str = False, **kwargs) -> dict:
+        page = page or "global"
+        return {"app": self.__class__.__name__, "page": page, "type": type, "name": name, "portable": portable, **kwargs}
 
-    def register(self, *, page: str = "global", type: str, name: str) -> dict:
-        cid = self.identify(page=page, type=type, name=name)
-        key = (cid["app"], cid["page"], cid["type"], cid["name"])
+    def register(self, *, page: str = "global", type: str, name: str, portable: bool | str = False, **kwargs) -> dict:
+        cid = self.identify(page=page, type=type, name=name, portable=portable, **kwargs)
+        key = (cid["app"], cid["page"], cid["type"], cid["name"], cid["portable"])
         if key in self._ids_: raise RuntimeError(f"Duplicate Dash ID detected: {cid}")
         self._ids_.add(key)
         return cid
@@ -255,6 +260,8 @@ class AppAPI:
         self._CONTACTS_ID_: dict = self.register(type="card", name="contacts")
         self._IMPORT_ID_: dict = self.register(type="button", name="import")
         self._EXPORT_ID_: dict = self.register(type="button", name="export")
+        self._IMPORT_UPLOAD_ID_: dict = self.register(type="upload", name="import")
+        self._EXPORT_DOWNLOAD_ID_: dict = self.register(type="download", name="export")
         self._TERMINAL_ARROW_ID_: dict = self.register(type="icon", name="terminal")
         self._TERMINAL_BUTTON_ID_: dict = self.register(type="button", name="terminal")
         self._TERMINAL_COLLAPSE_ID_: dict = self.register(type="collapse", name="terminal")
@@ -402,25 +409,21 @@ class AppAPI:
                 *ButtonAPI(id=self._CONTACTS_BUTTON_ID_, background="primary",
                     label=[IconAPI(icon="bi bi-caret-down-fill", id=self._CONTACTS_ARROW_ID_), TextAPI(text="  Contacts  "), IconAPI(icon="bi bi-question-circle")]
                 ).build(),
-                *ButtonAPI(upload=self._IMPORT_ID_, background="warning",
+                *ButtonAPI(id=self._IMPORT_ID_, upload=self._IMPORT_UPLOAD_ID_, background="warning",
                     label=[TextAPI(text="Import Snapshot  "), IconAPI(icon="bi bi-upload")]
                 ).build(),
-                *ButtonAPI(
-                    download=self._EXPORT_ID_, background="warning",
+                *ButtonAPI(id=self._EXPORT_ID_,download=self._EXPORT_DOWNLOAD_ID_, background="warning",
                     label=[TextAPI(text="Export Snapshot  "), IconAPI(icon="bi bi-download")]
                 ).build()
             ], className="footer-left"),
             html.Div(children=[
-                *ButtonAPI(
-                    id=self._CLEAN_CACHE_BUTTON_ID_, background="danger",
+                *ButtonAPI(id=self._CLEAN_CACHE_BUTTON_ID_, background="danger",
                     label=[IconAPI(icon="bi bi-trash"), TextAPI(text="  Clean Cache  ")]
                 ).build(),
-                *ButtonAPI(
-                    id=self._CLEAN_DATA_BUTTON_ID_, background="danger",
+                *ButtonAPI(id=self._CLEAN_DATA_BUTTON_ID_, background="danger",
                     label=[IconAPI(icon="bi bi-database-x"), TextAPI(text="  Clean Data  ")]
                 ).build(),
-                *ButtonAPI(
-                    id=self._TERMINAL_BUTTON_ID_, background="primary",
+                *ButtonAPI(id=self._TERMINAL_BUTTON_ID_, background="primary",
                     label=[IconAPI(icon="bi bi-terminal"), TextAPI(text="  Terminal  "), IconAPI(icon="bi bi-caret-down-fill", id=self._TERMINAL_ARROW_ID_)]
                 ).build()
             ], className="footer-right"),
@@ -666,6 +669,210 @@ class AppAPI:
     def _contacts_button_callback_(self, clicks: int, was_open: bool, classname: str):
         if clicks is None: raise PreventUpdate
         return self._collapse_button_callback_(name="Contacts", was_open=was_open, classname=classname)
+
+    def _import_snapshot_callback_(self, contents: str, filename: str, prop: str):
+        if not contents:
+            raise PreventUpdate
+
+        try:
+            _, b64 = contents.split(",", 1)
+            decoded = base64.b64decode(b64)
+            payload = json.loads(decoded.decode("utf-8"))
+        except Exception as exc:
+            self._log_.warning(lambda: f"Import Snapshot: Failed to Parse {filename}")
+            self._log_.error(lambda: f"{exc}")
+            raise PreventUpdate
+
+        snapshot_page = payload.get("page")
+        components = payload.get("components") or []
+
+        wanted = {
+            json.dumps(c["id"], sort_keys=True): c["value"]
+            for c in components
+            if c.get("prop") == prop and isinstance(c.get("id"), dict)
+        }
+
+        ctx = dash.callback_context
+        outs = []
+
+        for entry in (ctx.outputs_list or []):
+            outs.extend(entry if isinstance(entry, list) else [entry])
+
+        values = []
+
+        for out in outs:
+            cid = out.get("id")
+
+            if not isinstance(cid, dict):
+                values.append(dash.no_update)
+                continue
+
+            if snapshot_page and cid.get("page") != snapshot_page:
+                values.append(dash.no_update)
+                continue
+
+            key = json.dumps(cid, sort_keys=True)
+            values.append(wanted.get(key, dash.no_update))
+
+        return values
+
+    @serverside_callback(
+        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "data"}, "data"),
+        Input("_IMPORT_UPLOAD_ID_", "contents"),
+        State("_IMPORT_UPLOAD_ID_", "filename")
+    )
+    def _import_snapshot_data_callback_(self, contents: str, filename: str):
+        return self._import_snapshot_callback_(contents, filename, "data")
+
+    @serverside_callback(
+        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "value"}, "value"),
+        Input("_IMPORT_UPLOAD_ID_", "contents"),
+        State("_IMPORT_UPLOAD_ID_", "filename")
+    )
+    def _import_snapshot_value_callback_(self, contents: str, filename: str):
+        return self._import_snapshot_callback_(contents, filename, "value")
+
+    @serverside_callback(
+        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "input"}, "input"),
+        Input("_IMPORT_UPLOAD_ID_", "contents"),
+        State("_IMPORT_UPLOAD_ID_", "filename")
+    )
+    def _import_snapshot_input_callback_(self, contents: str, filename: str):
+        return self._import_snapshot_callback_(contents, filename, "input")
+
+    @serverside_callback(
+        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "filter"}, "filter"),
+        Input("_IMPORT_UPLOAD_ID_", "contents"),
+        State("_IMPORT_UPLOAD_ID_", "filename")
+    )
+    def _import_snapshot_filter_callback_(self, contents: str, filename: str):
+        return self._import_snapshot_callback_(contents, filename, "filter")
+
+    @serverside_callback(
+        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "date"}, "date"),
+        Input("_IMPORT_UPLOAD_ID_", "contents"),
+        State("_IMPORT_UPLOAD_ID_", "filename")
+    )
+    def _import_snapshot_date_callback_(self, contents: str, filename: str):
+        return self._import_snapshot_callback_(contents, filename, "date")
+
+    @serverside_callback(
+        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "checked"}, "checked"),
+        Input("_IMPORT_UPLOAD_ID_", "contents"),
+        State("_IMPORT_UPLOAD_ID_", "filename")
+    )
+    def _import_snapshot_checked_callback_(self, contents: str, filename: str):
+        return self._import_snapshot_callback_(contents, filename, "checked")
+
+    @serverside_callback(
+        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "start_date"}, "start_date"),
+        Input("_IMPORT_UPLOAD_ID_", "contents"),
+        State("_IMPORT_UPLOAD_ID_", "filename")
+    )
+    def _import_snapshot_start_date_callback_(self, contents: str, filename: str):
+        return self._import_snapshot_callback_(contents, filename, "start_date")
+
+    @serverside_callback(
+        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "end_date"}, "end_date"),
+        Input("_IMPORT_UPLOAD_ID_", "contents"),
+        State("_IMPORT_UPLOAD_ID_", "filename")
+    )
+    def _import_snapshot_end_date_callback_(self, contents: str, filename: str):
+        return self._import_snapshot_callback_(contents, filename, "end_date")
+
+    @serverside_callback(
+        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "options"}, "options"),
+        Input("_IMPORT_UPLOAD_ID_", "contents"),
+        State("_IMPORT_UPLOAD_ID_", "filename")
+    )
+    def _import_snapshot_options_callback_(self, contents: str, filename: str):
+        return self._import_snapshot_callback_(contents, filename, "options")
+
+    @serverside_callback(
+        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "disabled"}, "disabled"),
+        Input("_IMPORT_UPLOAD_ID_", "contents"),
+        State("_IMPORT_UPLOAD_ID_", "filename")
+    )
+    def _import_snapshot_disabled_callback_(self, contents: str, filename: str):
+        return self._import_snapshot_callback_(contents, filename, "disabled")
+
+    @serverside_callback(
+        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "is_open"}, "is_open"),
+        Input("_IMPORT_UPLOAD_ID_", "contents"),
+        State("_IMPORT_UPLOAD_ID_", "filename")
+    )
+    def _import_snapshot_is_open_callback_(self, contents: str, filename: str):
+        return self._import_snapshot_callback_(contents, filename, "is_open")
+
+    @serverside_callback(
+        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "active_tab"}, "active_tab"),
+        Input("_IMPORT_UPLOAD_ID_", "contents"),
+        State("_IMPORT_UPLOAD_ID_", "filename")
+    )
+    def _import_snapshot_active_tab_callback_(self, contents: str, filename: str):
+        return self._import_snapshot_callback_(contents, filename, "active_tab")
+
+    @serverside_callback(
+        Output("_EXPORT_DOWNLOAD_ID_", "data"),
+        Input("_EXPORT_ID_", "n_clicks"),
+        State("_LOCATION_ID_", "pathname"),
+        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "data"}, "data"),
+        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "value"}, "value"),
+        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "input"}, "input"),
+        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "filter"}, "filter"),
+        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "date"}, "date"),
+        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "checked"}, "checked"),
+        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "start_date"}, "start_date"),
+        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "end_date"}, "end_date"),
+        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "options"}, "options"),
+        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "disabled"}, "disabled"),
+        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "is_open"}, "is_open"),
+        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "active_tab"}, "active_tab")
+    )
+    def _export_snapshot_callback_(self, clicks: int, path: str, *states):
+
+        if not clicks or not path:
+            raise PreventUpdate
+
+        endpoint = self.endpointize(path=path, relative=False)
+        ctx = dash.callback_context
+
+        state_entries = []
+        for entry in (ctx.states_list or []):
+            state_entries.extend(entry if isinstance(entry, list) else [entry])
+
+        components = []
+
+        for s in state_entries:
+            cid = s.get("id")
+
+            if not isinstance(cid, dict):
+                continue
+
+            if cid.get("page") != endpoint:
+                continue
+
+            prop = s.get("property")
+            if not prop:
+                continue
+
+            components.append({
+                "id": cid,
+                "prop": prop,
+                "value": s.get("value")
+            })
+
+        payload = {
+            "page": endpoint,
+            "components": components
+        }
+
+        filename = f"configuration-{endpoint.strip('/').replace('/', '-') or 'root'}.json"
+
+        return dcc.send_string(
+            json.dumps(payload, indent=2, sort_keys=True),
+            filename=filename
+        )
 
     @serverside_callback(
         Output("MEMORY_STORAGE_ID", "data"),

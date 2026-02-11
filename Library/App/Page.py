@@ -52,15 +52,16 @@ class PageAPI:
 
     @staticmethod
     def normalize(element: Component | list[Component]) -> list[Component]:
-        return [element] if isinstance(element, Component) else element
+        if element is None: return []
+        return [element] if isinstance(element, Component) else list(element)
 
-    def identify(self, *, page: str = None, type: str, name: str) -> dict:
-        if not page: page = self.endpoint
-        return self._app_.identify(page=page, type=type, name=name)
+    def identify(self, *, page: str = None, type: str, name: str, portable: bool | str = False, **kwargs) -> dict:
+        page = page or self.endpoint or "global"
+        return self._app_.identify(page=page, type=type, name=name, portable=portable, **kwargs)
 
-    def register(self, *, page: str = None, type: str, name: str) -> dict:
-        if not page: page = self.endpoint
-        return self._app_.register(page=page, type=type, name=name)
+    def register(self, *, page: str = None, type: str, name: str, portable: bool | str = False, **kwargs) -> dict:
+        page = page or self.endpoint or "global"
+        return self._app_.register(page=page, type=type, name=name, portable=portable, **kwargs)
 
     @property
     def anchor(self) -> str:
