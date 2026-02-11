@@ -55,11 +55,11 @@ class PageAPI:
         if element is None: return []
         return [element] if isinstance(element, Component) else list(element)
 
-    def identify(self, *, page: str = None, type: str, name: str, portable: bool | str = False, **kwargs) -> dict:
+    def identify(self, *, page: str = None, type: str, name: str, portable: str = "", **kwargs) -> dict:
         page = page or self.endpoint or "global"
         return self._app_.identify(page=page, type=type, name=name, portable=portable, **kwargs)
 
-    def register(self, *, page: str = None, type: str, name: str, portable: bool | str = False, **kwargs) -> dict:
+    def register(self, *, page: str = None, type: str, name: str, portable: str = "", **kwargs) -> dict:
         page = page or self.endpoint or "global"
         return self._app_.register(page=page, type=type, name=name, portable=portable, **kwargs)
 

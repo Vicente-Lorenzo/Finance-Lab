@@ -4,6 +4,7 @@ import dash
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
+from dash._callback_context import CallbackContext
 from pathlib import PurePosixPath
 
 from fastapi import FastAPI
@@ -160,11 +161,14 @@ class AppAPI:
         self._init_callbacks_()
         self._log_.info(lambda: "Initialized Callbacks")
 
-    def identify(self, *, page: str = None, type: str, name: str, portable: bool | str = False, **kwargs) -> dict:
+        self.ctx: CallbackContext = dash.callback_context
+        self._log_.info(lambda: "Initialized Context")
+
+    def identify(self, *, page: str = None, type: str, name: str, portable: str = "", **kwargs) -> dict:
         page = page or "global"
         return {"app": self.__class__.__name__, "page": page, "type": type, "name": name, "portable": portable, **kwargs}
 
-    def register(self, *, page: str = "global", type: str, name: str, portable: bool | str = False, **kwargs) -> dict:
+    def register(self, *, page: str = "global", type: str, name: str, portable: str = "", **kwargs) -> dict:
         cid = self.identify(page=page, type=type, name=name, portable=portable, **kwargs)
         key = (cid["app"], cid["page"], cid["type"], cid["name"], cid["portable"])
         if key in self._ids_: raise RuntimeError(f"Duplicate Dash ID detected: {cid}")
@@ -671,9 +675,7 @@ class AppAPI:
         return self._collapse_button_callback_(name="Contacts", was_open=was_open, classname=classname)
 
     def _import_snapshot_callback_(self, contents: str, filename: str, prop: str):
-        if not contents:
-            raise PreventUpdate
-
+        if not contents: raise PreventUpdate
         try:
             _, b64 = contents.split(",", 1)
             decoded = base64.b64decode(b64)
@@ -682,38 +684,24 @@ class AppAPI:
             self._log_.warning(lambda: f"Import Snapshot: Failed to Parse {filename}")
             self._log_.error(lambda: f"{exc}")
             raise PreventUpdate
-
         snapshot_page = payload.get("page")
         components = payload.get("components") or []
-
-        wanted = {
-            json.dumps(c["id"], sort_keys=True): c["value"]
-            for c in components
-            if c.get("prop") == prop and isinstance(c.get("id"), dict)
-        }
-
-        ctx = dash.callback_context
+        wanted = {json.dumps(c["id"], sort_keys=True): c["value"]
+                  for c in components if c.get("prop") == prop and isinstance(c.get("id"), dict)}
         outs = []
-
-        for entry in (ctx.outputs_list or []):
+        for entry in (self.ctx.outputs_list or []):
             outs.extend(entry if isinstance(entry, list) else [entry])
-
         values = []
-
         for out in outs:
             cid = out.get("id")
-
             if not isinstance(cid, dict):
                 values.append(dash.no_update)
                 continue
-
             if snapshot_page and cid.get("page") != snapshot_page:
                 values.append(dash.no_update)
                 continue
-
             key = json.dumps(cid, sort_keys=True)
             values.append(wanted.get(key, dash.no_update))
-
         return values
 
     @serverside_callback(
@@ -829,50 +817,27 @@ class AppAPI:
         State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "is_open"}, "is_open"),
         State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "active_tab"}, "active_tab")
     )
-    def _export_snapshot_callback_(self, clicks: int, path: str, *states):
-
-        if not clicks or not path:
-            raise PreventUpdate
-
+    def _export_snapshot_callback_(self, clicks: int, path: str, *_):
+        if not clicks: raise PreventUpdate
+        if not path: raise PreventUpdate
         endpoint = self.endpointize(path=path, relative=False)
-        ctx = dash.callback_context
-
         state_entries = []
-        for entry in (ctx.states_list or []):
+        for entry in (self.ctx.states_list or []):
             state_entries.extend(entry if isinstance(entry, list) else [entry])
-
         components = []
-
         for s in state_entries:
             cid = s.get("id")
-
             if not isinstance(cid, dict):
                 continue
-
             if cid.get("page") != endpoint:
                 continue
-
             prop = s.get("property")
             if not prop:
                 continue
-
-            components.append({
-                "id": cid,
-                "prop": prop,
-                "value": s.get("value")
-            })
-
-        payload = {
-            "page": endpoint,
-            "components": components
-        }
-
+            components.append({"id": cid, "prop": prop, "value": s.get("value")})
+        payload = {"page": endpoint, "components": components}
         filename = f"configuration-{endpoint.strip('/').replace('/', '-') or 'root'}.json"
-
-        return dcc.send_string(
-            json.dumps(payload, indent=2, sort_keys=True),
-            filename=filename
-        )
+        return dcc.send_string(json.dumps(payload, indent=2, sort_keys=True), filename=filename)
 
     @serverside_callback(
         Output("MEMORY_STORAGE_ID", "data"),
