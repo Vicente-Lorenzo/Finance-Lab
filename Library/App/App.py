@@ -865,7 +865,7 @@ class AppAPI:
                 continue
             components.append({"id": cid, "prop": prop, "value": s.get("value")})
         payload = {"page": endpoint, "components": components}
-        filename = f"configuration-{endpoint.strip('/').replace('/', '-') or 'root'}.json"
+        filename = f"snapshot-{endpoint.strip('/').replace('/', '-') or 'root'}.json"
         return dcc.send_string(json.dumps(payload, indent=2, sort_keys=True), filename=filename)
 
     @serverside_callback(
