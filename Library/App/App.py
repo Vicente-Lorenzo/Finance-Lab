@@ -9,6 +9,7 @@ from pathlib import PurePosixPath
 
 from fastapi import FastAPI
 from fastapi.middleware.wsgi import WSGIMiddleware
+from flask import send_from_directory
 
 from Library.App import *
 from Library.Logging import *
@@ -138,10 +139,20 @@ class AppAPI:
         self._terminal_: int = terminal
         self._log_.debug(lambda: f"Defined Terminal = {self._terminal_}")
 
-        self._module_: PurePath = traceback_current_module(resolve=True)
-        self._log_.debug(lambda: f"Defined Calling = {self._module_}")
-        self._assets_: str = inspect_path(self._module_ / "Assets")
-        self._log_.debug(lambda: f"Defined Assets = {self._assets_}")
+        self._library_: Path = traceback_current_module(resolve=True)
+        self._log_.debug(lambda: f"Defined Library = {self._library_}")
+        self._library_assets_: Path = self._library_ / "Assets"
+        self._log_.debug(lambda: f"Defined Library Assets = {self._library_assets_}")
+        self._library_assets_url_: str = "library-assets"
+        self._log_.debug(lambda: f"Defined Library Assets URL = {self._library_assets_url_}")
+        self._application_: Path = traceback_calling_module(resolve=True)
+        self._log_.debug(lambda: f"Defined Application = {self._application_}")
+        self._application_assets_: Path = self._application_ / "Assets"
+        self._log_.debug(lambda: f"Defined Application Assets = {self._application_assets_}")
+        self._application_assets_.mkdir(parents=True, exist_ok=True)
+        self._log_.debug(lambda: f"Created Application Assets = {self._application_assets_}")
+        self._application_assets_url_: str = "application-assets"
+        self._log_.debug(lambda: f"Defined Application Assets URL = {self._application_assets_url_}")
 
         self._init_ids_()
         self._log_.debug(lambda: "Initialized IDs")
@@ -151,6 +162,9 @@ class AppAPI:
 
         self._init_pages_()
         self._log_.debug(lambda: "Initialized Pages")
+
+        self._init_assets_()
+        self._log_.debug(lambda: "Initialized Assets")
 
         self._init_navigation_()
         self._log_.debug(lambda: "Initialized Navigation")
@@ -163,6 +177,11 @@ class AppAPI:
 
         self.ctx: CallbackContext = dash.callback_context
         self._log_.info(lambda: "Initialized Context")
+
+    def asset(self, filename: str) -> str:
+        application_file = self._application_assets_ / filename
+        if application_file.exists(): return inspect_path(self._anchor_ / self._application_assets_url_ / filename)
+        return self.app.get_asset_url(filename)
 
     def identify(self, *, page: str = None, type: str, name: str, portable: str = "", **kwargs) -> dict:
         page = page or "global"
@@ -284,9 +303,10 @@ class AppAPI:
             name=self._name_,
             title=self._title_,
             update_title=self._update_,
-            assets_folder=self._assets_,
             routes_pathname_prefix=self._endpoint_,
             requests_pathname_prefix=self._endpoint_,
+            assets_url_path=self._library_assets_url_,
+            assets_folder=inspect_path(self._library_assets_),
             external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
             suppress_callback_exceptions=True,
             prevent_initial_callbacks=True
@@ -294,36 +314,45 @@ class AppAPI:
 
     def _init_pages_(self) -> None:
         self.NOT_FOUND_LAYOUT = DefaultLayoutAPI(
-            image=self.app.get_asset_url("404.png"),
+            image=self.asset("404.png"),
             title="Resource Not Found",
             description="Unable to find the resource you are looking for.",
             details="Please check the url path."
         ).build()
         self.LOADING_LAYOUT = DefaultLayoutAPI(
-            image=self.app.get_asset_url("loading.gif"),
+            image=self.asset("loading.gif"),
             title="Loading...",
             description="This resource is loading its content.",
             details="Please wait a moment."
         ).build()
         self.MAINTENANCE_LAYOUT = DefaultLayoutAPI(
-            image=self.app.get_asset_url("maintenance.png"),
+            image=self.asset("maintenance.png"),
             title="Resource Under Maintenance",
             description="This resource is temporarily down for maintenance.",
             details="Please try again later."
         ).build()
         self.DEVELOPMENT_LAYOUT = DefaultLayoutAPI(
-            image=self.app.get_asset_url("development.png"),
+            image=self.asset("development.png"),
             title="Resource Under Development",
             description="This resource is currently under development.",
             details="Please try again later."
         ).build()
         self.NOT_INDEXED_LAYOUT = DefaultLayoutAPI(
-            image=self.app.get_asset_url("indexed.png"),
+            image=self.asset("indexed.png"),
             title="Resource Not Indexed",
             description="This resource is not indexed at any page.",
             details="Please try again later."
         ).build()
         self.pages()
+
+    def _init_assets_(self) -> None:
+        application_url = inspect_path(self._anchor_ / self._application_assets_url_ / "<path:filename>")
+        endpoint_name = f"{self.__class__.__name__}__application_assets__{id(self.app.server)}"
+        if endpoint_name in self.app.server.view_functions:
+            return
+        def serve(filename):
+            return send_from_directory(inspect_path(self._application_assets_), filename)
+        self.app.server.add_url_rule(application_url, endpoint=endpoint_name, view_func=serve, methods=["GET"])
 
     def _init_navigation_(self) -> None:
         for endpoint, page in self._pages_.items():
@@ -377,7 +406,7 @@ class AppAPI:
     def _init_header_(self) -> Component:
         return html.Div(children=[
             html.Div(children=[
-                html.Div(children=[html.Img(src=self.app.get_asset_url("logo.png"), className="header-image")], className="header-logo"),
+                html.Div(children=[html.Img(src=self.asset("logo.png"), className="header-image")], className="header-logo"),
                 html.Div(children=[html.H1(self._name_, className="header-title"), html.H4(self._team_, className="header-team")], className="header-title-team"),
                 html.Div(children=[self._description_], id=self._DESCRIPTION_ID_, className="header-description")
             ], className="header-information-block"),
