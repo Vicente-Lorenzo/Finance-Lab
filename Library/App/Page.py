@@ -24,9 +24,12 @@ class PageAPI:
                  content: Component | list[Component] = None,
                  sidebar: Component | list[Component] = None,
                  navigation: Component | list[Component] = None,
-                 backward: bool = True,
-                 current: bool = False,
-                 forward: bool = True) -> None:
+                 add_backward_parent: bool = True,
+                 add_backward_children: bool = False,
+                 add_current_parent: bool = False,
+                 add_current_children: bool = True,
+                 add_forward_parent: bool = False,
+                 add_forward_children: bool = True) -> None:
 
         self._log_ = HandlerLoggingAPI(PageAPI.__name__)
 
@@ -34,9 +37,13 @@ class PageAPI:
         self.path: str = path
         self.button: str = button
         self.description: str = description
-        self.backward: bool = backward
-        self.current: bool = current
-        self.forward: bool = forward
+
+        self._add_backward_parent_: bool = add_backward_parent
+        self._add_backward_children_: bool = add_backward_children
+        self._add_current_parent_: bool = add_current_parent
+        self._add_current_children_: bool = add_current_children
+        self._add_forward_parent_: bool = add_forward_parent
+        self._add_forward_children_: bool = add_forward_children
 
         self._anchor_: str = anchor
         self._endpoint_: str = endpoint
@@ -85,6 +92,17 @@ class PageAPI:
     @property
     def family(self) -> list[Self]:
         return [self] + self.children
+
+    def backwards(self) -> list[Self]:
+        if not self.parent: return []
+        if self._add_backward_parent_: return self.parent.family if self._add_backward_children_ else [self.parent]
+        else: return self.parent.children if self._add_backward_children_ else []
+    def currents(self) -> list[Self]:
+        if self._add_current_parent_: return self.family if self._add_current_children_ else [self]
+        else: return self.children if self._add_current_children_ else []
+    def forwards(self, current: Self) -> list[Self]:
+        if self._add_forward_parent_: return current.family if self._add_forward_children_ else [current]
+        else: return current.children if self._add_forward_children_ else []
 
     def attach(self, parent: Self) -> None:
         if parent is None:

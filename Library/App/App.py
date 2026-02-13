@@ -235,9 +235,12 @@ class AppAPI:
                     app=self,
                     path=inspect_path(intermediate_alias),
                     description="Resource Not Indexed",
-                    backward=False,
-                    current=False,
-                    forward=False
+                    add_backward_parent=True,
+                    add_backward_children=False,
+                    add_current_parent=False,
+                    add_current_children=False,
+                    add_forward_parent=False,
+                    add_forward_children=False
                 )
                 self._log_.debug(lambda: f"Page Linking: Created Intermediate Page = {intermediate_endpoint}")
             intermediate_page.anchor = intermediate_anchor
@@ -363,24 +366,22 @@ class AppAPI:
                 self._log_.debug(lambda: f"Init Navigation: Loaded Page = {endpoint} with Parent Navigation")
                 continue
             currents: list = []
-            if page.parent and page.parent.backward:
+            for b in page.backwards():
                 backward = PaginatorAPI(
-                    href=page.parent.endpoint,
-                    label=[IconAPI(icon="bi bi-arrow-bar-left"), TextAPI(text=f"  {page.parent.button}")],
+                    href=b.endpoint,
+                    label=[IconAPI(icon="bi bi-arrow-bar-left"), TextAPI(text=f"  {b.button}")],
                     background="white",
                     outline_color="black",
                     outline_style="solid",
                     outline_width="1px",
                 )
                 currents.append(NavigatorAPI(element=backward, typename="header-navigation"))
-            members: list = page.family if page.current else page.children
-            for member in (m for m in members if m.forward):
+            for c in page.currents():
                 forwards: list = []
-                submembers: list = member.family if member.current else member.children
-                for submember in (m for m in submembers if m.forward):
+                for f in page.forwards(c):
                     forward = PaginatorAPI(
-                        href=submember.endpoint,
-                        label=[TextAPI(text=submember.button)],
+                        href=f.endpoint,
+                        label=[TextAPI(text=f.button)],
                         background="white"
                     )
                     forwards.append(DropdownAPI(element=forward))
@@ -390,8 +391,8 @@ class AppAPI:
                     align_end=True
                 ) if forwards else None
                 current = PaginatorAPI(
-                    href=member.endpoint,
-                    label=[TextAPI(text=member.button)],
+                    href=c.endpoint,
+                    label=[TextAPI(text=c.button)],
                     dropdown=dropdown,
                     background="white",
                     outline_color="black",

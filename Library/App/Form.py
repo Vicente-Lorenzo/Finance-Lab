@@ -9,63 +9,73 @@ from Library.Utility import Component
 
 class FormAPI(PageAPI):
 
+    BACK_INTERNAL_ID: dict = None
+    BACK_EXTERNAL_ID: dict = None
     ACTION_BUTTON_ID: dict = None
-    BACKWARD_INTERNAL_ID: dict = None
-    BACKWARD_EXTERNAL_ID: dict = None
-    FORWARD_INTERNAL_ID: dict = None
-    FORWARD_EXTERNAL_ID: dict = None
+    NEXT_INTERNAL_ID: dict = None
+    NEXT_EXTERNAL_ID: dict = None
 
     def __init__(self, *,
                  app: AppAPI,
                  path: str,
                  button: str = None,
                  description: str = None,
-                 indexed: bool = True,
                  content: Component = None,
                  sidebar: Component = None,
                  navigation: Component = None,
-                 backward: str | bool = False,
-                 forward: str | bool = False,
-                 action: str = None) -> None:
+                 add_backward_parent: bool = True,
+                 add_backward_children: bool = False,
+                 add_current_parent: bool = False,
+                 add_current_children: bool = True,
+                 add_forward_parent: bool = False,
+                 add_forward_children: bool = True,
+                 add_back_button: str | bool = False,
+                 add_action_button: str = None,
+                 add_next_button: str | bool = False) -> None:
 
         super().__init__(
             app=app,
             path=path,
             button=button,
             description=description,
-            indexed=indexed,
             content=content,
             sidebar=sidebar,
             navigation=navigation,
+            add_backward_parent=add_backward_parent,
+            add_backward_children=add_backward_children,
+            add_current_parent=add_current_parent,
+            add_current_children=add_current_children,
+            add_forward_parent=add_forward_parent,
+            add_forward_children=add_forward_children
         )
 
-        self.backward: str | bool = backward
-        self.forward: str | bool = forward
-        self.action: str = action
+        self._add_back_button_: str | bool = add_back_button
+        self._add_action_button_: str = add_action_button
+        self._add_next_button_: str | bool = add_next_button
 
     def _init_ids_(self) -> None:
         self.ACTION_BUTTON_ID = self.register(type="button", name="action")
-        self.BACKWARD_INTERNAL_ID = self.register(type="button", name="internal-backward")
-        self.BACKWARD_EXTERNAL_ID = self.register(type="button", name="external-backward")
-        self.FORWARD_INTERNAL_ID = self.register(type="button", name="internal-forward")
-        self.FORWARD_EXTERNAL_ID = self.register(type="button", name="external-forward")
+        self.BACK_INTERNAL_ID = self.register(type="button", name="internal-back")
+        self.BACK_EXTERNAL_ID = self.register(type="button", name="external-back")
+        self.NEXT_INTERNAL_ID = self.register(type="button", name="internal-next")
+        self.NEXT_EXTERNAL_ID = self.register(type="button", name="external-next")
         super()._init_ids_()
 
     def _init_buttons_(self) -> list[Component]:
         buttons = []
-        if self.backward:
-            target: str = self._app_.anchorize(path=self.backward, relative=True) if isinstance(self.backward, str) else None
-            buttons.append(PaginatorAPI(iid=self.BACKWARD_INTERNAL_ID, eid=self.BACKWARD_EXTERNAL_ID, label=[
+        if self._add_back_button_:
+            target: str = self._app_.anchorize(path=self._add_back_button_, relative=True) if isinstance(self._add_back_button_, str) else None
+            buttons.append(PaginatorAPI(iid=self.BACK_INTERNAL_ID, eid=self.BACK_EXTERNAL_ID, label=[
                 IconAPI(icon="bi bi-chevron-left"),
                 TextAPI(text="  Back")
             ], invert=False, href=target).build())
-        if self.action:
+        if self._add_action_button_:
             buttons.append(ButtonAPI(label=[
-                TextAPI(text=self.action),
+                TextAPI(text=self._add_action_button_),
             ], id=self.ACTION_BUTTON_ID).build())
-        if self.forward:
-            target: str = self._app_.anchorize(path=self.forward, relative=True) if isinstance(self.forward, str) else None
-            buttons.append(PaginatorAPI(iid=self.FORWARD_INTERNAL_ID, eid=self.FORWARD_EXTERNAL_ID, label=[
+        if self._add_next_button_:
+            target: str = self._app_.anchorize(path=self._add_next_button_, relative=True) if isinstance(self._add_next_button_, str) else None
+            buttons.append(PaginatorAPI(iid=self.NEXT_INTERNAL_ID, eid=self.NEXT_EXTERNAL_ID, label=[
                 TextAPI(text="Next  "),
                 IconAPI(icon="bi bi-chevron-right")
             ], invert=True, href=target).build())
