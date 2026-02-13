@@ -149,8 +149,6 @@ class AppAPI:
         self._log_.debug(lambda: f"Defined Application = {self._application_}")
         self._application_assets_: Path = self._application_ / "Assets"
         self._log_.debug(lambda: f"Defined Application Assets = {self._application_assets_}")
-        self._application_assets_.mkdir(parents=True, exist_ok=True)
-        self._log_.debug(lambda: f"Created Application Assets = {self._application_assets_}")
         self._application_assets_url_: str = "application-assets"
         self._log_.debug(lambda: f"Defined Application Assets URL = {self._application_assets_url_}")
 
@@ -179,8 +177,8 @@ class AppAPI:
         self._log_.info(lambda: "Initialized Context")
 
     def asset(self, filename: str) -> str:
-        application_file = self._application_assets_ / filename
-        if application_file.exists(): return inspect_path(self._anchor_ / self._application_assets_url_ / filename)
+        if self._application_assets_.exists() and (self._application_assets_ / filename).exists():
+            return inspect_path(self._anchor_ / self._application_assets_url_ / filename)
         return self.app.get_asset_url(filename)
 
     def identify(self, *, page: str = None, type: str, name: str, portable: str = "", **kwargs) -> dict:
