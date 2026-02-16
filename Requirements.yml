@@ -20,6 +20,8 @@ dependencies:
         - seaborn
         - holoviews
         - matplotlib
+
+        - pillow
         - selenium
 
         - jupyter
@@ -27,8 +29,6 @@ dependencies:
         - ipykernel
         - ipywidgets
 
-        - pillow
-        - pytorch
         - pymssql
         - oracledb
         - psycopg[binary]
@@ -43,3 +43,8 @@ dependencies:
         - dash-bootstrap-components
         - fastapi
         - flask
+
+        - torch
+        - torchaudio
+        - torchvision
+        - gymnasium
