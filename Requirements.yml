@@ -39,8 +39,7 @@ dependencies:
         - yfinance
 
         - dash
-        - dash-boostrap-templates
-        - dash-bootstrap-components
         - dash-extensions
+        - dash-bootstrap-components
         - fastapi
         - flask
