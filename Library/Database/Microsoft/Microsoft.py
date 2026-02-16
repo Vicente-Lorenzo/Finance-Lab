@@ -1,4 +1,4 @@
-# import pymssql
+import pymssql
 from typing import Callable
 
 from Library.DataFrame import pl
@@ -161,7 +161,7 @@ class MicrosoftDatabaseAPI(DatabaseAPI):
         database = "master" if admin else (self.database or None)
         connection = pymssql.connect(
             server=self._host_,
-            port=self._port_,
+            port=str(self._port_),
             user=self._user_,
             password=self._password_,
             database=database
