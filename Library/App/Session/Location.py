@@ -1,42 +1,41 @@
 from dataclasses import dataclass, field
 
-from Library.Dataclass import DataclassAPI
+from Library.App.Session import StorageAPI
 
 @dataclass(kw_only=True)
-class LocationAPI(DataclassAPI):
+class LocationAPI(StorageAPI):
 
-    index: int = field(default=-1, init=True, repr=True)
-    stack: list[str] = field(default_factory=list, init=True, repr=True)
+    history: list[str] = field(default_factory=list, init=True, repr=True)
 
     def current(self) -> str | None:
-        if 0 <= self.index < len(self.stack):
-            return self.stack[self.index]
+        if 0 <= self.index < len(self.history):
+            return self.history[self.index]
         return None
 
     def register(self, *, path: str) -> None:
         if self.index == -1:
-            self.stack = [path]
+            self.history = [path]
             self.index = 0
             return
         if self.current() == path:
             return
-        if self.index < len(self.stack) - 1:
-            self.stack = self.stack[: self.index + 1]
-        self.stack.append(path)
-        self.index = len(self.stack) - 1
+        if self.index < len(self.history) - 1:
+            self.history = self.history[: self.index + 1]
+        self.history.append(path)
+        self.index = len(self.history) - 1
 
     def backward(self, *, step: bool = False) -> str | None:
         if self.index <= 0:
             return None
         if not step:
-            return self.stack[self.index - 1]
+            return self.history[self.index - 1]
         self.index -= 1
-        return self.stack[self.index]
+        return self.history[self.index]
 
     def forward(self, *, step: bool = False) -> str | None:
-        if self.index < 0 or self.index >= len(self.stack) - 1:
+        if self.index < 0 or self.index >= len(self.history) - 1:
             return None
         if not step:
-            return self.stack[self.index + 1]
+            return self.history[self.index + 1]
         self.index += 1
-        return self.stack[self.index]
+        return self.history[self.index]

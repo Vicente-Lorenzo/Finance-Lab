@@ -1,7 +1,7 @@
 from dash import html
 from abc import ABC, abstractmethod
 
-from Library.Utility import Component
+from Library.App.Component import Component
 
 class LayoutAPI(Component, ABC):
 

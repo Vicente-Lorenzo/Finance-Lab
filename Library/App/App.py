@@ -20,54 +20,60 @@ from Library.Utility.Runtime import *
 
 class AppAPI:
 
-    _DESCRIPTION_ID_: dict
-    _CONTENT_ID_: dict
-    _SIDEBAR_BUTTON_ID_: dict
-    _SIDEBAR_COLLAPSE_ID_: dict
-    _SIDEBAR_ID_: dict
+    GLOBAL_LOCATION_ID: dict
+    GLOBAL_LOCATION_STORAGE_ID: dict
+    GLOBAL_DESCRIPTION_ID: dict
+    GLOBAL_NAVIGATION_ID: dict
+    GLOBAL_CONTENT_ID: dict
+    GLOBAL_CONTENT_LOADING_ID: dict
+    GLOBAL_SIDEBAR_ID: dict
+    GLOBAL_SIDEBAR_BUTTON_ID: dict
+    GLOBAL_SIDEBAR_LOADING_ID: dict
+    GLOBAL_SIDEBAR_COLLAPSE_ID: dict
 
-    _LOCATION_ID_: dict
-    _BACKWARD_BUTTON_ID_: dict
-    _BACKWARD_TRIGGER_ID_: dict
-    _REFRESH_BUTTON_ID_: dict
-    _REFRESH_TRIGGER_ID_: dict
-    _FORWARD_BUTTON_ID_: dict
-    _FORWARD_TRIGGER_ID_: dict
-    _LOCATION_STORAGE_ID_: dict
+    GLOBAL_BACKWARD_BUTTON_ID: dict
+    GLOBAL_BACKWARD_TRIGGER_ID: dict
+    GLOBAL_REFRESH_BUTTON_ID: dict
+    GLOBAL_REFRESH_TRIGGER_ID: dict
+    GLOBAL_FORWARD_BUTTON_ID: dict
+    GLOBAL_FORWARD_TRIGGER_ID: dict
 
-    _NAVIGATION_ID_: dict
-    NAVIGATION_STORAGE_ID: dict
+    GLOBAL_CONTACTS_ARROW_ID: dict
+    GLOBAL_CONTACTS_BUTTON_ID: dict
+    GLOBAL_CONTACTS_COLLAPSE_ID: dict
+    GLOBAL_CONTACTS_ID: dict
 
-    _CONTACTS_ARROW_ID_: dict
-    _CONTACTS_BUTTON_ID_: dict
-    _CONTACTS_COLLAPSE_ID_: dict
-    _CONTACTS_ID_: dict
+    GLOBAL_IMPORT_ID: dict
+    GLOBAL_IMPORT_UPLOAD_ID: dict
+    GLOBAL_EXPORT_ID: dict
+    GLOBAL_EXPORT_DOWNLOAD_ID: dict
 
-    _IMPORT_ID_: dict
-    _IMPORT_UPLOAD_ID_: dict
-    _EXPORT_ID_: dict
-    _EXPORT_DOWNLOAD_ID_: dict
+    GLOBAL_TERMINAL_ID: dict
+    GLOBAL_TERMINAL_ARROW_ID: dict
+    GLOBAL_TERMINAL_BUTTON_ID: dict
+    GLOBAL_TERMINAL_COLLAPSE_ID: dict
+    GLOBAL_TERMINAL_INTERVAL_ID: dict
 
-    _TERMINAL_ARROW_ID_: dict
-    _TERMINAL_BUTTON_ID_: dict
-    _TERMINAL_COLLAPSE_ID_: dict
-    _TERMINAL_ID_: dict
+    GLOBAL_LOADING_TRIGGER_ID: dict
+    GLOBAL_ROUTING_STORAGE_ID: dict
+    GLOBAL_RELOADING_TRIGGER_ID: dict
+    GLOBAL_UNLOADING_TRIGGER_ID: dict
 
-    _CLEAN_CACHE_BUTTON_ID_: dict
-    _CLEAN_DATA_BUTTON_ID_: dict
+    GLOBAL_MEMORY_STORAGE_ID: dict
+    GLOBAL_CLEAN_MEMORY_BUTTON_ID: dict
+    GLOBAL_CLEAN_MEMORY_TRIGGER_ID: dict
+    GLOBAL_SESSION_STORAGE_ID: dict
+    GLOBAL_CLEAN_SESSION_BUTTON_ID: dict
+    GLOBAL_CLEAN_SESSION_TRIGGER_ID: dict
+    GLOBAL_LOCAL_STORAGE_ID: dict
+    GLOBAL_CLEAN_LOCAL_BUTTON_ID: dict
+    GLOBAL_CLEAN_LOCAL_TRIGGER_ID: dict
 
-    CALLBACK_SINK_ID: dict
-
-    INTERVAL_ID: dict
-    MEMORY_STORAGE_ID: dict
-    SESSION_STORAGE_ID: dict
-    LOCAL_STORAGE_ID: dict
-
-    NOT_FOUND_LAYOUT: Component
-    LOADING_LAYOUT: Component
-    MAINTENANCE_LAYOUT: Component
-    DEVELOPMENT_LAYOUT: Component
-    NOT_INDEXED_LAYOUT: Component
+    GLOBAL_NOT_FOUND_LAYOUT: Component
+    GLOBAL_LOADING_LAYOUT: Component
+    GLOBAL_MAINTENANCE_LAYOUT: Component
+    GLOBAL_DEVELOPMENT_LAYOUT: Component
+    GLOBAL_NOT_INDEXED_LAYOUT: Component
 
     def __init__(self, *,
                  name: str = "<Insert App Name>",
@@ -89,6 +95,9 @@ class AppAPI:
 
         self._ids_: set = set()
         self._pages_: dict[str, PageAPI] = {}
+        self._loaders_: list[str] = []
+        self._reloaders_: list[str] = []
+        self._unloaders_: list[str] = []
 
         self._name_: str = name
         self._log_.debug(lambda: f"Defined Name = {self._name_}")
@@ -193,10 +202,10 @@ class AppAPI:
         return cid
 
     def resolve(self, path: PurePath | str, relative: bool, footer: bool = None) -> str:
-        path: PurePath = inspect_file(path, header=False, builder=PurePosixPath)
+        path = inspect_file(path, header=False, builder=PurePosixPath)
         self._log_.debug(lambda: f"Resolve Path: Received = {path}")
-        path: PurePath = self._anchor_ / path if relative else path
-        resolve: str = inspect_file_path(path, header=True, footer=footer, builder=PurePosixPath)
+        path = self._anchor_ / path if relative else path
+        resolve = inspect_file_path(path, header=True, footer=footer, builder=PurePosixPath)
         self._log_.debug(lambda: f"Resolve Path: Resolved = {resolve}")
         return resolve
 
@@ -206,30 +215,40 @@ class AppAPI:
     def endpointize(self, path: PurePath | str, relative: bool = True) -> str:
         return self.resolve(path, relative=relative, footer=True)
 
-    def locate(self, endpoint: str) -> PageAPI | None:
-        return self._pages_.get(endpoint, None)
+    def locate(self, endpoint: str) -> tuple[str, PageAPI | None]:
+        page = self._pages_.get(endpoint, None)
+        if page: self._log_.debug(lambda: f"Locate Page: Found = {endpoint}")
+        else: self._log_.debug(lambda: f"Locate Page: Not Found = {endpoint}")
+        return endpoint, page
+
+    def redirect(self, endpoint: str) -> tuple[str, PageAPI | None]:
+        endpoint, page = self.locate(endpoint=endpoint)
+        while page and page.endpoint != page.redirect:
+            self._log_.debug(lambda: f"Redirect Page: Redirect = {page.endpoint} -> {page.redirect}")
+            endpoint, page = self.locate(endpoint=page.redirect)
+        return endpoint, page
 
     def index(self, endpoint: str, page: PageAPI) -> None:
         self._pages_[endpoint] = page
 
     def link(self, page: PageAPI) -> None:
-        relative_path: PurePath = inspect_file(page.path, header=True, builder=PurePosixPath)
+        relative_path = inspect_file(page.path, header=True, builder=PurePosixPath)
         self._log_.debug(lambda: f"Page Linking: Relative Path = {relative_path}")
         relative_anchor = self.anchorize(path=relative_path, relative=True)
         self._log_.debug(lambda: f"Page Linking: Relative Anchor = {relative_anchor}")
         relative_endpoint = self.endpointize(path=relative_path, relative=True)
         self._log_.debug(lambda: f"Page Linking: Relative Endpoint = {relative_endpoint}")
-        intermediate_alias: PurePath = inspect_file("/", builder=PurePosixPath)
-        intermediate_parent: PageAPI = self.locate(endpoint=self.endpointize(path=intermediate_alias, relative=True))
+        intermediate_alias = inspect_file("/", builder=PurePosixPath)
+        _, intermediate_parent = self.locate(endpoint=self.endpointize(path=intermediate_alias, relative=True))
         for part in relative_path.parts[1:-1]:
-            intermediate_path: PurePath = inspect_file(part, header=True, builder=PurePosixPath)
+            intermediate_path = inspect_file(part, header=True, builder=PurePosixPath)
             intermediate_alias /= intermediate_path.name
             self._log_.debug(lambda: f"Page Linking: Intermediate Path = {intermediate_alias}")
             intermediate_anchor = self.anchorize(path=intermediate_alias, relative=True)
             self._log_.debug(lambda: f"Page Linking: Intermediate Anchor = {intermediate_anchor}")
             intermediate_endpoint = self.endpointize(path=intermediate_alias, relative=True)
             self._log_.debug(lambda: f"Page Linking: Intermediate Endpoint = {intermediate_endpoint}")
-            intermediate_page: PageAPI = self.locate(endpoint=intermediate_endpoint)
+            _, intermediate_page = self.locate(endpoint=intermediate_endpoint)
             if not intermediate_page:
                 intermediate_page = PageAPI(
                     app=self,
@@ -252,7 +271,7 @@ class AppAPI:
             intermediate_parent = intermediate_page
         page.anchor = relative_anchor
         page.endpoint = relative_endpoint
-        existing = self.locate(endpoint=relative_endpoint)
+        _, existing = self.locate(endpoint=relative_endpoint)
         if existing:
             page.merge(existing)
             self._log_.debug(lambda: f"Page Linking: Merged Relative Page = {relative_endpoint}")
@@ -262,41 +281,68 @@ class AppAPI:
         page.attach(parent=intermediate_parent)
         page._init_()
 
+    def loader(self, name: str) -> dict:
+        self._loaders_.append(name)
+        return self.GLOBAL_LOADING_TRIGGER_ID
+
+    def reloader(self, name: str) -> dict:
+        self._reloaders_.append(name)
+        return self.GLOBAL_RELOADING_TRIGGER_ID
+
+    def unloader(self, name: str) -> dict:
+        self._unloaders_.append(name)
+        return self.GLOBAL_UNLOADING_TRIGGER_ID
+
     def _init_ids_(self) -> None:
-        self._DESCRIPTION_ID_: dict = self.register(type="div", name="description")
-        self._CONTENT_ID_: dict = self.register(type="div", name="content")
-        self._SIDEBAR_BUTTON_ID_: dict = self.register(type="button", name="sidebar")
-        self._SIDEBAR_COLLAPSE_ID_: dict = self.register(type="collapse", name="sidebar")
-        self._SIDEBAR_ID_: dict = self.register(type="div", name="sidebar")
-        self._LOCATION_ID_: dict = self.register(type="location", name="location")
-        self._BACKWARD_BUTTON_ID_: dict = self.register(type="button", name="backward-button")
-        self._BACKWARD_TRIGGER_ID_ = self.register(type="storage", name="backward-trigger")
-        self._REFRESH_BUTTON_ID_: dict = self.register(type="button", name="refresh-button")
-        self._REFRESH_TRIGGER_ID_ = self.register(type="storage", name="refresh-trigger")
-        self._FORWARD_BUTTON_ID_: dict = self.register(type="button", name="forward-button")
-        self._FORWARD_TRIGGER_ID_ = self.register(type="storage", name="forward-trigger")
-        self._LOCATION_STORAGE_ID_: dict = self.register(type="storage", name="location")
-        self._NAVIGATION_ID_: dict = self.register(type="div", name="navigation")
-        self.NAVIGATION_STORAGE_ID: dict = self.register(type="storage", name="navigation")
-        self._CONTACTS_ARROW_ID_: dict = self.register(type="icon", name="contacts")
-        self._CONTACTS_BUTTON_ID_: dict = self.register(type="button", name="contacts")
-        self._CONTACTS_COLLAPSE_ID_: dict = self.register(type="collapse", name="contacts")
-        self._CONTACTS_ID_: dict = self.register(type="card", name="contacts")
-        self._IMPORT_ID_: dict = self.register(type="button", name="import")
-        self._EXPORT_ID_: dict = self.register(type="button", name="export")
-        self._IMPORT_UPLOAD_ID_: dict = self.register(type="upload", name="import")
-        self._EXPORT_DOWNLOAD_ID_: dict = self.register(type="download", name="export")
-        self._TERMINAL_ARROW_ID_: dict = self.register(type="icon", name="terminal")
-        self._TERMINAL_BUTTON_ID_: dict = self.register(type="button", name="terminal")
-        self._TERMINAL_COLLAPSE_ID_: dict = self.register(type="collapse", name="terminal")
-        self._TERMINAL_ID_: dict = self.register(type="card", name="terminal")
-        self._CLEAN_CACHE_BUTTON_ID_: dict = self.register(type="button", name="clean")
-        self._CLEAN_DATA_BUTTON_ID_: dict = self.register(type="button", name="reset")
-        self.CALLBACK_SINK_ID: dict = self.register(type="div", name="sink")
-        self.INTERVAL_ID: dict = self.register(type="interval", name="1000ms")
-        self.MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory")
-        self.SESSION_STORAGE_ID: dict = self.register(type="storage", name="session")
-        self.LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local")
+        self.GLOBAL_LOCATION_ID: dict = self.register(type="location", name="location")
+        self.GLOBAL_LOCATION_STORAGE_ID: dict = self.register(type="storage", name="location")
+        self.GLOBAL_DESCRIPTION_ID: dict = self.register(type="div", name="description")
+        self.GLOBAL_NAVIGATION_ID: dict = self.register(type="navigator", name="navigation")
+        self.GLOBAL_CONTENT_ID: dict = self.register(type="div", name="content")
+        self.GLOBAL_CONTENT_LOADING_ID: dict = self.register(type="loading", name="content")
+        self.GLOBAL_SIDEBAR_ID: dict = self.register(type="div", name="sidebar")
+        self.GLOBAL_SIDEBAR_BUTTON_ID: dict = self.register(type="button", name="sidebar")
+        self.GLOBAL_SIDEBAR_LOADING_ID: dict = self.register(type="loading", name="sidebar")
+        self.GLOBAL_SIDEBAR_COLLAPSE_ID: dict = self.register(type="collapse", name="sidebar")
+
+        self.GLOBAL_BACKWARD_BUTTON_ID: dict = self.register(type="button", name="backward")
+        self.GLOBAL_BACKWARD_TRIGGER_ID = self.register(type="trigger", name="backward")
+        self.GLOBAL_REFRESH_BUTTON_ID: dict = self.register(type="button", name="refresh")
+        self.GLOBAL_REFRESH_TRIGGER_ID = self.register(type="trigger", name="refresh")
+        self.GLOBAL_FORWARD_BUTTON_ID: dict = self.register(type="button", name="forward")
+        self.GLOBAL_FORWARD_TRIGGER_ID = self.register(type="trigger", name="forward")
+
+        self.GLOBAL_CONTACTS_ARROW_ID: dict = self.register(type="icon", name="contacts")
+        self.GLOBAL_CONTACTS_BUTTON_ID: dict = self.register(type="button", name="contacts")
+        self.GLOBAL_CONTACTS_COLLAPSE_ID: dict = self.register(type="collapse", name="contacts")
+        self.GLOBAL_CONTACTS_ID: dict = self.register(type="card", name="contacts")
+
+        self.GLOBAL_IMPORT_ID: dict = self.register(type="button", name="import")
+        self.GLOBAL_IMPORT_UPLOAD_ID: dict = self.register(type="upload", name="import")
+        self.GLOBAL_EXPORT_ID: dict = self.register(type="button", name="export")
+        self.GLOBAL_EXPORT_DOWNLOAD_ID: dict = self.register(type="download", name="export")
+
+        self.GLOBAL_TERMINAL_ID: dict = self.register(type="card", name="terminal")
+        self.GLOBAL_TERMINAL_ARROW_ID: dict = self.register(type="icon", name="terminal")
+        self.GLOBAL_TERMINAL_BUTTON_ID: dict = self.register(type="button", name="terminal")
+        self.GLOBAL_TERMINAL_COLLAPSE_ID: dict = self.register(type="collapse", name="terminal")
+        self.GLOBAL_TERMINAL_INTERVAL_ID: dict = self.register(type="interval", name="terminal")
+
+        self.GLOBAL_LOADING_TRIGGER_ID: dict = self.register(type="trigger", name="loading")
+        self.GLOBAL_ROUTING_STORAGE_ID: dict = self.register(type="storage", name="routing")
+        self.GLOBAL_RELOADING_TRIGGER_ID: dict = self.register(type="trigger", name="reloading")
+        self.GLOBAL_UNLOADING_TRIGGER_ID: dict = self.register(type="trigger", name="unloading")
+
+        self.GLOBAL_MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory")
+        self.GLOBAL_CLEAN_MEMORY_BUTTON_ID: dict = self.register(type="button", name="memory")
+        self.GLOBAL_CLEAN_MEMORY_TRIGGER_ID: dict = self.register(type="trigger", name="memory")
+        self.GLOBAL_SESSION_STORAGE_ID: dict = self.register(type="storage", name="session")
+        self.GLOBAL_CLEAN_SESSION_BUTTON_ID: dict = self.register(type="button", name="session")
+        self.GLOBAL_CLEAN_SESSION_TRIGGER_ID: dict = self.register(type="trigger", name="session")
+        self.GLOBAL_LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local")
+        self.GLOBAL_CLEAN_LOCAL_BUTTON_ID: dict = self.register(type="button", name="local")
+        self.GLOBAL_CLEAN_LOCAL_TRIGGER_ID: dict = self.register(type="trigger", name="local")
+
         self.ids()
 
     def _init_app_(self) -> None:
@@ -314,36 +360,37 @@ class AppAPI:
         )
 
     def _init_pages_(self) -> None:
-        self.NOT_FOUND_LAYOUT = DefaultLayoutAPI(
+        self.GLOBAL_NOT_FOUND_LAYOUT = DefaultLayoutAPI(
             image=self.asset("404.png"),
             title="Resource Not Found",
             description="Unable to find the resource you are looking for.",
             details="Please check the url path."
         ).build()
-        self.LOADING_LAYOUT = DefaultLayoutAPI(
+        self.GLOBAL_LOADING_LAYOUT = DefaultLayoutAPI(
             image=self.asset("loading.gif"),
             title="Loading...",
             description="This resource is loading its content.",
             details="Please wait a moment."
         ).build()
-        self.MAINTENANCE_LAYOUT = DefaultLayoutAPI(
+        self.GLOBAL_MAINTENANCE_LAYOUT = DefaultLayoutAPI(
             image=self.asset("maintenance.png"),
             title="Resource Under Maintenance",
             description="This resource is temporarily down for maintenance.",
             details="Please try again later."
         ).build()
-        self.DEVELOPMENT_LAYOUT = DefaultLayoutAPI(
+        self.GLOBAL_DEVELOPMENT_LAYOUT = DefaultLayoutAPI(
             image=self.asset("development.png"),
             title="Resource Under Development",
             description="This resource is currently under development.",
             details="Please try again later."
         ).build()
-        self.NOT_INDEXED_LAYOUT = DefaultLayoutAPI(
+        self.GLOBAL_NOT_INDEXED_LAYOUT = DefaultLayoutAPI(
             image=self.asset("indexed.png"),
             title="Resource Not Indexed",
             description="This resource is not indexed at any page.",
             details="Please try again later."
         ).build()
+
         self.pages()
 
     def _init_assets_(self) -> None:
@@ -365,7 +412,7 @@ class AppAPI:
                 page._navigation_ = page.parent._navigation_
                 self._log_.debug(lambda: f"Init Navigation: Loaded Page = {endpoint} with Parent Navigation")
                 continue
-            currents: list = []
+            currents = []
             for b in page.backwards():
                 backward = PaginatorAPI(
                     href=b.endpoint,
@@ -377,7 +424,7 @@ class AppAPI:
                 )
                 currents.append(NavigatorAPI(element=backward, typename="header-navigation"))
             for c in page.currents():
-                forwards: list = []
+                forwards = []
                 for f in page.forwards(c):
                     forward = PaginatorAPI(
                         href=f.endpoint,
@@ -407,15 +454,16 @@ class AppAPI:
             html.Div(children=[
                 html.Div(children=[html.Img(src=self.asset("logo.png"), className="header-image")], className="header-logo"),
                 html.Div(children=[html.H1(self._name_, className="header-title"), html.H4(self._team_, className="header-team")], className="header-title-team"),
-                html.Div(children=[self._description_], id=self._DESCRIPTION_ID_, className="header-description")
+                html.Div(children=[self._description_], id=self.GLOBAL_DESCRIPTION_ID, className="header-description")
             ], className="header-information-block"),
             html.Div(children=[
-                html.Div(children=[], id=self._NAVIGATION_ID_, className="header-navigation-block"),
+                html.Div(children=[
+                ], className="header-navigation-block", id=self.GLOBAL_NAVIGATION_ID),
                 html.Div(children=[
                     *ButtonContainerAPI(elements=[
-                        ButtonAPI(id=self._BACKWARD_BUTTON_ID_, label=[IconAPI(icon="bi bi-arrow-left")], trigger=self._BACKWARD_TRIGGER_ID_),
-                        ButtonAPI(id=self._REFRESH_BUTTON_ID_, label=[IconAPI(icon="bi bi-arrow-repeat")], trigger=self._REFRESH_TRIGGER_ID_),
-                        ButtonAPI(id=self._FORWARD_BUTTON_ID_, label=[IconAPI(icon="bi bi-arrow-right")], trigger=self._FORWARD_TRIGGER_ID_)
+                        ButtonAPI(id=self.GLOBAL_BACKWARD_BUTTON_ID, label=[IconAPI(icon="bi bi-arrow-left")], trigger=self.GLOBAL_BACKWARD_TRIGGER_ID),
+                        ButtonAPI(id=self.GLOBAL_REFRESH_BUTTON_ID, label=[IconAPI(icon="bi bi-arrow-repeat")], trigger=self.GLOBAL_REFRESH_TRIGGER_ID),
+                        ButtonAPI(id=self.GLOBAL_FORWARD_BUTTON_ID, label=[IconAPI(icon="bi bi-arrow-right")], trigger=self.GLOBAL_FORWARD_TRIGGER_ID)
                     ], background="primary").build()
                 ], className="header-location-block")
             ], className="header-control-block")
@@ -424,60 +472,68 @@ class AppAPI:
     def _init_content_(self) -> Component:
         return html.Div(children=[
                 dbc.Collapse(children=[html.Div(children=[
-                    self.DEVELOPMENT_LAYOUT
-                ], id=self._SIDEBAR_ID_, className="sidebar-content")
-                ], id=self._SIDEBAR_COLLAPSE_ID_, is_open=False, className="sidebar-collapse"),
+                    self.GLOBAL_LOADING_LAYOUT
+                ], id=self.GLOBAL_SIDEBAR_ID, className="sidebar-content")
+                ], id=self.GLOBAL_SIDEBAR_COLLAPSE_ID, is_open=False, className="sidebar-collapse"),
                 html.Div(children=[
-                    self.LOADING_LAYOUT
-                ], id=self._CONTENT_ID_, className="page-content"),
+                    self.GLOBAL_LOADING_LAYOUT
+                ], id=self.GLOBAL_CONTENT_ID, className="page-content"),
         ], className="content")
 
     def _init_footer_(self) -> Component:
         return html.Div(children=[
             html.Div(children=[
-                *ButtonAPI(id=self._SIDEBAR_BUTTON_ID_, background="primary",
-                    label=[IconAPI(icon="bi bi-layout-sidebar-inset")]
-                ).build(),
-                *ButtonAPI(id=self._CONTACTS_BUTTON_ID_, background="primary",
-                    label=[IconAPI(icon="bi bi-caret-down-fill", id=self._CONTACTS_ARROW_ID_), TextAPI(text="  Contacts  "), IconAPI(icon="bi bi-question-circle")]
-                ).build(),
-                *ButtonAPI(id=self._IMPORT_ID_, upload=self._IMPORT_UPLOAD_ID_, background="warning",
-                    label=[TextAPI(text="Import Snapshot  "), IconAPI(icon="bi bi-upload")]
-                ).build(),
-                *ButtonAPI(id=self._EXPORT_ID_,download=self._EXPORT_DOWNLOAD_ID_, background="warning",
-                    label=[TextAPI(text="Export Snapshot  "), IconAPI(icon="bi bi-download")]
-                ).build()
+                *ButtonAPI(id=self.GLOBAL_SIDEBAR_BUTTON_ID, background="primary",
+                           label=[IconAPI(icon="bi bi-layout-sidebar-inset")],
+                           ).build(),
+                *ButtonAPI(id=self.GLOBAL_CONTACTS_BUTTON_ID, background="primary",
+                           label=[IconAPI(icon="bi bi-caret-down-fill", id=self.GLOBAL_CONTACTS_ARROW_ID), TextAPI(text="  Contacts  "), IconAPI(icon="bi bi-question-circle")]
+                           ).build(),
+                *ButtonAPI(id=self.GLOBAL_IMPORT_ID, upload=self.GLOBAL_IMPORT_UPLOAD_ID, background="warning",
+                           label=[TextAPI(text="Import Snapshot  "), IconAPI(icon="bi bi-upload")]
+                           ).build(),
+                *ButtonAPI(id=self.GLOBAL_EXPORT_ID, download=self.GLOBAL_EXPORT_DOWNLOAD_ID, background="warning",
+                           label=[TextAPI(text="Export Snapshot  "), IconAPI(icon="bi bi-download")]
+                           ).build()
             ], className="footer-left"),
             html.Div(children=[
-                *ButtonAPI(id=self._CLEAN_CACHE_BUTTON_ID_, background="danger",
-                    label=[IconAPI(icon="bi bi-trash"), TextAPI(text="  Clean Cache  ")]
-                ).build(),
-                *ButtonAPI(id=self._CLEAN_DATA_BUTTON_ID_, background="danger",
-                    label=[IconAPI(icon="bi bi-database-x"), TextAPI(text="  Clean Data  ")]
-                ).build(),
-                *ButtonAPI(id=self._TERMINAL_BUTTON_ID_, background="primary",
-                    label=[IconAPI(icon="bi bi-terminal"), TextAPI(text="  Terminal  "), IconAPI(icon="bi bi-caret-down-fill", id=self._TERMINAL_ARROW_ID_)]
-                ).build()
+                *ButtonAPI(id=self.GLOBAL_CLEAN_MEMORY_BUTTON_ID, background="danger",
+                           label=[IconAPI(icon="bi bi-trash"), TextAPI(text="  Clean Memory  ")],
+                           trigger=self.GLOBAL_CLEAN_MEMORY_TRIGGER_ID
+                           ).build(),
+                *ButtonAPI(id=self.GLOBAL_CLEAN_SESSION_BUTTON_ID, background="danger",
+                           label=[IconAPI(icon="bi bi-database-x"), TextAPI(text="  Clean Session  ")],
+                           trigger=self.GLOBAL_CLEAN_SESSION_TRIGGER_ID
+                           ).build(),
+                *ButtonAPI(id=self.GLOBAL_CLEAN_LOCAL_BUTTON_ID, background="danger",
+                           label=[IconAPI(icon="bi bi-x-octagon"), TextAPI(text="  Clean Local  ")],
+                           trigger=self.GLOBAL_CLEAN_LOCAL_TRIGGER_ID
+                           ).build(),
+                *ButtonAPI(id=self.GLOBAL_TERMINAL_BUTTON_ID, background="primary",
+                           label=[IconAPI(icon="bi bi-terminal"), TextAPI(text="  Terminal  "), IconAPI(icon="bi bi-caret-down-fill", id=self.GLOBAL_TERMINAL_ARROW_ID)]
+                           ).build()
             ], className="footer-right"),
             dbc.Collapse(dbc.Card(dbc.CardBody([
                 html.Div(children=[html.B("Team: "), html.Span(self._team_)]),
                 html.Div(children=[html.B("Contact: "), html.A(self._contact_, href=f"mailto:{self._contact_}")])
-            ]), className="footer-panel footer-panel-left"), id=self._CONTACTS_COLLAPSE_ID_, is_open=False),
+            ]), className="footer-panel footer-panel-left"), id=self.GLOBAL_CONTACTS_COLLAPSE_ID, is_open=False),
             dbc.Collapse(dbc.Card(dbc.CardBody([
-                html.Pre([], id=self._TERMINAL_ID_)
-            ]), className="footer-panel footer-panel-right", color="dark", inverse=True), id=self._TERMINAL_COLLAPSE_ID_, is_open=False)
+                html.Pre([], id=self.GLOBAL_TERMINAL_ID)
+            ]), className="footer-panel footer-panel-right", color="dark", inverse=True), id=self.GLOBAL_TERMINAL_COLLAPSE_ID, is_open=False)
         ], className="footer")
 
     def _init_hidden_(self) -> Component:
         return html.Div(children=[
-            html.Div(id=self.CALLBACK_SINK_ID),
-            dcc.Interval(id=self.INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
-            dcc.Store(id=self._LOCATION_STORAGE_ID_, storage_type="session", data=LocationAPI().dict()),
-            dcc.Store(id=self.NAVIGATION_STORAGE_ID, storage_type="session", data=NavigationAPI().dict()),
-            dcc.Store(id=self.MEMORY_STORAGE_ID, storage_type="memory", data=dict()),
-            dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session", data=dict()),
-            dcc.Store(id=self.LOCAL_STORAGE_ID, storage_type="local", data=dict()),
-            dcc.Location(id=self._LOCATION_ID_, refresh=False)
+            dcc.Location(id=self.GLOBAL_LOCATION_ID, refresh=False),
+            dcc.Store(id=self.GLOBAL_LOCATION_STORAGE_ID, storage_type="session", data=dict()),
+            dcc.Store(id=self.GLOBAL_LOADING_TRIGGER_ID, storage_type="memory", data=dict()),
+            dcc.Store(id=self.GLOBAL_ROUTING_STORAGE_ID, storage_type="memory", data=dict()),
+            dcc.Store(id=self.GLOBAL_RELOADING_TRIGGER_ID, storage_type="memory", data=dict()),
+            dcc.Store(id=self.GLOBAL_UNLOADING_TRIGGER_ID, storage_type="memory", data=dict()),
+            dcc.Interval(id=self.GLOBAL_TERMINAL_INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
+            dcc.Store(id=self.GLOBAL_MEMORY_STORAGE_ID, storage_type="memory", data=dict()),
+            dcc.Store(id=self.GLOBAL_SESSION_STORAGE_ID, storage_type="session", data=dict()),
+            dcc.Store(id=self.GLOBAL_LOCAL_STORAGE_ID, storage_type="local", data=dict())
         ], className="hidden")
 
     def _init_layout_(self) -> None:
@@ -504,98 +560,39 @@ class AppAPI:
                     if not getattr(func, "_callback_", False):
                         continue
                     bound = getattr(context, name)
-                    callback_js: list = getattr(func, "_callback_js_")
-                    callback_args: list = getattr(func, "_callback_args_")
-                    callback_kwargs: dict = getattr(func, "_callback_kwargs_")
-                    callback_args = [arg.build(context=context) if isinstance(arg, Trigger) else arg for arg in callback_args]
-                    callback_kwargs.setdefault("prevent_initial_call", True)
-                    if callback_js:
-                        self.app.clientside_callback(bound(), *callback_args, **callback_kwargs)
+                    client: bool = func._callback_js_
+                    args: list = func._callback_args_
+                    kwargs: dict = func._callback_kwargs_
+                    loading: bool = func._callback_loading_
+                    reloading: bool = func._callback_reloading_
+                    unloading: bool = func._callback_unloading_
+                    args = [arg.build(context=context) if isinstance(arg, Trigger) else arg for arg in args]
+                    # override = int(bool(loading)) + int(bool(reloading)) + int(bool(unloading))
+                    # if unloading:
+                    #     trigger = context.unloader(name=name)
+                    #     args.insert(0, dash.Input(trigger, "data"))
+                    # if reloading:
+                    #     trigger = context.reloader(name=name)
+                    #     args.insert(0, dash.Input(trigger, "data"))
+                    # if loading:
+                    #     trigger = context.loader(name=name)
+                    #     args.insert(0, dash.Input(trigger, "data"))
+                    if client:
+                        javascript = bound()
+                        # if override:
+                        #     javascript = override_clientside_callback(javascript, override=override)
+                        self.app.clientside_callback(javascript, *args, **kwargs)
                         self._log_.info(lambda: f"Init Callbacks: Loaded Client-Side Callback: {name}")
                     else:
-                        self.app.callback(*callback_args, **callback_kwargs)(bound)
+                        # if override:
+                        #     bound = override_serverside_callback(bound, override=override)
+                        self.app.callback(*args, **kwargs)(bound)
                         self._log_.info(lambda: f"Init Callbacks: Loaded Server-Side Callback: {name}")
 
-    @serverside_callback(
-        Output("_LOCATION_ID_", "pathname"),
-        Output("_DESCRIPTION_ID_", "children"),
-        Output("_NAVIGATION_ID_", "children"),
-        Output("_SIDEBAR_ID_", "children"),
-        Output("_CONTENT_ID_", "children"),
-        Output("_LOCATION_STORAGE_ID_", "data"),
-        Input("_LOCATION_ID_", "pathname"),
-        State("_DESCRIPTION_ID_", "children"),
-        State("_NAVIGATION_ID_", "children"),
-        State("_SIDEBAR_ID_", "children"),
-        State("_CONTENT_ID_", "children"),
-        State("_LOCATION_STORAGE_ID_", "data"),
-        prevent_initial_call=False
-    )
-    def _update_location_callback_(self, path: str, description: Component, navigation: Component, sidebar: Component, content: Component, location: dict):
-        if path is None: raise PreventUpdate
-        self._log_.debug(lambda: f"Update Location Callback: Received Path = {path}")
-        anchor = self.anchorize(path=path, relative=False)
-        self._log_.debug(lambda: f"Update Location Callback: Parsed Anchor = {anchor}")
-        endpoint = self.endpointize(path=path, relative=False)
-        self._log_.debug(lambda: f"Update Location Callback: Parsed Endpoint = {endpoint}")
-        location = LocationAPI(**location or {})
-        if location.current() == anchor:
-            self._log_.debug(lambda: "Update Location Callback: Current Page Detected")
-        elif location.backward(step=False) == anchor:
-            self._log_.debug(lambda: "Update Location Callback: Backward Page Detected")
-            location.backward(step=True)
-        elif location.forward(step=False) == anchor:
-            self._log_.debug(lambda: "Update Location Callback: Forward Page Detected")
-            location.forward(step=True)
-        else:
-            location.register(path=anchor)
-            self._log_.debug(lambda: "Update Location Callback: Registered Page")
-        if path == anchor:
-            anchor = dash.no_update
-        else:
-            self._log_.debug(lambda: f"Update Location Callback: Updating Anchor")
-        if (page := self.locate(endpoint=endpoint)) is not None:
-            self._log_.debug(lambda: f"Update Location Callback: Page Found")
-            if description == page.description:
-                description = dash.no_update
-            elif self._description_ or not page.description:
-                description = dash.no_update
-            else:
-                self._log_.debug(lambda: f"Update Location Callback: Updating Description")
-                description = page.description
-            if navigation is page._navigation_:
-                navigation = dash.no_update
-            elif not page._navigation_:
-                navigation = dash.no_update
-            else:
-                self._log_.debug(lambda: f"Update Location Callback: Updating Navigation")
-                navigation = page._navigation_
-            if sidebar is page._sidebar_:
-                sidebar = dash.no_update
-            else:
-                self._log_.debug(lambda: f"Update Location Callback: Updating Sidebar")
-                sidebar = page._sidebar_
-            if content is page._content_:
-                content = dash.no_update
-            else:
-                self._log_.debug(lambda: f"Update Location Callback: Updating Content")
-                content = page._content_
-        else:
-            self._log_.debug(lambda: f"Update Location Callback: Page Not Found")
-            description = dash.no_update
-            navigation = dash.no_update
-            sidebar = self.NOT_FOUND_LAYOUT
-            content = self.NOT_FOUND_LAYOUT
-        if all([update is dash.no_update for update in [anchor, description, navigation, sidebar, content]]):
-            self._log_.debug(lambda: f"Update Location Callback: No Updates Required")
-            raise PreventUpdate
-        return anchor, description, navigation, sidebar, content, location.dict()
-
     @clientside_callback(
-        Output("CALLBACK_SINK_ID", "children", allow_duplicate=True),
-        Input("NAVIGATION_STORAGE_ID", "data")
+        Input("GLOBAL_ROUTING_STORAGE_ID", "data")
     )
-    def _update_navigation_callback_(self):
+    def _global_routing_location_callback_(self):
         return """
         function(nav) {
             if (!nav || !nav.href || nav.index == null) {
@@ -613,33 +610,97 @@ class AppAPI:
             }
             window.history.pushState({}, "", href);
             window.dispatchEvent(new PopStateEvent("popstate"));
-            return "";
         }
         """
 
     @serverside_callback(
-        Output("_LOCATION_ID_", "pathname"),
-        Output("_LOCATION_STORAGE_ID_", "data"),
-        Input("_BACKWARD_BUTTON_ID_", "n_clicks"),
-        State("_LOCATION_STORAGE_ID_", "data")
+        Output("GLOBAL_LOCATION_ID", "pathname"),
+        Output("GLOBAL_LOCATION_STORAGE_ID", "data"),
+        Output("GLOBAL_DESCRIPTION_ID", "children"),
+        Output("GLOBAL_NAVIGATION_ID", "children"),
+        Output("GLOBAL_SIDEBAR_ID", "children"),
+        Output("GLOBAL_CONTENT_ID", "children"),
+        Output("GLOBAL_LOADING_TRIGGER_ID", "data"),
+        Output("GLOBAL_RELOADING_TRIGGER_ID", "data"),
+        Input("GLOBAL_LOCATION_ID", "pathname"),
+        State("GLOBAL_LOCATION_STORAGE_ID", "data"),
+        State("GLOBAL_LOADING_TRIGGER_ID", "data"),
+        State("GLOBAL_RELOADING_TRIGGER_ID", "data"),
+        enable_initial_call=False
     )
-    def _backward_location_callback_(self, clicks: int, location: dict):
-        if clicks is None: raise PreventUpdate
+    def _global_update_location_callback_(self, path: str, location: dict, loading: dict, reloading: dict):
+        self._log_.debug(lambda: f"Update Location Callback: Received Path = {path}")
+        anchor = self.anchorize(path=path, relative=False)
+        self._log_.debug(lambda: f"Update Location Callback: Parsed Anchor = {anchor}")
+        endpoint = self.endpointize(path=path, relative=False)
+        self._log_.debug(lambda: f"Update Location Callback: Parsed Endpoint = {endpoint}")
+        location = LocationAPI(**location)
+        loading = TriggerAPI(**loading)
+        reloading = TriggerAPI(**reloading)
+        if location.current() == endpoint:
+            self._log_.debug(lambda: "Update Location Callback: Current Page Detected")
+            loading = dash.no_update
+            reloading = reloading.trigger().dict()
+        elif location.backward(step=False) == endpoint:
+            self._log_.debug(lambda: "Update Location Callback: Backward Page Detected")
+            location.backward(step=True)
+            loading = loading.trigger().dict()
+            reloading = dash.no_update
+        elif location.forward(step=False) == endpoint:
+            self._log_.debug(lambda: "Update Location Callback: Forward Page Detected")
+            location.forward(step=True)
+            loading = loading.trigger().dict()
+            reloading = dash.no_update
+        else:
+            self._log_.debug(lambda: "Update Location Callback: New Page Detected")
+            location.register(path=endpoint)
+            loading = loading.trigger().dict()
+            reloading = dash.no_update
+        redirect, page = self.redirect(endpoint=endpoint)
+        anchor = self.anchorize(path=redirect, relative=False)
+        self._log_.debug(lambda: f"Update Location Callback: Normalized Anchor")
+        if page:
+            description = dash.no_update if (self._description_ or not page.description) else page.description
+            self._log_.debug(lambda: f"Update Location Callback: Updated Description")
+            navigation = page._navigation_ if page._navigation_ else dash.no_update
+            self._log_.debug(lambda: f"Update Location Callback: Updated Navigation")
+            sidebar = page._sidebar_
+            self._log_.debug(lambda: f"Update Location Callback: Updated Sidebar")
+            content = page._content_
+            self._log_.debug(lambda: f"Update Location Callback: Updated Content")
+        else:
+            description = dash.no_update
+            self._log_.debug(lambda: f"Update Location Callback: Did not Update Description")
+            navigation = dash.no_update
+            self._log_.debug(lambda: f"Update Location Callback: Did not Update Navigation")
+            sidebar = self.GLOBAL_NOT_FOUND_LAYOUT
+            self._log_.debug(lambda: f"Update Location Callback: Updated Sidebar")
+            content = self.GLOBAL_NOT_FOUND_LAYOUT
+            self._log_.debug(lambda: f"Update Location Callback: Updated Content")
+        return anchor, location.dict(), description, navigation, sidebar, content, loading, reloading
+
+    @serverside_callback(
+        Output("GLOBAL_LOCATION_ID", "pathname"),
+        Output("GLOBAL_LOCATION_STORAGE_ID", "data"),
+        Input("GLOBAL_BACKWARD_BUTTON_ID", "n_clicks"),
+        State("GLOBAL_LOCATION_STORAGE_ID", "data")
+    )
+    def _global_backward_location_callback_(self, clicks: int, location: dict):
+        if not clicks: raise PreventUpdate
         self._log_.debug(lambda: f"Backward Location Callback: Clicks = {clicks}")
-        location = LocationAPI(**location or {})
+        location = LocationAPI(**location)
         path = location.backward(step=True)
         if not path:
-            self._log_.debug(lambda: "Backward Location Callback: No backward path available")
+            self._log_.debug(lambda: "Backward Location Callback: No Backward Path Available")
             raise PreventUpdate
         self._log_.debug(lambda: f"Backward Location Callback: Navigating to {path}")
         return path, location.dict()
 
     @clientside_callback(
-        Output("CALLBACK_SINK_ID", "children"),
-        Input("_REFRESH_BUTTON_ID_", "n_clicks"),
-        Input("_REFRESH_TRIGGER_ID_", "data"),
+        Input("GLOBAL_REFRESH_BUTTON_ID", "n_clicks"),
+        Input("GLOBAL_REFRESH_TRIGGER_ID", "data")
     )
-    def _refresh_location_callback_(self):
+    def _global_refresh_location_callback_(self):
         return """
         function(clicks, trigger) {
             const clicked = (clicks != null && clicks > 0);
@@ -653,28 +714,27 @@ class AppAPI:
                 window.__lastRefreshIndex__ = idx;
             }
             window.location.reload();
-            return "";
         }
         """
 
     @serverside_callback(
-        Output("_LOCATION_ID_", "pathname"),
-        Output("_LOCATION_STORAGE_ID_", "data"),
-        Input("_FORWARD_BUTTON_ID_", "n_clicks"),
-        State("_LOCATION_STORAGE_ID_", "data")
+        Output("GLOBAL_LOCATION_ID", "pathname"),
+        Output("GLOBAL_LOCATION_STORAGE_ID", "data"),
+        Input("GLOBAL_FORWARD_BUTTON_ID", "n_clicks"),
+        State("GLOBAL_LOCATION_STORAGE_ID", "data")
     )
-    def _forward_location_callback_(self, clicks: int, location: dict):
-        if clicks is None: raise PreventUpdate
+    def _global_forward_location_callback_(self, clicks: int, location: dict):
+        if not clicks: raise PreventUpdate
         self._log_.debug(lambda: f"Forward Location Callback: Clicks = {clicks}")
-        location = LocationAPI(**location or {})
+        location = LocationAPI(**location)
         path = location.forward(step=True)
         if not path:
-            self._log_.debug(lambda: "Forward Location Callback: No forward path available")
+            self._log_.debug(lambda: "Forward Location Callback: No Forward Path Available")
             raise PreventUpdate
         self._log_.debug(lambda: f"Forward Location Callback: Navigating to {path}")
         return path, location.dict()
 
-    def _collapse_button_callback_(self, name: str, was_open: bool, classname: str = None):
+    def _global_collapse_button_callback_(self, name: str, was_open: bool, classname: str = None):
         is_open = not was_open
         self._log_.debug(lambda: f"{name} Callback: {'Expanding' if is_open else 'Collapsing'}")
         if not classname: return is_open
@@ -683,26 +743,26 @@ class AppAPI:
         return is_open, classname
 
     @serverside_callback(
-        Output("_SIDEBAR_COLLAPSE_ID_", "is_open"),
-        Input("_SIDEBAR_BUTTON_ID_", "n_clicks"),
-        State("_SIDEBAR_COLLAPSE_ID_", "is_open")
+        Output("GLOBAL_SIDEBAR_COLLAPSE_ID", "is_open"),
+        Input("GLOBAL_SIDEBAR_BUTTON_ID", "n_clicks"),
+        State("GLOBAL_SIDEBAR_COLLAPSE_ID", "is_open")
     )
-    def _sidebar_button_callback_(self, clicks: int, was_open: bool):
-        if clicks is None: raise PreventUpdate
-        return self._collapse_button_callback_(name="Sidebar", was_open=was_open)
+    def _global_sidebar_button_callback_(self, clicks: int, was_open: bool):
+        if not clicks: raise PreventUpdate
+        return self._global_collapse_button_callback_(name="Sidebar", was_open=was_open)
 
     @serverside_callback(
-        Output("_CONTACTS_COLLAPSE_ID_", "is_open"),
-        Output("_CONTACTS_ARROW_ID_", "className"),
-        Input("_CONTACTS_BUTTON_ID_", "n_clicks"),
-        State("_CONTACTS_COLLAPSE_ID_", "is_open"),
-        State("_CONTACTS_ARROW_ID_", "className")
+        Output("GLOBAL_CONTACTS_COLLAPSE_ID", "is_open"),
+        Output("GLOBAL_CONTACTS_ARROW_ID", "className"),
+        Input("GLOBAL_CONTACTS_BUTTON_ID", "n_clicks"),
+        State("GLOBAL_CONTACTS_COLLAPSE_ID", "is_open"),
+        State("GLOBAL_CONTACTS_ARROW_ID", "className")
     )
-    def _contacts_button_callback_(self, clicks: int, was_open: bool, classname: str):
-        if clicks is None: raise PreventUpdate
-        return self._collapse_button_callback_(name="Contacts", was_open=was_open, classname=classname)
+    def _global_contacts_button_callback_(self, clicks: int, was_open: bool, classname: str):
+        if not clicks: raise PreventUpdate
+        return self._global_collapse_button_callback_(name="Contacts", was_open=was_open, classname=classname)
 
-    def _import_snapshot_callback_(self, contents: str, filename: str, prop: str):
+    def _global_import_snapshot_callback_(self, contents: str, filename: str, prop: str):
         if not contents: raise PreventUpdate
         try:
             _, b64 = contents.split(",", 1)
@@ -734,104 +794,104 @@ class AppAPI:
 
     @serverside_callback(
         Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "data"}, "data"),
-        Input("_IMPORT_UPLOAD_ID_", "contents"),
-        State("_IMPORT_UPLOAD_ID_", "filename")
+        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
+        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
     )
-    def _import_snapshot_data_callback_(self, contents: str, filename: str):
-        return self._import_snapshot_callback_(contents, filename, "data")
+    def _global_import_snapshot_data_callback_(self, contents: str, filename: str):
+        return self._global_import_snapshot_callback_(contents, filename, "data")
 
     @serverside_callback(
         Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "value"}, "value"),
-        Input("_IMPORT_UPLOAD_ID_", "contents"),
-        State("_IMPORT_UPLOAD_ID_", "filename")
+        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
+        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
     )
-    def _import_snapshot_value_callback_(self, contents: str, filename: str):
-        return self._import_snapshot_callback_(contents, filename, "value")
+    def _global_import_snapshot_value_callback_(self, contents: str, filename: str):
+        return self._global_import_snapshot_callback_(contents, filename, "value")
 
     @serverside_callback(
         Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "input"}, "input"),
-        Input("_IMPORT_UPLOAD_ID_", "contents"),
-        State("_IMPORT_UPLOAD_ID_", "filename")
+        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
+        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
     )
-    def _import_snapshot_input_callback_(self, contents: str, filename: str):
-        return self._import_snapshot_callback_(contents, filename, "input")
+    def _global_import_snapshot_input_callback_(self, contents: str, filename: str):
+        return self._global_import_snapshot_callback_(contents, filename, "input")
 
     @serverside_callback(
         Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "filter"}, "filter"),
-        Input("_IMPORT_UPLOAD_ID_", "contents"),
-        State("_IMPORT_UPLOAD_ID_", "filename")
+        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
+        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
     )
-    def _import_snapshot_filter_callback_(self, contents: str, filename: str):
-        return self._import_snapshot_callback_(contents, filename, "filter")
+    def _global_import_snapshot_filter_callback_(self, contents: str, filename: str):
+        return self._global_import_snapshot_callback_(contents, filename, "filter")
 
     @serverside_callback(
         Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "date"}, "date"),
-        Input("_IMPORT_UPLOAD_ID_", "contents"),
-        State("_IMPORT_UPLOAD_ID_", "filename")
+        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
+        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
     )
-    def _import_snapshot_date_callback_(self, contents: str, filename: str):
-        return self._import_snapshot_callback_(contents, filename, "date")
+    def _global_import_snapshot_date_callback_(self, contents: str, filename: str):
+        return self._global_import_snapshot_callback_(contents, filename, "date")
 
     @serverside_callback(
         Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "checked"}, "checked"),
-        Input("_IMPORT_UPLOAD_ID_", "contents"),
-        State("_IMPORT_UPLOAD_ID_", "filename")
+        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
+        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
     )
-    def _import_snapshot_checked_callback_(self, contents: str, filename: str):
-        return self._import_snapshot_callback_(contents, filename, "checked")
+    def _global_import_snapshot_checked_callback_(self, contents: str, filename: str):
+        return self._global_import_snapshot_callback_(contents, filename, "checked")
 
     @serverside_callback(
         Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "start_date"}, "start_date"),
-        Input("_IMPORT_UPLOAD_ID_", "contents"),
-        State("_IMPORT_UPLOAD_ID_", "filename")
+        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
+        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
     )
-    def _import_snapshot_start_date_callback_(self, contents: str, filename: str):
-        return self._import_snapshot_callback_(contents, filename, "start_date")
+    def _global_import_snapshot_start_date_callback_(self, contents: str, filename: str):
+        return self._global_import_snapshot_callback_(contents, filename, "start_date")
 
     @serverside_callback(
         Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "end_date"}, "end_date"),
-        Input("_IMPORT_UPLOAD_ID_", "contents"),
-        State("_IMPORT_UPLOAD_ID_", "filename")
+        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
+        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
     )
-    def _import_snapshot_end_date_callback_(self, contents: str, filename: str):
-        return self._import_snapshot_callback_(contents, filename, "end_date")
+    def _global_import_snapshot_end_date_callback_(self, contents: str, filename: str):
+        return self._global_import_snapshot_callback_(contents, filename, "end_date")
 
     @serverside_callback(
         Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "options"}, "options"),
-        Input("_IMPORT_UPLOAD_ID_", "contents"),
-        State("_IMPORT_UPLOAD_ID_", "filename")
+        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
+        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
     )
-    def _import_snapshot_options_callback_(self, contents: str, filename: str):
-        return self._import_snapshot_callback_(contents, filename, "options")
+    def _global_import_snapshot_options_callback_(self, contents: str, filename: str):
+        return self._global_import_snapshot_callback_(contents, filename, "options")
 
     @serverside_callback(
         Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "disabled"}, "disabled"),
-        Input("_IMPORT_UPLOAD_ID_", "contents"),
-        State("_IMPORT_UPLOAD_ID_", "filename")
+        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
+        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
     )
-    def _import_snapshot_disabled_callback_(self, contents: str, filename: str):
-        return self._import_snapshot_callback_(contents, filename, "disabled")
+    def _global_import_snapshot_disabled_callback_(self, contents: str, filename: str):
+        return self._global_import_snapshot_callback_(contents, filename, "disabled")
 
     @serverside_callback(
         Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "is_open"}, "is_open"),
-        Input("_IMPORT_UPLOAD_ID_", "contents"),
-        State("_IMPORT_UPLOAD_ID_", "filename")
+        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
+        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
     )
-    def _import_snapshot_is_open_callback_(self, contents: str, filename: str):
-        return self._import_snapshot_callback_(contents, filename, "is_open")
+    def _global_import_snapshot_is_open_callback_(self, contents: str, filename: str):
+        return self._global_import_snapshot_callback_(contents, filename, "is_open")
 
     @serverside_callback(
         Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "active_tab"}, "active_tab"),
-        Input("_IMPORT_UPLOAD_ID_", "contents"),
-        State("_IMPORT_UPLOAD_ID_", "filename")
+        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
+        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
     )
-    def _import_snapshot_active_tab_callback_(self, contents: str, filename: str):
-        return self._import_snapshot_callback_(contents, filename, "active_tab")
+    def _global_import_snapshot_active_tab_callback_(self, contents: str, filename: str):
+        return self._global_import_snapshot_callback_(contents, filename, "active_tab")
 
     @serverside_callback(
-        Output("_EXPORT_DOWNLOAD_ID_", "data"),
-        Input("_EXPORT_ID_", "n_clicks"),
-        State("_LOCATION_ID_", "pathname"),
+        Output("GLOBAL_EXPORT_DOWNLOAD_ID", "data"),
+        Input("GLOBAL_EXPORT_ID", "n_clicks"),
+        State("GLOBAL_LOCATION_ID", "pathname"),
         State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "data"}, "data"),
         State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "value"}, "value"),
         State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "input"}, "input"),
@@ -845,7 +905,7 @@ class AppAPI:
         State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "is_open"}, "is_open"),
         State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "active_tab"}, "active_tab")
     )
-    def _export_snapshot_callback_(self, clicks: int, path: str, *_):
+    def _global_export_snapshot_callback_(self, clicks: int, path: str, *_):
         if not clicks: raise PreventUpdate
         if not path: raise PreventUpdate
         endpoint = self.endpointize(path=path, relative=False)
@@ -867,61 +927,77 @@ class AppAPI:
         filename = f"snapshot-{endpoint.strip('/').replace('/', '-') or 'root'}.json"
         return dcc.send_string(json.dumps(payload, indent=2, sort_keys=True), filename=filename)
 
-    @serverside_callback(
-        Output("MEMORY_STORAGE_ID", "data"),
-        Output("SESSION_STORAGE_ID", "data"),
-        Output("_REFRESH_TRIGGER_ID_", "data"),
-        Input("_CLEAN_CACHE_BUTTON_ID_", "n_clicks"),
-        State("_REFRESH_TRIGGER_ID_", "data")
-    )
-    def _clean_cache_callback_(self, clicks: int, trigger: dict):
-        if clicks is None: raise PreventUpdate
-        button = TriggerAPI(**trigger or {})
-        self._log_.debug(lambda: "Clean Cache Callback: Cleaning Cache")
-        memory = {}
-        session = {}
-        self._log_.debug(lambda: "Clean Cache Callback: Cleaned Data")
-        button.trigger()
-        self._log_.debug(lambda: "Clean Cache Callback: Refreshing Page")
-        return memory, session, button.dict()
+    def _global_clean_storage_callback_(self, clicks: int, trigger: dict, name: str, storage: str):
+        if not clicks and not trigger: raise PreventUpdate
+        self._log_.debug(lambda: f"Clean {storage.title()} Callback: Cleaned {name} Storage")
+        return dict()
 
     @serverside_callback(
-        Output("MEMORY_STORAGE_ID", "data"),
-        Output("SESSION_STORAGE_ID", "data"),
-        Output("LOCAL_STORAGE_ID", "data"),
-        Output("_REFRESH_TRIGGER_ID_", "data"),
-        Input("_CLEAN_DATA_BUTTON_ID_", "n_clicks"),
-        State("_REFRESH_TRIGGER_ID_", "data")
+        Output("GLOBAL_LOADING_TRIGGER_ID", "data"),
+        Output("GLOBAL_ROUTING_STORAGE_ID", "data"),
+        Output("GLOBAL_RELOADING_TRIGGER_ID", "data"),
+        Output("GLOBAL_UNLOADING_TRIGGER_ID", "data"),
+        Output("GLOBAL_MEMORY_STORAGE_ID", "data"),
+        Output("GLOBAL_REFRESH_TRIGGER_ID", "data"),
+        Input("GLOBAL_CLEAN_MEMORY_BUTTON_ID", "n_clicks"),
+        Input("GLOBAL_CLEAN_MEMORY_TRIGGER_ID", "data"),
+        State("GLOBAL_MEMORY_STORAGE_ID", "storage_type"),
+        State("GLOBAL_REFRESH_TRIGGER_ID", "data")
     )
-    def _clean_data_callback_(self, clicks: int, trigger: dict):
-        if clicks is None: raise PreventUpdate
-        button = TriggerAPI(**trigger or {})
-        self._log_.debug(lambda: "Clean Data Callback: Cleaning Data")
-        memory = {}
-        session = {}
-        local = {}
-        self._log_.debug(lambda: "Clean Data Callback: Cleaned Data")
-        button.trigger()
-        self._log_.debug(lambda: "Clean Data Callback: Refreshing Page")
-        return memory, session, local, button.dict()
+    def _global_clean_memory_callback_(self, clicks: int, trigger: dict, storage: str, refresh: dict):
+        loading = self._global_clean_storage_callback_(clicks=clicks, trigger=trigger, name="Loading", storage=storage)
+        routing = self._global_clean_storage_callback_(clicks=clicks, trigger=trigger, name="Routing", storage=storage)
+        reloading = self._global_clean_storage_callback_(clicks=clicks, trigger=trigger, name="Reloading", storage=storage)
+        unloading = self._global_clean_storage_callback_(clicks=clicks, trigger=trigger, name="Unloading", storage=storage)
+        memory = self._global_clean_storage_callback_(clicks=clicks, trigger=trigger, name="Memory", storage=storage)
+        refresh = TriggerAPI(**refresh)
+        return loading, routing, reloading, unloading, memory, refresh.trigger().dict()
 
     @serverside_callback(
-        Output("_TERMINAL_COLLAPSE_ID_", "is_open"),
-        Output("_TERMINAL_ARROW_ID_", "className"),
-        Input("_TERMINAL_BUTTON_ID_", "n_clicks"),
-        State("_TERMINAL_COLLAPSE_ID_", "is_open"),
-        State("_TERMINAL_ARROW_ID_", "className")
+        Output("GLOBAL_LOCATION_STORAGE_ID", "data"),
+        Output("GLOBAL_SESSION_STORAGE_ID", "data"),
+        Output("GLOBAL_CLEAN_MEMORY_TRIGGER_ID", "data"),
+        Input("GLOBAL_CLEAN_SESSION_BUTTON_ID", "n_clicks"),
+        Input("GLOBAL_CLEAN_SESSION_TRIGGER_ID", "data"),
+        State("GLOBAL_SESSION_STORAGE_ID", "storage_type"),
+        State("GLOBAL_CLEAN_MEMORY_TRIGGER_ID", "data")
     )
-    def _terminal_button_callback_(self, clicks: int, was_open: bool, classname: str):
-        if clicks is None: raise PreventUpdate
-        return self._collapse_button_callback_(name="Terminal", was_open=was_open, classname=classname)
+    def _global_clean_session_callback_(self, clicks: int, trigger: dict, storage: str, memory: dict):
+        location = self._global_clean_storage_callback_(clicks=clicks, trigger=trigger, name="Location", storage=storage)
+        session = self._global_clean_storage_callback_(clicks=clicks, trigger=trigger, name="Session", storage=storage)
+        memory = TriggerAPI(**memory)
+        return location, session, memory.trigger().dict()
 
     @serverside_callback(
-        Output("_TERMINAL_ID_", "children"),
-        Input("INTERVAL_ID", "n_intervals"),
-        State("_TERMINAL_ID_", "children")
+        Output("GLOBAL_LOCAL_STORAGE_ID", "data"),
+        Output("GLOBAL_CLEAN_SESSION_TRIGGER_ID", "data"),
+        Input("GLOBAL_CLEAN_LOCAL_BUTTON_ID", "n_clicks"),
+        Input("GLOBAL_CLEAN_LOCAL_TRIGGER_ID", "data"),
+        State("GLOBAL_LOCAL_STORAGE_ID", "storage_type"),
+        State("GLOBAL_CLEAN_SESSION_TRIGGER_ID", "data")
     )
-    def _terminal_stream_callback_(self, _, terminal: list[Component]):
+    def _global_clean_local_callback_(self, clicks: int, trigger: dict, storage: str, session: dict):
+        local = self._global_clean_storage_callback_(clicks=clicks, trigger=trigger, name="Local", storage=storage)
+        session = TriggerAPI(**session)
+        return local, session.trigger().dict()
+
+    @serverside_callback(
+        Output("GLOBAL_TERMINAL_COLLAPSE_ID", "is_open"),
+        Output("GLOBAL_TERMINAL_ARROW_ID", "className"),
+        Input("GLOBAL_TERMINAL_BUTTON_ID", "n_clicks"),
+        State("GLOBAL_TERMINAL_COLLAPSE_ID", "is_open"),
+        State("GLOBAL_TERMINAL_ARROW_ID", "className")
+    )
+    def _global_terminal_button_callback_(self, clicks: int, was_open: bool, classname: str):
+        if not clicks: raise PreventUpdate
+        return self._global_collapse_button_callback_(name="Terminal", was_open=was_open, classname=classname)
+
+    @serverside_callback(
+        Output("GLOBAL_TERMINAL_ID", "children"),
+        Input("GLOBAL_TERMINAL_INTERVAL_ID", "n_intervals"),
+        State("GLOBAL_TERMINAL_ID", "children")
+    )
+    def _global_terminal_stream_callback_(self, _, terminal: list[Component]):
         logs = self._log_.web.stream()
         if not logs: raise PreventUpdate
         terminal = terminal or []

@@ -93,10 +93,7 @@ class ComponentAPI(Component, ABC):
 
     @staticmethod
     def flatten(element: Component | list) -> list[Component]:
-        if isinstance(element, list):
-            element = element
-        else:
-            element = [element]
+        element = [element] if not isinstance(element, (tuple, list)) else element
         elements = []
         for e in element:
             if isinstance(e, ComponentAPI):

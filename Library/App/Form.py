@@ -4,16 +4,15 @@ from dash import html, dcc
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: from Library.App import AppAPI
 
-from Library.App import IconAPI, TextAPI, ButtonAPI, PaginatorAPI, PageAPI
-from Library.Utility import Component
+from Library.App import Component, IconAPI, TextAPI, ButtonAPI, PaginatorAPI, PageAPI
 
 class FormAPI(PageAPI):
 
-    BACK_INTERNAL_ID: dict = None
-    BACK_EXTERNAL_ID: dict = None
-    ACTION_BUTTON_ID: dict = None
-    NEXT_INTERNAL_ID: dict = None
-    NEXT_EXTERNAL_ID: dict = None
+    FORM_BACK_INTERNAL_ID: dict
+    FORM_BACK_EXTERNAL_ID: dict
+    FORM_ACTION_BUTTON_ID: dict
+    FORM_NEXT_INTERNAL_ID: dict
+    FORM_NEXT_EXTERNAL_ID: dict
 
     def __init__(self, *,
                  app: AppAPI,
@@ -54,28 +53,28 @@ class FormAPI(PageAPI):
         self._add_next_button_: str | bool = add_next_button
 
     def _init_ids_(self) -> None:
-        self.ACTION_BUTTON_ID = self.register(type="button", name="action")
-        self.BACK_INTERNAL_ID = self.register(type="button", name="internal-back")
-        self.BACK_EXTERNAL_ID = self.register(type="button", name="external-back")
-        self.NEXT_INTERNAL_ID = self.register(type="button", name="internal-next")
-        self.NEXT_EXTERNAL_ID = self.register(type="button", name="external-next")
+        self.FORM_ACTION_BUTTON_ID = self.register(type="button", name="action")
+        self.FORM_BACK_INTERNAL_ID = self.register(type="button", name="internal-back")
+        self.FORM_BACK_EXTERNAL_ID = self.register(type="button", name="external-back")
+        self.FORM_NEXT_INTERNAL_ID = self.register(type="button", name="internal-next")
+        self.FORM_NEXT_EXTERNAL_ID = self.register(type="button", name="external-next")
         super()._init_ids_()
 
     def _init_buttons_(self) -> list[Component]:
         buttons = []
         if self._add_back_button_:
             target: str = self._app_.anchorize(path=self._add_back_button_, relative=True) if isinstance(self._add_back_button_, str) else None
-            buttons.append(PaginatorAPI(iid=self.BACK_INTERNAL_ID, eid=self.BACK_EXTERNAL_ID, label=[
+            buttons.append(PaginatorAPI(iid=self.FORM_BACK_INTERNAL_ID, eid=self.FORM_BACK_EXTERNAL_ID, label=[
                 IconAPI(icon="bi bi-chevron-left"),
                 TextAPI(text="  Back")
             ], invert=False, href=target).build())
         if self._add_action_button_:
             buttons.append(ButtonAPI(label=[
                 TextAPI(text=self._add_action_button_),
-            ], id=self.ACTION_BUTTON_ID).build())
+            ], id=self.FORM_ACTION_BUTTON_ID).build())
         if self._add_next_button_:
             target: str = self._app_.anchorize(path=self._add_next_button_, relative=True) if isinstance(self._add_next_button_, str) else None
-            buttons.append(PaginatorAPI(iid=self.NEXT_INTERNAL_ID, eid=self.NEXT_EXTERNAL_ID, label=[
+            buttons.append(PaginatorAPI(iid=self.FORM_NEXT_INTERNAL_ID, eid=self.FORM_NEXT_EXTERNAL_ID, label=[
                 TextAPI(text="Next  "),
                 IconAPI(icon="bi bi-chevron-right")
             ], invert=True, href=target).build())

@@ -1,11 +1,12 @@
-from dataclasses import dataclass, field
+from typing_extensions import Self
+from dataclasses import dataclass
 
-from Library.Dataclass import DataclassAPI
+from Library.App.Session import StorageAPI
 
 @dataclass(kw_only=True)
-class TriggerAPI(DataclassAPI):
+class TriggerAPI(StorageAPI):
 
-    index: int = field(default=0, init=True, repr=True)
-
-    def trigger(self) -> None:
-        self.index += 1
+    def trigger(self) -> Self:
+        super().trigger()
+        self.increment()
+        return self

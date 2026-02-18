@@ -5,20 +5,27 @@ from typing import TYPE_CHECKING
 from typing_extensions import Self
 if TYPE_CHECKING: from Library.App import AppAPI
 
+from Library.App.Callback import *
+from Library.App.Session import TriggerAPI
 from Library.App.Component import Component
 from Library.Logging import HandlerLoggingAPI
 
 class PageAPI:
 
-    MEMORY_STORAGE_ID: dict = None
-    SESSION_STORAGE_ID: dict = None
-    LOCAL_STORAGE_ID: dict = None
+    PAGE_LOADING_TRIGGER_ID: dict
+    PAGE_RELOADING_TRIGGER_ID: dict
+    PAGE_UNLOADING_TRIGGER_ID: dict
+
+    PAGE_MEMORY_STORAGE_ID: dict
+    PAGE_SESSION_STORAGE_ID: dict
+    PAGE_PERMANENT_STORAGE_ID: dict
 
     def __init__(self, *,
                  app: AppAPI,
                  path: str,
                  anchor: str = None,
                  endpoint: str = None,
+                 redirect: str = None,
                  button: str = None,
                  description: str = None,
                  content: Component | list[Component] = None,
@@ -45,8 +52,9 @@ class PageAPI:
         self._add_forward_parent_: bool = add_forward_parent
         self._add_forward_children_: bool = add_forward_children
 
-        self._anchor_: str = anchor
-        self._endpoint_: str = endpoint
+        self._anchor_: str = self._app_.anchorize(anchor, relative=True) if anchor else anchor
+        self._endpoint_: str = self._app_.endpointize(endpoint, relative=True) if endpoint else endpoint
+        self._redirect_: str = self._app_.endpointize(redirect, relative=True) if redirect else redirect
 
         self._sidebar_: list[Component] = self.normalize(sidebar)
         self._content_: list[Component] = self.normalize(content)
@@ -54,6 +62,10 @@ class PageAPI:
 
         self._parent_: PageAPI | None = None
         self._children_: list[PageAPI] = []
+
+        self._loaders_: list[str] = []
+        self._reloaders_: list[str] = []
+        self._unloaders_: list[str] = []
 
         self._initialized_: bool = False
 
@@ -82,6 +94,9 @@ class PageAPI:
     @endpoint.setter
     def endpoint(self, endpoint: str) -> None:
         self._endpoint_ = self._endpoint_ or endpoint
+    @property
+    def redirect(self) -> str:
+        return self._redirect_ or self.endpoint
 
     @property
     def parent(self) -> Self:
@@ -132,17 +147,37 @@ class PageAPI:
         page._children_.clear()
         self._log_.info(lambda: f"Merged {page} (Old) into {self} (New)")
 
+    def loader(self, name: str) -> dict:
+        self._loaders_.append(name)
+        return self.PAGE_LOADING_TRIGGER_ID
+
+    def reloader(self, name: str) -> dict:
+        self._reloaders_.append(name)
+        return self.PAGE_RELOADING_TRIGGER_ID
+
+    def unloader(self, name: str) -> dict:
+        self._unloaders_.append(name)
+        return self.PAGE_UNLOADING_TRIGGER_ID
+
     def _init_ids_(self) -> None:
-        self.MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory")
-        self.SESSION_STORAGE_ID: dict = self.register(type="storage", name="session")
-        self.LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local")
+        self.PAGE_LOADING_TRIGGER_ID: dict = self.register(type="trigger", name="loading")
+        self.PAGE_RELOADING_TRIGGER_ID: dict = self.register(type="trigger", name="reloading")
+        self.PAGE_UNLOADING_TRIGGER_ID: dict = self.register(type="trigger", name="unloading")
+
+        self.PAGE_MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory")
+        self.PAGE_SESSION_STORAGE_ID: dict = self.register(type="storage", name="session")
+        self.PAGE_PERMANENT_STORAGE_ID: dict = self.register(type="storage", name="permanent")
+
         self.ids()
 
     def _init_hidden_(self) -> list[Component]:
-        memory = dcc.Store(id=self.MEMORY_STORAGE_ID, storage_type="memory", data={})
-        session = dcc.Store(id=self.SESSION_STORAGE_ID, storage_type="session", data={})
-        local = dcc.Store(id=self.LOCAL_STORAGE_ID, storage_type="local", data={})
-        return self.normalize([memory, session, local])
+        loading = dcc.Store(id=self.PAGE_LOADING_TRIGGER_ID, storage_type="memory", data=dict())
+        reloading = dcc.Store(id=self.PAGE_RELOADING_TRIGGER_ID, storage_type="memory", data=dict())
+        unloading = dcc.Store(id=self.PAGE_UNLOADING_TRIGGER_ID, storage_type="memory", data=dict())
+        memory = dcc.Store(id=self.PAGE_MEMORY_STORAGE_ID, storage_type="memory", data=dict())
+        session = dcc.Store(id=self.PAGE_SESSION_STORAGE_ID, storage_type="session", data=dict())
+        permanent = dcc.Store(id=self.PAGE_PERMANENT_STORAGE_ID, storage_type="local", data=dict())
+        return self.normalize([loading, reloading, unloading, memory, session, permanent])
 
     def _init_layout_(self) -> None:
         hidden = self._init_hidden_()
@@ -165,14 +200,32 @@ class PageAPI:
         self._log_.info(lambda: f"Initialized Layout: {self}")
         self._initialized_ = True
 
+    @serverside_callback(
+        Output("PAGE_LOADING_TRIGGER_ID", "data"),
+        Input("GLOBAL_LOADING_TRIGGER_ID", "data"),
+        State("PAGE_LOADING_TRIGGER_ID", "data")
+    )
+    def _page_loading_location_callback_(self, _, loading: dict):
+        loading = TriggerAPI(**(loading or {}))
+        return loading.trigger().dict()
+
+    @serverside_callback(
+        Output("PAGE_RELOADING_TRIGGER_ID", "data"),
+        Input("GLOBAL_RELOADING_TRIGGER_ID", "data"),
+        State("PAGE_RELOADING_TRIGGER_ID", "data")
+    )
+    def _page_reloading_location_callback_(self, _, reloading: dict):
+        reloading = TriggerAPI(**(reloading or {}))
+        return reloading.trigger().dict()
+
     def ids(self) -> None:
         pass
 
     def content(self) -> Component | list[Component]:
-        return self.normalize(self._app_.NOT_INDEXED_LAYOUT)
+        return self.normalize(self._app_.GLOBAL_NOT_INDEXED_LAYOUT)
 
     def sidebar(self) -> Component | list[Component]:
-        return self.normalize(self._app_.NOT_INDEXED_LAYOUT)
+        return self.normalize(self._app_.GLOBAL_NOT_INDEXED_LAYOUT)
 
     def navigation(self) -> Component | list[Component]:
         return self.normalize([])
