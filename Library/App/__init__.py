@@ -25,6 +25,8 @@ from Library.App.Callback import (
     callback,
     clientside_callback,
     serverside_callback,
+    override_clientside_callback,
+    override_serverside_callback,
     Trigger,
     Output,
     Input,
@@ -50,6 +52,7 @@ __all__ = [
     "PageAPI",
     "FormAPI",
     "callback", "clientside_callback", "serverside_callback",
+    "override_clientside_callback", "override_serverside_callback",
     "Trigger", "Output", "Input", "State",
     "AppAPI"
 ]

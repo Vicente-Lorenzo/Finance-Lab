@@ -567,25 +567,65 @@ class AppAPI:
                     reloading: bool = func._callback_reloading_
                     unloading: bool = func._callback_unloading_
                     args = [arg.build(context=context) if isinstance(arg, Trigger) else arg for arg in args]
-                    # override = int(bool(loading)) + int(bool(reloading)) + int(bool(unloading))
-                    # if unloading:
-                    #     trigger = context.unloader(name=name)
-                    #     args.insert(0, dash.Input(trigger, "data"))
-                    # if reloading:
-                    #     trigger = context.reloader(name=name)
-                    #     args.insert(0, dash.Input(trigger, "data"))
-                    # if loading:
-                    #     trigger = context.loader(name=name)
-                    #     args.insert(0, dash.Input(trigger, "data"))
                     if client:
                         javascript = bound()
-                        # if override:
-                        #     javascript = override_clientside_callback(javascript, override=override)
+                        if loading:
+                            trigger = context.loader(name=name)
+                            handler_args = [dash.Input(trigger, "data")]
+                            javascript, args = override_clientside_callback(
+                                handler_func=None,
+                                handler_args=handler_args,
+                                original_js=javascript,
+                                original_args=args
+                            )
+                        if reloading:
+                            trigger = context.reloader(name=name)
+                            handler_args = [dash.Input(trigger, "data")]
+                            javascript, args = override_clientside_callback(
+                                handler_func=None,
+                                handler_args=handler_args,
+                                original_js=javascript,
+                                original_args=args
+                            )
+                        if unloading:
+                            trigger = context.unloader(name=name)
+                            handler_args = [dash.Input(trigger, "data")]
+                            javascript, args = override_clientside_callback(
+                                handler_func=None,
+                                handler_args=handler_args,
+                                original_js=javascript,
+                                original_args=args
+                            )
                         self.app.clientside_callback(javascript, *args, **kwargs)
                         self._log_.info(lambda: f"Init Callbacks: Loaded Client-Side Callback: {name}")
                     else:
-                        # if override:
-                        #     bound = override_serverside_callback(bound, override=override)
+                        if loading:
+                            trigger = context.loader(name=name)
+                            handler_args = [dash.Input(trigger, "data")]
+                            bound, args = override_serverside_callback(
+                                handler_func=None,
+                                handler_args=handler_args,
+                                original_func=bound,
+                                original_args=args
+                            )
+                        if reloading:
+                            trigger = context.reloader(name=name)
+                            handler_args = [dash.Input(trigger, "data")]
+                            bound, args = override_serverside_callback(
+                                handler_func=None,
+                                handler_args=handler_args,
+                                original_func=bound,
+                                original_args=args
+                            )
+                        if unloading:
+                            trigger = context.unloader(name=name)
+                            handler_args = [dash.Input(trigger, "data")]
+                            bound, args = override_serverside_callback(
+                                handler_func=None,
+                                handler_args=handler_args,
+                                original_func=bound,
+                                original_args=args
+                            )
                         self.app.callback(*args, **kwargs)(bound)
                         self._log_.info(lambda: f"Init Callbacks: Loaded Server-Side Callback: {name}")
 
