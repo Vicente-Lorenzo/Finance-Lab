@@ -1,4 +1,3 @@
-import json
 import base64
 import dash
 from dash import dcc, html
@@ -9,7 +8,6 @@ from pathlib import PurePosixPath
 
 from fastapi import FastAPI
 from fastapi.middleware.wsgi import WSGIMiddleware
-from flask import send_from_directory
 
 from Library.App import *
 from Library.Logging import *
@@ -17,6 +15,7 @@ from Library.Utility.HTML import *
 from Library.Utility.Path import *
 from Library.Utility.Typing import *
 from Library.Utility.Runtime import *
+from Library.Utility.IO import *
 
 class AppAPI:
 
@@ -152,26 +151,21 @@ class AppAPI:
         self._log_.debug(lambda: f"Defined Library = {self._library_}")
         self._library_assets_: Path = self._library_ / "Assets"
         self._log_.debug(lambda: f"Defined Library Assets = {self._library_assets_}")
-        self._library_assets_url_: str = "library-assets"
-        self._log_.debug(lambda: f"Defined Library Assets URL = {self._library_assets_url_}")
         self._application_: Path = traceback_calling_module(resolve=True)
         self._log_.debug(lambda: f"Defined Application = {self._application_}")
         self._application_assets_: Path = self._application_ / "Assets"
         self._log_.debug(lambda: f"Defined Application Assets = {self._application_assets_}")
-        self._application_assets_url_: str = "application-assets"
+        self._application_assets_url_: str = "Assets"
         self._log_.debug(lambda: f"Defined Application Assets URL = {self._application_assets_url_}")
 
-        self._init_ids_()
-        self._log_.debug(lambda: "Initialized IDs")
+        self._init_assets_()
+        self._log_.debug(lambda: "Initialized Assets")
 
         self._init_app_()
         self._log_.info(lambda: "Initialized App")
 
         self._init_pages_()
         self._log_.debug(lambda: "Initialized Pages")
-
-        self._init_assets_()
-        self._log_.debug(lambda: "Initialized Assets")
 
         self._init_navigation_()
         self._log_.debug(lambda: "Initialized Navigation")
@@ -185,113 +179,19 @@ class AppAPI:
         self.ctx: CallbackContext = dash.callback_context
         self._log_.info(lambda: "Initialized Context")
 
-    def asset(self, filename: str) -> str:
-        if self._application_assets_.exists() and (self._application_assets_ / filename).exists():
-            return inspect_path(self._anchor_ / self._application_assets_url_ / filename)
-        return self.app.get_asset_url(filename)
-
-    def identify(self, *, page: str = None, type: str, name: str, portable: str = "", **kwargs) -> dict:
-        page = page or "global"
-        return {"app": self.__class__.__name__, "page": page, "type": type, "name": name, "portable": portable, **kwargs}
-
-    def register(self, *, page: str = "global", type: str, name: str, portable: str = "", **kwargs) -> dict:
-        cid = self.identify(page=page, type=type, name=name, portable=portable, **kwargs)
-        key = (cid["app"], cid["page"], cid["type"], cid["name"], cid["portable"])
-        if key in self._ids_: raise RuntimeError(f"Duplicate Dash ID detected: {cid}")
-        self._ids_.add(key)
-        return cid
-
-    def resolve(self, path: PurePath | str, relative: bool, footer: bool = None) -> str:
-        path = inspect_file(path, header=False, builder=PurePosixPath)
-        self._log_.debug(lambda: f"Resolve Path: Received = {path}")
-        path = self._anchor_ / path if relative else path
-        resolve = inspect_file_path(path, header=True, footer=footer, builder=PurePosixPath)
-        self._log_.debug(lambda: f"Resolve Path: Resolved = {resolve}")
-        return resolve
-
-    def anchorize(self, path: PurePath | str, relative: bool = True) -> str:
-        return self.resolve(path, relative=relative, footer=False)
-
-    def endpointize(self, path: PurePath | str, relative: bool = True) -> str:
-        return self.resolve(path, relative=relative, footer=True)
-
-    def locate(self, endpoint: str) -> tuple[str, PageAPI | None]:
-        page = self._pages_.get(endpoint, None)
-        if page: self._log_.debug(lambda: f"Locate Page: Found = {endpoint}")
-        else: self._log_.debug(lambda: f"Locate Page: Not Found = {endpoint}")
-        return endpoint, page
-
-    def redirect(self, endpoint: str) -> tuple[str, PageAPI | None]:
-        endpoint, page = self.locate(endpoint=endpoint)
-        while page and page.endpoint != page.redirect:
-            self._log_.debug(lambda: f"Redirect Page: Redirect = {page.endpoint} -> {page.redirect}")
-            endpoint, page = self.locate(endpoint=page.redirect)
-        return endpoint, page
-
-    def index(self, endpoint: str, page: PageAPI) -> None:
-        self._pages_[endpoint] = page
-
-    def link(self, page: PageAPI) -> None:
-        relative_path = inspect_file(page.path, header=True, builder=PurePosixPath)
-        self._log_.debug(lambda: f"Page Linking: Relative Path = {relative_path}")
-        relative_anchor = self.anchorize(path=relative_path, relative=True)
-        self._log_.debug(lambda: f"Page Linking: Relative Anchor = {relative_anchor}")
-        relative_endpoint = self.endpointize(path=relative_path, relative=True)
-        self._log_.debug(lambda: f"Page Linking: Relative Endpoint = {relative_endpoint}")
-        intermediate_alias = inspect_file("/", builder=PurePosixPath)
-        _, intermediate_parent = self.locate(endpoint=self.endpointize(path=intermediate_alias, relative=True))
-        for part in relative_path.parts[1:-1]:
-            intermediate_path = inspect_file(part, header=True, builder=PurePosixPath)
-            intermediate_alias /= intermediate_path.name
-            self._log_.debug(lambda: f"Page Linking: Intermediate Path = {intermediate_alias}")
-            intermediate_anchor = self.anchorize(path=intermediate_alias, relative=True)
-            self._log_.debug(lambda: f"Page Linking: Intermediate Anchor = {intermediate_anchor}")
-            intermediate_endpoint = self.endpointize(path=intermediate_alias, relative=True)
-            self._log_.debug(lambda: f"Page Linking: Intermediate Endpoint = {intermediate_endpoint}")
-            _, intermediate_page = self.locate(endpoint=intermediate_endpoint)
-            if not intermediate_page:
-                intermediate_page = PageAPI(
-                    app=self,
-                    path=inspect_path(intermediate_alias),
-                    description="Resource Not Indexed",
-                    add_backward_parent=True,
-                    add_backward_children=False,
-                    add_current_parent=False,
-                    add_current_children=False,
-                    add_forward_parent=False,
-                    add_forward_children=False
-                )
-                self._log_.debug(lambda: f"Page Linking: Created Intermediate Page = {intermediate_endpoint}")
-            intermediate_page.anchor = intermediate_anchor
-            intermediate_page.endpoint = intermediate_endpoint
-            intermediate_page._init_()
-            self.index(endpoint=intermediate_page.endpoint, page=intermediate_page)
-            self._log_.debug(lambda: f"Page Linking: Linked Intermediate Page = {intermediate_endpoint}")
-            intermediate_page.attach(parent=intermediate_parent)
-            intermediate_parent = intermediate_page
-        page.anchor = relative_anchor
-        page.endpoint = relative_endpoint
-        _, existing = self.locate(endpoint=relative_endpoint)
-        if existing:
-            page.merge(existing)
-            self._log_.debug(lambda: f"Page Linking: Merged Relative Page = {relative_endpoint}")
-        else:
-            self.index(endpoint=page.endpoint, page=page)
-            self._log_.info(lambda: f"Page Linking: Linked {page}")
-        page.attach(parent=intermediate_parent)
-        page._init_()
-
-    def loader(self, name: str) -> dict:
-        self._loaders_.append(name)
-        return self.GLOBAL_LOADING_TRIGGER_ID
-
-    def reloader(self, name: str) -> dict:
-        self._reloaders_.append(name)
-        return self.GLOBAL_RELOADING_TRIGGER_ID
-
-    def unloader(self, name: str) -> dict:
-        self._unloaders_.append(name)
-        return self.GLOBAL_UNLOADING_TRIGGER_ID
+    def _init_assets_(self) -> None:
+        writable, created, updated, removed, conflicts, _ = mirror(
+            src_root=self._library_assets_,
+            dst_root=self._application_assets_,
+            subdirs=(".", "Styles", "Images", "Callbacks", "Data"),
+            manifest_name="manifest.json"
+        )
+        if writable:
+            self._log_.debug(lambda: "Init Assets: Mirrored Assets")
+        if not writable:
+            self._log_.debug(lambda: "Init Assets: Mirroring Aborted (Read-Only)")
+        if conflicts:
+            self._log_.warning(lambda: f"Init Assets: {conflicts} Conflicts Detected")
 
     def _init_ids_(self) -> None:
         self.GLOBAL_LOCATION_ID: dict = self.register(type="location", name="location")
@@ -352,55 +252,46 @@ class AppAPI:
             update_title=self._update_,
             routes_pathname_prefix=self._endpoint_,
             requests_pathname_prefix=self._endpoint_,
-            assets_url_path=self._library_assets_url_,
-            assets_folder=inspect_path(self._library_assets_),
+            assets_url_path=self._application_assets_url_,
+            assets_folder=inspect_path(self._application_assets_),
             external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
             suppress_callback_exceptions=True,
             prevent_initial_callbacks=True
         )
+        self._init_ids_()
 
     def _init_pages_(self) -> None:
         self.GLOBAL_NOT_FOUND_LAYOUT = DefaultLayoutAPI(
-            image=self.asset("404.png"),
+            image=self.asset("Images/404.png"),
             title="Resource Not Found",
             description="Unable to find the resource you are looking for.",
             details="Please check the url path."
         ).build()
         self.GLOBAL_LOADING_LAYOUT = DefaultLayoutAPI(
-            image=self.asset("loading.gif"),
+            image=self.asset("Images/loading.gif"),
             title="Loading...",
             description="This resource is loading its content.",
             details="Please wait a moment."
         ).build()
         self.GLOBAL_MAINTENANCE_LAYOUT = DefaultLayoutAPI(
-            image=self.asset("maintenance.png"),
+            image=self.asset("Images/maintenance.png"),
             title="Resource Under Maintenance",
             description="This resource is temporarily down for maintenance.",
             details="Please try again later."
         ).build()
         self.GLOBAL_DEVELOPMENT_LAYOUT = DefaultLayoutAPI(
-            image=self.asset("development.png"),
+            image=self.asset("Images/development.png"),
             title="Resource Under Development",
             description="This resource is currently under development.",
             details="Please try again later."
         ).build()
         self.GLOBAL_NOT_INDEXED_LAYOUT = DefaultLayoutAPI(
-            image=self.asset("indexed.png"),
+            image=self.asset("Images/indexed.png"),
             title="Resource Not Indexed",
             description="This resource is not indexed at any page.",
             details="Please try again later."
         ).build()
-
         self.pages()
-
-    def _init_assets_(self) -> None:
-        application_url = inspect_path(self._anchor_ / self._application_assets_url_ / "<path:filename>")
-        endpoint_name = f"{self.__class__.__name__}__application_assets__{id(self.app.server)}"
-        if endpoint_name in self.app.server.view_functions:
-            return
-        def serve(filename):
-            return send_from_directory(inspect_path(self._application_assets_), filename)
-        self.app.server.add_url_rule(application_url, endpoint=endpoint_name, view_func=serve, methods=["GET"])
 
     def _init_navigation_(self) -> None:
         for endpoint, page in self._pages_.items():
@@ -452,7 +343,7 @@ class AppAPI:
     def _init_header_(self) -> Component:
         return html.Div(children=[
             html.Div(children=[
-                html.Div(children=[html.Img(src=self.asset("logo.png"), className="header-image")], className="header-logo"),
+                html.Div(children=[html.Img(src=self.asset("Images/logo.png"), className="header-image")], className="header-logo"),
                 html.Div(children=[html.H1(self._name_, className="header-title"), html.H4(self._team_, className="header-team")], className="header-title-team"),
                 html.Div(children=[self._description_], id=self.GLOBAL_DESCRIPTION_ID, className="header-description")
             ], className="header-information-block"),
@@ -628,6 +519,112 @@ class AppAPI:
                             )
                         self.app.callback(*args, **kwargs)(bound)
                         self._log_.info(lambda: f"Init Callbacks: Loaded Server-Side Callback: {name}")
+
+    def asset(self, path: str) -> str:
+        return self.app.get_asset_url(path)
+
+    def identify(self, *, page: str = None, type: str, name: str, portable: str = "", **kwargs) -> dict:
+        page = page or "global"
+        return {"app": self.__class__.__name__, "page": page, "type": type, "name": name, "portable": portable, **kwargs}
+
+    def register(self, *, page: str = "global", type: str, name: str, portable: str = "", **kwargs) -> dict:
+        cid = self.identify(page=page, type=type, name=name, portable=portable, **kwargs)
+        key = (cid["app"], cid["page"], cid["type"], cid["name"], cid["portable"])
+        if key in self._ids_: raise RuntimeError(f"Duplicate Dash ID detected: {cid}")
+        self._ids_.add(key)
+        return cid
+
+    def resolve(self, path: PurePath | str, relative: bool, footer: bool = None) -> str:
+        path = inspect_file(path, header=False, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Resolve Path: Received = {path}")
+        path = self._anchor_ / path if relative else path
+        resolve = inspect_file_path(path, header=True, footer=footer, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Resolve Path: Resolved = {resolve}")
+        return resolve
+
+    def anchorize(self, path: PurePath | str, relative: bool = True) -> str:
+        return self.resolve(path, relative=relative, footer=False)
+
+    def endpointize(self, path: PurePath | str, relative: bool = True) -> str:
+        return self.resolve(path, relative=relative, footer=True)
+
+    def locate(self, endpoint: str) -> tuple[str, PageAPI | None]:
+        page = self._pages_.get(endpoint, None)
+        if page: self._log_.debug(lambda: f"Locate Page: Found = {endpoint}")
+        else: self._log_.debug(lambda: f"Locate Page: Not Found = {endpoint}")
+        return endpoint, page
+
+    def redirect(self, endpoint: str) -> tuple[str, PageAPI | None]:
+        endpoint, page = self.locate(endpoint=endpoint)
+        while page and page.endpoint != page.redirect:
+            self._log_.debug(lambda: f"Redirect Page: Redirect = {page.endpoint} -> {page.redirect}")
+            endpoint, page = self.locate(endpoint=page.redirect)
+        return endpoint, page
+
+    def index(self, endpoint: str, page: PageAPI) -> None:
+        self._pages_[endpoint] = page
+
+    def link(self, page: PageAPI) -> None:
+        relative_path = inspect_file(page.path, header=True, builder=PurePosixPath)
+        self._log_.debug(lambda: f"Page Linking: Relative Path = {relative_path}")
+        relative_anchor = self.anchorize(path=relative_path, relative=True)
+        self._log_.debug(lambda: f"Page Linking: Relative Anchor = {relative_anchor}")
+        relative_endpoint = self.endpointize(path=relative_path, relative=True)
+        self._log_.debug(lambda: f"Page Linking: Relative Endpoint = {relative_endpoint}")
+        intermediate_alias = inspect_file("/", builder=PurePosixPath)
+        _, intermediate_parent = self.locate(endpoint=self.endpointize(path=intermediate_alias, relative=True))
+        for part in relative_path.parts[1:-1]:
+            intermediate_path = inspect_file(part, header=True, builder=PurePosixPath)
+            intermediate_alias /= intermediate_path.name
+            self._log_.debug(lambda: f"Page Linking: Intermediate Path = {intermediate_alias}")
+            intermediate_anchor = self.anchorize(path=intermediate_alias, relative=True)
+            self._log_.debug(lambda: f"Page Linking: Intermediate Anchor = {intermediate_anchor}")
+            intermediate_endpoint = self.endpointize(path=intermediate_alias, relative=True)
+            self._log_.debug(lambda: f"Page Linking: Intermediate Endpoint = {intermediate_endpoint}")
+            _, intermediate_page = self.locate(endpoint=intermediate_endpoint)
+            if not intermediate_page:
+                intermediate_page = PageAPI(
+                    app=self,
+                    path=inspect_path(intermediate_alias),
+                    description="Resource Not Indexed",
+                    add_backward_parent=True,
+                    add_backward_children=False,
+                    add_current_parent=False,
+                    add_current_children=False,
+                    add_forward_parent=False,
+                    add_forward_children=False
+                )
+                self._log_.debug(lambda: f"Page Linking: Created Intermediate Page = {intermediate_endpoint}")
+            intermediate_page.anchor = intermediate_anchor
+            intermediate_page.endpoint = intermediate_endpoint
+            intermediate_page._init_()
+            self.index(endpoint=intermediate_page.endpoint, page=intermediate_page)
+            self._log_.debug(lambda: f"Page Linking: Linked Intermediate Page = {intermediate_endpoint}")
+            intermediate_page.attach(parent=intermediate_parent)
+            intermediate_parent = intermediate_page
+        page.anchor = relative_anchor
+        page.endpoint = relative_endpoint
+        _, existing = self.locate(endpoint=relative_endpoint)
+        if existing:
+            page.merge(existing)
+            self._log_.debug(lambda: f"Page Linking: Merged Relative Page = {relative_endpoint}")
+        else:
+            self.index(endpoint=page.endpoint, page=page)
+            self._log_.info(lambda: f"Page Linking: Linked {page}")
+        page.attach(parent=intermediate_parent)
+        page._init_()
+
+    def loader(self, name: str) -> dict:
+        self._loaders_.append(name)
+        return self.GLOBAL_LOADING_TRIGGER_ID
+
+    def reloader(self, name: str) -> dict:
+        self._reloaders_.append(name)
+        return self.GLOBAL_RELOADING_TRIGGER_ID
+
+    def unloader(self, name: str) -> dict:
+        self._unloaders_.append(name)
+        return self.GLOBAL_UNLOADING_TRIGGER_ID
 
     @clientside_callback(
         Input("GLOBAL_ROUTING_STORAGE_ID", "data")
