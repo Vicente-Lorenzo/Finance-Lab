@@ -375,7 +375,7 @@ class AppAPI:
         return html.Div(children=[
             html.Div(children=[
                 *ButtonAPI(id=self.GLOBAL_SIDEBAR_BUTTON_ID, background="primary",
-                           label=[IconAPI(icon="bi bi-layout-sidebar-inset")],
+                           label=[IconAPI(icon="bi bi-layout-sidebar-inset")]
                            ).build(),
                 *ButtonAPI(id=self.GLOBAL_CONTACTS_BUTTON_ID, background="primary",
                            label=[IconAPI(icon="bi bi-caret-down-fill", id=self.GLOBAL_CONTACTS_ARROW_ID), TextAPI(text="  Contacts  "), IconAPI(icon="bi bi-question-circle")]

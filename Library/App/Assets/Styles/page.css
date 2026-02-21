@@ -19,20 +19,3 @@
     overflow: auto;
     padding: 0 0 0 0;
 }
-
-.form-page-content {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 0 0 0 0;
-}
-
-.form-page-buttons {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
-    padding: 20px 0 20px 0;
-}

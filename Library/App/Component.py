@@ -226,7 +226,7 @@ class ButtonAPI(ComponentAPI):
 
     classname: str | None = field(default="button")
 
-    label: list[ComponentAPI] = field(default_factory=list)
+    label: list[Component] = field(default_factory=list)
     title: str = field(default=None)
     clicks: int = field(default=0)
     value: str = field(default=None)
@@ -282,7 +282,7 @@ class ContainerAPI(ComponentAPI):
 
     basename: str = field(default="container")
 
-    elements: list[ComponentAPI] = field(default_factory=list)
+    elements: list[Component] = field(default_factory=list)
     builder: type[Component] = field(default=dbc.Container)
 
     fluid: str | bool = field(default=None)
@@ -293,7 +293,7 @@ class ContainerAPI(ComponentAPI):
         elif isinstance(self.elements, ComponentAPI): self.elements = [self.elements]
         else: self.elements = []
         self.elements = self.elements if not self.invert else list(reversed(self.elements))
-        for element in self.elements:
+        for element in (e for e in self.elements if isinstance(e, ComponentAPI)):
             if element.border_color is None: element.border_color = "transparent"
             if element.border_style is None: element.border_style = self.border_style
             if element.border_width is None: element.border_width = self.border_width
@@ -419,7 +419,7 @@ class PaginatorAPI(ButtonContainerAPI):
 
     iid: dict = field(default_factory=dict)
     eid: dict = field(default_factory=dict)
-    label: list[ComponentAPI] = field(default_factory=list)
+    label: list[Component] = field(default_factory=list)
     href: str = field(default=None)
     dropdown: DropdownContainerAPI = field(default=None)
 

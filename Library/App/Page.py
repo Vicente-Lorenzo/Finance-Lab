@@ -3,8 +3,8 @@ from __future__ import annotations
 from dash import dcc
 from typing import TYPE_CHECKING
 from typing_extensions import Self
-if TYPE_CHECKING: from Library.App import AppAPI
 
+if TYPE_CHECKING: from Library.App import AppAPI
 from Library.App.Callback import *
 from Library.App.Session import TriggerAPI
 from Library.App.Component import Component
@@ -40,7 +40,7 @@ class PageAPI:
 
         self._log_ = HandlerLoggingAPI(PageAPI.__name__)
 
-        self._app_: AppAPI = app
+        self.app: AppAPI = app
         self.path: str = path
         self.button: str = button
         self.description: str = description
@@ -52,9 +52,9 @@ class PageAPI:
         self._add_forward_parent_: bool = add_forward_parent
         self._add_forward_children_: bool = add_forward_children
 
-        self._anchor_: str = self._app_.anchorize(anchor, relative=True) if anchor else anchor
-        self._endpoint_: str = self._app_.endpointize(endpoint, relative=True) if endpoint else endpoint
-        self._redirect_: str = self._app_.endpointize(redirect, relative=True) if redirect else redirect
+        self._anchor_: str = self.app.anchorize(anchor, relative=True) if anchor else anchor
+        self._endpoint_: str = self.app.endpointize(endpoint, relative=True) if endpoint else endpoint
+        self._redirect_: str = self.app.endpointize(redirect, relative=True) if redirect else redirect
 
         self._sidebar_: list[Component] = self.normalize(sidebar)
         self._content_: list[Component] = self.normalize(content)
@@ -76,11 +76,11 @@ class PageAPI:
 
     def identify(self, *, page: str = None, type: str, name: str, portable: str = "", **kwargs) -> dict:
         page = page or self.endpoint or "global"
-        return self._app_.identify(page=page, type=type, name=name, portable=portable, **kwargs)
+        return self.app.identify(page=page, type=type, name=name, portable=portable, **kwargs)
 
     def register(self, *, page: str = None, type: str, name: str, portable: str = "", **kwargs) -> dict:
         page = page or self.endpoint or "global"
-        return self._app_.register(page=page, type=type, name=name, portable=portable, **kwargs)
+        return self.app.register(page=page, type=type, name=name, portable=portable, **kwargs)
 
     @property
     def anchor(self) -> str:
@@ -179,17 +179,26 @@ class PageAPI:
         permanent = dcc.Store(id=self.PAGE_PERMANENT_STORAGE_ID, storage_type="local", data=dict())
         return self.normalize([loading, reloading, unloading, memory, session, permanent])
 
-    def _init_layout_(self) -> None:
+    def _init_content_(self) -> list[Component]:
         hidden = self._init_hidden_()
         self._log_.debug(lambda: f"Loaded Hidden Layout")
         content = self.normalize(self._content_ or self.content())
-        self._content_ = self.normalize([*content, *hidden])
-        self._log_.debug(lambda: f"Loaded Content Layout")
+        return self.normalize([*content, *hidden])
+
+    def _init_sidebar_(self) -> list[Component]:
         sidebar = self.normalize(self._sidebar_ or self.sidebar())
-        self._sidebar_ = self.normalize([*sidebar])
-        self._log_.debug(lambda: f"Loaded Sidebar Layout")
+        return self.normalize([*sidebar])
+
+    def _init_navigation_(self) -> list[Component]:
         navigation = self.normalize(self._navigation_ or self.navigation())
-        self._navigation_ = self.normalize([*navigation])
+        return self.normalize([*navigation])
+
+    def _init_layout_(self) -> None:
+        self._content_ = self._init_content_()
+        self._log_.debug(lambda: f"Loaded Content Layout")
+        self._sidebar_ = self._init_sidebar_()
+        self._log_.debug(lambda: f"Loaded Sidebar Layout")
+        self._navigation_ = self._init_navigation_()
         self._log_.debug(lambda: f"Loaded Navigation Layout")
 
     def _init_(self) -> None:
@@ -222,10 +231,10 @@ class PageAPI:
         pass
 
     def content(self) -> Component | list[Component]:
-        return self.normalize(self._app_.GLOBAL_NOT_INDEXED_LAYOUT)
+        return self.normalize(self.app.GLOBAL_NOT_INDEXED_LAYOUT)
 
     def sidebar(self) -> Component | list[Component]:
-        return self.normalize(self._app_.GLOBAL_NOT_INDEXED_LAYOUT)
+        return self.normalize(self.app.GLOBAL_NOT_INDEXED_LAYOUT)
 
     def navigation(self) -> Component | list[Component]:
         return self.normalize([])
