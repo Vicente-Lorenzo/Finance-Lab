@@ -225,5 +225,5 @@ class PathAPI(DataclassAPI):
     def exists(self) -> bool:
         return self.file.exists()
 
-    def __repr__(self):
-        return inspect_path(self.file)
+    def __repr__(self) -> str:
+        return repr(inspect_path(self.file))

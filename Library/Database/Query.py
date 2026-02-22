@@ -65,5 +65,5 @@ class QueryAPI:
         parameters = self.bind(configuration, *args, **kwargs) if configuration else None
         return query, configuration, parameters
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self._query_)

@@ -9,7 +9,7 @@ class LayoutAPI(Component, ABC):
     def build(self) -> Component:
         raise NotImplementedError
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self.build())
 
 class DefaultLayoutAPI(LayoutAPI):

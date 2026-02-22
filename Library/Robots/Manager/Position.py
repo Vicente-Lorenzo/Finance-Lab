@@ -96,5 +96,5 @@ class PositionAPI:
     def data(self):
         return self.Buys, self.Sells
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self.data())

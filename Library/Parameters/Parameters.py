@@ -82,8 +82,8 @@ class ParametersAPI:
     def __delitem__(self, name):
         self._delete_item(name)
 
-    def __repr__(self):
-        return f"ParametersAPI(path={self.path})"
+    def __repr__(self) -> str:
+        return repr(f"ParametersAPI(path={self.path})")
 
 class Parameters:
     def __init__(self, data, path, parent=None, parent_key=None):
@@ -144,5 +144,5 @@ class Parameters:
     def clone(self):
         return Parameters(copy.copy(self.data), self.path, parent=self.parent, parent_key=self.parent_key)
 
-    def __repr__(self):
-        return f"Parameters(path={self.path}, data={self.data})"
+    def __repr__(self) -> str:
+        return repr(f"Parameters(path={self.path}, data={self.data})")

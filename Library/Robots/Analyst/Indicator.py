@@ -66,5 +66,5 @@ class IndicatorAPI:
     def signal_sell(self, market: MarketAPI | None = None, shift: int = 0) -> bool:
         return self._indicator.SignalSell(market, self, shift)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self.data())

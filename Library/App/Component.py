@@ -121,7 +121,7 @@ class ComponentAPI(Component, ABC):
         component = self.builder(elements, **self.arguments()) if elements else self.builder(**self.arguments())
         return self.serialize(elements=[component], hidden=hidden)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self.build())
 
 @dataclass(kw_only=True)

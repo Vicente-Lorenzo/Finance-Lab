@@ -54,5 +54,5 @@ class AnalystAPI:
         for indicator in self._indicators:
             indicator.update_offset(offset)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self.data())

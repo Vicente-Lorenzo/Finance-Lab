@@ -28,5 +28,5 @@ class IndicatorAPI(ABC):
     def calculate(self):
         pass
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self.data())

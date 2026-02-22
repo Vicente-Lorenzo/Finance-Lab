@@ -40,5 +40,5 @@ class MarketAPI:
         for tseries in self._series:
             tseries.update_offset(offset)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self.data())

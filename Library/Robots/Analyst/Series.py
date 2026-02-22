@@ -45,5 +45,5 @@ class SeriesAPI:
     def crossunder(self, other, shift: int = 0) -> bool:
         return self.under(other, shift) and self.over(other, shift + 1)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self.data())

@@ -239,5 +239,5 @@ class PageAPI:
     def navigation(self) -> Component | list[Component]:
         return self.normalize([])
 
-    def __repr__(self):
-        return f"{self.description} @ {self.endpoint}"
+    def __repr__(self) -> str:
+        return repr(f"{self.description} @ {self.endpoint}")
