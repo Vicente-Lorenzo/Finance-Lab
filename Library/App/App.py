@@ -233,13 +233,13 @@ class AppAPI:
         self.GLOBAL_RELOADING_TRIGGER_ID: dict = self.register(type="trigger", name="reloading")
         self.GLOBAL_UNLOADING_TRIGGER_ID: dict = self.register(type="trigger", name="unloading")
 
-        self.GLOBAL_MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory")
+        self.GLOBAL_MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory", portable="data")
         self.GLOBAL_CLEAN_MEMORY_BUTTON_ID: dict = self.register(type="button", name="memory")
         self.GLOBAL_CLEAN_MEMORY_TRIGGER_ID: dict = self.register(type="trigger", name="memory")
-        self.GLOBAL_SESSION_STORAGE_ID: dict = self.register(type="storage", name="session")
+        self.GLOBAL_SESSION_STORAGE_ID: dict = self.register(type="storage", name="session", portable="data")
         self.GLOBAL_CLEAN_SESSION_BUTTON_ID: dict = self.register(type="button", name="session")
         self.GLOBAL_CLEAN_SESSION_TRIGGER_ID: dict = self.register(type="trigger", name="session")
-        self.GLOBAL_LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local")
+        self.GLOBAL_LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local", portable="data")
         self.GLOBAL_CLEAN_LOCAL_BUTTON_ID: dict = self.register(type="button", name="local")
         self.GLOBAL_CLEAN_LOCAL_TRIGGER_ID: dict = self.register(type="trigger", name="local")
 

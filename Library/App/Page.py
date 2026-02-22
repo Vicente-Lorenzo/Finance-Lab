@@ -18,7 +18,7 @@ class PageAPI:
 
     PAGE_MEMORY_STORAGE_ID: dict
     PAGE_SESSION_STORAGE_ID: dict
-    PAGE_PERMANENT_STORAGE_ID: dict
+    PAGE_LOCAL_STORAGE_ID: dict
 
     def __init__(self, *,
                  app: AppAPI,
@@ -164,9 +164,9 @@ class PageAPI:
         self.PAGE_RELOADING_TRIGGER_ID: dict = self.register(type="trigger", name="reloading")
         self.PAGE_UNLOADING_TRIGGER_ID: dict = self.register(type="trigger", name="unloading")
 
-        self.PAGE_MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory")
-        self.PAGE_SESSION_STORAGE_ID: dict = self.register(type="storage", name="session")
-        self.PAGE_PERMANENT_STORAGE_ID: dict = self.register(type="storage", name="permanent")
+        self.PAGE_MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory", portable="data")
+        self.PAGE_SESSION_STORAGE_ID: dict = self.register(type="storage", name="session", portable="data")
+        self.PAGE_LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local", portable="data")
 
         self.ids()
 
@@ -176,8 +176,8 @@ class PageAPI:
         unloading = dcc.Store(id=self.PAGE_UNLOADING_TRIGGER_ID, storage_type="memory", data=dict())
         memory = dcc.Store(id=self.PAGE_MEMORY_STORAGE_ID, storage_type="memory", data=dict())
         session = dcc.Store(id=self.PAGE_SESSION_STORAGE_ID, storage_type="session", data=dict())
-        permanent = dcc.Store(id=self.PAGE_PERMANENT_STORAGE_ID, storage_type="local", data=dict())
-        return self.normalize([loading, reloading, unloading, memory, session, permanent])
+        local = dcc.Store(id=self.PAGE_LOCAL_STORAGE_ID, storage_type="local", data=dict())
+        return self.normalize([loading, reloading, unloading, memory, session, local])
 
     def _init_content_(self) -> list[Component]:
         hidden = self._init_hidden_()
