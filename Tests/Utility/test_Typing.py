@@ -19,8 +19,8 @@ def test_hasmember():
     c = Child()
     c.x = 1
 
-    assert hasmember(c, "x") is True          # instance __dict__
-    assert hasmember(c, "z") is True          # class member
+    assert hasmember(c, "x") is True
+    assert hasmember(c, "z") is True
     assert hasmember(c, "f", mro=False) is False
     assert hasmember(c, "f", mro=True) is True
     assert hasmember(c, "p", mro=True) is True
@@ -35,9 +35,9 @@ def test_hasmember_slots():
     s = S()
 
     assert hasmember(s, "x", slots=True) is True
-    assert hasmember(s, "x", slots=False) is False  # excludes slot-backed instance check
-    assert hasmember(S, "x", slots=True) is True    # slot descriptor exists on class
-    assert hasmember(S, "x", slots=False) is False  # excluded when slots=False
+    assert hasmember(s, "x", slots=False) is False
+    assert hasmember(S, "x", slots=True) is True
+    assert hasmember(S, "x", slots=False) is False
 
 def test_attribute():
     class A:
