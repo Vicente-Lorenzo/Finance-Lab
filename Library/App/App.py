@@ -59,14 +59,13 @@ class AppAPI:
     GLOBAL_UNLOADING_TRIGGER_ID: dict
 
     GLOBAL_MEMORY_STORAGE_ID: dict
-    GLOBAL_CLEAN_MEMORY_BUTTON_ID: dict
-    GLOBAL_CLEAN_MEMORY_TRIGGER_ID: dict
     GLOBAL_SESSION_STORAGE_ID: dict
-    GLOBAL_CLEAN_SESSION_BUTTON_ID: dict
-    GLOBAL_CLEAN_SESSION_TRIGGER_ID: dict
     GLOBAL_LOCAL_STORAGE_ID: dict
-    GLOBAL_CLEAN_LOCAL_BUTTON_ID: dict
-    GLOBAL_CLEAN_LOCAL_TRIGGER_ID: dict
+
+    GLOBAL_CLEAR_SESSION_BUTTON_ID: dict
+    GLOBAL_CLEAR_SESSION_TRIGGER_ID: dict
+    GLOBAL_CLEAR_CACHE_BUTTON_ID: dict
+    GLOBAL_CLEAR_CACHE_TRIGGER_ID: dict
 
     GLOBAL_NOT_FOUND_LAYOUT: Component
     GLOBAL_LOADING_LAYOUT: Component
@@ -234,14 +233,13 @@ class AppAPI:
         self.GLOBAL_UNLOADING_TRIGGER_ID: dict = self.register(type="trigger", name="unloading")
 
         self.GLOBAL_MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory", portable="data")
-        self.GLOBAL_CLEAN_MEMORY_BUTTON_ID: dict = self.register(type="button", name="memory")
-        self.GLOBAL_CLEAN_MEMORY_TRIGGER_ID: dict = self.register(type="trigger", name="memory")
         self.GLOBAL_SESSION_STORAGE_ID: dict = self.register(type="storage", name="session", portable="data")
-        self.GLOBAL_CLEAN_SESSION_BUTTON_ID: dict = self.register(type="button", name="session")
-        self.GLOBAL_CLEAN_SESSION_TRIGGER_ID: dict = self.register(type="trigger", name="session")
         self.GLOBAL_LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local", portable="data")
-        self.GLOBAL_CLEAN_LOCAL_BUTTON_ID: dict = self.register(type="button", name="local")
-        self.GLOBAL_CLEAN_LOCAL_TRIGGER_ID: dict = self.register(type="trigger", name="local")
+
+        self.GLOBAL_CLEAR_SESSION_BUTTON_ID: dict = self.register(type="button", name="session")
+        self.GLOBAL_CLEAR_SESSION_TRIGGER_ID: dict = self.register(type="trigger", name="session")
+        self.GLOBAL_CLEAR_CACHE_BUTTON_ID: dict = self.register(type="button", name="cache")
+        self.GLOBAL_CLEAR_CACHE_TRIGGER_ID: dict = self.register(type="trigger", name="cache")
 
         self.ids()
 
@@ -374,35 +372,38 @@ class AppAPI:
     def _init_footer_(self) -> Component:
         return html.Div(children=[
             html.Div(children=[
-                *ButtonAPI(id=self.GLOBAL_SIDEBAR_BUTTON_ID, background="primary",
-                           label=[IconAPI(icon="bi bi-layout-sidebar-inset")]
-                           ).build(),
-                *ButtonAPI(id=self.GLOBAL_CONTACTS_BUTTON_ID, background="primary",
-                           label=[IconAPI(icon="bi bi-caret-down-fill", id=self.GLOBAL_CONTACTS_ARROW_ID), TextAPI(text="  Contacts  "), IconAPI(icon="bi bi-question-circle")]
-                           ).build(),
-                *ButtonAPI(id=self.GLOBAL_IMPORT_ID, upload=self.GLOBAL_IMPORT_UPLOAD_ID, background="warning",
-                           label=[TextAPI(text="Import Snapshot  "), IconAPI(icon="bi bi-upload")]
-                           ).build(),
-                *ButtonAPI(id=self.GLOBAL_EXPORT_ID, download=self.GLOBAL_EXPORT_DOWNLOAD_ID, background="warning",
-                           label=[TextAPI(text="Export Snapshot  "), IconAPI(icon="bi bi-download")]
-                           ).build()
+                *ButtonAPI(
+                    id=self.GLOBAL_SIDEBAR_BUTTON_ID, background="primary",
+                    label=[IconAPI(icon="bi bi-layout-sidebar-inset")]
+                ).build(),
+                *ButtonAPI(
+                    id=self.GLOBAL_CONTACTS_BUTTON_ID, background="primary",
+                    label=[IconAPI(icon="bi bi-caret-down-fill", id=self.GLOBAL_CONTACTS_ARROW_ID), TextAPI(text="  Contacts  "), IconAPI(icon="bi bi-question-circle")]
+                ).build(),
+                *ButtonAPI(
+                    id=self.GLOBAL_IMPORT_ID, upload=self.GLOBAL_IMPORT_UPLOAD_ID, background="warning",
+                    label=[TextAPI(text="Import Snapshot  "), IconAPI(icon="bi bi-upload")]
+                ).build(),
+                *ButtonAPI(
+                    id=self.GLOBAL_EXPORT_ID, download=self.GLOBAL_EXPORT_DOWNLOAD_ID, background="warning",
+                    label=[TextAPI(text="Export Snapshot  "), IconAPI(icon="bi bi-download")]
+                ).build()
             ], className="footer-left"),
             html.Div(children=[
-                *ButtonAPI(id=self.GLOBAL_CLEAN_MEMORY_BUTTON_ID, background="danger",
-                           label=[IconAPI(icon="bi bi-trash"), TextAPI(text="  Clean Memory  ")],
-                           trigger=self.GLOBAL_CLEAN_MEMORY_TRIGGER_ID
-                           ).build(),
-                *ButtonAPI(id=self.GLOBAL_CLEAN_SESSION_BUTTON_ID, background="danger",
-                           label=[IconAPI(icon="bi bi-database-x"), TextAPI(text="  Clean Session  ")],
-                           trigger=self.GLOBAL_CLEAN_SESSION_TRIGGER_ID
-                           ).build(),
-                *ButtonAPI(id=self.GLOBAL_CLEAN_LOCAL_BUTTON_ID, background="danger",
-                           label=[IconAPI(icon="bi bi-x-octagon"), TextAPI(text="  Clean Local  ")],
-                           trigger=self.GLOBAL_CLEAN_LOCAL_TRIGGER_ID
-                           ).build(),
-                *ButtonAPI(id=self.GLOBAL_TERMINAL_BUTTON_ID, background="primary",
-                           label=[IconAPI(icon="bi bi-terminal"), TextAPI(text="  Terminal  "), IconAPI(icon="bi bi-caret-down-fill", id=self.GLOBAL_TERMINAL_ARROW_ID)]
-                           ).build()
+                *ButtonAPI(
+                    id=self.GLOBAL_CLEAR_SESSION_BUTTON_ID, background="danger",
+                    label=[IconAPI(icon="bi bi-trash"), TextAPI(text="  Clear Session  ")],
+                    trigger=self.GLOBAL_CLEAR_SESSION_TRIGGER_ID
+                ).build(),
+                *ButtonAPI(
+                    id=self.GLOBAL_CLEAR_CACHE_BUTTON_ID, background="danger",
+                    label=[IconAPI(icon="bi bi-database-x"), TextAPI(text="  Clear Cache  ")],
+                    trigger=self.GLOBAL_CLEAR_CACHE_TRIGGER_ID
+                ).build(),
+                *ButtonAPI(
+                    id=self.GLOBAL_TERMINAL_BUTTON_ID, background="primary",
+                    label=[IconAPI(icon="bi bi-terminal"), TextAPI(text="  Terminal  "), IconAPI(icon="bi bi-caret-down-fill", id=self.GLOBAL_TERMINAL_ARROW_ID)]
+                ).build()
             ], className="footer-right"),
             dbc.Collapse(dbc.Card(dbc.CardBody([
                 html.Div(children=[html.B("Team: "), html.Span(self._team_)]),
@@ -964,9 +965,8 @@ class AppAPI:
         filename = f"snapshot-{endpoint.strip('/').replace('/', '-') or 'root'}.json"
         return dcc.send_string(json.dumps(payload, indent=2, sort_keys=True), filename=filename)
 
-    def _global_clean_storage_callback_(self, clicks: int, trigger: dict, name: str, storage: str):
-        if not clicks and not trigger: raise PreventUpdate
-        self._log_.debug(lambda: f"Clean {storage.title()} Callback: Cleaned {name} Storage")
+    def _global_clear_storage_callback_(self, title: str, name: str, storage: str):
+        self._log_.debug(lambda: f"Clear {title} Callback: Cleared {name} Storage (Type = {storage.title()})")
         return dict()
 
     @serverside_callback(
@@ -975,48 +975,40 @@ class AppAPI:
         Output("GLOBAL_RELOADING_TRIGGER_ID", "data"),
         Output("GLOBAL_UNLOADING_TRIGGER_ID", "data"),
         Output("GLOBAL_MEMORY_STORAGE_ID", "data"),
-        Output("GLOBAL_REFRESH_TRIGGER_ID", "data"),
-        Input("GLOBAL_CLEAN_MEMORY_BUTTON_ID", "n_clicks"),
-        Input("GLOBAL_CLEAN_MEMORY_TRIGGER_ID", "data"),
-        State("GLOBAL_MEMORY_STORAGE_ID", "storage_type"),
-        State("GLOBAL_REFRESH_TRIGGER_ID", "data")
-    )
-    def _global_clean_memory_callback_(self, clicks: int, trigger: dict, storage: str, refresh: dict):
-        loading = self._global_clean_storage_callback_(clicks=clicks, trigger=trigger, name="Loading", storage=storage)
-        routing = self._global_clean_storage_callback_(clicks=clicks, trigger=trigger, name="Routing", storage=storage)
-        reloading = self._global_clean_storage_callback_(clicks=clicks, trigger=trigger, name="Reloading", storage=storage)
-        unloading = self._global_clean_storage_callback_(clicks=clicks, trigger=trigger, name="Unloading", storage=storage)
-        memory = self._global_clean_storage_callback_(clicks=clicks, trigger=trigger, name="Memory", storage=storage)
-        refresh = TriggerAPI(**refresh)
-        return loading, routing, reloading, unloading, memory, refresh.trigger().dict()
-
-    @serverside_callback(
         Output("GLOBAL_LOCATION_STORAGE_ID", "data"),
         Output("GLOBAL_SESSION_STORAGE_ID", "data"),
-        Output("GLOBAL_CLEAN_MEMORY_TRIGGER_ID", "data"),
-        Input("GLOBAL_CLEAN_SESSION_BUTTON_ID", "n_clicks"),
-        Input("GLOBAL_CLEAN_SESSION_TRIGGER_ID", "data"),
+        Output("GLOBAL_REFRESH_TRIGGER_ID", "data"),
+        Input("GLOBAL_CLEAR_SESSION_BUTTON_ID", "n_clicks"),
+        Input("GLOBAL_CLEAR_SESSION_TRIGGER_ID", "data"),
+        State("GLOBAL_MEMORY_STORAGE_ID", "storage_type"),
         State("GLOBAL_SESSION_STORAGE_ID", "storage_type"),
-        State("GLOBAL_CLEAN_MEMORY_TRIGGER_ID", "data")
+        State("GLOBAL_REFRESH_TRIGGER_ID", "data")
     )
-    def _global_clean_session_callback_(self, clicks: int, trigger: dict, storage: str, memory: dict):
-        location = self._global_clean_storage_callback_(clicks=clicks, trigger=trigger, name="Location", storage=storage)
-        session = self._global_clean_storage_callback_(clicks=clicks, trigger=trigger, name="Session", storage=storage)
-        memory = TriggerAPI(**memory)
-        return location, session, memory.trigger().dict()
+    def _global_clear_session_callback_(self, clicks: int, trigger: dict, memory: str, session: str, refresh: dict):
+        if not clicks and not trigger: raise PreventUpdate
+        loading = self._global_clear_storage_callback_(title="Session", name="Loading", storage=memory)
+        routing = self._global_clear_storage_callback_(title="Session", name="Routing", storage=memory)
+        reloading = self._global_clear_storage_callback_(title="Session", name="Reloading", storage=memory)
+        unloading = self._global_clear_storage_callback_(title="Session", name="Unloading", storage=memory)
+        memory = self._global_clear_storage_callback_(title="Session", name="Memory", storage=memory)
+        location = self._global_clear_storage_callback_(title="Session", name="Location", storage=session)
+        session = self._global_clear_storage_callback_(title="Session", name="Session", storage=session)
+        refresh = TriggerAPI(**refresh)
+        return loading, routing, reloading, unloading, memory, location, session, refresh.trigger().dict()
 
     @serverside_callback(
         Output("GLOBAL_LOCAL_STORAGE_ID", "data"),
-        Output("GLOBAL_CLEAN_SESSION_TRIGGER_ID", "data"),
-        Input("GLOBAL_CLEAN_LOCAL_BUTTON_ID", "n_clicks"),
-        Input("GLOBAL_CLEAN_LOCAL_TRIGGER_ID", "data"),
+        Output("GLOBAL_REFRESH_TRIGGER_ID", "data"),
+        Input("GLOBAL_CLEAR_CACHE_BUTTON_ID", "n_clicks"),
+        Input("GLOBAL_CLEAR_CACHE_TRIGGER_ID", "data"),
         State("GLOBAL_LOCAL_STORAGE_ID", "storage_type"),
-        State("GLOBAL_CLEAN_SESSION_TRIGGER_ID", "data")
+        State("GLOBAL_REFRESH_TRIGGER_ID", "data")
     )
-    def _global_clean_local_callback_(self, clicks: int, trigger: dict, storage: str, session: dict):
-        local = self._global_clean_storage_callback_(clicks=clicks, trigger=trigger, name="Local", storage=storage)
-        session = TriggerAPI(**session)
-        return local, session.trigger().dict()
+    def _global_clear_cache_callback_(self, clicks: int, trigger: dict, local: str, refresh: dict):
+        if not clicks and not trigger: raise PreventUpdate
+        local = self._global_clear_storage_callback_(title="Cache", name="Local", storage=local)
+        refresh = TriggerAPI(**refresh)
+        return local, refresh.trigger().dict()
 
     @serverside_callback(
         Output("GLOBAL_TERMINAL_COLLAPSE_ID", "is_open"),
