@@ -2,11 +2,9 @@ from __future__ import annotations
 
 from dash import dcc
 from typing import TYPE_CHECKING
-from typing_extensions import Self
 
 if TYPE_CHECKING: from Library.App import AppAPI
 from Library.App.Callback import *
-from Library.App.Session import TriggerAPI
 from Library.App.Component import Component
 from Library.Logging import HandlerLoggingAPI
 
