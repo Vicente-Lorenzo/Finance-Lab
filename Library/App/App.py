@@ -945,7 +945,6 @@ class AppAPI:
     )
     def _global_export_snapshot_callback_(self, clicks: int, path: str, *_):
         if not clicks: raise PreventUpdate
-        if not path: raise PreventUpdate
         endpoint = self.endpointize(path=path, relative=False)
         state_entries = []
         for entry in (self.ctx.states_list or []):
