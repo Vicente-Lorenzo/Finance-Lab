@@ -66,8 +66,8 @@ class AppAPI:
     GLOBAL_CLEAN_MEMORY_TRIGGER_ID: dict
     GLOBAL_CLEAN_SESSION_BUTTON_ID: dict
     GLOBAL_CLEAN_SESSION_TRIGGER_ID: dict
-    GLOBAL_CLEAN_CACHE_BUTTON_ID: dict
-    GLOBAL_CLEAN_CACHE_TRIGGER_ID: dict
+    GLOBAL_CLEAN_LOCAL_BUTTON_ID: dict
+    GLOBAL_CLEAN_LOCAL_TRIGGER_ID: dict
 
     GLOBAL_NOT_FOUND_LAYOUT: Component
     GLOBAL_LOADING_LAYOUT: Component
@@ -242,8 +242,8 @@ class AppAPI:
         self.GLOBAL_CLEAN_MEMORY_TRIGGER_ID: dict = self.register(type="trigger", name="memory")
         self.GLOBAL_CLEAN_SESSION_BUTTON_ID: dict = self.register(type="button", name="session")
         self.GLOBAL_CLEAN_SESSION_TRIGGER_ID: dict = self.register(type="trigger", name="session")
-        self.GLOBAL_CLEAN_CACHE_BUTTON_ID: dict = self.register(type="button", name="cache")
-        self.GLOBAL_CLEAN_CACHE_TRIGGER_ID: dict = self.register(type="trigger", name="cache")
+        self.GLOBAL_CLEAN_LOCAL_BUTTON_ID: dict = self.register(type="button", name="cache")
+        self.GLOBAL_CLEAN_LOCAL_TRIGGER_ID: dict = self.register(type="trigger", name="cache")
 
         self.ids()
 
@@ -405,9 +405,9 @@ class AppAPI:
                     trigger=self.GLOBAL_CLEAN_SESSION_TRIGGER_ID
                 ).build(),
                 *ButtonAPI(
-                    id=self.GLOBAL_CLEAN_CACHE_BUTTON_ID, background="danger",
+                    id=self.GLOBAL_CLEAN_LOCAL_BUTTON_ID, background="danger",
                     label=[IconAPI(icon="bi bi-database-x"), TextAPI(text="  Clean Cache  ")],
-                    trigger=self.GLOBAL_CLEAN_CACHE_TRIGGER_ID
+                    trigger=self.GLOBAL_CLEAN_LOCAL_TRIGGER_ID
                 ).build(),
                 *ButtonAPI(
                     id=self.GLOBAL_TERMINAL_BUTTON_ID, background="primary",
@@ -451,7 +451,7 @@ class AppAPI:
         self._log_.debug(lambda: "Init Layout: Loaded App Layout")
 
     def _init_callbacks_(self) -> None:
-        def trigger(_orig_result, *, hidden_inputs):
+        def trigger(_orig_result, *, hidden_inputs, hidden_states):
             t = hidden_inputs[0] or {}
             return TriggerAPI(**t).trigger().dict()
         callback_injections = [
@@ -470,9 +470,18 @@ class AppAPI:
                 Input("GLOBAL_UNLOADING_TRIGGER_ID", "data"),
                 State("PAGE_UNLOADING_TRIGGER_ID", "data"),
             ], trigger),
-            ("_on_app_memory_clean_", [Input("GLOBAL_CLEAN_MEMORY_TRIGGER_ID", "data")], None),
-            ("_on_app_session_clean_", [Input("GLOBAL_CLEAN_SESSION_TRIGGER_ID", "data")], None),
-            ("_on_app_local_clean_", [Input("GLOBAL_CLEAN_CACHE_TRIGGER_ID", "data")], None),
+            ("_on_app_memory_clean_", [
+                Input("GLOBAL_CLEAN_MEMORY_BUTTON_ID", "n_clicks"),
+                Input("GLOBAL_CLEAN_MEMORY_TRIGGER_ID", "data")
+            ], None),
+            ("_on_app_session_clean_", [
+                Input("GLOBAL_CLEAN_SESSION_BUTTON_ID", "n_clicks"),
+                Input("GLOBAL_CLEAN_SESSION_TRIGGER_ID", "data")
+            ], None),
+            ("_on_app_local_clean_", [
+                Input("GLOBAL_CLEAN_LOCAL_BUTTON_ID", "n_clicks"),
+                Input("GLOBAL_CLEAN_LOCAL_TRIGGER_ID", "data")
+            ], None),
         ]
         for context in [self] + list(self._pages_.values()):
             for cls in reversed(getmro(context)):
@@ -971,12 +980,11 @@ class AppAPI:
         Output("GLOBAL_UNLOADING_TRIGGER_ID", "data"),
         Output("GLOBAL_MEMORY_STORAGE_ID", "data"),
         Output("GLOBAL_REFRESH_TRIGGER_ID", "data"),
-        Input("GLOBAL_CLEAN_MEMORY_BUTTON_ID", "n_clicks"),
-        Input("GLOBAL_CLEAN_MEMORY_TRIGGER_ID", "data"),
         State("GLOBAL_MEMORY_STORAGE_ID", "storage_type"),
-        State("GLOBAL_REFRESH_TRIGGER_ID", "data")
+        State("GLOBAL_REFRESH_TRIGGER_ID", "data"),
+        on_app_memory_clean=Injection.ACTIVE
     )
-    def _global_clean_memory_callback_(self, clicks: int, trigger: dict, memory: str, refresh: dict):
+    def _global_clean_memory_callback_(self, memory: str, refresh: dict, clicks: int, trigger: dict):
         if not clicks and not trigger: raise PreventUpdate
         loading = self._global_clean_storage_callback_(title="Session", name="Loading", storage=memory)
         routing = self._global_clean_storage_callback_(title="Session", name="Routing", storage=memory)
@@ -990,12 +998,11 @@ class AppAPI:
         Output("GLOBAL_LOCATION_STORAGE_ID", "data"),
         Output("GLOBAL_SESSION_STORAGE_ID", "data"),
         Output("GLOBAL_REFRESH_TRIGGER_ID", "data"),
-        Input("GLOBAL_CLEAN_SESSION_BUTTON_ID", "n_clicks"),
-        Input("GLOBAL_CLEAN_SESSION_TRIGGER_ID", "data"),
         State("GLOBAL_SESSION_STORAGE_ID", "storage_type"),
-        State("GLOBAL_REFRESH_TRIGGER_ID", "data")
+        State("GLOBAL_REFRESH_TRIGGER_ID", "data"),
+        on_app_session_clean=Injection.ACTIVE
     )
-    def _global_clean_session_callback_(self, clicks: int, trigger: dict, session: str, refresh: dict):
+    def _global_clean_session_callback_(self, session: str, refresh: dict, clicks: int, trigger: dict):
         if not clicks and not trigger: raise PreventUpdate
         location = self._global_clean_storage_callback_(title="Session", name="Location", storage=session)
         session = self._global_clean_storage_callback_(title="Session", name="Session", storage=session)
@@ -1005,12 +1012,11 @@ class AppAPI:
     @serverside_callback(
         Output("GLOBAL_LOCAL_STORAGE_ID", "data"),
         Output("GLOBAL_REFRESH_TRIGGER_ID", "data"),
-        Input("GLOBAL_CLEAN_CACHE_BUTTON_ID", "n_clicks"),
-        Input("GLOBAL_CLEAN_CACHE_TRIGGER_ID", "data"),
         State("GLOBAL_LOCAL_STORAGE_ID", "storage_type"),
-        State("GLOBAL_REFRESH_TRIGGER_ID", "data")
+        State("GLOBAL_REFRESH_TRIGGER_ID", "data"),
+        on_app_local_clean=Injection.ACTIVE
     )
-    def _global_clean_cache_callback_(self, clicks: int, trigger: dict, local: str, refresh: dict):
+    def _global_clean_cache_callback_(self, local: str, refresh: dict, clicks: int, trigger: dict):
         if not clicks and not trigger: raise PreventUpdate
         local = self._global_clean_storage_callback_(title="Cache", name="Local", storage=local)
         refresh = TriggerAPI(**refresh)
