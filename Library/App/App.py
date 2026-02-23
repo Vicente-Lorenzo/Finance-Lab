@@ -451,25 +451,25 @@ class AppAPI:
         self._log_.debug(lambda: "Init Layout: Loaded App Layout")
 
     def _init_callbacks_(self) -> None:
-        def bump_page_trigger(_orig_result, *, hidden_inputs, hidden_states):
-            trigger = hidden_inputs[0] or {}
-            return TriggerAPI(**trigger).trigger().dict()
+        def trigger(_orig_result, *, hidden_inputs):
+            t = hidden_inputs[0] or {}
+            return TriggerAPI(**t).trigger().dict()
         callback_injections = [
             ("_on_app_loading_", [
                 Output("PAGE_LOADING_TRIGGER_ID", "data"),
                 Input("GLOBAL_LOADING_TRIGGER_ID", "data"),
                 State("PAGE_LOADING_TRIGGER_ID", "data"),
-            ], bump_page_trigger),
+            ], trigger),
             ("_on_app_reloading_", [
                 Output("PAGE_RELOADING_TRIGGER_ID", "data"),
                 Input("GLOBAL_RELOADING_TRIGGER_ID", "data"),
                 State("PAGE_RELOADING_TRIGGER_ID", "data"),
-            ], bump_page_trigger),
+            ], trigger),
             ("_on_app_unloading_", [
                 Output("PAGE_UNLOADING_TRIGGER_ID", "data"),
                 Input("GLOBAL_UNLOADING_TRIGGER_ID", "data"),
                 State("PAGE_UNLOADING_TRIGGER_ID", "data"),
-            ], bump_page_trigger),
+            ], trigger),
             ("_on_app_memory_clean_", [Input("GLOBAL_CLEAN_MEMORY_TRIGGER_ID", "data")], None),
             ("_on_app_session_clean_", [Input("GLOBAL_CLEAN_SESSION_TRIGGER_ID", "data")], None),
             ("_on_app_local_clean_", [Input("GLOBAL_CLEAN_CACHE_TRIGGER_ID", "data")], None),
