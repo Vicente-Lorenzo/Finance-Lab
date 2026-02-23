@@ -62,10 +62,12 @@ class AppAPI:
     GLOBAL_SESSION_STORAGE_ID: dict
     GLOBAL_LOCAL_STORAGE_ID: dict
 
-    GLOBAL_CLEAR_SESSION_BUTTON_ID: dict
-    GLOBAL_CLEAR_SESSION_TRIGGER_ID: dict
-    GLOBAL_CLEAR_CACHE_BUTTON_ID: dict
-    GLOBAL_CLEAR_CACHE_TRIGGER_ID: dict
+    GLOBAL_CLEAN_MEMORY_BUTTON_ID: dict
+    GLOBAL_CLEAN_MEMORY_TRIGGER_ID: dict
+    GLOBAL_CLEAN_SESSION_BUTTON_ID: dict
+    GLOBAL_CLEAN_SESSION_TRIGGER_ID: dict
+    GLOBAL_CLEAN_CACHE_BUTTON_ID: dict
+    GLOBAL_CLEAN_CACHE_TRIGGER_ID: dict
 
     GLOBAL_NOT_FOUND_LAYOUT: Component
     GLOBAL_LOADING_LAYOUT: Component
@@ -236,10 +238,12 @@ class AppAPI:
         self.GLOBAL_SESSION_STORAGE_ID: dict = self.register(type="storage", name="session", portable="data")
         self.GLOBAL_LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local", portable="data")
 
-        self.GLOBAL_CLEAR_SESSION_BUTTON_ID: dict = self.register(type="button", name="session")
-        self.GLOBAL_CLEAR_SESSION_TRIGGER_ID: dict = self.register(type="trigger", name="session")
-        self.GLOBAL_CLEAR_CACHE_BUTTON_ID: dict = self.register(type="button", name="cache")
-        self.GLOBAL_CLEAR_CACHE_TRIGGER_ID: dict = self.register(type="trigger", name="cache")
+        self.GLOBAL_CLEAN_MEMORY_BUTTON_ID: dict = self.register(type="button", name="memory")
+        self.GLOBAL_CLEAN_MEMORY_TRIGGER_ID: dict = self.register(type="trigger", name="memory")
+        self.GLOBAL_CLEAN_SESSION_BUTTON_ID: dict = self.register(type="button", name="session")
+        self.GLOBAL_CLEAN_SESSION_TRIGGER_ID: dict = self.register(type="trigger", name="session")
+        self.GLOBAL_CLEAN_CACHE_BUTTON_ID: dict = self.register(type="button", name="cache")
+        self.GLOBAL_CLEAN_CACHE_TRIGGER_ID: dict = self.register(type="trigger", name="cache")
 
         self.ids()
 
@@ -391,14 +395,19 @@ class AppAPI:
             ], className="footer-left"),
             html.Div(children=[
                 *ButtonAPI(
-                    id=self.GLOBAL_CLEAR_SESSION_BUTTON_ID, background="danger",
-                    label=[IconAPI(icon="bi bi-trash"), TextAPI(text="  Clear Session  ")],
-                    trigger=self.GLOBAL_CLEAR_SESSION_TRIGGER_ID
+                    id=self.GLOBAL_CLEAN_MEMORY_BUTTON_ID, background="danger",
+                    label=[IconAPI(icon="bi bi-trash"), TextAPI(text="  Clean Memory  ")],
+                    trigger=self.GLOBAL_CLEAN_MEMORY_TRIGGER_ID
                 ).build(),
                 *ButtonAPI(
-                    id=self.GLOBAL_CLEAR_CACHE_BUTTON_ID, background="danger",
-                    label=[IconAPI(icon="bi bi-database-x"), TextAPI(text="  Clear Cache  ")],
-                    trigger=self.GLOBAL_CLEAR_CACHE_TRIGGER_ID
+                    id=self.GLOBAL_CLEAN_SESSION_BUTTON_ID, background="danger",
+                    label=[IconAPI(icon="bi bi-trash"), TextAPI(text="  Clean Session  ")],
+                    trigger=self.GLOBAL_CLEAN_SESSION_TRIGGER_ID
+                ).build(),
+                *ButtonAPI(
+                    id=self.GLOBAL_CLEAN_CACHE_BUTTON_ID, background="danger",
+                    label=[IconAPI(icon="bi bi-database-x"), TextAPI(text="  Clean Cache  ")],
+                    trigger=self.GLOBAL_CLEAN_CACHE_TRIGGER_ID
                 ).build(),
                 *ButtonAPI(
                     id=self.GLOBAL_TERMINAL_BUTTON_ID, background="primary",
@@ -442,84 +451,71 @@ class AppAPI:
         self._log_.debug(lambda: "Init Layout: Loaded App Layout")
 
     def _init_callbacks_(self) -> None:
+        def bump_page_trigger(_orig_result, *, hidden_inputs, hidden_states):
+            trigger = hidden_inputs[0] or {}
+            return TriggerAPI(**trigger).trigger().dict()
+        callback_injections = [
+            ("_on_app_loading_", [
+                Output("PAGE_LOADING_TRIGGER_ID", "data"),
+                Input("GLOBAL_LOADING_TRIGGER_ID", "data"),
+                State("PAGE_LOADING_TRIGGER_ID", "data"),
+            ], bump_page_trigger),
+            ("_on_app_reloading_", [
+                Output("PAGE_RELOADING_TRIGGER_ID", "data"),
+                Input("GLOBAL_RELOADING_TRIGGER_ID", "data"),
+                State("PAGE_RELOADING_TRIGGER_ID", "data"),
+            ], bump_page_trigger),
+            ("_on_app_unloading_", [
+                Output("PAGE_UNLOADING_TRIGGER_ID", "data"),
+                Input("GLOBAL_UNLOADING_TRIGGER_ID", "data"),
+                State("PAGE_UNLOADING_TRIGGER_ID", "data"),
+            ], bump_page_trigger),
+            ("_on_app_memory_clean_", [Input("GLOBAL_CLEAN_MEMORY_TRIGGER_ID", "data")], None),
+            ("_on_app_session_clean_", [Input("GLOBAL_CLEAN_SESSION_TRIGGER_ID", "data")], None),
+            ("_on_app_local_clean_", [Input("GLOBAL_CLEAN_CACHE_TRIGGER_ID", "data")], None),
+        ]
         for context in [self] + list(self._pages_.values()):
             for cls in reversed(getmro(context)):
                 if cls is object:
                     continue
-                for name, func in cls.__dict__.items():
+                for callback_name, func in cls.__dict__.items():
                     if not iscallable(func):
                         continue
                     if not getattr(func, "_callback_", False):
                         continue
-                    bound = getattr(context, name)
-                    client: bool = func._callback_js_
-                    args: list = func._callback_args_
+                    is_client: bool = func._callback_js_
                     kwargs: dict = func._callback_kwargs_
-                    loading: bool = func._callback_loading_
-                    reloading: bool = func._callback_reloading_
-                    unloading: bool = func._callback_unloading_
-                    args = [arg.build(context=context) if isinstance(arg, Trigger) else arg for arg in args]
-                    if client:
-                        javascript = bound()
-                        if loading:
-                            trigger = context.loader(name=name)
-                            handler_args = [dash.Input(trigger, "data")]
-                            javascript, args = override_clientside_callback(
-                                handler_func=None,
-                                handler_args=handler_args,
-                                original_js=javascript,
+                    args = list(func._callback_args_)
+                    target = getattr(context, callback_name)() if is_client else getattr(context, callback_name)
+                    for flag_attr, extras, passive_func in callback_injections:
+                        mode = Injection.coerce(getattr(func, flag_attr, False))
+                        if mode is Injection.DISABLED:
+                            continue
+                        if mode is Injection.ACTIVE:
+                            args.extend(extras)
+                            continue
+                        if is_client:
+                            target, args = inject_clientside_callback(
+                                injection_func=passive_func,  # <— key change
+                                injection_args=extras,
+                                original_js=target,
                                 original_args=args
                             )
-                        if reloading:
-                            trigger = context.reloader(name=name)
-                            handler_args = [dash.Input(trigger, "data")]
-                            javascript, args = override_clientside_callback(
-                                handler_func=None,
-                                handler_args=handler_args,
-                                original_js=javascript,
+                        else:
+                            target, args = inject_serverside_callback(
+                                injection_func=passive_func,  # <— key change
+                                injection_args=extras,
+                                original_func=target,
                                 original_args=args
                             )
-                        if unloading:
-                            trigger = context.unloader(name=name)
-                            handler_args = [dash.Input(trigger, "data")]
-                            javascript, args = override_clientside_callback(
-                                handler_func=None,
-                                handler_args=handler_args,
-                                original_js=javascript,
-                                original_args=args
-                            )
-                        self.app.clientside_callback(javascript, *args, **kwargs)
-                        self._log_.info(lambda: f"Init Callbacks: Loaded Client-Side Callback: {name}")
+                    args = [a.build(context=context) if isinstance(a, Trigger) else a for a in args]
+                    if is_client:
+                        self.app.clientside_callback(target, *args, **kwargs)
+                        callback_type = "Client"
                     else:
-                        if loading:
-                            trigger = context.loader(name=name)
-                            handler_args = [dash.Input(trigger, "data")]
-                            bound, args = override_serverside_callback(
-                                handler_func=None,
-                                handler_args=handler_args,
-                                original_func=bound,
-                                original_args=args
-                            )
-                        if reloading:
-                            trigger = context.reloader(name=name)
-                            handler_args = [dash.Input(trigger, "data")]
-                            bound, args = override_serverside_callback(
-                                handler_func=None,
-                                handler_args=handler_args,
-                                original_func=bound,
-                                original_args=args
-                            )
-                        if unloading:
-                            trigger = context.unloader(name=name)
-                            handler_args = [dash.Input(trigger, "data")]
-                            bound, args = override_serverside_callback(
-                                handler_func=None,
-                                handler_args=handler_args,
-                                original_func=bound,
-                                original_args=args
-                            )
-                        self.app.callback(*args, **kwargs)(bound)
-                        self._log_.info(lambda: f"Init Callbacks: Loaded Server-Side Callback: {name}")
+                        self.app.callback(*args, **kwargs)(target)
+                        callback_type = "Server"
+                    self._log_.info(lambda: f"Init Callbacks: Loaded {callback_type}-Side Callback: {callback_name}")
 
     def asset(self, path: str) -> str:
         return self.app.get_asset_url(path)
@@ -664,7 +660,7 @@ class AppAPI:
         State("GLOBAL_LOCATION_STORAGE_ID", "data"),
         State("GLOBAL_LOADING_TRIGGER_ID", "data"),
         State("GLOBAL_RELOADING_TRIGGER_ID", "data"),
-        enable_initial_call=False
+        on_app_init=Injection.PASSIVE
     )
     def _global_update_location_callback_(self, path: str, location: dict, loading: dict, reloading: dict):
         self._log_.debug(lambda: f"Update Location Callback: Received Path = {path}")
@@ -964,8 +960,8 @@ class AppAPI:
         filename = f"snapshot-{endpoint.strip('/').replace('/', '-') or 'root'}.json"
         return dcc.send_string(json.dumps(payload, indent=2, sort_keys=True), filename=filename)
 
-    def _global_clear_storage_callback_(self, title: str, name: str, storage: str):
-        self._log_.debug(lambda: f"Clear {title} Callback: Cleared {name} Storage (Type = {storage.title()})")
+    def _global_clean_storage_callback_(self, title: str, name: str, storage: str):
+        self._log_.debug(lambda: f"Clean {title} Callback: Cleaned {name} Storage (Type = {storage.title()})")
         return dict()
 
     @serverside_callback(
@@ -974,38 +970,49 @@ class AppAPI:
         Output("GLOBAL_RELOADING_TRIGGER_ID", "data"),
         Output("GLOBAL_UNLOADING_TRIGGER_ID", "data"),
         Output("GLOBAL_MEMORY_STORAGE_ID", "data"),
+        Output("GLOBAL_REFRESH_TRIGGER_ID", "data"),
+        Input("GLOBAL_CLEAN_MEMORY_BUTTON_ID", "n_clicks"),
+        Input("GLOBAL_CLEAN_MEMORY_TRIGGER_ID", "data"),
+        State("GLOBAL_MEMORY_STORAGE_ID", "storage_type"),
+        State("GLOBAL_REFRESH_TRIGGER_ID", "data")
+    )
+    def _global_clean_memory_callback_(self, clicks: int, trigger: dict, memory: str, refresh: dict):
+        if not clicks and not trigger: raise PreventUpdate
+        loading = self._global_clean_storage_callback_(title="Session", name="Loading", storage=memory)
+        routing = self._global_clean_storage_callback_(title="Session", name="Routing", storage=memory)
+        reloading = self._global_clean_storage_callback_(title="Session", name="Reloading", storage=memory)
+        unloading = self._global_clean_storage_callback_(title="Session", name="Unloading", storage=memory)
+        memory = self._global_clean_storage_callback_(title="Session", name="Memory", storage=memory)
+        refresh = TriggerAPI(**refresh)
+        return loading, routing, reloading, unloading, memory, refresh.trigger().dict()
+
+    @serverside_callback(
         Output("GLOBAL_LOCATION_STORAGE_ID", "data"),
         Output("GLOBAL_SESSION_STORAGE_ID", "data"),
         Output("GLOBAL_REFRESH_TRIGGER_ID", "data"),
-        Input("GLOBAL_CLEAR_SESSION_BUTTON_ID", "n_clicks"),
-        Input("GLOBAL_CLEAR_SESSION_TRIGGER_ID", "data"),
-        State("GLOBAL_MEMORY_STORAGE_ID", "storage_type"),
+        Input("GLOBAL_CLEAN_SESSION_BUTTON_ID", "n_clicks"),
+        Input("GLOBAL_CLEAN_SESSION_TRIGGER_ID", "data"),
         State("GLOBAL_SESSION_STORAGE_ID", "storage_type"),
         State("GLOBAL_REFRESH_TRIGGER_ID", "data")
     )
-    def _global_clear_session_callback_(self, clicks: int, trigger: dict, memory: str, session: str, refresh: dict):
+    def _global_clean_session_callback_(self, clicks: int, trigger: dict, session: str, refresh: dict):
         if not clicks and not trigger: raise PreventUpdate
-        loading = self._global_clear_storage_callback_(title="Session", name="Loading", storage=memory)
-        routing = self._global_clear_storage_callback_(title="Session", name="Routing", storage=memory)
-        reloading = self._global_clear_storage_callback_(title="Session", name="Reloading", storage=memory)
-        unloading = self._global_clear_storage_callback_(title="Session", name="Unloading", storage=memory)
-        memory = self._global_clear_storage_callback_(title="Session", name="Memory", storage=memory)
-        location = self._global_clear_storage_callback_(title="Session", name="Location", storage=session)
-        session = self._global_clear_storage_callback_(title="Session", name="Session", storage=session)
+        location = self._global_clean_storage_callback_(title="Session", name="Location", storage=session)
+        session = self._global_clean_storage_callback_(title="Session", name="Session", storage=session)
         refresh = TriggerAPI(**refresh)
-        return loading, routing, reloading, unloading, memory, location, session, refresh.trigger().dict()
+        return location, session, refresh.trigger().dict()
 
     @serverside_callback(
         Output("GLOBAL_LOCAL_STORAGE_ID", "data"),
         Output("GLOBAL_REFRESH_TRIGGER_ID", "data"),
-        Input("GLOBAL_CLEAR_CACHE_BUTTON_ID", "n_clicks"),
-        Input("GLOBAL_CLEAR_CACHE_TRIGGER_ID", "data"),
+        Input("GLOBAL_CLEAN_CACHE_BUTTON_ID", "n_clicks"),
+        Input("GLOBAL_CLEAN_CACHE_TRIGGER_ID", "data"),
         State("GLOBAL_LOCAL_STORAGE_ID", "storage_type"),
         State("GLOBAL_REFRESH_TRIGGER_ID", "data")
     )
-    def _global_clear_cache_callback_(self, clicks: int, trigger: dict, local: str, refresh: dict):
+    def _global_clean_cache_callback_(self, clicks: int, trigger: dict, local: str, refresh: dict):
         if not clicks and not trigger: raise PreventUpdate
-        local = self._global_clear_storage_callback_(title="Cache", name="Local", storage=local)
+        local = self._global_clean_storage_callback_(title="Cache", name="Local", storage=local)
         refresh = TriggerAPI(**refresh)
         return local, refresh.trigger().dict()
 

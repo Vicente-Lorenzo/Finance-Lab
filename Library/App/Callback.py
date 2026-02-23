@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import dash
+from enum import Enum
 from functools import wraps
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Callable
+from typing_extensions import Self
 
 from Library.App.Component import Component
 if TYPE_CHECKING: from Library.App import AppAPI, PageAPI
@@ -74,60 +76,91 @@ def organize(*callback_args):
         else: others.append(arg)
     return outputs, inputs, states, others
 
-def callback(*callback_args,
-             callback_js: bool,
-             callback_loading: bool,
-             callback_reloading: bool,
-             callback_unloading: bool,
-             **callback_kwargs):
+class Injection(Enum):
+    DISABLED = 0
+    PASSIVE = 1
+    ACTIVE = 2
+    @classmethod
+    def coerce(cls, value) -> Self:
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, bool):
+            return cls.PASSIVE if value else cls.DISABLED
+        return cls.DISABLED
+
+def callback(
+        *callback_args,
+        callback_js: bool,
+        on_app_loading: bool | Injection,
+        on_app_reloading: bool | Injection,
+        on_app_unloading: bool | Injection,
+        on_app_memory_clean: bool | Injection,
+        on_app_session_clean: bool | Injection,
+        on_app_local_clean: bool | Injection,
+        **callback_kwargs):
     def decorator(func):
         func._callback_ = True
         func._callback_js_ = callback_js
         func._callback_kwargs_ = callback_kwargs
-        func._callback_loading_ = callback_loading
-        func._callback_reloading_ = callback_reloading
-        func._callback_unloading_ = callback_unloading
+        func._on_app_loading_ = on_app_loading
+        func._on_app_reloading_ = on_app_reloading
+        func._on_app_unloading_ = on_app_unloading
+        func._on_app_memory_clean_ = on_app_memory_clean
+        func._on_app_session_clean_ = on_app_session_clean
+        func._on_app_local_clean_ = on_app_local_clean
         func._callback_args_ = flatten(*organize(*flatten(*callback_args)))
         return func
     return decorator
 
 def clientside_callback(
         *callback_args,
-        enable_loading_call: bool = False,
-        enable_reloading_call: bool = False,
-        enable_unloading_call: bool = False,
-        enable_initial_call: bool = False,
+        on_app_init: bool | Injection = Injection.DISABLED,
+        on_app_loading: bool | Injection = Injection.DISABLED,
+        on_app_reloading: bool | Injection = Injection.DISABLED,
+        on_app_unloading: bool | Injection = Injection.DISABLED,
+        on_app_memory_clean: bool | Injection = Injection.DISABLED,
+        on_app_session_clean: bool | Injection = Injection.DISABLED,
+        on_app_local_clean: bool | Injection = Injection.DISABLED,
         **callback_kwargs):
     return callback(
         *callback_args,
         callback_js=True,
-        callback_loading=enable_loading_call,
-        callback_reloading=enable_reloading_call,
-        callback_unloading=enable_unloading_call,
-        prevent_initial_call=not enable_initial_call,
+        on_app_loading=on_app_loading,
+        on_app_reloading=on_app_reloading,
+        on_app_unloading=on_app_unloading,
+        on_app_memory_clean=on_app_memory_clean,
+        on_app_session_clean=on_app_session_clean,
+        on_app_local_clean=on_app_local_clean,
+        prevent_initial_call=Injection.coerce(on_app_init) is Injection.DISABLED,
         **callback_kwargs
     )
 
 def serverside_callback(
-    *callback_args,
-    enable_loading_call: bool = False,
-    enable_reloading_call: bool = False,
-    enable_unloading_call: bool = False,
-    enable_initial_call: bool = False,
-    background: bool = False,
-    memoize: bool = False,
-    manager: str = None,
-    running: list[Component] = None,
-    progress: list[Component] = None,
-    cancel: list[Component] = None,
-    **callback_kwargs):
+        *callback_args,
+        on_app_init: bool | Injection = Injection.DISABLED,
+        on_app_loading: bool | Injection = Injection.DISABLED,
+        on_app_reloading: bool | Injection = Injection.DISABLED,
+        on_app_unloading: bool | Injection = Injection.DISABLED,
+        on_app_memory_clean: bool | Injection = Injection.DISABLED,
+        on_app_session_clean: bool | Injection = Injection.DISABLED,
+        on_app_local_clean: bool | Injection = Injection.DISABLED,
+        background: bool = False,
+        memoize: bool = False,
+        manager: str = None,
+        running: list[Component] = None,
+        progress: list[Component] = None,
+        cancel: list[Component] = None,
+        **callback_kwargs):
     return callback(
         *callback_args,
         callback_js=False,
-        callback_loading=enable_loading_call,
-        callback_reloading=enable_reloading_call,
-        callback_unloading=enable_unloading_call,
-        prevent_initial_call=not enable_initial_call,
+        on_app_loading=on_app_loading,
+        on_app_reloading=on_app_reloading,
+        on_app_unloading=on_app_unloading,
+        on_app_memory_clean=on_app_memory_clean,
+        on_app_session_clean=on_app_session_clean,
+        on_app_local_clean=on_app_local_clean,
+        prevent_initial_call=Injection.coerce(on_app_init) is Injection.DISABLED,
         background=background,
         manager=manager,
         running=running,
@@ -137,9 +170,9 @@ def serverside_callback(
         **callback_kwargs
     )
 
-def override_serverside_callback(
-        handler_func: Callable | None,
-        handler_args: tuple | list,
+def inject_serverside_callback(
+        injection_func: Callable | None,
+        injection_args: tuple | list,
         original_func: Callable,
         original_args: tuple | list):
     def normalize_return(value, n_outputs: int) -> tuple:
@@ -152,7 +185,7 @@ def override_serverside_callback(
         if len(value) != n_outputs:
             raise ValueError(f"Expected {n_outputs} outputs, got {len(value)}.")
         return tuple(value)
-    h_out, h_in, h_st, h_other = organize(*flatten(*handler_args))
+    h_out, h_in, h_st, h_other = organize(*flatten(*injection_args))
     o_out, o_in, o_st, o_other = organize(*flatten(*original_args))
     new_out = [*o_out, *h_out]
     new_in  = [*o_in,  *h_in]
@@ -172,15 +205,15 @@ def override_serverside_callback(
         hidden_states = state_vals[n_o_st:n_o_st + n_h_st]
         orig_result = original_func(*orig_inputs, *orig_states, **kwargs)
         if n_h_out == 0:
-            if handler_func is None:
+            if injection_func is None:
                 return orig_result
-            out = handler_func(orig_result, hidden_inputs=hidden_inputs, hidden_states=hidden_states)
+            out = injection_func(orig_result, hidden_inputs=hidden_inputs, hidden_states=hidden_states)
             return orig_result if out is None else out
         base = normalize_return(orig_result, n_o_out)
-        if handler_func is None:
+        if injection_func is None:
             pad = (dash.no_update,) * n_h_out
             return *base, *pad
-        extra = handler_func(orig_result, hidden_inputs=hidden_inputs, hidden_states=hidden_states)
+        extra = injection_func(orig_result, hidden_inputs=hidden_inputs, hidden_states=hidden_states)
         if extra is None:
             pad = (dash.no_update,) * n_h_out
             return *base, *pad
@@ -196,12 +229,12 @@ def override_serverside_callback(
     new_args = [*new_out, *new_in, *new_st, *new_other]
     return wrapped, new_args
 
-def override_clientside_callback(
-        handler_func: str | None,
-        handler_args: tuple | list,
+def inject_clientside_callback(
+        injection_func: str | None,
+        injection_args: tuple | list,
         original_js: str,
         original_args: tuple | list):
-    h_out, h_in, h_st, h_other = organize(*flatten(*handler_args))
+    h_out, h_in, h_st, h_other = organize(*flatten(*injection_args))
     o_out, o_in, o_st, o_other = organize(*flatten(*original_args))
     new_out = [*o_out, *h_out]
     new_in  = [*o_in,  *h_in]
@@ -214,7 +247,7 @@ def override_clientside_callback(
     n_new_inputs = len(new_in)
     n_new_states = len(new_st)
     no_update = "window.dash_clientside.no_update"
-    handler_src = "null" if handler_func is None else f"({handler_func})"
+    handler_src = "null" if injection_func is None else f"({injection_func})"
     wrapped_js = f"""
     function() {{
         const userFn = ({original_js});

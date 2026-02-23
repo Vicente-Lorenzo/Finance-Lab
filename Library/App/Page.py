@@ -209,24 +209,6 @@ class PageAPI:
         self._log_.info(lambda: f"Initialized Layout: {self}")
         self._initialized_ = True
 
-    @serverside_callback(
-        Output("PAGE_LOADING_TRIGGER_ID", "data"),
-        Input("GLOBAL_LOADING_TRIGGER_ID", "data"),
-        State("PAGE_LOADING_TRIGGER_ID", "data")
-    )
-    def _page_loading_location_callback_(self, _, loading: dict):
-        loading = TriggerAPI(**(loading or {}))
-        return loading.trigger().dict()
-
-    @serverside_callback(
-        Output("PAGE_RELOADING_TRIGGER_ID", "data"),
-        Input("GLOBAL_RELOADING_TRIGGER_ID", "data"),
-        State("PAGE_RELOADING_TRIGGER_ID", "data")
-    )
-    def _page_reloading_location_callback_(self, _, reloading: dict):
-        reloading = TriggerAPI(**(reloading or {}))
-        return reloading.trigger().dict()
-
     def ids(self) -> None:
         pass
 
