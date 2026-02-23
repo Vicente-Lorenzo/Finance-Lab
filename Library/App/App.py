@@ -496,14 +496,14 @@ class AppAPI:
                             continue
                         if is_client:
                             target, args = inject_clientside_callback(
-                                injection_func=passive_func,  # <— key change
+                                injection_func=passive_func,
                                 injection_args=extras,
                                 original_js=target,
                                 original_args=args
                             )
                         else:
                             target, args = inject_serverside_callback(
-                                injection_func=passive_func,  # <— key change
+                                injection_func=passive_func,
                                 injection_args=extras,
                                 original_func=target,
                                 original_args=args
