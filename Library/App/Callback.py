@@ -22,10 +22,10 @@ class Trigger(ABC):
         if isinstance(self.component, dict):
             component = context.identify(**self.component)
             load: str = "Hardcode Dict"
-        elif isinstance(self.component, str) and hasattribute(context, self.component):
+        elif hasattribute(context, self.component):
             component = getattribute(context, self.component)
             load: str = "Page Attribute" if isinstance(context, PageAPI) else "Global Attribute"
-        elif isinstance(self.component, str) and isinstance(context, PageAPI) and hasattribute(context.app, self.component):
+        elif isinstance(context, PageAPI) and hasattribute(context.app, self.component):
             component = getattribute(context.app, self.component)
             load: str = "Global Attribute"
         else:
