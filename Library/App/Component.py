@@ -131,11 +131,9 @@ class IconAPI(ComponentAPI):
     builder: type[Component] = field(default=html.I)
 
     icon: str = field(default=None)
-    text: str = field(default=None)
 
     def __post_init__(self):
         if self.icon is not None: self.stylename = self.icon
-        if self.text is not None: self.element = self.text
         super().__post_init__()
 
 @dataclass(kw_only=True)
@@ -144,7 +142,6 @@ class TextAPI(ComponentAPI):
     classname: str | None = field(default="text")
     builder: type[Component] = field(default=html.Span)
 
-    icon: str = field(default=None)
     text: str = field(default=None)
 
     font_weight: str | int = field(default=None)
@@ -153,7 +150,6 @@ class TextAPI(ComponentAPI):
     font_family: str = field(default=None)
 
     def __post_init__(self):
-        if self.icon is not None: self.stylename = self.icon
         if self.text is not None: self.element = self.text
         super().__post_init__()
 
@@ -164,9 +160,50 @@ class TextAPI(ComponentAPI):
         if self.font_color is not None: textstyle.update(color=self.font_color)
         if self.font_size is not None: textstyle.update(fontSize=self.font_size)
         if self.font_family is not None: textstyle.update(fontFamily=self.font_family)
-        if textstyle:
-            self.style = parse_style(basestyle=self.style, classstyle=textstyle)
-            kwargs.update(style=self.style)
+        self.style = parse_style(basestyle=self.style, classstyle=textstyle)
+        kwargs.update(style=self.style)
+        return kwargs
+
+@dataclass(kw_only=True)
+class LabelAPI(TextAPI):
+
+    classname: str | None = field(default="label")
+    builder: type[Component] = field(default=dbc.FormText)
+
+@dataclass(kw_only=True)
+class MarkdownAPI(ComponentAPI):
+
+    classname: str | None = field(default="markdown")
+    builder: type[Component] = field(default=dcc.Markdown)
+
+    allow_html: bool = field(default=None)
+    dedent: bool = field(default=None)
+
+    def arguments(self) -> dict:
+        kwargs = super().arguments()
+        if self.allow_html is not None: kwargs.update(dangerously_allow_html=self.allow_html)
+        if self.dedent is not None: kwargs.update(dedent=self.dedent)
+        return kwargs
+
+@dataclass(kw_only=True)
+class IntervalAPI(ComponentAPI):
+
+    classname: str | None = field(default="interval")
+    builder: type[Component] = field(default=dcc.Interval)
+
+    interval: int = field(default=None)
+    intervals: int = field(default=None)
+    disabled: bool = field(default=None)
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.classname = None
+
+    def arguments(self) -> dict:
+        kwargs = super().arguments()
+        if self.interval is not None: kwargs.update(interval=self.interval)
+        if self.intervals is not None: kwargs.update(n_intervals=self.intervals)
+        if self.disabled is not None: kwargs.update(disabled=self.disabled)
         return kwargs
 
 @dataclass(kw_only=True)
@@ -175,7 +212,7 @@ class StorageAPI(ComponentAPI):
     classname: str | None = field(default="store")
     builder: type[Component] = field(default=dcc.Store)
 
-    data: dict = field(default=None)
+    data: dict = field(default_factory=dict)
     autoclear: bool = field(default=None)
     persistence: str = field(default=None)
 
