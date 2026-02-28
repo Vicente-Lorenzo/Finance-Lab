@@ -171,7 +171,7 @@ class LabelAPI(TextAPI):
     builder: type[Component] = field(default=dbc.FormText)
 
 @dataclass(kw_only=True)
-class MarkdownAPI(ComponentAPI):
+class MarkdownAPI(TextAPI):
 
     classname: str | None = field(default="markdown")
     builder: type[Component] = field(default=dcc.Markdown)
@@ -192,7 +192,7 @@ class IntervalAPI(ComponentAPI):
     builder: type[Component] = field(default=dcc.Interval)
 
     interval: int = field(default=None)
-    intervals: int = field(default=None)
+    intervals: int = field(default=0)
     disabled: bool = field(default=None)
 
     def __post_init__(self):
