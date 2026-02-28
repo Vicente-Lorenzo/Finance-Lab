@@ -1,5 +1,3 @@
-import inspect
-
 def isclass(obj: object) -> bool:
     return isinstance(obj, type)
 
@@ -7,6 +5,7 @@ def iscallable(obj: object) -> bool:
     return callable(obj)
 
 def ismethod(obj: object) -> bool:
+    import inspect
     v = obj.__func__ if isinstance(obj, (classmethod, staticmethod)) else obj
     return inspect.isroutine(v)
 
@@ -144,6 +143,25 @@ def getproperty(obj: object, name: str, default = None, *, mro: bool = False):
             return c.__dict__[name]
     return default
 
+def getvariable(value: object, scope: dict):
+    for name, obj in scope.items():
+        if obj is value:
+            return name
+    return None
+
+def findvariable(value: object, scope: dict):
+    import inspect
+    frame = inspect.currentframe()
+    try:
+        caller = frame.f_back
+        name = getvariable(value, caller.f_locals)
+        if name: return name
+        name = getvariable(value, caller.f_globals)
+        if name: return name
+    finally:
+        del caller
+        del frame
+
 def cast(cast_value, cast_type: type, cast_default):
     try:
         return cast_value if isinstance(cast_value, cast_type) else cast_type(cast_value)
@@ -162,3 +180,9 @@ def contains(text: str, substrings: str | tuple | list, case_sensitive: bool = F
         text = text.lower()
         subs = [s.lower() for s in subs]
     return any(sub in text for sub in subs)
+
+def format(original: str, *args, **kwargs):
+    from collections import defaultdict
+    with_args = original.format(*args) if args else original
+    with_kwargs = with_args.format_map(defaultdict(str, **kwargs)) if kwargs else with_args
+    return with_kwargs
