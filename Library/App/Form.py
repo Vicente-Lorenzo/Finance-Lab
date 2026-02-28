@@ -6,7 +6,6 @@ if TYPE_CHECKING: from Library.App import AppAPI
 from Library.App.Page import PageAPI
 from Library.App.Component import Component, IconAPI, TextAPI, ButtonAPI, PaginatorAPI, ContainerAPI
 
-
 class FormAPI(PageAPI):
 
     FORM_BACK_INTERNAL_ID: dict
@@ -18,11 +17,14 @@ class FormAPI(PageAPI):
     def __init__(self, *,
                  app: AppAPI,
                  path: str,
+                 anchor: str = None,
+                 endpoint: str = None,
+                 redirect: str = None,
                  button: str = None,
                  description: str = None,
-                 content: Component = None,
-                 sidebar: Component = None,
-                 navigation: Component = None,
+                 content: Component | list[Component] = None,
+                 sidebar: Component | list[Component] = None,
+                 navigation: Component | list[Component] = None,
                  add_backward_parent: bool = True,
                  add_backward_children: bool = False,
                  add_current_parent: bool = False,
@@ -38,6 +40,9 @@ class FormAPI(PageAPI):
         super().__init__(
             app=app,
             path=path,
+            anchor=anchor,
+            endpoint=endpoint,
+            redirect=redirect,
             button=button,
             description=description,
             content=content,
@@ -96,7 +101,7 @@ class FormAPI(PageAPI):
             buttons.append(PaginatorAPI(
                 iid=self.FORM_NEXT_INTERNAL_ID,
                 eid=self.FORM_NEXT_EXTERNAL_ID,
-                label=[TextAPI(text="Next  "), IconAPI(icon="bi bi-chevron-right")],
+                label=[TextAPI(text=f"{self._next_button_label_}  "), IconAPI(icon="bi bi-chevron-right")],
                 invert=True,
                 href=target,
                 background="white",
@@ -111,8 +116,8 @@ class FormAPI(PageAPI):
         hidden = self._init_hidden_()
         self._log_.debug(lambda: f"Loaded Hidden Layout")
         buttons = self._init_buttons_()
-        buttons = ContainerAPI(element=buttons, stylename="form-page-buttons").build()
+        buttons = ContainerAPI(elements=buttons, stylename="form-page-buttons").build()
         self._log_.debug(lambda: f"Loaded Buttons Layout")
         content = self.normalize(self._content_ or self.content())
-        content = ContainerAPI(element=content, stylename="form-page-content").build()
+        content = ContainerAPI(elements=content, stylename="form-page-content").build()
         return self.normalize([*content, *buttons, *hidden])
