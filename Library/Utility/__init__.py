@@ -2,6 +2,7 @@ from Library.Utility.Chart import gantt
 from Library.Utility.Image import image
 from Library.Utility.HTML import (
     Component,
+    formatize,
     stylize,
     htmlize
 )
@@ -18,9 +19,11 @@ from Library.Utility.Typing import (
     hasattribute, getattribute,
     hasmethod, getmethod,
     hasproperty, getproperty,
+    getvariable, findvariable,
     cast,
     equals,
-    contains
+    contains,
+    format
 )
 from Library.Utility.DateTime import (
     datetime_to_string,
@@ -46,7 +49,10 @@ from Library.Utility.Runtime import (
     is_console,
     is_terminal,
     is_notebook,
-    find_notebook
+    find_notebook,
+    find_env_var,
+    match_env_vars,
+    find_host_port
 )
 from Library.Utility.Path import (
     inspect_separator,
@@ -105,17 +111,20 @@ from Library.Utility.IO import (
     smartlink,
     mirror
 )
+from Library.Utility.Report import ReportAPI
 
 __all__ = [
     "gantt",
     "image",
-    "Component", "stylize", "htmlize",
+    "Component", "formatize", "stylize", "htmlize",
     "isclass", "iscallable", "ismethod", "isproperty", "getclass", "getmro", "getslots", "getclasses",
     "hasmember", "getmember", "hasattribute", "getattribute", "hasmethod", "getmethod", "hasproperty", "getproperty",
+    "getvariable", "findvariable",
     "cast", "equals", "contains",
     "datetime_to_string", "string_to_datetime", "datetime_to_timestamp", "timestamp_to_datetime", "datetime_to_iso", "iso_to_datetime", "seconds_to_string",
     "find_user", "is_windows", "is_linux", "is_mac", "is_local", "is_remote", "is_service",
     "find_ipython", "find_shell", "is_python", "is_console", "is_terminal", "is_notebook", "find_notebook",
+    "find_env_var", "match_env_vars", "find_host_port",
     "inspect_separator", "inspect_file", "inspect_file_path", "inspect_module", "inspect_module_path",
     "traceback_working", "traceback_working_module", "traceback_working_module_path",
     "traceback_depth", "traceback_depth_file", "traceback_depth_file_path", "traceback_depth_module", "traceback_depth_module_path",
@@ -127,5 +136,6 @@ __all__ = [
     "PathAPI",
     "is_readable", "is_writable",
     "mkdir", "remove", "read_text", "write_text", "read_json", "write_json",
-    "symlink", "hardlink", "copy", "smartlink", "mirror"
+    "symlink", "hardlink", "copy", "smartlink", "mirror",
+    "ReportAPI"
 ]
