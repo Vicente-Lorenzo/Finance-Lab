@@ -26,15 +26,12 @@ def formatize(name: str, value: object) -> str:
 def stylize(component: Component) -> str:
     parts: list[str] = []
     for prop in component._prop_names:
-        if prop == "children":
-            continue
+        if prop == "children": continue
         value = getattr(component, prop, None)
-        if value is None:
-            continue
+        if value is None: continue
         html_key = prop.replace("_", "-")
         attr_str = formatize(html_key, value)
-        if attr_str:
-            parts.append(f'{html_key}="{value}"')
+        if attr_str: parts.append(attr_str)
     return "" if not parts else " " + " ".join(parts)
 
 def htmlize(node: str | int | float | list | tuple | Component) -> str:

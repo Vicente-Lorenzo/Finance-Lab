@@ -143,13 +143,13 @@ def getproperty(obj: object, name: str, default = None, *, mro: bool = False):
             return c.__dict__[name]
     return default
 
-def getvariable(value: object, scope: dict):
+def getvariable(value: object, scope: dict) -> str | None:
     for name, obj in scope.items():
         if obj is value:
             return name
     return None
 
-def findvariable(value: object, scope: dict):
+def findvariable(value: object) -> str | None:
     import inspect
     frame = inspect.currentframe()
     try:
@@ -158,6 +158,7 @@ def findvariable(value: object, scope: dict):
         if name: return name
         name = getvariable(value, caller.f_globals)
         if name: return name
+        return None
     finally:
         del caller
         del frame
@@ -181,7 +182,7 @@ def contains(text: str, substrings: str | tuple | list, case_sensitive: bool = F
         subs = [s.lower() for s in subs]
     return any(sub in text for sub in subs)
 
-def format(original: str, *args, **kwargs):
+def format(original: str, *args, **kwargs) -> str:
     from collections import defaultdict
     with_args = original.format(*args) if args else original
     with_kwargs = with_args.format_map(defaultdict(str, **kwargs)) if kwargs else with_args

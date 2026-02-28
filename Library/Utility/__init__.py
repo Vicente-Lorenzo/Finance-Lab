@@ -120,7 +120,7 @@ __all__ = [
     "isclass", "iscallable", "ismethod", "isproperty", "getclass", "getmro", "getslots", "getclasses",
     "hasmember", "getmember", "hasattribute", "getattribute", "hasmethod", "getmethod", "hasproperty", "getproperty",
     "getvariable", "findvariable",
-    "cast", "equals", "contains",
+    "cast", "equals", "contains", "format",
     "datetime_to_string", "string_to_datetime", "datetime_to_timestamp", "timestamp_to_datetime", "datetime_to_iso", "iso_to_datetime", "seconds_to_string",
     "find_user", "is_windows", "is_linux", "is_mac", "is_local", "is_remote", "is_service",
     "find_ipython", "find_shell", "is_python", "is_console", "is_terminal", "is_notebook", "find_notebook",

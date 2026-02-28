@@ -7,7 +7,7 @@ class ReportAPI:
         report = data.file.read_text() if isinstance(data, PathAPI) else data
         self._report_ = htmlize([html.Br() if not line else html.Div(children=line, **kwargs) for line in report.split("\n")])
 
-    def __call__(self, **kwargs):
+    def __call__(self, **kwargs) -> str:
         return format(self._report_, **kwargs)
 
     def __repr__(self) -> str:
