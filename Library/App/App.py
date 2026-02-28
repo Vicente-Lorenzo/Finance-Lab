@@ -51,7 +51,6 @@ class AppAPI:
     GLOBAL_TERMINAL_ARROW_ID: dict
     GLOBAL_TERMINAL_BUTTON_ID: dict
     GLOBAL_TERMINAL_COLLAPSE_ID: dict
-    GLOBAL_TERMINAL_INTERVAL_ID: dict
 
     GLOBAL_LOADING_TRIGGER_ID: dict
     GLOBAL_ROUTING_STORAGE_ID: dict
@@ -68,6 +67,10 @@ class AppAPI:
     GLOBAL_CLEAN_SESSION_TRIGGER_ID: dict
     GLOBAL_CLEAN_LOCAL_BUTTON_ID: dict
     GLOBAL_CLEAN_LOCAL_TRIGGER_ID: dict
+
+    GLOBAL_HIGH_FREQUENCY_INTERVAL_ID: dict
+    GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID: dict
+    GLOBAL_LOW_FREQUENCY_INTERVAL_ID: dict
 
     GLOBAL_NOT_FOUND_LAYOUT: Component
     GLOBAL_LOADING_LAYOUT: Component
@@ -89,7 +92,8 @@ class AppAPI:
                  proxy: str = None,
                  anchor: str = None,
                  debug: bool = False,
-                 terminal: int = 1000) -> None:
+                 terminal: int = 100,
+                 interval: tuple[int, int, int] = (100, 1000, 60000)) -> None:
 
         self._log_ = HandlerLoggingAPI(AppAPI.__name__)
 
@@ -159,6 +163,14 @@ class AppAPI:
         self._application_assets_url_: str = "Assets"
         self._log_.debug(lambda: f"Defined Application Assets URL = {self._application_assets_url_}")
 
+        high, medium, low = interval
+        self._high_freq_interval_: int = high
+        self._log_.debug(lambda: f"Defined High Frequency Interval = {self._high_freq_interval_}")
+        self._medium_freq_interval_: int = medium
+        self._log_.debug(lambda: f"Defined Medium Frequency Interval = {self._medium_freq_interval_}")
+        self._low_freq_interval_: int = low
+        self._log_.debug(lambda: f"Defined Low Frequency Interval = {self._low_freq_interval_}")
+
         self._init_assets_()
         self._log_.debug(lambda: "Initialized Assets")
 
@@ -227,7 +239,6 @@ class AppAPI:
         self.GLOBAL_TERMINAL_ARROW_ID: dict = self.register(type="icon", name="terminal")
         self.GLOBAL_TERMINAL_BUTTON_ID: dict = self.register(type="button", name="terminal")
         self.GLOBAL_TERMINAL_COLLAPSE_ID: dict = self.register(type="collapse", name="terminal")
-        self.GLOBAL_TERMINAL_INTERVAL_ID: dict = self.register(type="interval", name="terminal")
 
         self.GLOBAL_LOADING_TRIGGER_ID: dict = self.register(type="trigger", name="loading")
         self.GLOBAL_ROUTING_STORAGE_ID: dict = self.register(type="storage", name="routing")
@@ -244,6 +255,10 @@ class AppAPI:
         self.GLOBAL_CLEAN_SESSION_TRIGGER_ID: dict = self.register(type="trigger", name="session")
         self.GLOBAL_CLEAN_LOCAL_BUTTON_ID: dict = self.register(type="button", name="cache")
         self.GLOBAL_CLEAN_LOCAL_TRIGGER_ID: dict = self.register(type="trigger", name="cache")
+
+        self.GLOBAL_HIGH_FREQUENCY_INTERVAL_ID: dict = self.register(type="interval", name="high")
+        self.GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID: dict = self.register(type="interval", name="medium")
+        self.GLOBAL_LOW_FREQUENCY_INTERVAL_ID: dict = self.register(type="interval", name="low")
 
         self.ids()
 
@@ -426,15 +441,17 @@ class AppAPI:
     def _init_hidden_(self) -> Component:
         return html.Div(children=[
             dcc.Location(id=self.GLOBAL_LOCATION_ID, refresh=False),
-            dcc.Store(id=self.GLOBAL_LOCATION_STORAGE_ID, storage_type="session", data=dict()),
-            dcc.Store(id=self.GLOBAL_LOADING_TRIGGER_ID, storage_type="memory", data=dict()),
-            dcc.Store(id=self.GLOBAL_ROUTING_STORAGE_ID, storage_type="memory", data=dict()),
-            dcc.Store(id=self.GLOBAL_RELOADING_TRIGGER_ID, storage_type="memory", data=dict()),
-            dcc.Store(id=self.GLOBAL_UNLOADING_TRIGGER_ID, storage_type="memory", data=dict()),
-            dcc.Interval(id=self.GLOBAL_TERMINAL_INTERVAL_ID, interval=1000, n_intervals=0, disabled=False),
-            dcc.Store(id=self.GLOBAL_MEMORY_STORAGE_ID, storage_type="memory", data=dict()),
-            dcc.Store(id=self.GLOBAL_SESSION_STORAGE_ID, storage_type="session", data=dict()),
-            dcc.Store(id=self.GLOBAL_LOCAL_STORAGE_ID, storage_type="local", data=dict())
+            *StorageAPI(id=self.GLOBAL_LOCATION_STORAGE_ID, persistence="session").build(),
+            *StorageAPI(id=self.GLOBAL_LOADING_TRIGGER_ID, persistence="memory").build(),
+            *StorageAPI(id=self.GLOBAL_ROUTING_STORAGE_ID, persistence="memory").build(),
+            *StorageAPI(id=self.GLOBAL_RELOADING_TRIGGER_ID, persistence="memory").build(),
+            *StorageAPI(id=self.GLOBAL_UNLOADING_TRIGGER_ID, persistence="memory").build(),
+            *StorageAPI(id=self.GLOBAL_MEMORY_STORAGE_ID, persistence="memory").build(),
+            *StorageAPI(id=self.GLOBAL_SESSION_STORAGE_ID, persistence="session").build(),
+            *StorageAPI(id=self.GLOBAL_LOCAL_STORAGE_ID, persistence="local").build(),
+            *IntervalAPI(id=self.GLOBAL_HIGH_FREQUENCY_INTERVAL_ID, interval=self._high_freq_interval_).build(),
+            *IntervalAPI(id=self.GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID, interval=self._medium_freq_interval_).build(),
+            *IntervalAPI(id=self.GLOBAL_LOW_FREQUENCY_INTERVAL_ID, interval=self._low_freq_interval_).build(),
         ], className="hidden")
 
     def _init_layout_(self) -> None:
@@ -453,7 +470,7 @@ class AppAPI:
     def _init_callbacks_(self) -> None:
         def trigger(_orig_result, *, hidden_inputs, hidden_states):
             t = hidden_inputs[0] or {}
-            return TriggerAPI(**t).trigger().dict()
+            return _orig_result, TriggerAPI(**t).trigger().dict()
         callback_injections = [
             ("_on_app_loading_", [
                 Output("PAGE_LOADING_TRIGGER_ID", "data"),
@@ -1035,7 +1052,7 @@ class AppAPI:
 
     @serverside_callback(
         Output("GLOBAL_TERMINAL_ID", "children"),
-        Input("GLOBAL_TERMINAL_INTERVAL_ID", "n_intervals"),
+        Input("GLOBAL_MEDIUM_INTERVAL_ID", "n_intervals"),
         State("GLOBAL_TERMINAL_ID", "children")
     )
     def _global_terminal_stream_callback_(self, _, terminal: list[Component]):
