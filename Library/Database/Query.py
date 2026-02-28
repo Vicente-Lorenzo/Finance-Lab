@@ -1,7 +1,7 @@
 import re
 from typing import Callable
 
-from Library.Utility import PathAPI
+from Library.Utility import PathAPI, format
 
 class QueryAPI:
 
@@ -22,7 +22,7 @@ class QueryAPI:
                 k = next(iter(missing))
                 raise KeyError(f"Missing interpolation parameter '{k}' for ::{k}:: placeholder")
             query = self._INTERPOLATION_PARAMETER_TOKEN_.sub(r"{\1}", query)
-            query = query.format(**kwargs)
+            query = format(query, **kwargs)
         configuration: list[int | str] = []
         parameters_index: int = 0
         positional_index: int = 0
