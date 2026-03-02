@@ -59,6 +59,21 @@ class State(Trigger):
         component, property = super().build(context=context)
         return dash.State(component_id=component, component_property=property, allow_optional=self.allow_optional)
 
+class Injection(Enum):
+    Disabled = 0
+    Hidden = 1
+    Prepend = 2
+    Append = 3
+    @classmethod
+    def coerce(cls, value) -> Self:
+        if isinstance(value, cls):
+            return value
+        if value is False:
+            return cls.Disabled
+        if value is True:
+            return cls.Hidden
+        return cls.Disabled
+
 def flatten(*args) -> list:
     flat = []
     for arg in args:
@@ -80,83 +95,78 @@ def sort(*args):
 def organize(original_args: list, inject_args: list, mode: Injection):
     o_out, o_in, o_st, o_oth = sort(original_args)
     i_out, i_in, i_st, i_oth = sort(inject_args)
-    if mode == Injection.PREPEND:
+    if mode == Injection.Prepend:
         all_out, all_in, all_st, all_oth = i_out + o_out, i_in + o_in, i_st + o_st, i_oth + o_oth
     else:
         all_out, all_in, all_st, all_oth = o_out + i_out, o_in + i_in, o_st + i_st, o_oth + i_oth
     return all_out, all_in, all_st, all_oth, o_out, o_in, o_st, i_out, i_in, i_st
 
-class Injection(Enum):
-    DISABLED = 0
-    HIDDEN = 1
-    PREPEND = 2
-    APPEND = 3
-    @classmethod
-    def coerce(cls, value) -> Self:
-        if isinstance(value, cls):
-            return value
-        if value is False:
-            return cls.DISABLED
-        if value is True:
-            return cls.HIDDEN
-        return cls.DISABLED
-
 def callback(
         *callback_args,
         callback_js: bool,
+        on_app_click: bool | Injection,
         on_app_loading: bool | Injection,
         on_app_reloading: bool | Injection,
         on_app_unloading: bool | Injection,
         on_app_memory_clean: bool | Injection,
         on_app_session_clean: bool | Injection,
         on_app_local_clean: bool | Injection,
+        on_app_clean_reset: bool | Injection,
         **callback_kwargs):
     def decorator(func):
         func._callback_ = True
         func._callback_js_ = callback_js
         func._callback_kwargs_ = callback_kwargs
+        func._on_app_click_ = on_app_click
         func._on_app_loading_ = on_app_loading
         func._on_app_reloading_ = on_app_reloading
         func._on_app_unloading_ = on_app_unloading
         func._on_app_memory_clean_ = on_app_memory_clean
         func._on_app_session_clean_ = on_app_session_clean
         func._on_app_local_clean_ = on_app_local_clean
+        func._on_app_clean_reset_ = on_app_clean_reset
         func._callback_args_ = flatten(*sort(callback_args))
         return func
     return decorator
 
 def clientside_callback(
         *callback_args,
-        on_app_init: bool | Injection = Injection.DISABLED,
-        on_app_loading: bool | Injection = Injection.DISABLED,
-        on_app_reloading: bool | Injection = Injection.DISABLED,
-        on_app_unloading: bool | Injection = Injection.DISABLED,
-        on_app_memory_clean: bool | Injection = Injection.DISABLED,
-        on_app_session_clean: bool | Injection = Injection.DISABLED,
-        on_app_local_clean: bool | Injection = Injection.DISABLED,
+        on_app_init: bool | Injection = Injection.Disabled,
+        on_app_click: bool | Injection = Injection.Disabled,
+        on_app_loading: bool | Injection = Injection.Disabled,
+        on_app_reloading: bool | Injection = Injection.Disabled,
+        on_app_unloading: bool | Injection = Injection.Disabled,
+        on_app_memory_clean: bool | Injection = Injection.Disabled,
+        on_app_session_clean: bool | Injection = Injection.Disabled,
+        on_app_local_clean: bool | Injection = Injection.Disabled,
+        on_app_clean_reset: bool | Injection = Injection.Disabled,
         **callback_kwargs):
     return callback(
         *callback_args,
         callback_js=True,
+        on_app_click=on_app_click,
         on_app_loading=on_app_loading,
         on_app_reloading=on_app_reloading,
         on_app_unloading=on_app_unloading,
         on_app_memory_clean=on_app_memory_clean,
         on_app_session_clean=on_app_session_clean,
         on_app_local_clean=on_app_local_clean,
-        prevent_initial_call=Injection.coerce(on_app_init) is Injection.DISABLED,
+        on_app_clean_reset=on_app_clean_reset,
+        prevent_initial_call=Injection.coerce(on_app_init) is Injection.Disabled,
         **callback_kwargs
     )
 
 def serverside_callback(
         *callback_args,
-        on_app_init: bool | Injection = Injection.DISABLED,
-        on_app_loading: bool | Injection = Injection.DISABLED,
-        on_app_reloading: bool | Injection = Injection.DISABLED,
-        on_app_unloading: bool | Injection = Injection.DISABLED,
-        on_app_memory_clean: bool | Injection = Injection.DISABLED,
-        on_app_session_clean: bool | Injection = Injection.DISABLED,
-        on_app_local_clean: bool | Injection = Injection.DISABLED,
+        on_app_init: bool | Injection = Injection.Disabled,
+        on_app_click: bool | Injection = Injection.Disabled,
+        on_app_loading: bool | Injection = Injection.Disabled,
+        on_app_reloading: bool | Injection = Injection.Disabled,
+        on_app_unloading: bool | Injection = Injection.Disabled,
+        on_app_memory_clean: bool | Injection = Injection.Disabled,
+        on_app_session_clean: bool | Injection = Injection.Disabled,
+        on_app_local_clean: bool | Injection = Injection.Disabled,
+        on_app_clean_reset: bool | Injection = Injection.Disabled,
         background: bool = False,
         memoize: bool = False,
         manager: str = None,
@@ -167,13 +177,15 @@ def serverside_callback(
     return callback(
         *callback_args,
         callback_js=False,
+        on_app_click=on_app_click,
         on_app_loading=on_app_loading,
         on_app_reloading=on_app_reloading,
         on_app_unloading=on_app_unloading,
         on_app_memory_clean=on_app_memory_clean,
         on_app_session_clean=on_app_session_clean,
         on_app_local_clean=on_app_local_clean,
-        prevent_initial_call=Injection.coerce(on_app_init) is Injection.DISABLED,
+        on_app_clean_reset=on_app_clean_reset,
+        prevent_initial_call=Injection.coerce(on_app_init) is Injection.Disabled,
         background=background,
         manager=manager,
         running=running,
@@ -186,8 +198,8 @@ def serverside_callback(
 def _inject_callback_(original_args, inject_args, inject_func, mode):
     all_out, all_in, all_st, all_oth, o_out, o_in, o_st, i_out, i_in, i_st = organize(original_args, inject_args, mode)
     all_args = [*all_out, *all_in, *all_st, *all_oth]
-    prepend = mode == Injection.PREPEND
-    inject_func = inject_func if mode == Injection.HIDDEN else None
+    prepend = mode == Injection.Prepend
+    inject_func = inject_func if mode == Injection.Hidden else None
     return all_args, prepend, inject_func, len(o_out), len(o_in), len(o_st), len(i_out), len(i_in), len(i_st), len(all_out), len(all_in), len(all_st)
 
 def inject_serverside_callback(
