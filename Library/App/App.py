@@ -74,6 +74,21 @@ class AppAPI:
     GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID: dict
     GLOBAL_LOW_FREQUENCY_INTERVAL_ID: dict
 
+    _MEMORY_STORAGE_IDS_: list[str] = [
+        "GLOBAL_LOADING_TRIGGER_ID",
+        "GLOBAL_ROUTING_STORAGE_ID",
+        "GLOBAL_RELOADING_TRIGGER_ID",
+        "GLOBAL_UNLOADING_TRIGGER_ID",
+        "GLOBAL_MEMORY_STORAGE_ID"
+    ]
+    _SESSION_STORAGE_IDS_: list[str] = [
+        "GLOBAL_LOCATION_STORAGE_ID",
+        "GLOBAL_SESSION_STORAGE_ID"
+    ]
+    _LOCAL_STORAGE_IDS_: list[str] = [
+        "GLOBAL_LOCAL_STORAGE_ID"
+    ]
+
     GLOBAL_NOT_FOUND_LAYOUT: Component
     GLOBAL_LOADING_LAYOUT: Component
     GLOBAL_MAINTENANCE_LAYOUT: Component
@@ -448,20 +463,17 @@ class AppAPI:
         ], className="footer")
 
     def _init_hidden_(self) -> Component:
-        return html.Div(children=[
-            dcc.Location(id=self.GLOBAL_LOCATION_ID, refresh=False),
-            *StorageAPI(id=self.GLOBAL_LOCATION_STORAGE_ID, persistence="session").build(),
-            *StorageAPI(id=self.GLOBAL_LOADING_TRIGGER_ID, persistence="memory").build(),
-            *StorageAPI(id=self.GLOBAL_ROUTING_STORAGE_ID, persistence="memory").build(),
-            *StorageAPI(id=self.GLOBAL_RELOADING_TRIGGER_ID, persistence="memory").build(),
-            *StorageAPI(id=self.GLOBAL_UNLOADING_TRIGGER_ID, persistence="memory").build(),
-            *StorageAPI(id=self.GLOBAL_MEMORY_STORAGE_ID, persistence="memory").build(),
-            *StorageAPI(id=self.GLOBAL_SESSION_STORAGE_ID, persistence="session").build(),
-            *StorageAPI(id=self.GLOBAL_LOCAL_STORAGE_ID, persistence="local").build(),
-            *IntervalAPI(id=self.GLOBAL_HIGH_FREQUENCY_INTERVAL_ID, interval=self._high_freq_interval_).build(),
-            *IntervalAPI(id=self.GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID, interval=self._medium_freq_interval_).build(),
-            *IntervalAPI(id=self.GLOBAL_LOW_FREQUENCY_INTERVAL_ID, interval=self._low_freq_interval_).build(),
-        ], className="hidden")
+        hidden: list = [dcc.Location(id=self.GLOBAL_LOCATION_ID, refresh=False)]
+        for x in self._MEMORY_STORAGE_IDS_:
+            hidden.extend(StorageAPI(id=getattr(self, x), persistence="memory").build())
+        for x in self._SESSION_STORAGE_IDS_:
+            hidden.extend(StorageAPI(id=getattr(self, x), persistence="session").build())
+        for x in self._LOCAL_STORAGE_IDS_:
+            hidden.extend(StorageAPI(id=getattr(self, x), persistence="local").build())
+        hidden.extend(IntervalAPI(id=self.GLOBAL_HIGH_FREQUENCY_INTERVAL_ID, interval=self._high_freq_interval_).build())
+        hidden.extend(IntervalAPI(id=self.GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID, interval=self._medium_freq_interval_).build())
+        hidden.extend(IntervalAPI(id=self.GLOBAL_LOW_FREQUENCY_INTERVAL_ID, interval=self._low_freq_interval_).build())
+        return html.Div(children=hidden, className="hidden")
 
     def _init_layout_(self) -> None:
         header = self._init_header_()
@@ -1008,56 +1020,41 @@ class AppAPI:
         filename = f"snapshot-{endpoint.strip('/').replace('/', '-') or 'root'}.json"
         return dcc.send_string(json.dumps(payload, indent=2, sort_keys=True), filename=filename)
 
-    def _global_clean_storage_callback_(self, title: str, name: str, storage: str):
-        self._log_.debug(lambda: f"Clean {title} Callback: Cleaned {name} Storage (Type = {storage.title()})")
-        return dict()
+    def _global_clean_storages_callback_(self, names: list[str], storage: str) -> list[dict]:
+        results = []
+        for name in names:
+            self._log_.debug(lambda n=name: f"Clean Callback: Cleaned {n} (Type = {storage})")
+            results.append(dict())
+        return results
 
     @serverside_callback(
-        Output("GLOBAL_LOADING_TRIGGER_ID", "data"),
-        Output("GLOBAL_ROUTING_STORAGE_ID", "data"),
-        Output("GLOBAL_RELOADING_TRIGGER_ID", "data"),
-        Output("GLOBAL_UNLOADING_TRIGGER_ID", "data"),
-        Output("GLOBAL_MEMORY_STORAGE_ID", "data"),
+        *[Output(x, "data") for x in _MEMORY_STORAGE_IDS_],
         State("GLOBAL_MEMORY_STORAGE_ID", "storage_type"),
         on_app_memory_clean=Injection.Hidden
     )
     def _global_clean_memory_callback_(self, memory: str):
-        loading = self._global_clean_storage_callback_(title="Memory", name="Loading", storage=memory)
-        routing = self._global_clean_storage_callback_(title="Memory", name="Routing", storage=memory)
-        reloading = self._global_clean_storage_callback_(title="Memory", name="Reloading", storage=memory)
-        unloading = self._global_clean_storage_callback_(title="Memory", name="Unloading", storage=memory)
-        memory = self._global_clean_storage_callback_(title="Memory", name="Memory", storage=memory)
-        return loading, routing, reloading, unloading, memory
+        return self._global_clean_storages_callback_(self._MEMORY_STORAGE_IDS_, memory)
 
     @serverside_callback(
-        Output("GLOBAL_LOCATION_STORAGE_ID", "data"),
-        Output("GLOBAL_SESSION_STORAGE_ID", "data"),
+        *[Output(x, "data") for x in _SESSION_STORAGE_IDS_],
         State("GLOBAL_SESSION_STORAGE_ID", "storage_type"),
         on_app_session_clean=Injection.Hidden
     )
     def _global_clean_session_callback_(self, session: str):
-        location = self._global_clean_storage_callback_(title="Session", name="Location", storage=session)
-        session = self._global_clean_storage_callback_(title="Session", name="Session", storage=session)
-        return location, session
+        return self._global_clean_storages_callback_(self._SESSION_STORAGE_IDS_, session)
 
     @serverside_callback(
-        Output("GLOBAL_LOCAL_STORAGE_ID", "data"),
+        *[Output(x, "data") for x in _LOCAL_STORAGE_IDS_],
         State("GLOBAL_LOCAL_STORAGE_ID", "storage_type"),
         on_app_local_clean=Injection.Hidden
     )
     def _global_clean_local_callback_(self, local: str):
-        local = self._global_clean_storage_callback_(title="Local", name="Local", storage=local)
-        return local
+        return self._global_clean_storages_callback_(self._LOCAL_STORAGE_IDS_, local)
 
     @serverside_callback(
-        Output("GLOBAL_LOADING_TRIGGER_ID", "data"),
-        Output("GLOBAL_ROUTING_STORAGE_ID", "data"),
-        Output("GLOBAL_RELOADING_TRIGGER_ID", "data"),
-        Output("GLOBAL_UNLOADING_TRIGGER_ID", "data"),
-        Output("GLOBAL_MEMORY_STORAGE_ID", "data"),
-        Output("GLOBAL_LOCATION_STORAGE_ID", "data"),
-        Output("GLOBAL_SESSION_STORAGE_ID", "data"),
-        Output("GLOBAL_LOCAL_STORAGE_ID", "data"),
+        *[Output(x, "data") for x in _MEMORY_STORAGE_IDS_],
+        *[Output(x, "data") for x in _SESSION_STORAGE_IDS_],
+        *[Output(x, "data") for x in _LOCAL_STORAGE_IDS_],
         Output("GLOBAL_REFRESH_TRIGGER_ID", "data"),
         State("GLOBAL_MEMORY_STORAGE_ID", "storage_type"),
         State("GLOBAL_SESSION_STORAGE_ID", "storage_type"),
@@ -1066,16 +1063,11 @@ class AppAPI:
         on_app_clean_reset=Injection.Hidden
     )
     def _global_clean_reset_callback_(self, memory: str, session: str, local: str, refresh: dict):
-        loading = self._global_clean_storage_callback_(title="Reset", name="Loading", storage=memory)
-        routing = self._global_clean_storage_callback_(title="Reset", name="Routing", storage=memory)
-        reloading = self._global_clean_storage_callback_(title="Reset", name="Reloading", storage=memory)
-        unloading = self._global_clean_storage_callback_(title="Reset", name="Unloading", storage=memory)
-        memory = self._global_clean_storage_callback_(title="Reset", name="Memory", storage=memory)
-        location = self._global_clean_storage_callback_(title="Reset", name="Location", storage=session)
-        session = self._global_clean_storage_callback_(title="Reset", name="Session", storage=session)
-        local = self._global_clean_storage_callback_(title="Reset", name="Local", storage=local)
+        m = self._global_clean_storages_callback_(self._MEMORY_STORAGE_IDS_, memory)
+        s = self._global_clean_storages_callback_(self._SESSION_STORAGE_IDS_, session)
+        l = self._global_clean_storages_callback_(self._LOCAL_STORAGE_IDS_, local)
         refresh = TriggerAPI(**refresh).trigger().dict()
-        return loading, routing, reloading, unloading, memory, location, session, local, refresh
+        return *m, *s, *l, refresh
 
     @serverside_callback(
         Output("GLOBAL_TERMINAL_COLLAPSE_ID", "is_open"),

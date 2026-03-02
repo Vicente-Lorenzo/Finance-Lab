@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from dash import dcc
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING: from Library.App import AppAPI
 from Library.App.Callback import *
-from Library.App.Component import Component
-from Library.Logging import HandlerLoggingAPI
+from Library.App.Component import *
+from Library.Logging import *
 
 class PageAPI:
 
@@ -17,6 +16,19 @@ class PageAPI:
     PAGE_MEMORY_STORAGE_ID: dict
     PAGE_SESSION_STORAGE_ID: dict
     PAGE_LOCAL_STORAGE_ID: dict
+
+    _MEMORY_STORAGE_IDS_: list[str] = [
+        "PAGE_LOADING_TRIGGER_ID",
+        "PAGE_RELOADING_TRIGGER_ID",
+        "PAGE_UNLOADING_TRIGGER_ID",
+        "PAGE_MEMORY_STORAGE_ID"
+    ]
+    _SESSION_STORAGE_IDS_: list[str] = [
+        "PAGE_SESSION_STORAGE_ID"
+    ]
+    _LOCAL_STORAGE_IDS_: list[str] = [
+        "PAGE_LOCAL_STORAGE_ID"
+    ]
 
     def __init__(self, *,
                  app: AppAPI,
@@ -157,6 +169,52 @@ class PageAPI:
         self._unloaders_.append(name)
         return self.PAGE_UNLOADING_TRIGGER_ID
 
+    def _page_clean_storages_callback_(self, names: list[str], storage: str) -> list[dict]:
+        results = []
+        for name in names:
+            self._log_.debug(lambda n=name: f"Clean Callback: Cleaned {n} (Type = {storage})")
+            results.append(dict())
+        return results
+
+    @serverside_callback(
+        *[Output(x, "data") for x in _MEMORY_STORAGE_IDS_],
+        State("PAGE_MEMORY_STORAGE_ID", "storage_type"),
+        on_app_memory_clean=Injection.Hidden
+    )
+    def _page_clean_memory_callback_(self, memory: str):
+        return self._page_clean_storages_callback_(self._MEMORY_STORAGE_IDS_, memory)
+
+    @serverside_callback(
+        *[Output(x, "data") for x in _SESSION_STORAGE_IDS_],
+        State("PAGE_SESSION_STORAGE_ID", "storage_type"),
+        on_app_session_clean=Injection.Hidden
+    )
+    def _page_clean_session_callback_(self, session: str):
+        return self._page_clean_storages_callback_(self._SESSION_STORAGE_IDS_, session)
+
+    @serverside_callback(
+        *[Output(x, "data") for x in _LOCAL_STORAGE_IDS_],
+        State("PAGE_LOCAL_STORAGE_ID", "storage_type"),
+        on_app_local_clean=Injection.Hidden
+    )
+    def _page_clean_local_callback_(self, local: str):
+        return self._page_clean_storages_callback_(self._LOCAL_STORAGE_IDS_, local)
+
+    @serverside_callback(
+        *[Output(x, "data") for x in _MEMORY_STORAGE_IDS_],
+        *[Output(x, "data") for x in _SESSION_STORAGE_IDS_],
+        *[Output(x, "data") for x in _LOCAL_STORAGE_IDS_],
+        State("PAGE_MEMORY_STORAGE_ID", "storage_type"),
+        State("PAGE_SESSION_STORAGE_ID", "storage_type"),
+        State("PAGE_LOCAL_STORAGE_ID", "storage_type"),
+        on_app_clean_reset=Injection.Hidden
+    )
+    def _page_clean_reset_callback_(self, memory: str, session: str, local: str):
+        m = self._page_clean_storages_callback_(self._MEMORY_STORAGE_IDS_, memory)
+        s = self._page_clean_storages_callback_(self._SESSION_STORAGE_IDS_, session)
+        l = self._page_clean_storages_callback_(self._LOCAL_STORAGE_IDS_, local)
+        return *m, *s, *l
+
     def _init_ids_(self) -> None:
         self.PAGE_LOADING_TRIGGER_ID: dict = self.register(type="trigger", name="loading")
         self.PAGE_RELOADING_TRIGGER_ID: dict = self.register(type="trigger", name="reloading")
@@ -169,13 +227,14 @@ class PageAPI:
         self.ids()
 
     def _init_hidden_(self) -> list[Component]:
-        loading = dcc.Store(id=self.PAGE_LOADING_TRIGGER_ID, storage_type="memory", data=dict())
-        reloading = dcc.Store(id=self.PAGE_RELOADING_TRIGGER_ID, storage_type="memory", data=dict())
-        unloading = dcc.Store(id=self.PAGE_UNLOADING_TRIGGER_ID, storage_type="memory", data=dict())
-        memory = dcc.Store(id=self.PAGE_MEMORY_STORAGE_ID, storage_type="memory", data=dict())
-        session = dcc.Store(id=self.PAGE_SESSION_STORAGE_ID, storage_type="session", data=dict())
-        local = dcc.Store(id=self.PAGE_LOCAL_STORAGE_ID, storage_type="local", data=dict())
-        return self.normalize([loading, reloading, unloading, memory, session, local])
+        hidden: list = []
+        for x in self._MEMORY_STORAGE_IDS_:
+            hidden.extend(StorageAPI(id=getattr(self, x), persistence="memory").build())
+        for x in self._SESSION_STORAGE_IDS_:
+            hidden.extend(StorageAPI(id=getattr(self, x), persistence="session").build())
+        for x in self._LOCAL_STORAGE_IDS_:
+            hidden.extend(StorageAPI(id=getattr(self, x), persistence="local").build())
+        return self.normalize(hidden)
 
     def _init_content_(self) -> list[Component]:
         hidden = self._init_hidden_()
