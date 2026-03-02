@@ -1107,6 +1107,7 @@ class AppAPI:
         pass
 
     def run(self):
+        self._log_.info(lambda: f"Starting Server at {self._host_url_}")
         return self.app.run(
             host=self._host_,
             port=self._port_,
@@ -1118,5 +1119,7 @@ class AppAPI:
 
     def mount(self):
         app = FastAPI()
-        app.mount(self._endpoint_, WSGIMiddleware(self.app.server))
+        path: str = self._endpoint_
+        self._log_.info(lambda: f"Mounting Server at {path}")
+        app.mount(path, WSGIMiddleware(self.app.server))
         return app
