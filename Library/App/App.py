@@ -1070,6 +1070,24 @@ class AppAPI:
         return *m, *s, *l, refresh
 
     @serverside_callback(
+        Input("GLOBAL_MEMORY_STORAGE_ID", "data")
+    )
+    def _global_debug_memory_callback_(self, data):
+        if data: self._log_.debug(lambda: f"Global Memory Storage: {data}")
+
+    @serverside_callback(
+        Input("GLOBAL_SESSION_STORAGE_ID", "data")
+    )
+    def _global_debug_session_callback_(self, data):
+        if data: self._log_.debug(lambda: f"Global Session Storage: {data}")
+
+    @serverside_callback(
+        Input("GLOBAL_LOCAL_STORAGE_ID", "data")
+    )
+    def _global_debug_local_callback_(self, data):
+        if data: self._log_.debug(lambda: f"Global Local Storage: {data}")
+
+    @serverside_callback(
         Output("GLOBAL_TERMINAL_COLLAPSE_ID", "is_open"),
         Output("GLOBAL_TERMINAL_ARROW_ID", "className"),
         Input("GLOBAL_TERMINAL_BUTTON_ID", "n_clicks"),

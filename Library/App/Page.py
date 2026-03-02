@@ -215,6 +215,24 @@ class PageAPI:
         l = self._page_clean_storages_callback_(self._LOCAL_STORAGE_IDS_, local)
         return *m, *s, *l
 
+    @serverside_callback(
+        Input("PAGE_MEMORY_STORAGE_ID", "data")
+    )
+    def _page_debug_memory_callback_(self, data):
+        if data: self._log_.debug(lambda: f"Page Memory Storage: {data}")
+
+    @serverside_callback(
+        Input("PAGE_SESSION_STORAGE_ID", "data")
+    )
+    def _page_debug_session_callback_(self, data):
+        if data: self._log_.debug(lambda: f"Page Session Storage: {data}")
+
+    @serverside_callback(
+        Input("PAGE_LOCAL_STORAGE_ID", "data")
+    )
+    def _page_debug_local_callback_(self, data):
+        if data: self._log_.debug(lambda: f"Page Local Storage: {data}")
+
     def _init_ids_(self) -> None:
         self.PAGE_LOADING_TRIGGER_ID: dict = self.register(type="trigger", name="loading")
         self.PAGE_RELOADING_TRIGGER_ID: dict = self.register(type="trigger", name="reloading")
