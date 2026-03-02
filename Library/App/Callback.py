@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dash
+import inspect
 from enum import Enum
 from functools import wraps
 from abc import ABC, abstractmethod
@@ -58,34 +59,46 @@ class State(Trigger):
         component, property = super().build(context=context)
         return dash.State(component_id=component, component_property=property, allow_optional=self.allow_optional)
 
-def flatten(*callback_args) -> list:
+def flatten(*args) -> list:
     flat = []
-    for arg in callback_args:
+    for arg in args:
         if isinstance(arg, (tuple, list)):
             flat.extend(arg)
         else:
             flat.append(arg)
     return flat
 
-def organize(*callback_args):
+def sort(*args):
     outputs, inputs, states, others = [], [], [], []
-    for arg in callback_args:
+    for arg in flatten(*args):
         if isinstance(arg, (Output, dash.dependencies.Output)): outputs.append(arg)
         elif isinstance(arg, (Input, dash.dependencies.Input)): inputs.append(arg)
         elif isinstance(arg, (State, dash.dependencies.State)): states.append(arg)
         else: others.append(arg)
     return outputs, inputs, states, others
 
+def organize(original_args: list, inject_args: list, mode: Injection):
+    o_out, o_in, o_st, o_oth = sort(original_args)
+    i_out, i_in, i_st, i_oth = sort(inject_args)
+    if mode == Injection.PREPEND:
+        all_out, all_in, all_st, all_oth = i_out + o_out, i_in + o_in, i_st + o_st, i_oth + o_oth
+    else:
+        all_out, all_in, all_st, all_oth = o_out + i_out, o_in + i_in, o_st + i_st, o_oth + i_oth
+    return all_out, all_in, all_st, all_oth, o_out, o_in, o_st, i_out, i_in, i_st
+
 class Injection(Enum):
     DISABLED = 0
-    PASSIVE = 1
-    ACTIVE = 2
+    HIDDEN = 1
+    PREPEND = 2
+    APPEND = 3
     @classmethod
     def coerce(cls, value) -> Self:
         if isinstance(value, cls):
             return value
-        if isinstance(value, bool):
-            return cls.PASSIVE if value else cls.DISABLED
+        if value is False:
+            return cls.DISABLED
+        if value is True:
+            return cls.HIDDEN
         return cls.DISABLED
 
 def callback(
@@ -108,7 +121,7 @@ def callback(
         func._on_app_memory_clean_ = on_app_memory_clean
         func._on_app_session_clean_ = on_app_session_clean
         func._on_app_local_clean_ = on_app_local_clean
-        func._callback_args_ = flatten(*organize(*flatten(*callback_args)))
+        func._callback_args_ = flatten(*sort(callback_args))
         return func
     return decorator
 
@@ -170,134 +183,117 @@ def serverside_callback(
         **callback_kwargs
     )
 
+def _inject_callback_(original_args, inject_args, inject_func, mode):
+    all_out, all_in, all_st, all_oth, o_out, o_in, o_st, i_out, i_in, i_st = organize(original_args, inject_args, mode)
+    all_args = [*all_out, *all_in, *all_st, *all_oth]
+    prepend = mode == Injection.PREPEND
+    inject_func = inject_func if mode == Injection.HIDDEN else None
+    return all_args, prepend, inject_func, len(o_out), len(o_in), len(o_st), len(i_out), len(i_in), len(i_st), len(all_out), len(all_in), len(all_st)
+
 def inject_serverside_callback(
-        injection_func: Callable | None,
-        injection_args: tuple | list,
+        inject_func: Callable | None,
+        inject_args: tuple | list,
         original_func: Callable,
-        original_args: tuple | list):
-    def normalize_return(value, n_outputs: int) -> tuple:
-        if n_outputs == 0:
-            return tuple()
-        if n_outputs == 1:
-            return (value,)
-        if not isinstance(value, (tuple, list)):
-            raise TypeError(f"Expected {n_outputs} outputs, got {type(value).__name__}.")
-        if len(value) != n_outputs:
-            raise ValueError(f"Expected {n_outputs} outputs, got {len(value)}.")
-        return tuple(value)
-    h_out, h_in, h_st, h_other = organize(*flatten(*injection_args))
-    o_out, o_in, o_st, o_other = organize(*flatten(*original_args))
-    new_out = [*o_out, *h_out]
-    new_in  = [*o_in,  *h_in]
-    new_st  = [*o_st,  *h_st]
-    new_other = [*o_other, *h_other]
-    n_h_in, n_o_in = len(h_in), len(o_in)
-    n_h_st, n_o_st = len(h_st), len(o_st)
-    n_h_out, n_o_out = len(h_out), len(o_out)
-    n_new_out = len(new_out)
+        original_args: tuple | list,
+        mode: Injection):
+    all_args, prepend, inject_func, n_o_out, n_o_in, n_o_st, n_i_out, n_i_in, n_i_st, n_all_out, n_all_in, n_all_st = _inject_callback_(original_args, inject_args, inject_func, mode)
+    wants_kwargs = False
+    accepted_params = set()
+    if inject_func:
+        sig = inspect.signature(inject_func)
+        wants_kwargs = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+        accepted_params = set(sig.parameters.keys())
     @wraps(original_func)
     def wrapped(*args, **kwargs):
-        input_vals = tuple(args[: len(new_in)])
-        state_vals = tuple(args[len(new_in): len(new_in) + len(new_st)])
-        orig_inputs = input_vals[:n_o_in]
-        hidden_inputs = input_vals[n_o_in:n_o_in + n_h_in]
-        orig_states = state_vals[:n_o_st]
-        hidden_states = state_vals[n_o_st:n_o_st + n_h_st]
-        orig_result = original_func(*orig_inputs, *orig_states, **kwargs)
-        if n_h_out == 0:
-            if injection_func is None:
-                return orig_result
-            out = injection_func(orig_result, hidden_inputs=hidden_inputs, hidden_states=hidden_states)
-            return orig_result if out is None else out
-        base = normalize_return(orig_result, n_o_out)
-        if injection_func is None:
-            pad = (dash.no_update,) * n_h_out
-            return *base, *pad
-        extra = injection_func(orig_result, hidden_inputs=hidden_inputs, hidden_states=hidden_states)
-        if extra is None:
-            pad = (dash.no_update,) * n_h_out
-            return *base, *pad
-        if n_new_out == 1 and not isinstance(extra, (tuple, list)):
-            return extra
-        if isinstance(extra, (tuple, list)):
-            extra_t = tuple(extra)
-            if len(extra_t) == n_h_out:
-                return *base, *extra_t
-            if len(extra_t) == n_new_out:
-                return extra_t
-        raise ValueError(f"handler_func returned an unexpected shape. Expected None, {n_h_out} (extras), or {n_new_out} (full).")
-    new_args = [*new_out, *new_in, *new_st, *new_other]
-    return wrapped, new_args
+        input_vals = args[:n_all_in]
+        state_vals = args[n_all_in:]
+        if prepend:
+            inject_inputs, original_inputs = input_vals[:n_i_in], input_vals[n_i_in:]
+            inject_states, original_states = state_vals[:n_i_st], state_vals[n_i_st:]
+        else:
+            original_inputs, inject_inputs = input_vals[:n_o_in], input_vals[n_o_in:]
+            original_states, inject_states = state_vals[:n_o_st], state_vals[n_o_st:]
+        original_result = original_func(*original_inputs, *original_states, **kwargs)
+        inject_result = None
+        if inject_func:
+            available_kwargs = {
+                "inject_inputs": inject_inputs,
+                "inject_states": inject_states,
+                "original_inputs": original_inputs,
+                "original_states": original_states
+            }
+            if wants_kwargs:
+                kwargs_to_pass = available_kwargs
+            else:
+                kwargs_to_pass = {k: v for k, v in available_kwargs.items() if k in accepted_params}
+            inject_result = inject_func(original_result, **kwargs_to_pass)
+        o_res_list = [original_result] if n_o_out == 1 else list(original_result) if n_o_out > 1 else []
+        if n_o_out > 1 and not isinstance(original_result, (list, tuple)):
+            raise ValueError(f"Expected {n_o_out} outputs from original function.")
+        i_res_list = []
+        if n_i_out > 0:
+            if inject_result is None: i_res_list = [dash.no_update] * n_i_out
+            elif n_i_out == 1: i_res_list = [inject_result]
+            else:
+                if not isinstance(inject_result, (list, tuple)): raise ValueError(f"Expected {n_i_out} outputs from inject function.")
+                i_res_list = list(inject_result)
+        final_list = i_res_list + o_res_list if prepend else o_res_list + i_res_list
+        if n_all_out == 0: return None
+        if n_all_out == 1: return final_list[0]
+        return tuple(final_list)
+    return wrapped, all_args
 
 def inject_clientside_callback(
-        injection_func: str | None,
-        injection_args: tuple | list,
+        inject_func: str | None,
+        inject_args: tuple | list,
         original_js: str,
-        original_args: tuple | list):
-    h_out, h_in, h_st, h_other = organize(*flatten(*injection_args))
-    o_out, o_in, o_st, o_other = organize(*flatten(*original_args))
-    new_out = [*o_out, *h_out]
-    new_in  = [*o_in,  *h_in]
-    new_st  = [*o_st,  *h_st]
-    new_other = [*o_other, *h_other]
-    n_h_in, n_o_in = len(h_in), len(o_in)
-    n_h_st, n_o_st = len(h_st), len(o_st)
-    n_h_out, n_o_out = len(h_out), len(o_out)
-    n_new_out = len(new_out)
-    n_new_inputs = len(new_in)
-    n_new_states = len(new_st)
+        original_args: tuple | list,
+        mode: Injection):
+    all_args, prepend, inject_func, n_o_out, n_o_in, n_o_st, n_i_out, n_i_in, n_i_st, n_all_out, n_all_in, n_all_st = _inject_callback_(original_args, inject_args, inject_func, mode)
+    handler_src = "null" if inject_func is None else f"({inject_func})"
     no_update = "window.dash_clientside.no_update"
-    handler_src = "null" if injection_func is None else f"({injection_func})"
     wrapped_js = f"""
     function() {{
-        const userFn = ({original_js});
-        const handlerFn = {handler_src};
+        const originalFn = ({original_js});
+        const injectFn = {handler_src};
         const args = Array.prototype.slice.call(arguments);
-        const inputVals = args.slice(0, {n_new_inputs});
-        const stateVals = args.slice({n_new_inputs}, {n_new_inputs} + {n_new_states});
-        const origInputs = inputVals.slice(0, {n_o_in});
-        const hiddenInputs = inputVals.slice({n_o_in}, {n_o_in} + {n_h_in});
-        const origStates = stateVals.slice(0, {n_o_st});
-        const hiddenStates = stateVals.slice({n_o_st}, {n_o_st} + {n_h_st});
-        const baseResult = userFn.apply(null, origInputs.concat(origStates));
-        if ({n_h_out} === 0) {{
-            if (!handlerFn) {{
-                return baseResult;
-            }}
-            const out = handlerFn(baseResult, hiddenInputs, hiddenStates);
-            return (out === undefined || out === null) ? baseResult : out;
+        const inputVals = args.slice(0, {n_all_in});
+        const stateVals = args.slice({n_all_in});
+        let originalInputs, injectInputs, originalStates, injectStates;
+        if ({str(prepend).lower()}) {{
+            injectInputs = inputVals.slice(0, {n_i_in});
+            originalInputs = inputVals.slice({n_i_in});
+            injectStates = stateVals.slice(0, {n_i_st});
+            originalStates = stateVals.slice({n_i_st});
+        }} else {{
+            originalInputs = inputVals.slice(0, {n_o_in});
+            injectInputs = inputVals.slice({n_o_in});
+            originalStates = stateVals.slice(0, {n_o_st});
+            injectStates = stateVals.slice({n_o_st});
         }}
-        function normalizeBase(value) {{
-            if ({n_o_out} === 0) return [];
-            if ({n_o_out} === 1) return [value];
-            if (!Array.isArray(value) || value.length !== {n_o_out}) {{
-                throw new Error("Expected {n_o_out} outputs from user callback.");
-            }}
-            return value;
+        const originalResult = originalFn.apply(null, originalInputs.concat(originalStates));
+        let injectResult = null;
+        if (injectFn) {{
+            injectResult = injectFn(originalResult, injectInputs, injectStates, originalInputs, originalStates);
         }}
-        const baseArr = normalizeBase(baseResult);
-        if (!handlerFn) {{
-            const pad = Array({n_h_out}).fill({no_update});
-            return baseArr.concat(pad);
+        let oResList = [];
+        if ({n_o_out} === 1) oResList = [originalResult];
+        else if ({n_o_out} > 1) {{
+            if (!Array.isArray(originalResult)) throw new Error("Expected {n_o_out} outputs from original callback.");
+            oResList = originalResult;
         }}
-        const extra = handlerFn(baseResult, hiddenInputs, hiddenStates);
-        if (extra === undefined || extra === null) {{
-            const pad = Array({n_h_out}).fill({no_update});
-            return baseArr.concat(pad);
-        }}
-        if ({n_new_out} === 1 && !Array.isArray(extra)) {{
-            return extra;
-        }}
-        if (Array.isArray(extra)) {{
-            if (extra.length === {n_h_out}) {{
-                return baseArr.concat(extra);
-            }}
-            if (extra.length === {n_new_out}) {{
-                return extra;
+        let iResList = [];
+        if ({n_i_out} > 0) {{
+            if (injectResult === null || injectResult === undefined) iResList = Array({n_i_out}).fill({no_update});
+            else if ({n_i_out} === 1) iResList = [injectResult];
+            else {{
+                if (!Array.isArray(injectResult)) throw new Error("Expected {n_i_out} outputs from injected callback.");
+                iResList = injectResult;
             }}
         }}
-        throw new Error("handler_func returned unexpected shape. Expected null, {n_h_out} (extras), or {n_new_out} (full).");
+        const finalList = {str(prepend).lower()} ? iResList.concat(oResList) : oResList.concat(iResList);
+        if ({n_all_out} <= 1) return finalList.length > 0 ? finalList[0] : undefined;
+        return finalList;
     }}
     """
-    new_args = [*new_out, *new_in, *new_st, *new_other]
-    return wrapped_js, new_args
+    return wrapped_js, all_args

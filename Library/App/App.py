@@ -468,9 +468,9 @@ class AppAPI:
         self._log_.debug(lambda: "Init Layout: Loaded App Layout")
 
     def _init_callbacks_(self) -> None:
-        def trigger(_orig_result, *, hidden_inputs, hidden_states):
-            t = hidden_inputs[0] or {}
-            return _orig_result, TriggerAPI(**t).trigger().dict()
+        def trigger(_, *, inject_inputs):
+            t = inject_inputs[0] or {}
+            return TriggerAPI(**t).trigger().dict()
         callback_injections = [
             ("_on_app_loading_", [
                 Output("PAGE_LOADING_TRIGGER_ID", "data"),
@@ -513,27 +513,30 @@ class AppAPI:
                     kwargs: dict = func._callback_kwargs_
                     args = list(func._callback_args_)
                     target = getattr(context, callback_name)() if is_client else getattr(context, callback_name)
-                    for flag_attr, extras, passive_func in callback_injections:
+                    for flag_attr, extras, _ in callback_injections:
                         mode = Injection.coerce(getattr(func, flag_attr, False))
-                        if mode is Injection.DISABLED:
-                            continue
-                        if mode is Injection.ACTIVE:
-                            args.extend(extras)
-                            continue
-                        if is_client:
-                            target, args = inject_clientside_callback(
-                                injection_func=passive_func,
-                                injection_args=extras,
-                                original_js=target,
-                                original_args=args
-                            )
-                        else:
-                            target, args = inject_serverside_callback(
-                                injection_func=passive_func,
-                                injection_args=extras,
-                                original_func=target,
-                                original_args=args
-                            )
+                        if mode is Injection.PREPEND or mode is Injection.APPEND:
+                            all_out, all_in, all_st, all_oth, *_ = organize(args, extras, mode)
+                            args = [*all_out, *all_in, *all_st, *all_oth]
+                    for flag_attr, extras, inject_func in callback_injections:
+                        mode = Injection.coerce(getattr(func, flag_attr, False))
+                        if mode is Injection.HIDDEN:
+                            if is_client:
+                                target, args = inject_clientside_callback(
+                                    inject_func=inject_func,
+                                    inject_args=extras,
+                                    original_js=target,
+                                    original_args=args,
+                                    mode=mode
+                                )
+                            else:
+                                target, args = inject_serverside_callback(
+                                    inject_func=inject_func,
+                                    inject_args=extras,
+                                    original_func=target,
+                                    original_args=args,
+                                    mode=mode
+                                )
                     args = [a.build(context=context) if isinstance(a, Trigger) else a for a in args]
                     if is_client:
                         self.app.clientside_callback(target, *args, **kwargs)
@@ -686,7 +689,7 @@ class AppAPI:
         State("GLOBAL_LOCATION_STORAGE_ID", "data"),
         State("GLOBAL_LOADING_TRIGGER_ID", "data"),
         State("GLOBAL_RELOADING_TRIGGER_ID", "data"),
-        on_app_init=Injection.PASSIVE
+        on_app_init=Injection.HIDDEN
     )
     def _global_update_location_callback_(self, path: str, location: dict, loading: dict, reloading: dict):
         self._log_.debug(lambda: f"Update Location Callback: Received Path = {path}")
@@ -999,7 +1002,7 @@ class AppAPI:
         Output("GLOBAL_REFRESH_TRIGGER_ID", "data"),
         State("GLOBAL_MEMORY_STORAGE_ID", "storage_type"),
         State("GLOBAL_REFRESH_TRIGGER_ID", "data"),
-        on_app_memory_clean=Injection.ACTIVE
+        on_app_memory_clean=Injection.APPEND
     )
     def _global_clean_memory_callback_(self, memory: str, refresh: dict, clicks: int, trigger: dict):
         if not clicks and not trigger: raise PreventUpdate
@@ -1017,7 +1020,7 @@ class AppAPI:
         Output("GLOBAL_REFRESH_TRIGGER_ID", "data"),
         State("GLOBAL_SESSION_STORAGE_ID", "storage_type"),
         State("GLOBAL_REFRESH_TRIGGER_ID", "data"),
-        on_app_session_clean=Injection.ACTIVE
+        on_app_session_clean=Injection.APPEND
     )
     def _global_clean_session_callback_(self, session: str, refresh: dict, clicks: int, trigger: dict):
         if not clicks and not trigger: raise PreventUpdate
@@ -1031,7 +1034,7 @@ class AppAPI:
         Output("GLOBAL_REFRESH_TRIGGER_ID", "data"),
         State("GLOBAL_LOCAL_STORAGE_ID", "storage_type"),
         State("GLOBAL_REFRESH_TRIGGER_ID", "data"),
-        on_app_local_clean=Injection.ACTIVE
+        on_app_local_clean=Injection.APPEND
     )
     def _global_clean_cache_callback_(self, local: str, refresh: dict, clicks: int, trigger: dict):
         if not clicks and not trigger: raise PreventUpdate
