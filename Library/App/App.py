@@ -118,8 +118,10 @@ class AppAPI:
                  proxy: str = None,
                  anchor: str = None,
                  debug: bool = False,
-                 terminal: int = 100,
-                 interval: tuple[int, int, int] = (100, 1000, 60000)) -> None:
+                 terminal_limit: int = 100,
+                 high_frequency_interval: int = 100,
+                 medium_frequency_interval: int = 1000,
+                 low_frequency_interval: int = 60000) -> None:
 
         self._log_ = HandlerLoggingAPI(AppAPI.__name__)
 
@@ -175,8 +177,8 @@ class AppAPI:
 
         self._debug_: bool = debug
         self._log_.debug(lambda: f"Defined Debug = {self._debug_}")
-        self._terminal_: int = terminal
-        self._log_.debug(lambda: f"Defined Terminal = {self._terminal_}")
+        self._terminal_limit_: int = terminal_limit
+        self._log_.debug(lambda: f"Defined Terminal = {self._terminal_limit_}")
 
         self._library_: Path = traceback_current_module(resolve=True)
         self._log_.debug(lambda: f"Defined Library = {self._library_}")
@@ -189,13 +191,12 @@ class AppAPI:
         self._application_assets_url_: str = "Assets"
         self._log_.debug(lambda: f"Defined Application Assets URL = {self._application_assets_url_}")
 
-        high, medium, low = interval
-        self._high_freq_interval_: int = high
-        self._log_.debug(lambda: f"Defined High Frequency Interval = {self._high_freq_interval_}")
-        self._medium_freq_interval_: int = medium
-        self._log_.debug(lambda: f"Defined Medium Frequency Interval = {self._medium_freq_interval_}")
-        self._low_freq_interval_: int = low
-        self._log_.debug(lambda: f"Defined Low Frequency Interval = {self._low_freq_interval_}")
+        self._high_frequency_interval_: int = high_frequency_interval
+        self._log_.debug(lambda: f"Defined High Frequency Interval = {self._high_frequency_interval_}")
+        self._medium_frequency_interval_: int = medium_frequency_interval
+        self._log_.debug(lambda: f"Defined Medium Frequency Interval = {self._medium_frequency_interval_}")
+        self._low_frequency_interval_: int = low_frequency_interval
+        self._log_.debug(lambda: f"Defined Low Frequency Interval = {self._low_frequency_interval_}")
 
         self._init_assets_()
         self._log_.debug(lambda: "Initialized Assets")
@@ -479,9 +480,9 @@ class AppAPI:
             hidden.extend(StorageAPI(id=getattr(self, x), persistence="session").build())
         for x in self._LOCAL_STORAGE_IDS_:
             hidden.extend(StorageAPI(id=getattr(self, x), persistence="local").build())
-        hidden.extend(IntervalAPI(id=self.GLOBAL_HIGH_FREQUENCY_INTERVAL_ID, interval=self._high_freq_interval_).build())
-        hidden.extend(IntervalAPI(id=self.GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID, interval=self._medium_freq_interval_).build())
-        hidden.extend(IntervalAPI(id=self.GLOBAL_LOW_FREQUENCY_INTERVAL_ID, interval=self._low_freq_interval_).build())
+        hidden.extend(IntervalAPI(id=self.GLOBAL_HIGH_FREQUENCY_INTERVAL_ID, interval=self._high_frequency_interval_).build())
+        hidden.extend(IntervalAPI(id=self.GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID, interval=self._medium_frequency_interval_).build())
+        hidden.extend(IntervalAPI(id=self.GLOBAL_LOW_FREQUENCY_INTERVAL_ID, interval=self._low_frequency_interval_).build())
         return html.Div(children=hidden, className="hidden")
 
     def _init_layout_(self) -> None:
@@ -1119,7 +1120,7 @@ class AppAPI:
         if not logs: raise PreventUpdate
         terminal = terminal or []
         terminal.extend(logs)
-        return terminal[-self._terminal_:]
+        return terminal[-self._terminal_limit_:]
 
     def ids(self) -> None:
         pass
