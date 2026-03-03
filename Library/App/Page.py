@@ -17,28 +17,6 @@ class PageAPI:
     PAGE_SESSION_STORAGE_ID: dict
     PAGE_LOCAL_STORAGE_ID: dict
 
-    _MEMORY_STORAGE_IDS_: list[str] = [
-        "PAGE_LOADING_TRIGGER_ID",
-        "PAGE_RELOADING_TRIGGER_ID",
-        "PAGE_UNLOADING_TRIGGER_ID",
-        "PAGE_MEMORY_STORAGE_ID"
-    ]
-    _SESSION_STORAGE_IDS_: list[str] = [
-        "PAGE_SESSION_STORAGE_ID"
-    ]
-    _LOCAL_STORAGE_IDS_: list[str] = [
-        "PAGE_LOCAL_STORAGE_ID"
-    ]
-    _CLEAN_MEMORY_STORAGE_IDS_: list[str] = [
-        "PAGE_MEMORY_STORAGE_ID"
-    ]
-    _CLEAN_SESSION_STORAGE_IDS_: list[str] = [
-        "PAGE_SESSION_STORAGE_ID"
-    ]
-    _CLEAN_LOCAL_STORAGE_IDS_: list[str] = [
-        "PAGE_LOCAL_STORAGE_ID"
-    ]
-
     def __init__(self, *,
                  app: AppAPI,
                  path: str,
@@ -178,53 +156,48 @@ class PageAPI:
         self._unloaders_.append(name)
         return self.PAGE_UNLOADING_TRIGGER_ID
 
-    def _page_clean_storages_callback_(self, names: list[str], storage: str, unpack: bool = True) -> list[dict] | dict:
-        results = []
-        for name in names:
-            self._log_.debug(lambda n=name: f"Clean Callback: Cleaned {n} (Type = {storage})")
-            results.append(dict())
-        if unpack and len(results) == 1:
-            return results[0]
-        return results
-
     @serverside_callback(
-        *[Output(x, "data") for x in _CLEAN_MEMORY_STORAGE_IDS_],
+        Output("PAGE_MEMORY_STORAGE_ID", "data"),
         State("PAGE_MEMORY_STORAGE_ID", "storage_type"),
         on_app_memory_clean=Injection.Hidden
     )
     def _page_clean_memory_callback_(self, memory: str):
-        return self._page_clean_storages_callback_(self._CLEAN_MEMORY_STORAGE_IDS_, memory)
+        self._log_.debug(lambda: f"Clean Callback: Cleaned Memory (Type = {memory.capitalize()})")
+        return dict()
 
     @serverside_callback(
-        *[Output(x, "data") for x in _CLEAN_SESSION_STORAGE_IDS_],
+        Output("PAGE_SESSION_STORAGE_ID", "data"),
         State("PAGE_SESSION_STORAGE_ID", "storage_type"),
         on_app_session_clean=Injection.Hidden
     )
     def _page_clean_session_callback_(self, session: str):
-        return self._page_clean_storages_callback_(self._CLEAN_SESSION_STORAGE_IDS_, session)
+        self._log_.debug(lambda: f"Clean Callback: Cleaned Session (Type = {session.capitalize()})")
+        return dict()
 
     @serverside_callback(
-        *[Output(x, "data") for x in _CLEAN_LOCAL_STORAGE_IDS_],
+        Output("PAGE_LOCAL_STORAGE_ID", "data"),
         State("PAGE_LOCAL_STORAGE_ID", "storage_type"),
         on_app_local_clean=Injection.Hidden
     )
     def _page_clean_local_callback_(self, local: str):
-        return self._page_clean_storages_callback_(self._CLEAN_LOCAL_STORAGE_IDS_, local)
+        self._log_.debug(lambda: f"Clean Callback: Cleaned Local (Type = {local.capitalize()})")
+        return dict()
 
     @serverside_callback(
-        *[Output(x, "data") for x in _CLEAN_MEMORY_STORAGE_IDS_],
-        *[Output(x, "data") for x in _CLEAN_SESSION_STORAGE_IDS_],
-        *[Output(x, "data") for x in _CLEAN_LOCAL_STORAGE_IDS_],
+        Output("PAGE_MEMORY_STORAGE_ID", "data"),
+        Output("PAGE_SESSION_STORAGE_ID", "data"),
+        Output("PAGE_LOCAL_STORAGE_ID", "data"),
         State("PAGE_MEMORY_STORAGE_ID", "storage_type"),
         State("PAGE_SESSION_STORAGE_ID", "storage_type"),
         State("PAGE_LOCAL_STORAGE_ID", "storage_type"),
         on_app_clean_reset=Injection.Hidden
     )
     def _page_clean_reset_callback_(self, memory: str, session: str, local: str):
-        m = self._page_clean_storages_callback_(self._CLEAN_MEMORY_STORAGE_IDS_, memory, unpack=False)
-        s = self._page_clean_storages_callback_(self._CLEAN_SESSION_STORAGE_IDS_, session, unpack=False)
-        l = self._page_clean_storages_callback_(self._CLEAN_LOCAL_STORAGE_IDS_, local, unpack=False)
-        return *m, *s, *l
+        memory = self._page_clean_memory_callback_(memory=memory)
+        session = self._page_clean_session_callback_(session=session)
+        local = self._page_clean_local_callback_(local=local)
+        self._log_.debug(lambda: f"Clean Reset Callback: Cleaned Memory, Session, Local")
+        return memory, session, local
 
     @serverside_callback(
         Input("PAGE_MEMORY_STORAGE_ID", "data")
@@ -257,12 +230,12 @@ class PageAPI:
 
     def _init_hidden_(self) -> list[Component]:
         hidden: list = []
-        for x in self._MEMORY_STORAGE_IDS_:
-            hidden.extend(StorageAPI(id=getattr(self, x), persistence="memory").build())
-        for x in self._SESSION_STORAGE_IDS_:
-            hidden.extend(StorageAPI(id=getattr(self, x), persistence="session").build())
-        for x in self._LOCAL_STORAGE_IDS_:
-            hidden.extend(StorageAPI(id=getattr(self, x), persistence="local").build())
+        hidden.extend(StorageAPI(id=self.PAGE_LOADING_TRIGGER_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.PAGE_RELOADING_TRIGGER_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.PAGE_UNLOADING_TRIGGER_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.PAGE_MEMORY_STORAGE_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.PAGE_SESSION_STORAGE_ID, persistence="session").build())
+        hidden.extend(StorageAPI(id=self.PAGE_LOCAL_STORAGE_ID, persistence="local").build())
         return self.normalize(hidden)
 
     def _init_content_(self) -> list[Component]:
