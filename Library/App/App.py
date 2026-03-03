@@ -792,7 +792,7 @@ class AppAPI:
         State("GLOBAL_LOCATION_STORAGE_ID", "data"),
         on_app_click=Injection.Hidden
     )
-    def _global_backward_location_callback_(self, location: dict):
+    def _global_backward_location_callback_(self, _, location: dict):
         location = LocationAPI(**location)
         path = location.backward(step=True)
         if not path:
@@ -829,7 +829,7 @@ class AppAPI:
         State("GLOBAL_LOCATION_STORAGE_ID", "data"),
         on_app_click=Injection.Hidden
     )
-    def _global_forward_location_callback_(self, location: dict):
+    def _global_forward_location_callback_(self, _, location: dict):
         location = LocationAPI(**location)
         path = location.forward(step=True)
         if not path:
@@ -852,7 +852,7 @@ class AppAPI:
         State("GLOBAL_SIDEBAR_COLLAPSE_ID", "is_open"),
         on_app_click=Injection.Hidden
     )
-    def _global_sidebar_button_callback_(self, was_open: bool):
+    def _global_sidebar_button_callback_(self, _, was_open: bool):
         return self._global_collapse_button_callback_(name="Sidebar", was_open=was_open)
 
     @serverside_callback(
@@ -863,7 +863,7 @@ class AppAPI:
         State("GLOBAL_CONTACTS_ARROW_ID", "className"),
         on_app_click=Injection.Hidden
     )
-    def _global_contacts_button_callback_(self, was_open: bool, classname: str):
+    def _global_contacts_button_callback_(self, _, was_open: bool, classname: str):
         return self._global_collapse_button_callback_(name="Contacts", was_open=was_open, classname=classname)
 
     def _global_import_snapshot_callback_(self, contents: str, filename: str, prop: str):
@@ -1010,7 +1010,7 @@ class AppAPI:
         State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "active_tab"}, "active_tab"),
         on_app_click=Injection.Hidden
     )
-    def _global_export_snapshot_callback_(self, path: str, *_):
+    def _global_export_snapshot_callback_(self, _, path: str, *args):
         endpoint = self.endpointize(path=path, relative=False)
         state_entries = []
         for entry in (self.ctx.states_list or []):
@@ -1107,7 +1107,7 @@ class AppAPI:
         State("GLOBAL_TERMINAL_ARROW_ID", "className"),
         on_app_click=Injection.Hidden
     )
-    def _global_terminal_button_callback_(self, was_open: bool, classname: str):
+    def _global_terminal_button_callback_(self, _, was_open: bool, classname: str):
         return self._global_collapse_button_callback_(name="Terminal", was_open=was_open, classname=classname)
 
     @serverside_callback(
