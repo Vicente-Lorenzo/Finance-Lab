@@ -230,9 +230,6 @@ class PageAPI:
 
     def _init_hidden_(self) -> list[Component]:
         hidden: list = []
-        hidden.extend(StorageAPI(id=self.PAGE_LOADING_TRIGGER_ID, persistence="memory").build())
-        hidden.extend(StorageAPI(id=self.PAGE_RELOADING_TRIGGER_ID, persistence="memory").build())
-        hidden.extend(StorageAPI(id=self.PAGE_UNLOADING_TRIGGER_ID, persistence="memory").build())
         hidden.extend(StorageAPI(id=self.PAGE_MEMORY_STORAGE_ID, persistence="memory").build())
         hidden.extend(StorageAPI(id=self.PAGE_SESSION_STORAGE_ID, persistence="session").build())
         hidden.extend(StorageAPI(id=self.PAGE_LOCAL_STORAGE_ID, persistence="local").build())
