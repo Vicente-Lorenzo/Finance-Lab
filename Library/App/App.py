@@ -458,6 +458,10 @@ class AppAPI:
         hidden.extend(StorageAPI(id=self.GLOBAL_LOCATION_STORAGE_ID, persistence="session").build())
         hidden.extend(StorageAPI(id=self.GLOBAL_SESSION_STORAGE_ID, persistence="session").build())
         hidden.extend(StorageAPI(id=self.GLOBAL_LOCAL_STORAGE_ID, persistence="local").build())
+        for page in self._pages_.values():
+            hidden.extend(StorageAPI(id=page.PAGE_LOADING_TRIGGER_ID, persistence="memory").build())
+            hidden.extend(StorageAPI(id=page.PAGE_RELOADING_TRIGGER_ID, persistence="memory").build())
+            hidden.extend(StorageAPI(id=page.PAGE_UNLOADING_TRIGGER_ID, persistence="memory").build())
         hidden.extend(IntervalAPI(id=self.GLOBAL_HIGH_FREQUENCY_INTERVAL_ID, interval=self._high_frequency_interval_).build())
         hidden.extend(IntervalAPI(id=self.GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID, interval=self._medium_frequency_interval_).build())
         hidden.extend(IntervalAPI(id=self.GLOBAL_LOW_FREQUENCY_INTERVAL_ID, interval=self._low_frequency_interval_).build())
@@ -1102,7 +1106,7 @@ class AppAPI:
         pass
 
     def run(self):
-        self._log_.info(lambda: f"Starting Server at {self._host_url_}")
+        self._log_.info(lambda: f"Running at {self._host_url_}")
         return self.app.run(
             host=self._host_,
             port=self._port_,
@@ -1115,6 +1119,6 @@ class AppAPI:
     def mount(self):
         app = FastAPI()
         path: str = self._endpoint_
-        self._log_.info(lambda: f"Mounting Server at {path}")
+        self._log_.info(lambda: f"Mounting at {path}")
         app.mount(path, WSGIMiddleware(self.app.server))
         return app
