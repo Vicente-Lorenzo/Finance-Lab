@@ -496,41 +496,50 @@ class AppAPI:
             clicks = inject_inputs[0]
             trigger = inject_inputs[1]
             if not clicks and not trigger: raise PreventUpdate
-        callback_injections = [
-            ("_on_app_click_", [], _click_),
-            ("_on_app_loading_", [
-                Output("PAGE_LOADING_TRIGGER_ID", "data"),
-                Input("GLOBAL_LOADING_TRIGGER_ID", "data"),
-                State("PAGE_LOADING_TRIGGER_ID", "data"),
-            ], _trigger_),
-            ("_on_app_reloading_", [
-                Output("PAGE_RELOADING_TRIGGER_ID", "data"),
-                Input("GLOBAL_RELOADING_TRIGGER_ID", "data"),
-                State("PAGE_RELOADING_TRIGGER_ID", "data"),
-            ], _trigger_),
-            ("_on_app_unloading_", [
-                Output("PAGE_UNLOADING_TRIGGER_ID", "data"),
-                Input("GLOBAL_UNLOADING_TRIGGER_ID", "data"),
-                State("PAGE_UNLOADING_TRIGGER_ID", "data"),
-            ], _trigger_),
-            ("_on_app_memory_clean_", [
+        common_injections = [
+            ("_on_click_", [], _click_),
+            ("_on_clean_memory_", [
                 Input("GLOBAL_CLEAN_MEMORY_BUTTON_ID", "n_clicks"),
                 Input("GLOBAL_CLEAN_MEMORY_TRIGGER_ID", "data")
             ], _clean_),
-            ("_on_app_session_clean_", [
+            ("_on_clean_session_", [
                 Input("GLOBAL_CLEAN_SESSION_BUTTON_ID", "n_clicks"),
                 Input("GLOBAL_CLEAN_SESSION_TRIGGER_ID", "data")
             ], _clean_),
-            ("_on_app_local_clean_", [
+            ("_on_clean_local_", [
                 Input("GLOBAL_CLEAN_LOCAL_BUTTON_ID", "n_clicks"),
                 Input("GLOBAL_CLEAN_LOCAL_TRIGGER_ID", "data")
             ], _clean_),
-            ("_on_app_clean_reset_", [
+            ("_on_clean_reset_", [
                 Input("GLOBAL_CLEAN_RESET_BUTTON_ID", "n_clicks"),
                 Input("GLOBAL_CLEAN_RESET_TRIGGER_ID", "data")
             ], _clean_)
         ]
+        page_injections = [
+            ("_on_loading_", [
+                Output("PAGE_LOADING_TRIGGER_ID", "data"),
+                Input("GLOBAL_LOADING_TRIGGER_ID", "data"),
+                State("PAGE_LOADING_TRIGGER_ID", "data"),
+            ], _trigger_),
+            ("_on_reloading_", [
+                Output("PAGE_RELOADING_TRIGGER_ID", "data"),
+                Input("GLOBAL_RELOADING_TRIGGER_ID", "data"),
+                State("PAGE_RELOADING_TRIGGER_ID", "data"),
+            ], _trigger_),
+            ("_on_unloading_", [
+                Output("PAGE_UNLOADING_TRIGGER_ID", "data"),
+                Input("GLOBAL_UNLOADING_TRIGGER_ID", "data"),
+                State("PAGE_UNLOADING_TRIGGER_ID", "data"),
+            ], _trigger_)
+        ]
+        app_injections = [
+            ("_on_loading_", [Input("GLOBAL_LOADING_TRIGGER_ID", "data")], None),
+            ("_on_reloading_", [Input("GLOBAL_RELOADING_TRIGGER_ID", "data")], None),
+            ("_on_unloading_", [Input("GLOBAL_UNLOADING_TRIGGER_ID", "data")], None)
+        ]
         for context in [self] + list(self._pages_.values()):
+            is_page = isinstance(context, PageAPI)
+            callback_injections = common_injections + (page_injections if is_page else app_injections)
             for cls in reversed(getmro(context)):
                 if cls is object:
                     continue
@@ -567,8 +576,8 @@ class AppAPI:
                                     original_args=args,
                                     mode=mode
                                 )
-                    on_app_init = getattr(func, "_on_app_init_", Injection.Disabled)
-                    kwargs["prevent_initial_call"] = Injection.coerce(on_app_init) is Injection.Disabled
+                    on_init = getattr(func, "_on_init_", Injection.Disabled)
+                    kwargs["prevent_initial_call"] = Injection.coerce(on_init) is Injection.Disabled
                     running = getattr(func, "_callback_running_", None)
                     if running:
                         kwargs["running"] = [
@@ -752,7 +761,7 @@ class AppAPI:
         State("GLOBAL_LOCATION_STORAGE_ID", "data"),
         State("GLOBAL_LOADING_TRIGGER_ID", "data"),
         State("GLOBAL_RELOADING_TRIGGER_ID", "data"),
-        on_app_init=Injection.Hidden
+        on_init=Injection.Hidden
     )
     def _global_update_location_callback_(self, path: str, location: dict, loading: dict, reloading: dict):
         self._log_.debug(lambda: f"Update Location Callback: Received Path = {path}")
@@ -810,7 +819,7 @@ class AppAPI:
         Output("GLOBAL_LOCATION_STORAGE_ID", "data"),
         Input("GLOBAL_BACKWARD_BUTTON_ID", "n_clicks"),
         State("GLOBAL_LOCATION_STORAGE_ID", "data"),
-        on_app_click=Injection.Hidden
+        on_click=Injection.Hidden
     )
     def _global_backward_location_callback_(self, _, location: dict):
         location = LocationAPI(**location)
@@ -847,7 +856,7 @@ class AppAPI:
         Output("GLOBAL_LOCATION_STORAGE_ID", "data"),
         Input("GLOBAL_FORWARD_BUTTON_ID", "n_clicks"),
         State("GLOBAL_LOCATION_STORAGE_ID", "data"),
-        on_app_click=Injection.Hidden
+        on_click=Injection.Hidden
     )
     def _global_forward_location_callback_(self, _, location: dict):
         location = LocationAPI(**location)
@@ -870,7 +879,7 @@ class AppAPI:
         Output("GLOBAL_SIDEBAR_COLLAPSE_ID", "is_open"),
         Input("GLOBAL_SIDEBAR_BUTTON_ID", "n_clicks"),
         State("GLOBAL_SIDEBAR_COLLAPSE_ID", "is_open"),
-        on_app_click=Injection.Hidden
+        on_click=Injection.Hidden
     )
     def _global_sidebar_button_callback_(self, _, was_open: bool):
         return self._global_collapse_button_callback_(name="Sidebar", was_open=was_open)
@@ -881,7 +890,7 @@ class AppAPI:
         Input("GLOBAL_CONTACTS_BUTTON_ID", "n_clicks"),
         State("GLOBAL_CONTACTS_COLLAPSE_ID", "is_open"),
         State("GLOBAL_CONTACTS_ARROW_ID", "className"),
-        on_app_click=Injection.Hidden
+        on_click=Injection.Hidden
     )
     def _global_contacts_button_callback_(self, _, was_open: bool, classname: str):
         return self._global_collapse_button_callback_(name="Contacts", was_open=was_open, classname=classname)
@@ -1028,7 +1037,7 @@ class AppAPI:
         State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "disabled"}, "disabled"),
         State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "is_open"}, "is_open"),
         State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "active_tab"}, "active_tab"),
-        on_app_click=Injection.Hidden
+        on_click=Injection.Hidden
     )
     def _global_export_snapshot_callback_(self, _, path: str, *args):
         endpoint = self.endpointize(path=path, relative=False)
@@ -1053,7 +1062,7 @@ class AppAPI:
     @serverside_callback(
         Output("GLOBAL_MEMORY_STORAGE_ID", "data"),
         State("GLOBAL_MEMORY_STORAGE_ID", "storage_type"),
-        on_app_memory_clean=Injection.Hidden
+        on_clean_memory=Injection.Hidden
     )
     def _global_clean_memory_callback_(self, memory: str):
         self._log_.debug(lambda: f"Clean Callback: Cleaned Memory (Type = {memory.capitalize()})")
@@ -1062,7 +1071,7 @@ class AppAPI:
     @serverside_callback(
         Output("GLOBAL_SESSION_STORAGE_ID", "data"),
         State("GLOBAL_SESSION_STORAGE_ID", "storage_type"),
-        on_app_session_clean=Injection.Hidden
+        on_clean_session=Injection.Hidden
     )
     def _global_clean_session_callback_(self, session: str):
         self._log_.debug(lambda: f"Clean Callback: Cleaned Session (Type = {session.capitalize()})")
@@ -1071,7 +1080,7 @@ class AppAPI:
     @serverside_callback(
         Output("GLOBAL_LOCAL_STORAGE_ID", "data"),
         State("GLOBAL_LOCAL_STORAGE_ID", "storage_type"),
-        on_app_local_clean=Injection.Hidden
+        on_clean_local=Injection.Hidden
     )
     def _global_clean_local_callback_(self, local: str):
         self._log_.debug(lambda: f"Clean Callback: Cleaned Local (Type = {local.capitalize()})")
@@ -1086,7 +1095,7 @@ class AppAPI:
         State("GLOBAL_SESSION_STORAGE_ID", "storage_type"),
         State("GLOBAL_LOCAL_STORAGE_ID", "storage_type"),
         State("GLOBAL_REFRESH_TRIGGER_ID", "data"),
-        on_app_clean_reset=Injection.Hidden
+        on_clean_reset=Injection.Hidden
     )
     def _global_clean_reset_callback_(self, memory: str, session: str, local: str, refresh: dict):
         memory = self._global_clean_memory_callback_(memory=memory)
@@ -1120,7 +1129,7 @@ class AppAPI:
         Input("GLOBAL_TERMINAL_BUTTON_ID", "n_clicks"),
         State("GLOBAL_TERMINAL_COLLAPSE_ID", "is_open"),
         State("GLOBAL_TERMINAL_ARROW_ID", "className"),
-        on_app_click=Injection.Hidden
+        on_click=Injection.Hidden
     )
     def _global_terminal_button_callback_(self, _, was_open: bool, classname: str):
         return self._global_collapse_button_callback_(name="Terminal", was_open=was_open, classname=classname)

@@ -159,7 +159,7 @@ class PageAPI:
     @serverside_callback(
         Output("PAGE_MEMORY_STORAGE_ID", "data"),
         State("PAGE_MEMORY_STORAGE_ID", "storage_type"),
-        on_app_memory_clean=Injection.Hidden
+        on_clean_memory=Injection.Hidden
     )
     def _page_clean_memory_callback_(self, memory: str):
         self._log_.debug(lambda: f"Clean Callback: Cleaned Memory (Type = {memory.capitalize()})")
@@ -168,7 +168,7 @@ class PageAPI:
     @serverside_callback(
         Output("PAGE_SESSION_STORAGE_ID", "data"),
         State("PAGE_SESSION_STORAGE_ID", "storage_type"),
-        on_app_session_clean=Injection.Hidden
+        on_clean_session=Injection.Hidden
     )
     def _page_clean_session_callback_(self, session: str):
         self._log_.debug(lambda: f"Clean Callback: Cleaned Session (Type = {session.capitalize()})")
@@ -177,7 +177,7 @@ class PageAPI:
     @serverside_callback(
         Output("PAGE_LOCAL_STORAGE_ID", "data"),
         State("PAGE_LOCAL_STORAGE_ID", "storage_type"),
-        on_app_local_clean=Injection.Hidden
+        on_clean_local=Injection.Hidden
     )
     def _page_clean_local_callback_(self, local: str):
         self._log_.debug(lambda: f"Clean Callback: Cleaned Local (Type = {local.capitalize()})")
@@ -190,7 +190,7 @@ class PageAPI:
         State("PAGE_MEMORY_STORAGE_ID", "storage_type"),
         State("PAGE_SESSION_STORAGE_ID", "storage_type"),
         State("PAGE_LOCAL_STORAGE_ID", "storage_type"),
-        on_app_clean_reset=Injection.Hidden
+        on_clean_reset=Injection.Hidden
     )
     def _page_clean_reset_callback_(self, memory: str, session: str, local: str):
         memory = self._page_clean_memory_callback_(memory=memory)

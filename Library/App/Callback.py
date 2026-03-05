@@ -104,15 +104,15 @@ def organize(original_args: list, inject_args: list, mode: Injection):
 def callback(
         *callback_args,
         callback_js: bool,
-        on_app_init: bool | Injection,
-        on_app_click: bool | Injection,
-        on_app_loading: bool | Injection,
-        on_app_reloading: bool | Injection,
-        on_app_unloading: bool | Injection,
-        on_app_memory_clean: bool | Injection,
-        on_app_session_clean: bool | Injection,
-        on_app_local_clean: bool | Injection,
-        on_app_clean_reset: bool | Injection,
+        on_init: bool | Injection,
+        on_click: bool | Injection,
+        on_loading: bool | Injection,
+        on_reloading: bool | Injection,
+        on_unloading: bool | Injection,
+        on_clean_memory: bool | Injection,
+        on_clean_session: bool | Injection,
+        on_clean_local: bool | Injection,
+        on_clean_reset: bool | Injection,
         running: list[tuple] = None,
         progress: list[Component] | Component = None,
         cancel: list[Component] = None,
@@ -123,15 +123,15 @@ def callback(
         func._callback_ = True
         func._callback_js_ = callback_js
         func._callback_kwargs_ = callback_kwargs
-        func._on_app_init_ = on_app_init
-        func._on_app_click_ = on_app_click
-        func._on_app_loading_ = on_app_loading
-        func._on_app_reloading_ = on_app_reloading
-        func._on_app_unloading_ = on_app_unloading
-        func._on_app_memory_clean_ = on_app_memory_clean
-        func._on_app_session_clean_ = on_app_session_clean
-        func._on_app_local_clean_ = on_app_local_clean
-        func._on_app_clean_reset_ = on_app_clean_reset
+        func._on_init_ = on_init
+        func._on_click_ = on_click
+        func._on_loading_ = on_loading
+        func._on_reloading_ = on_reloading
+        func._on_unloading_ = on_unloading
+        func._on_clean_memory_ = on_clean_memory
+        func._on_clean_session_ = on_clean_session
+        func._on_clean_local_ = on_clean_local
+        func._on_clean_reset_ = on_clean_reset
         func._callback_running_ = running
         func._callback_progress_ = progress
         func._callback_cancel_ = cancel
@@ -143,15 +143,15 @@ def callback(
 
 def clientside_callback(
         *callback_args,
-        on_app_init: bool | Injection = Injection.Disabled,
-        on_app_click: bool | Injection = Injection.Disabled,
-        on_app_loading: bool | Injection = Injection.Disabled,
-        on_app_reloading: bool | Injection = Injection.Disabled,
-        on_app_unloading: bool | Injection = Injection.Disabled,
-        on_app_memory_clean: bool | Injection = Injection.Disabled,
-        on_app_session_clean: bool | Injection = Injection.Disabled,
-        on_app_local_clean: bool | Injection = Injection.Disabled,
-        on_app_clean_reset: bool | Injection = Injection.Disabled,
+        on_init: bool | Injection = Injection.Disabled,
+        on_click: bool | Injection = Injection.Disabled,
+        on_loading: bool | Injection = Injection.Disabled,
+        on_reloading: bool | Injection = Injection.Disabled,
+        on_unloading: bool | Injection = Injection.Disabled,
+        on_clean_memory: bool | Injection = Injection.Disabled,
+        on_clean_session: bool | Injection = Injection.Disabled,
+        on_clean_local: bool | Injection = Injection.Disabled,
+        on_clean_reset: bool | Injection = Injection.Disabled,
         running: list[tuple] = None,
         progress: list[Component] | Component = None,
         cancel: list[Component] = None,
@@ -161,15 +161,15 @@ def clientside_callback(
     return callback(
         *callback_args,
         callback_js=True,
-        on_app_init=on_app_init,
-        on_app_click=on_app_click,
-        on_app_loading=on_app_loading,
-        on_app_reloading=on_app_reloading,
-        on_app_unloading=on_app_unloading,
-        on_app_memory_clean=on_app_memory_clean,
-        on_app_session_clean=on_app_session_clean,
-        on_app_local_clean=on_app_local_clean,
-        on_app_clean_reset=on_app_clean_reset,
+        on_init=on_init,
+        on_click=on_click,
+        on_loading=on_loading,
+        on_reloading=on_reloading,
+        on_unloading=on_unloading,
+        on_clean_memory=on_clean_memory,
+        on_clean_session=on_clean_session,
+        on_clean_local=on_clean_local,
+        on_clean_reset=on_clean_reset,
         running=running,
         progress=progress,
         cancel=cancel,
@@ -180,15 +180,15 @@ def clientside_callback(
 
 def serverside_callback(
         *callback_args,
-        on_app_init: bool | Injection = Injection.Disabled,
-        on_app_click: bool | Injection = Injection.Disabled,
-        on_app_loading: bool | Injection = Injection.Disabled,
-        on_app_reloading: bool | Injection = Injection.Disabled,
-        on_app_unloading: bool | Injection = Injection.Disabled,
-        on_app_memory_clean: bool | Injection = Injection.Disabled,
-        on_app_session_clean: bool | Injection = Injection.Disabled,
-        on_app_local_clean: bool | Injection = Injection.Disabled,
-        on_app_clean_reset: bool | Injection = Injection.Disabled,
+        on_init: bool | Injection = Injection.Disabled,
+        on_click: bool | Injection = Injection.Disabled,
+        on_loading: bool | Injection = Injection.Disabled,
+        on_reloading: bool | Injection = Injection.Disabled,
+        on_unloading: bool | Injection = Injection.Disabled,
+        on_clean_memory: bool | Injection = Injection.Disabled,
+        on_clean_session: bool | Injection = Injection.Disabled,
+        on_clean_local: bool | Injection = Injection.Disabled,
+        on_clean_reset: bool | Injection = Injection.Disabled,
         background: bool = False,
         memoize: bool = False,
         manager: str = None,
@@ -201,15 +201,15 @@ def serverside_callback(
     return callback(
         *callback_args,
         callback_js=False,
-        on_app_init=on_app_init,
-        on_app_click=on_app_click,
-        on_app_loading=on_app_loading,
-        on_app_reloading=on_app_reloading,
-        on_app_unloading=on_app_unloading,
-        on_app_memory_clean=on_app_memory_clean,
-        on_app_session_clean=on_app_session_clean,
-        on_app_local_clean=on_app_local_clean,
-        on_app_clean_reset=on_app_clean_reset,
+        on_init=on_init,
+        on_click=on_click,
+        on_loading=on_loading,
+        on_reloading=on_reloading,
+        on_unloading=on_unloading,
+        on_clean_memory=on_clean_memory,
+        on_clean_session=on_clean_session,
+        on_clean_local=on_clean_local,
+        on_clean_reset=on_clean_reset,
         background=background,
         manager=manager,
         running=running,
