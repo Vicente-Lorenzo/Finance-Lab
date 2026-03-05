@@ -459,6 +459,7 @@ class PaginatorAPI(ButtonContainerAPI):
     label: list[Component] = field(default_factory=list)
     href: str = field(default=None)
     dropdown: DropdownContainerAPI = field(default=None)
+    disabled: bool = field(default=None)
 
     def __post_init__(self):
         internal = ButtonAPI(
@@ -467,7 +468,8 @@ class PaginatorAPI(ButtonContainerAPI):
             title="Open Page",
             external=False,
             label=self.label,
-            typename="internal"
+            typename="internal",
+            disabled=self.disabled
         )
         external = ButtonAPI(
             id=self.eid,
@@ -475,7 +477,8 @@ class PaginatorAPI(ButtonContainerAPI):
             title="Open Page (New Tab)",
             external=True,
             typename="external",
-            stylename="bi bi-box-arrow-up-right"
+            stylename="bi bi-box-arrow-up-right",
+            disabled=self.disabled
         )
         self.elements = [internal, external, self.dropdown] if self.dropdown is not None else [internal, external]
         super().__post_init__()
