@@ -180,14 +180,16 @@ class AppAPI:
         self._init_app_()
         self._log_.info(lambda: "Initialized App")
 
+        self._init_components_()
+
         self._init_pages_()
         self._log_.debug(lambda: "Initialized Pages")
 
-        self._init_navigation_()
-        self._log_.debug(lambda: "Initialized Navigation")
-
         self._init_layout_()
         self._log_.info(lambda: "Initialized Layout")
+
+        self._init_navigation_()
+        self._log_.debug(lambda: "Initialized Navigation")
 
         self._init_callbacks_()
         self._log_.info(lambda: "Initialized Callbacks")
@@ -282,6 +284,10 @@ class AppAPI:
         )
         self._init_ids_()
 
+    def _init_components_(self) -> None:
+        self.components()
+        self._log_.debug(lambda: "Initialized Components")
+
     def _init_pages_(self) -> None:
         self.GLOBAL_NOT_FOUND_LAYOUT = DefaultLayoutAPI(
             image=self.asset("Images/404.png"),
@@ -317,6 +323,9 @@ class AppAPI:
 
     def _init_navigation_(self) -> None:
         for endpoint, page in self._pages_.items():
+            if page._navigation_ or getattr(page.navigation, "__func__", None) is not PageAPI.navigation:
+                self._log_.debug(lambda: f"Init Navigation: Preserving Custom Navigation for {endpoint}")
+                continue
             if not page.parent and not page.children:
                 page._navigation_ = []
                 self._log_.debug(lambda: f"Init Navigation: Loaded Page = {endpoint} with No Navigation")
@@ -1096,9 +1105,21 @@ class AppAPI:
         return terminal[-self._terminal_limit_:]
 
     def ids(self) -> None:
+        """
+        Override this method to register custom Dash IDs.
+        """
+        pass
+
+    def components(self) -> None:
+        """
+        Override this method to initialize shared components.
+        """
         pass
 
     def pages(self) -> None:
+        """
+        Override this method to register pages.
+        """
         pass
 
     def run(self):

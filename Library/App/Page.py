@@ -269,16 +269,28 @@ class PageAPI:
         self._initialized_ = True
 
     def ids(self) -> None:
+        """
+        Override this method to register custom Dash IDs.
+        """
         pass
 
     def content(self) -> Component | list[Component]:
+        """
+        Override this method to provide the page content.
+        """
         return self.normalize(self.app.GLOBAL_NOT_INDEXED_LAYOUT)
 
     def sidebar(self) -> Component | list[Component]:
+        """
+        Override this method to provide the page sidebar.
+        """
         return self.normalize(self.app.GLOBAL_NOT_INDEXED_LAYOUT)
 
     def navigation(self) -> Component | list[Component]:
-        return self.normalize([])
+        """
+        Override this method to provide the page navigation.
+        """
+        pass
 
     def __repr__(self) -> str:
         return repr(f"{self.description} @ {self.endpoint}")
