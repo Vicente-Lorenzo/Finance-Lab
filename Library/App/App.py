@@ -567,6 +567,46 @@ class AppAPI:
                                     original_args=args,
                                     mode=mode
                                 )
+
+                    on_app_init = getattr(func, "_on_app_init_", Injection.Disabled)
+                    kwargs["prevent_initial_call"] = Injection.coerce(on_app_init) is Injection.Disabled
+
+                    running = getattr(func, "_callback_running_", None)
+                    if running:
+                        kwargs["running"] = [
+                            (item[0].build(context), item[1], item[2])
+                            if isinstance(item, (tuple, list)) and len(item) == 3 and isinstance(item[0], Trigger)
+                            else item
+                            for item in running
+                        ]
+
+                    cancel = getattr(func, "_callback_cancel_", None)
+                    if cancel:
+                        kwargs["cancel"] = [
+                            item.build(context) if isinstance(item, Trigger) else item
+                            for item in cancel
+                        ]
+
+                    progress = getattr(func, "_callback_progress_", None)
+                    if progress:
+                        if isinstance(progress, list):
+                            kwargs["progress"] = [
+                                item.build(context) if isinstance(item, Trigger) else item
+                                for item in progress
+                            ]
+                        elif isinstance(progress, Trigger):
+                            kwargs["progress"] = progress.build(context)
+                        else:
+                            kwargs["progress"] = progress
+
+                    interval = getattr(func, "_callback_interval_", None)
+                    if interval is not None:
+                        kwargs["interval"] = interval
+
+                    progress_default = getattr(func, "_callback_progress_default_", None)
+                    if progress_default is not None:
+                        kwargs["progress_default"] = progress_default
+
                     args = [a.build(context=context) if isinstance(a, Trigger) else a for a in args]
                     if is_client:
                         self.app.clientside_callback(target, *args, **kwargs)

@@ -5,7 +5,7 @@ import inspect
 from enum import Enum
 from functools import wraps
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Any
 from typing_extensions import Self
 
 from Library.App.Component import Component
@@ -104,6 +104,7 @@ def organize(original_args: list, inject_args: list, mode: Injection):
 def callback(
         *callback_args,
         callback_js: bool,
+        on_app_init: bool | Injection,
         on_app_click: bool | Injection,
         on_app_loading: bool | Injection,
         on_app_reloading: bool | Injection,
@@ -112,11 +113,17 @@ def callback(
         on_app_session_clean: bool | Injection,
         on_app_local_clean: bool | Injection,
         on_app_clean_reset: bool | Injection,
+        running: list[tuple] = None,
+        progress: list[Component] | Component = None,
+        cancel: list[Component] = None,
+        interval: int = None,
+        progress_default: Any = None,
         **callback_kwargs):
     def decorator(func):
         func._callback_ = True
         func._callback_js_ = callback_js
         func._callback_kwargs_ = callback_kwargs
+        func._on_app_init_ = on_app_init
         func._on_app_click_ = on_app_click
         func._on_app_loading_ = on_app_loading
         func._on_app_reloading_ = on_app_reloading
@@ -125,6 +132,11 @@ def callback(
         func._on_app_session_clean_ = on_app_session_clean
         func._on_app_local_clean_ = on_app_local_clean
         func._on_app_clean_reset_ = on_app_clean_reset
+        func._callback_running_ = running
+        func._callback_progress_ = progress
+        func._callback_cancel_ = cancel
+        func._callback_interval_ = interval
+        func._callback_progress_default_ = progress_default
         func._callback_args_ = flatten(*sort(callback_args))
         return func
     return decorator
@@ -140,10 +152,16 @@ def clientside_callback(
         on_app_session_clean: bool | Injection = Injection.Disabled,
         on_app_local_clean: bool | Injection = Injection.Disabled,
         on_app_clean_reset: bool | Injection = Injection.Disabled,
+        running: list[tuple] = None,
+        progress: list[Component] | Component = None,
+        cancel: list[Component] = None,
+        interval: int = None,
+        progress_default: Any = None,
         **callback_kwargs):
     return callback(
         *callback_args,
         callback_js=True,
+        on_app_init=on_app_init,
         on_app_click=on_app_click,
         on_app_loading=on_app_loading,
         on_app_reloading=on_app_reloading,
@@ -152,7 +170,11 @@ def clientside_callback(
         on_app_session_clean=on_app_session_clean,
         on_app_local_clean=on_app_local_clean,
         on_app_clean_reset=on_app_clean_reset,
-        prevent_initial_call=Injection.coerce(on_app_init) is Injection.Disabled,
+        running=running,
+        progress=progress,
+        cancel=cancel,
+        interval=interval,
+        progress_default=progress_default,
         **callback_kwargs
     )
 
@@ -170,13 +192,16 @@ def serverside_callback(
         background: bool = False,
         memoize: bool = False,
         manager: str = None,
-        running: list[Component] = None,
-        progress: list[Component] = None,
+        running: list[tuple] = None,
+        progress: list[Component] | Component = None,
         cancel: list[Component] = None,
+        interval: int = None,
+        progress_default: Any = None,
         **callback_kwargs):
     return callback(
         *callback_args,
         callback_js=False,
+        on_app_init=on_app_init,
         on_app_click=on_app_click,
         on_app_loading=on_app_loading,
         on_app_reloading=on_app_reloading,
@@ -185,12 +210,13 @@ def serverside_callback(
         on_app_session_clean=on_app_session_clean,
         on_app_local_clean=on_app_local_clean,
         on_app_clean_reset=on_app_clean_reset,
-        prevent_initial_call=Injection.coerce(on_app_init) is Injection.Disabled,
         background=background,
         manager=manager,
         running=running,
         progress=progress,
         cancel=cancel,
+        interval=interval,
+        progress_default=progress_default,
         memoize=memoize,
         **callback_kwargs
     )
