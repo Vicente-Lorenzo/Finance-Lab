@@ -108,8 +108,7 @@ from Library.Utility.IO import (
     symlink,
     hardlink,
     copy,
-    smartlink,
-    mirror
+    smartlink
 )
 from Library.Utility.Report import ReportAPI
 
@@ -136,6 +135,6 @@ __all__ = [
     "PathAPI",
     "is_readable", "is_writable",
     "mkdir", "remove", "read_text", "write_text", "read_json", "write_json",
-    "symlink", "hardlink", "copy", "smartlink", "mirror",
+    "symlink", "hardlink", "copy", "smartlink",
     "ReportAPI"
 ]

@@ -4,6 +4,7 @@ from dash import dcc, html
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from dash._callback_context import CallbackContext
+from flask import send_from_directory
 from pathlib import PurePosixPath
 
 from fastapi import FastAPI
@@ -160,11 +161,13 @@ class AppAPI:
         self._log_.debug(lambda: f"Defined Library = {self._library_}")
         self._library_assets_: Path = self._library_ / "Assets"
         self._log_.debug(lambda: f"Defined Library Assets = {self._library_assets_}")
+        self._library_assets_url_: str = "_library_"
+        self._log_.debug(lambda: f"Defined Library Assets URL = {self._library_assets_url_}")
         self._application_: Path = traceback_calling_module(resolve=True)
         self._log_.debug(lambda: f"Defined Application = {self._application_}")
         self._application_assets_: Path = self._application_ / "Assets"
         self._log_.debug(lambda: f"Defined Application Assets = {self._application_assets_}")
-        self._application_assets_url_: str = "Assets"
+        self._application_assets_url_: str = "_application_"
         self._log_.debug(lambda: f"Defined Application Assets URL = {self._application_assets_url_}")
 
         self._high_frequency_interval_: int = high_frequency_interval
@@ -174,8 +177,7 @@ class AppAPI:
         self._low_frequency_interval_: int = low_frequency_interval
         self._log_.debug(lambda: f"Defined Low Frequency Interval = {self._low_frequency_interval_}")
 
-        self._init_assets_()
-        self._log_.debug(lambda: "Initialized Assets")
+        self._stylesheets_: list[str | dict] = [dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP]
 
         self._init_app_()
         self._log_.info(lambda: "Initialized App")
@@ -196,20 +198,6 @@ class AppAPI:
 
         self.ctx: CallbackContext = dash.callback_context
         self._log_.info(lambda: "Initialized Context")
-
-    def _init_assets_(self) -> None:
-        writable, created, updated, removed, conflicts, _ = mirror(
-            src_root=self._library_assets_,
-            dst_root=self._application_assets_,
-            subdirs=(".", "Styles", "Images", "Callbacks", "Data"),
-            manifest_name="manifest.json"
-        )
-        if writable:
-            self._log_.debug(lambda: "Init Assets: Mirrored Assets")
-        if not writable:
-            self._log_.debug(lambda: "Init Assets: Mirroring Aborted (Read-Only)")
-        if conflicts:
-            self._log_.warning(lambda: f"Init Assets: {conflicts} Conflicts Detected")
 
     def _init_ids_(self) -> None:
         self.GLOBAL_LOCATION_ID: dict = self.register(type="location", name="location")
@@ -269,6 +257,15 @@ class AppAPI:
 
         self.ids()
 
+    def _init_assets_(self):
+        def serve_application(filename: str):
+            return send_from_directory(self._application_assets_, filename, max_age=31536000)
+        self.app.server.add_url_rule(
+            f"{(self._anchor_ / self._application_assets_url_).as_posix()}/<path:filename>",
+            endpoint=f"_{self._application_assets_url_}_{id(self)}",
+            view_func=serve_application
+        )
+
     def _init_app_(self) -> None:
         self.app = dash.Dash(
             name=self._name_,
@@ -276,13 +273,14 @@ class AppAPI:
             update_title=self._update_,
             routes_pathname_prefix=self._endpoint_,
             requests_pathname_prefix=self._endpoint_,
-            assets_url_path=self._application_assets_url_,
-            assets_folder=inspect_path(self._application_assets_),
-            external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
+            assets_url_path=self._library_assets_url_,
+            assets_folder=inspect_path(self._library_assets_),
+            external_stylesheets=self._stylesheets_,
             suppress_callback_exceptions=True,
             prevent_initial_callbacks=True
         )
         self._init_ids_()
+        self._init_assets_()
 
     def _init_components_(self) -> None:
         self.components()
@@ -619,6 +617,10 @@ class AppAPI:
                     self._log_.info(lambda: f"Init Callbacks: Loaded {callback_type}-Side Callback: {callback_name}")
 
     def asset(self, path: str) -> str:
+        if (self._library_assets_ / path).exists():
+            return self.app.get_asset_url(path)
+        if (self._application_assets_ / path).exists():
+            return (self._anchor_ / self._application_assets_url_ / path).as_posix()
         return self.app.get_asset_url(path)
 
     def identify(self, *, page: str = None, type: str, name: str, portable: str = "", **kwargs) -> dict:
