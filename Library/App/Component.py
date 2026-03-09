@@ -29,6 +29,7 @@ class ComponentAPI(Component, ABC):
     typename: str | None = field(default_factory=str)
     stylename: str | None = field(default_factory=str)
     style: dict | None = field(default_factory=dict)
+    hidden: bool | None = field(default=None)
 
     border_color: str | None = field(default=None)
     border_style: str | None = field(default=None)
@@ -70,6 +71,7 @@ class ComponentAPI(Component, ABC):
         kwargs = {}
         if self.id: kwargs.update(id=self.id)
         if self.classname: kwargs.update(className=self.classname)
+        if self.hidden is not None: kwargs.update(hidden=self.hidden)
         classstyle = {}
         if self.border_color is not None: classstyle.update(borderColor=self.border_color)
         if self.border_style is not None: classstyle.update(borderStyle=self.border_style)
