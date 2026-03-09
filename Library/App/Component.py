@@ -72,7 +72,7 @@ class ComponentAPI(Component, ABC):
         if self.id: kwargs.update(id=self.id)
         if self.classname: kwargs.update(className=self.classname)
         classstyle = {}
-        if self.hidden: classstyle.update(display="none")
+        if self.hidden is not None: classstyle = self.display(hidden=self.hidden, style=classstyle)
         if self.border_color is not None: classstyle.update(borderColor=self.border_color)
         if self.border_style is not None: classstyle.update(borderStyle=self.border_style)
         if self.border_width is not None: classstyle.update(borderWidth=self.border_width)
@@ -92,6 +92,13 @@ class ComponentAPI(Component, ABC):
         self.style = parse_style(basestyle=self.style, classstyle=classstyle)
         if self.style: kwargs.update(style=self.style)
         return kwargs
+
+    @staticmethod
+    def display(hidden: bool, style: dict = None) -> dict:
+        style = style or {}
+        if hidden: style.update(display="none")
+        else: style.update(display="flex")
+        return style
 
     @staticmethod
     def flatten(element: Component | list) -> list[Component]:
