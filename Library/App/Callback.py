@@ -292,43 +292,23 @@ def inject_clientside_callback(
     no_update = "window.dash_clientside.no_update"
     wrapped_js = f"""
     function() {{
-        const originalFn = ({original_js});
+        const originalFn = {original_js};
         const injectFn = {handler_src};
-        const args = Array.prototype.slice.call(arguments);
+        const args = Array.from(arguments);
         const inputVals = args.slice(0, {n_all_in});
         const stateVals = args.slice({n_all_in});
-        let originalInputs, injectInputs, originalStates, injectStates;
-        if ({str(prepend).lower()}) {{
-            injectInputs = inputVals.slice(0, {n_i_in});
-            originalInputs = inputVals.slice({n_i_in});
-            injectStates = stateVals.slice(0, {n_i_st});
-            originalStates = stateVals.slice({n_i_st});
-        }} else {{
-            originalInputs = inputVals.slice(0, {n_o_in});
-            injectInputs = inputVals.slice({n_o_in});
-            originalStates = stateVals.slice(0, {n_o_st});
-            injectStates = stateVals.slice({n_o_st});
-        }}
-        const originalResult = originalFn.apply(null, originalInputs.concat(originalStates));
+        const injectInputs = {str(prepend).lower()} ? inputVals.slice(0, {n_i_in}) : inputVals.slice({n_o_in});
+        const originalInputs = {str(prepend).lower()} ? inputVals.slice({n_i_in}) : inputVals.slice(0, {n_o_in});
+        const injectStates = {str(prepend).lower()} ? stateVals.slice(0, {n_i_st}) : stateVals.slice({n_o_st});
+        const originalStates = {str(prepend).lower()} ? stateVals.slice({n_i_st}) : stateVals.slice(0, {n_o_st});
+        const originalResult = originalFn(...originalInputs, ...originalStates);
         let injectResult = null;
         if (injectFn) {{
             injectResult = injectFn(originalResult, injectInputs, injectStates, originalInputs, originalStates);
+            if (injectResult === {no_update}) return {no_update};
         }}
-        let oResList = [];
-        if ({n_o_out} === 1) oResList = [originalResult];
-        else if ({n_o_out} > 1) {{
-            if (!Array.isArray(originalResult)) throw new Error("Expected {n_o_out} outputs from original callback.");
-            oResList = originalResult;
-        }}
-        let iResList = [];
-        if ({n_i_out} > 0) {{
-            if (injectResult === null || injectResult === undefined) iResList = Array({n_i_out}).fill({no_update});
-            else if ({n_i_out} === 1) iResList = [injectResult];
-            else {{
-                if (!Array.isArray(injectResult)) throw new Error("Expected {n_i_out} outputs from injected callback.");
-                iResList = injectResult;
-            }}
-        }}
+        const oResList = ({n_o_out} > 1) ? originalResult : (({n_o_out} === 1) ? [originalResult] : []);
+        const iResList = ({n_i_out} > 0) ? (Array.isArray(injectResult) ? injectResult : [injectResult ?? {no_update}]) : [];
         const finalList = {str(prepend).lower()} ? iResList.concat(oResList) : oResList.concat(iResList);
         if ({n_all_out} <= 1) return finalList.length > 0 ? finalList[0] : undefined;
         return finalList;
