@@ -489,8 +489,9 @@ class AppAPI:
             if not clicks: raise PreventUpdate
         _click_js_ = self.asset(path="Callbacks/Click.js", resolve=True)
         def _trigger_py_(_, *, inject_inputs):
-            t = inject_inputs[0] or {}
-            return TriggerAPI(**t).trigger().dict()
+            trigger = inject_inputs[0]
+            if not trigger: raise PreventUpdate
+            return TriggerAPI(**trigger).trigger().dict()
         _trigger_js_ = self.asset(path="Callbacks/Trigger.js", resolve=True)
         def _clean_py_(_, *, inject_inputs, **__):
             clicks = inject_inputs[0]

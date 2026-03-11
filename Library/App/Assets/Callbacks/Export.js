@@ -1,11 +1,8 @@
 (function(n_clicks, pathname, ...args) {
-    if (!n_clicks) {
-        return window.dash_clientside.no_update;
-    }
+    if (!n_clicks) return window.dash_clientside.no_update;
     const context = window.dash_clientside.callback_context;
     const states = context.states_list;
     const components = [];
-
     states.forEach((group) => {
         if (!Array.isArray(group)) return;
         group.forEach((item) => {
@@ -18,11 +15,9 @@
             }
         });
     });
-
     const endpoint = pathname;
     const payload = { page: endpoint, components: components };
     const safe = endpoint.replace(/^\/+|\/+$/g, '').replace(/\//g, '-') || 'root';
-
     return {
         content: JSON.stringify(payload, null, 2),
         filename: `snapshot-${safe}.json`,
