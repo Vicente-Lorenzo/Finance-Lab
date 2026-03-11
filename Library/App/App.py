@@ -1,13 +1,14 @@
 import json
 import base64
+from pathlib import PurePosixPath
+
 import dash
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from dash._callback_context import CallbackContext
-from flask import send_from_directory
-from pathlib import PurePosixPath
 
+import flask
 from fastapi import FastAPI
 from fastapi.middleware.wsgi import WSGIMiddleware
 
@@ -260,9 +261,9 @@ class AppAPI:
 
     def _init_assets_(self):
         def serve_application(filename: str):
-            return send_from_directory(self._application_assets_, filename, max_age=31536000)
+            return flask.send_from_directory(self._application_assets_, filename, max_age=31536000)
         self.app.server.add_url_rule(
-            f"{(self._anchor_ / self._application_assets_url_).as_posix()}/<path:filename>",
+            rule=f"{(self._anchor_ / self._application_assets_url_).as_posix()}/<path:filename>",
             endpoint=f"_{self._application_assets_url_}_{id(self)}",
             view_func=serve_application
         )
