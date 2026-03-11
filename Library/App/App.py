@@ -1,7 +1,3 @@
-import json
-import base64
-from pathlib import PurePosixPath
-
 import dash
 from dash import dcc, html
 import dash_bootstrap_components as dbc
@@ -11,6 +7,8 @@ from dash._callback_context import CallbackContext
 import flask
 from fastapi import FastAPI
 from fastapi.middleware.wsgi import WSGIMiddleware
+
+from pathlib import PurePosixPath
 
 from Library.App import *
 from Library.Logging import *
@@ -290,31 +288,31 @@ class AppAPI:
 
     def _init_pages_(self) -> None:
         self.GLOBAL_NOT_FOUND_LAYOUT = DefaultLayoutAPI(
-            image=self.asset("Images/404.png"),
+            image=self.asset(path="Images/404.png"),
             title="Resource Not Found",
             description="Unable to find the resource you are looking for.",
             details="Please check the url path."
         ).build()
         self.GLOBAL_LOADING_LAYOUT = DefaultLayoutAPI(
-            image=self.asset("Images/loading.gif"),
+            image=self.asset(path="Images/loading.gif"),
             title="Loading...",
             description="This resource is loading its content.",
             details="Please wait a moment."
         ).build()
         self.GLOBAL_MAINTENANCE_LAYOUT = DefaultLayoutAPI(
-            image=self.asset("Images/maintenance.png"),
+            image=self.asset(path="Images/maintenance.png"),
             title="Resource Under Maintenance",
             description="This resource is temporarily down for maintenance.",
             details="Please try again later."
         ).build()
         self.GLOBAL_DEVELOPMENT_LAYOUT = DefaultLayoutAPI(
-            image=self.asset("Images/development.png"),
+            image=self.asset(path="Images/development.png"),
             title="Resource Under Development",
             description="This resource is currently under development.",
             details="Please try again later."
         ).build()
         self.GLOBAL_NOT_INDEXED_LAYOUT = DefaultLayoutAPI(
-            image=self.asset("Images/indexed.png"),
+            image=self.asset(path="Images/indexed.png"),
             title="Resource Not Indexed",
             description="This resource is not indexed at any page.",
             details="Please try again later."
@@ -374,7 +372,7 @@ class AppAPI:
     def _init_header_(self) -> Component:
         return html.Div(children=[
             html.Div(children=[
-                html.Div(children=[html.Img(src=self.asset("Images/logo.png"), className="header-image")], className="header-logo"),
+                html.Div(children=[html.Img(src=self.asset(path="Images/logo.png"), className="header-image")], className="header-logo"),
                 html.Div(children=[html.H1(self._name_, className="header-title"), html.H4(self._team_, className="header-team")], className="header-title-team"),
                 html.Div(children=[self._description_], id=self.GLOBAL_DESCRIPTION_ID, className="header-description")
             ], className="header-information-block"),
@@ -486,56 +484,59 @@ class AppAPI:
         self._log_.debug(lambda: "Init Layout: Loaded App Layout")
 
     def _init_callbacks_(self) -> None:
-        def _click_(_, *, original_inputs, **__):
+        def _click_py_(_, *, original_inputs, **__):
             clicks = original_inputs[0]
             if not clicks: raise PreventUpdate
-        def _trigger_(_, *, inject_inputs):
+        _click_js_ = self.asset(path="Callbacks/Click.js", resolve=True)
+        def _trigger_py_(_, *, inject_inputs):
             t = inject_inputs[0] or {}
             return TriggerAPI(**t).trigger().dict()
-        def _clean_(_, *, inject_inputs, **__):
+        _trigger_js_ = self.asset(path="Callbacks/Trigger.js", resolve=True)
+        def _clean_py_(_, *, inject_inputs, **__):
             clicks = inject_inputs[0]
             trigger = inject_inputs[1]
             if not clicks and not trigger: raise PreventUpdate
+        _clean_js_ = self.asset(path="Callbacks/Clean.js", resolve=True)
         common_injections = [
-            ("_on_click_", [], _click_),
+            ("_on_click_", [], (_click_py_, _click_js_)),
             ("_on_clean_memory_", [
                 Input("GLOBAL_CLEAN_MEMORY_BUTTON_ID", "n_clicks"),
                 Input("GLOBAL_CLEAN_MEMORY_TRIGGER_ID", "data")
-            ], _clean_),
+            ], (_clean_py_, _clean_js_)),
             ("_on_clean_session_", [
                 Input("GLOBAL_CLEAN_SESSION_BUTTON_ID", "n_clicks"),
                 Input("GLOBAL_CLEAN_SESSION_TRIGGER_ID", "data")
-            ], _clean_),
+            ], (_clean_py_, _clean_js_)),
             ("_on_clean_local_", [
                 Input("GLOBAL_CLEAN_LOCAL_BUTTON_ID", "n_clicks"),
                 Input("GLOBAL_CLEAN_LOCAL_TRIGGER_ID", "data")
-            ], _clean_),
+            ], (_clean_py_, _clean_js_)),
             ("_on_clean_reset_", [
                 Input("GLOBAL_CLEAN_RESET_BUTTON_ID", "n_clicks"),
                 Input("GLOBAL_CLEAN_RESET_TRIGGER_ID", "data")
-            ], _clean_)
+            ], (_clean_py_, _clean_js_))
         ]
         page_injections = [
             ("_on_loading_", [
                 Output("PAGE_LOADING_TRIGGER_ID", "data"),
                 Input("GLOBAL_LOADING_TRIGGER_ID", "data"),
                 State("PAGE_LOADING_TRIGGER_ID", "data"),
-            ], _trigger_),
+            ], (_trigger_py_, _trigger_js_)),
             ("_on_reloading_", [
                 Output("PAGE_RELOADING_TRIGGER_ID", "data"),
                 Input("GLOBAL_RELOADING_TRIGGER_ID", "data"),
                 State("PAGE_RELOADING_TRIGGER_ID", "data"),
-            ], _trigger_),
+            ], (_trigger_py_, _trigger_js_)),
             ("_on_unloading_", [
                 Output("PAGE_UNLOADING_TRIGGER_ID", "data"),
                 Input("GLOBAL_UNLOADING_TRIGGER_ID", "data"),
                 State("PAGE_UNLOADING_TRIGGER_ID", "data"),
-            ], _trigger_)
+            ], (_trigger_py_, _trigger_js_))
         ]
         app_injections = [
-            ("_on_loading_", [Input("GLOBAL_LOADING_TRIGGER_ID", "data")], None),
-            ("_on_reloading_", [Input("GLOBAL_RELOADING_TRIGGER_ID", "data")], None),
-            ("_on_unloading_", [Input("GLOBAL_UNLOADING_TRIGGER_ID", "data")], None)
+            ("_on_loading_", [Input("GLOBAL_LOADING_TRIGGER_ID", "data")], (None, None)),
+            ("_on_reloading_", [Input("GLOBAL_RELOADING_TRIGGER_ID", "data")], (None, None)),
+            ("_on_unloading_", [Input("GLOBAL_UNLOADING_TRIGGER_ID", "data")], (None, None))
         ]
         for context in [self] + list(self._pages_.values()):
             is_page = isinstance(context, PageAPI)
@@ -557,8 +558,9 @@ class AppAPI:
                         if mode is Injection.Prepend or mode is Injection.Append:
                             all_out, all_in, all_st, all_oth, *_ = organize(args, extras, mode)
                             args = [*all_out, *all_in, *all_st, *all_oth]
-                    for flag_attr, extras, inject_func in callback_injections:
+                    for flag_attr, extras, (py_func, js_func) in callback_injections:
                         mode = Injection.coerce(getattr(func, flag_attr, False))
+                        inject_func = js_func if is_client else py_func
                         if mode is Injection.Hidden:
                             if is_client:
                                 target, args = inject_clientside_callback(
@@ -618,11 +620,18 @@ class AppAPI:
                         callback_type = "Server"
                     self._log_.info(lambda: f"Init Callbacks: Loaded {callback_type}-Side Callback: {callback_name}")
 
-    def asset(self, path: str) -> str:
+    def asset(self, path: str, resolve: bool = False) -> str:
         if (self._library_assets_ / path).exists():
+            if resolve:
+                return (self._library_assets_ / path).read_text(encoding="utf-8")
             return self.app.get_asset_url(path)
         if (self._application_assets_ / path).exists():
+            if resolve:
+                return (self._application_assets_ / path).read_text(encoding="utf-8")
             return (self._anchor_ / self._application_assets_url_ / path).as_posix()
+        if resolve:
+            self._log_.warning(lambda: f"Resolve Asset: Could not find {path}")
+            return ""
         return self.app.get_asset_url(path)
 
     def identify(self, *, page: str = None, type: str, name: str, portable: str = "", **kwargs) -> dict:
@@ -732,25 +741,7 @@ class AppAPI:
         Input("GLOBAL_ROUTING_STORAGE_ID", "data")
     )
     def _global_routing_location_callback_(self):
-        return """
-        function(nav) {
-            if (!nav || !nav.href || nav.index == null) {
-                return window.dash_clientside.no_update;
-            }
-            const last = (window.__lastNavIndex__ ?? -1);
-            if (nav.index <= last) {
-                return window.dash_clientside.no_update;
-            }
-            window.__lastNavIndex__ = nav.index;
-            const href = nav.href;
-            if (nav.external) {
-                window.open(href, "_blank", "noopener,noreferrer");
-                return "";
-            }
-            window.history.pushState({}, "", href);
-            window.dispatchEvent(new PopStateEvent("popstate"));
-        }
-        """
+        return self.asset(path="Callbacks/Routing.js", resolve=True)
 
     @serverside_callback(
         Output("GLOBAL_LOCATION_ID", "pathname"),
@@ -839,21 +830,7 @@ class AppAPI:
         Input("GLOBAL_REFRESH_TRIGGER_ID", "data")
     )
     def _global_refresh_location_callback_(self):
-        return """
-        function(clicks, trigger) {
-            const clicked = (clicks != null && clicks > 0);
-            const idx = (trigger && trigger.index != null) ? trigger.index : 0;
-            const last = (window.__lastRefreshIndex__ ?? 0);
-            const triggered = (idx > last);
-            if (!clicked && !triggered) {
-                return window.dash_clientside.no_update;
-            }
-            if (triggered) {
-                window.__lastRefreshIndex__ = idx;
-            }
-            window.location.reload();
-        }
-        """
+        return self.asset(path="Callbacks/Refresh.js", resolve=True)
 
     @serverside_callback(
         Output("GLOBAL_LOCATION_ID", "pathname"),
@@ -899,133 +876,14 @@ class AppAPI:
     def _global_contacts_button_callback_(self, _, was_open: bool, classname: str):
         return self._global_collapse_button_callback_(name="Contacts", was_open=was_open, classname=classname)
 
-    def _global_import_snapshot_callback_(self, contents: str, filename: str, prop: str):
-        if not contents: raise PreventUpdate
-        try:
-            _, b64 = contents.split(",", 1)
-            decoded = base64.b64decode(b64)
-            payload = json.loads(decoded.decode("utf-8"))
-        except Exception as exc:
-            self._log_.warning(lambda: f"Import Snapshot: Failed to Parse {filename}")
-            self._log_.error(lambda: f"{exc}")
-            raise PreventUpdate
-        snapshot_page = payload.get("page")
-        components = payload.get("components") or []
-        wanted = {json.dumps(c["id"], sort_keys=True): c["value"]
-                  for c in components if c.get("prop") == prop and isinstance(c.get("id"), dict)}
-        outs = []
-        for entry in (self.ctx.outputs_list or []):
-            outs.extend(entry if isinstance(entry, list) else [entry])
-        values = []
-        for out in outs:
-            cid = out.get("id")
-            if not isinstance(cid, dict):
-                values.append(dash.no_update)
-                continue
-            if snapshot_page and cid.get("page") != snapshot_page:
-                values.append(dash.no_update)
-                continue
-            key = json.dumps(cid, sort_keys=True)
-            values.append(wanted.get(key, dash.no_update))
-        return values
-
-    @serverside_callback(
-        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "data"}, "data"),
+    @clientside_callback(
         Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
         State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
     )
-    def _global_import_snapshot_data_callback_(self, contents: str, filename: str):
-        return self._global_import_snapshot_callback_(contents, filename, "data")
+    def _global_import_snapshot_callback_(self):
+        return self.asset(path="Callbacks/Import.js", resolve=True)
 
-    @serverside_callback(
-        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "value"}, "value"),
-        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
-        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
-    )
-    def _global_import_snapshot_value_callback_(self, contents: str, filename: str):
-        return self._global_import_snapshot_callback_(contents, filename, "value")
-
-    @serverside_callback(
-        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "input"}, "input"),
-        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
-        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
-    )
-    def _global_import_snapshot_input_callback_(self, contents: str, filename: str):
-        return self._global_import_snapshot_callback_(contents, filename, "input")
-
-    @serverside_callback(
-        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "filter"}, "filter"),
-        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
-        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
-    )
-    def _global_import_snapshot_filter_callback_(self, contents: str, filename: str):
-        return self._global_import_snapshot_callback_(contents, filename, "filter")
-
-    @serverside_callback(
-        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "date"}, "date"),
-        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
-        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
-    )
-    def _global_import_snapshot_date_callback_(self, contents: str, filename: str):
-        return self._global_import_snapshot_callback_(contents, filename, "date")
-
-    @serverside_callback(
-        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "checked"}, "checked"),
-        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
-        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
-    )
-    def _global_import_snapshot_checked_callback_(self, contents: str, filename: str):
-        return self._global_import_snapshot_callback_(contents, filename, "checked")
-
-    @serverside_callback(
-        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "start_date"}, "start_date"),
-        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
-        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
-    )
-    def _global_import_snapshot_start_date_callback_(self, contents: str, filename: str):
-        return self._global_import_snapshot_callback_(contents, filename, "start_date")
-
-    @serverside_callback(
-        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "end_date"}, "end_date"),
-        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
-        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
-    )
-    def _global_import_snapshot_end_date_callback_(self, contents: str, filename: str):
-        return self._global_import_snapshot_callback_(contents, filename, "end_date")
-
-    @serverside_callback(
-        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "options"}, "options"),
-        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
-        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
-    )
-    def _global_import_snapshot_options_callback_(self, contents: str, filename: str):
-        return self._global_import_snapshot_callback_(contents, filename, "options")
-
-    @serverside_callback(
-        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "disabled"}, "disabled"),
-        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
-        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
-    )
-    def _global_import_snapshot_disabled_callback_(self, contents: str, filename: str):
-        return self._global_import_snapshot_callback_(contents, filename, "disabled")
-
-    @serverside_callback(
-        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "is_open"}, "is_open"),
-        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
-        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
-    )
-    def _global_import_snapshot_is_open_callback_(self, contents: str, filename: str):
-        return self._global_import_snapshot_callback_(contents, filename, "is_open")
-
-    @serverside_callback(
-        Output({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "active_tab"}, "active_tab"),
-        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
-        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
-    )
-    def _global_import_snapshot_active_tab_callback_(self, contents: str, filename: str):
-        return self._global_import_snapshot_callback_(contents, filename, "active_tab")
-
-    @serverside_callback(
+    @clientside_callback(
         Output("GLOBAL_EXPORT_DOWNLOAD_ID", "data"),
         Input("GLOBAL_EXPORT_ID", "n_clicks"),
         State("GLOBAL_LOCATION_ID", "pathname"),
@@ -1040,28 +898,10 @@ class AppAPI:
         State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "options"}, "options"),
         State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "disabled"}, "disabled"),
         State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "is_open"}, "is_open"),
-        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "active_tab"}, "active_tab"),
-        on_click=Injection.Hidden
+        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "active_tab"}, "active_tab")
     )
-    def _global_export_snapshot_callback_(self, _, path: str, *args):
-        endpoint = self.endpointize(path=path, relative=False)
-        state_entries = []
-        for entry in (self.ctx.states_list or []):
-            state_entries.extend(entry if isinstance(entry, list) else [entry])
-        components = []
-        for s in state_entries:
-            cid = s.get("id")
-            if not isinstance(cid, dict):
-                continue
-            if cid.get("page") != endpoint:
-                continue
-            prop = s.get("property")
-            if not prop:
-                continue
-            components.append({"id": cid, "prop": prop, "value": s.get("value")})
-        payload = {"page": endpoint, "components": components}
-        filename = f"snapshot-{endpoint.strip('/').replace('/', '-') or 'root'}.json"
-        return dcc.send_string(json.dumps(payload, indent=2, sort_keys=True), filename=filename)
+    def _global_export_snapshot_callback_(self):
+        return self.asset(path="Callbacks/Export.js", resolve=True)
 
     @serverside_callback(
         Output("GLOBAL_MEMORY_STORAGE_ID", "data"),
