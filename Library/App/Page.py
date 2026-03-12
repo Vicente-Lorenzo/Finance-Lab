@@ -179,20 +179,20 @@ class PageAPI:
     @serverside_callback(
         Input("PAGE_MEMORY_STORAGE_ID", "data")
     )
-    def _page_async_debug_memory_callback_(self, data):
-        self._log_.debug(lambda: f"Page Memory Storage: {data if data else 'Empty'}")
+    def _page_async_update_memory_callback_(self, data):
+        self._log_.info(lambda: f"Page Memory Storage: {data if data else 'Empty'}")
 
     @serverside_callback(
         Input("PAGE_SESSION_STORAGE_ID", "data")
     )
-    def _page_async_debug_session_callback_(self, data):
-        self._log_.debug(lambda: f"Page Session Storage: {data if data else 'Empty'}")
+    def _page_async_update_session_callback_(self, data):
+        self._log_.info(lambda: f"Page Session Storage: {data if data else 'Empty'}")
 
     @serverside_callback(
         Input("PAGE_LOCAL_STORAGE_ID", "data")
     )
-    def _page_async_debug_local_callback_(self, data):
-        self._log_.debug(lambda: f"Page Local Storage: {data if data else 'Empty'}")
+    def _page_async_update_local_callback_(self, data):
+        self._log_.info(lambda: f"Page Local Storage: {data if data else 'Empty'}")
 
     def __init_ids__(self) -> None:
         self.PAGE_LOADING_TRIGGER_ID: dict = self.register(type="trigger", name="loading")

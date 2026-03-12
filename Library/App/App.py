@@ -947,20 +947,20 @@ class AppAPI:
     @serverside_callback(
         Input("GLOBAL_MEMORY_STORAGE_ID", "data")
     )
-    def _global_async_debug_memory_callback_(self, data):
-        self._log_.debug(lambda: f"Global Memory Storage: {data if data else 'Empty'}")
+    def _global_async_update_memory_callback_(self, data):
+        self._log_.info(lambda: f"Global Memory Storage: {data if data else 'Empty'}")
 
     @serverside_callback(
         Input("GLOBAL_SESSION_STORAGE_ID", "data")
     )
-    def _global_async_debug_session_callback_(self, data):
-        self._log_.debug(lambda: f"Global Session Storage: {data if data else 'Empty'}")
+    def _global_async_update_session_callback_(self, data):
+        self._log_.info(lambda: f"Global Session Storage: {data if data else 'Empty'}")
 
     @serverside_callback(
         Input("GLOBAL_LOCAL_STORAGE_ID", "data")
     )
-    def _global_async_debug_local_callback_(self, data):
-        self._log_.debug(lambda: f"Global Local Storage: {data if data else 'Empty'}")
+    def _global_async_update_local_callback_(self, data):
+        self._log_.info(lambda: f"Global Local Storage: {data if data else 'Empty'}")
 
     @clientside_callback(
         Output("GLOBAL_TERMINAL_COLLAPSE_ID", "is_open"),
