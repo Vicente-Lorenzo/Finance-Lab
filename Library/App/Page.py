@@ -49,9 +49,9 @@ class PageAPI:
         self._add_forward_parent_: bool = add_forward_parent
         self._add_forward_children_: bool = add_forward_children
 
-        self._anchor_: str = self.app.anchorize(anchor, relative=True) if anchor else anchor
-        self._endpoint_: str = self.app.endpointize(endpoint, relative=True) if endpoint else endpoint
-        self._redirect_: str = self.app.endpointize(redirect, relative=True) if redirect else redirect
+        self._anchor_: str = self.app.anchorize(path=anchor, relative=True) if anchor else anchor
+        self._endpoint_: str = self.app.endpointize(path=endpoint, relative=True) if endpoint else endpoint
+        self._redirect_: str = self.app.endpointize(path=redirect, relative=True) if redirect else redirect
 
         self._sidebar_: list[Component] = self.normalize(sidebar)
         self._content_: list[Component] = self.normalize(content)
@@ -59,10 +59,6 @@ class PageAPI:
 
         self._parent_: PageAPI | None = None
         self._children_: list[PageAPI] = []
-
-        self._loaders_: list[str] = []
-        self._reloaders_: list[str] = []
-        self._unloaders_: list[str] = []
 
         self._initialized_: bool = False
 
@@ -144,80 +140,61 @@ class PageAPI:
         page._children_.clear()
         self._log_.info(lambda: f"Merged {page} (Old) into {self} (New)")
 
-    def loader(self, name: str) -> dict:
-        self._loaders_.append(name)
-        return self.PAGE_LOADING_TRIGGER_ID
-
-    def reloader(self, name: str) -> dict:
-        self._reloaders_.append(name)
-        return self.PAGE_RELOADING_TRIGGER_ID
-
-    def unloader(self, name: str) -> dict:
-        self._unloaders_.append(name)
-        return self.PAGE_UNLOADING_TRIGGER_ID
-
-    @serverside_callback(
+    @clientside_callback(
         Output("PAGE_MEMORY_STORAGE_ID", "data"),
         State("PAGE_MEMORY_STORAGE_ID", "storage_type"),
         on_clean_memory=Injection.Hidden
     )
-    def _page_clean_memory_callback_(self, memory: str):
-        self._log_.debug(lambda: f"Clean Callback: Cleaned Memory (Type = {memory.capitalize()})")
-        return dict()
+    def _page_async_clean_memory_callback_(self):
+        return self.app.asset(path="Callbacks/Clear.js")
 
-    @serverside_callback(
+    @clientside_callback(
         Output("PAGE_SESSION_STORAGE_ID", "data"),
         State("PAGE_SESSION_STORAGE_ID", "storage_type"),
         on_clean_session=Injection.Hidden
     )
-    def _page_clean_session_callback_(self, session: str):
-        self._log_.debug(lambda: f"Clean Callback: Cleaned Session (Type = {session.capitalize()})")
-        return dict()
+    def _page_async_clean_session_callback_(self):
+        return self.app.asset(path="Callbacks/Clear.js")
 
-    @serverside_callback(
+    @clientside_callback(
         Output("PAGE_LOCAL_STORAGE_ID", "data"),
         State("PAGE_LOCAL_STORAGE_ID", "storage_type"),
         on_clean_local=Injection.Hidden
     )
-    def _page_clean_local_callback_(self, local: str):
-        self._log_.debug(lambda: f"Clean Callback: Cleaned Local (Type = {local.capitalize()})")
-        return dict()
+    def _page_async_clean_local_callback_(self):
+        return self.app.asset(path="Callbacks/Clear.js")
 
-    @serverside_callback(
+    @clientside_callback(
         Output("PAGE_MEMORY_STORAGE_ID", "data"),
         Output("PAGE_SESSION_STORAGE_ID", "data"),
         Output("PAGE_LOCAL_STORAGE_ID", "data"),
         State("PAGE_MEMORY_STORAGE_ID", "storage_type"),
         State("PAGE_SESSION_STORAGE_ID", "storage_type"),
         State("PAGE_LOCAL_STORAGE_ID", "storage_type"),
-        on_clean_reset=Injection.Hidden
+        on_clean_reset=Injection.Prepend
     )
-    def _page_clean_reset_callback_(self, memory: str, session: str, local: str):
-        memory = self._page_clean_memory_callback_(memory=memory)
-        session = self._page_clean_session_callback_(session=session)
-        local = self._page_clean_local_callback_(local=local)
-        self._log_.debug(lambda: f"Clean Reset Callback: Cleaned Memory, Session, Local")
-        return memory, session, local
+    def _page_async_clean_reset_callback_(self):
+        return self.app.asset(path="Callbacks/Clear.js")
 
     @serverside_callback(
         Input("PAGE_MEMORY_STORAGE_ID", "data")
     )
-    def _page_debug_memory_callback_(self, data):
+    def _page_async_debug_memory_callback_(self, data):
         self._log_.debug(lambda: f"Page Memory Storage: {data if data else 'Empty'}")
 
     @serverside_callback(
         Input("PAGE_SESSION_STORAGE_ID", "data")
     )
-    def _page_debug_session_callback_(self, data):
+    def _page_async_debug_session_callback_(self, data):
         self._log_.debug(lambda: f"Page Session Storage: {data if data else 'Empty'}")
 
     @serverside_callback(
         Input("PAGE_LOCAL_STORAGE_ID", "data")
     )
-    def _page_debug_local_callback_(self, data):
+    def _page_async_debug_local_callback_(self, data):
         self._log_.debug(lambda: f"Page Local Storage: {data if data else 'Empty'}")
 
-    def _init_ids_(self) -> None:
+    def __init_ids__(self) -> None:
         self.PAGE_LOADING_TRIGGER_ID: dict = self.register(type="trigger", name="loading")
         self.PAGE_RELOADING_TRIGGER_ID: dict = self.register(type="trigger", name="reloading")
         self.PAGE_UNLOADING_TRIGGER_ID: dict = self.register(type="trigger", name="unloading")
@@ -225,10 +202,9 @@ class PageAPI:
         self.PAGE_MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory", portable="data")
         self.PAGE_SESSION_STORAGE_ID: dict = self.register(type="storage", name="session", portable="data")
         self.PAGE_LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local", portable="data")
-
         self.ids()
 
-    def _init_hidden_(self) -> list[Component]:
+    def __init_hidden_layout_(self) -> list[Component]:
         hidden: list = []
         hidden.extend(StorageAPI(id=self.PAGE_LOADING_TRIGGER_ID, persistence="memory").build())
         hidden.extend(StorageAPI(id=self.PAGE_RELOADING_TRIGGER_ID, persistence="memory").build())
@@ -238,31 +214,31 @@ class PageAPI:
         hidden.extend(StorageAPI(id=self.PAGE_LOCAL_STORAGE_ID, persistence="local").build())
         return self.normalize(hidden)
 
-    def _init_content_(self) -> list[Component]:
-        hidden = self._init_hidden_()
+    def __init_content_layout__(self) -> list[Component]:
+        hidden = self.__init_hidden_layout_()
         self._log_.debug(lambda: f"Loaded Hidden Layout")
         content = self.normalize(self._content_ or self.content())
         return self.normalize([*content, *hidden])
 
-    def _init_sidebar_(self) -> list[Component]:
+    def __init_sidebar_layout__(self) -> list[Component]:
         sidebar = self.normalize(self._sidebar_ or self.sidebar())
         return self.normalize([*sidebar])
 
-    def _init_navigation_(self) -> list[Component]:
+    def __init_navigation_layout__(self) -> list[Component]:
         navigation = self.normalize(self._navigation_ or self.navigation())
         return self.normalize([*navigation])
 
     def _init_layout_(self) -> None:
-        self._content_ = self._init_content_()
+        self._content_ = self.__init_content_layout__()
         self._log_.debug(lambda: f"Loaded Content Layout")
-        self._sidebar_ = self._init_sidebar_()
+        self._sidebar_ = self.__init_sidebar_layout__()
         self._log_.debug(lambda: f"Loaded Sidebar Layout")
-        self._navigation_ = self._init_navigation_()
+        self._navigation_ = self.__init_navigation_layout__()
         self._log_.debug(lambda: f"Loaded Navigation Layout")
 
     def _init_(self) -> None:
         if self._initialized_: return
-        self._init_ids_()
+        self.__init_ids__()
         self._log_.info(lambda: f"Initialized IDs: {self}")
         self._init_layout_()
         self._log_.info(lambda: f"Initialized Layout: {self}")

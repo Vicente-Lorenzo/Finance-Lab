@@ -62,15 +62,15 @@ class FormAPI(PageAPI):
         self._back_button_label_: str = back_button_label
         self._next_button_label_: str = next_button_label
 
-    def _init_ids_(self) -> None:
+    def __init_ids__(self) -> None:
         self.FORM_ACTION_BUTTON_ID = self.register(type="button", name="action")
         self.FORM_BACK_INTERNAL_ID = self.register(type="button", name="internal-back")
         self.FORM_BACK_EXTERNAL_ID = self.register(type="button", name="external-back")
         self.FORM_NEXT_INTERNAL_ID = self.register(type="button", name="internal-next")
         self.FORM_NEXT_EXTERNAL_ID = self.register(type="button", name="external-next")
-        super()._init_ids_()
+        super().__init_ids__()
 
-    def _init_buttons_(self) -> list[Component]:
+    def __init_button_layout__(self) -> list[Component]:
         buttons = []
         if self._add_back_button_:
             target: str = self.app.endpointize(path=self._add_back_button_, relative=True) if isinstance(self._add_back_button_, str) else None
@@ -112,10 +112,10 @@ class FormAPI(PageAPI):
             ))
         return self.normalize([*buttons])
 
-    def _init_content_(self) -> list[Component]:
-        hidden = self._init_hidden_()
+    def __init_content_layout__(self) -> list[Component]:
+        hidden = self.__init_hidden_layout_()
         self._log_.debug(lambda: f"Loaded Hidden Layout")
-        buttons = self._init_buttons_()
+        buttons = self.__init_button_layout__()
         buttons = ContainerAPI(elements=buttons, stylename="form-page-buttons").build()
         self._log_.debug(lambda: f"Loaded Buttons Layout")
         content = self.normalize(self._content_ or self.content())

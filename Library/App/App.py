@@ -2,7 +2,6 @@ import dash
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
-from dash._callback_context import CallbackContext
 
 import flask
 from fastapi import FastAPI
@@ -102,12 +101,6 @@ class AppAPI:
 
         self._log_ = HandlerLoggingAPI(AppAPI.__name__)
 
-        self._ids_: set = set()
-        self._pages_: dict[str, PageAPI] = {}
-        self._loaders_: list[str] = []
-        self._reloaders_: list[str] = []
-        self._unloaders_: list[str] = []
-
         self._name_: str = name
         self._log_.debug(lambda: f"Defined Name = {self._name_}")
         self._title_: str = title
@@ -177,29 +170,23 @@ class AppAPI:
         self._low_frequency_interval_: int = low_frequency_interval
         self._log_.debug(lambda: f"Defined Low Frequency Interval = {self._low_frequency_interval_}")
 
-        self._stylesheets_: list[str | dict] = [dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP]
-
         self._init_app_()
         self._log_.info(lambda: "Initialized App")
-
-        self._init_components_()
-
-        self._init_pages_()
-        self._log_.debug(lambda: "Initialized Pages")
 
         self._init_layout_()
         self._log_.info(lambda: "Initialized Layout")
 
+        self._init_pages_()
+        self._log_.info(lambda: "Initialized Pages")
+
         self._init_navigation_()
-        self._log_.debug(lambda: "Initialized Navigation")
+        self._log_.info(lambda: "Initialized Navigation")
 
         self._init_callbacks_()
         self._log_.info(lambda: "Initialized Callbacks")
 
-        self.ctx: CallbackContext = dash.callback_context
-        self._log_.info(lambda: "Initialized Context")
-
-    def _init_ids_(self) -> None:
+    def __init_ids__(self) -> None:
+        self._ids_: set = set()
         self.GLOBAL_LOCATION_ID: dict = self.register(type="location", name="location")
         self.GLOBAL_LOCATION_STORAGE_ID: dict = self.register(type="storage", name="location")
         self.GLOBAL_DESCRIPTION_ID: dict = self.register(type="div", name="description")
@@ -254,12 +241,11 @@ class AppAPI:
         self.GLOBAL_HIGH_FREQUENCY_INTERVAL_ID: dict = self.register(type="interval", name="high")
         self.GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID: dict = self.register(type="interval", name="medium")
         self.GLOBAL_LOW_FREQUENCY_INTERVAL_ID: dict = self.register(type="interval", name="low")
-
         self.ids()
 
-    def _init_assets_(self):
+    def __init_assets__(self):
         def serve_application(filename: str):
-            return flask.send_from_directory(self._application_assets_, filename, max_age=31536000)
+            return flask.send_from_directory(self._application_assets_, filename)
         self.app.server.add_url_rule(
             rule=f"{(self._anchor_ / self._application_assets_url_).as_posix()}/<path:filename>",
             endpoint=f"_{self._application_assets_url_}_{id(self)}",
@@ -275,104 +261,52 @@ class AppAPI:
             requests_pathname_prefix=self._endpoint_,
             assets_url_path=self._library_assets_url_,
             assets_folder=inspect_path(self._library_assets_),
-            external_stylesheets=self._stylesheets_,
+            external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
             suppress_callback_exceptions=True,
             prevent_initial_callbacks=True
         )
-        self._init_ids_()
-        self._init_assets_()
+        self._log_.debug(lambda: "Init App: Loaded App")
+        self.__init_ids__()
+        self._log_.debug(lambda: "Init App: Loaded IDs")
+        self.__init_assets__()
+        self._log_.debug(lambda: "Init App: Loaded Assets")
 
-    def _init_components_(self) -> None:
-        self.components()
-        self._log_.debug(lambda: "Initialized Components")
-
-    def _init_pages_(self) -> None:
+    def __init_default_layout__(self):
         self.GLOBAL_NOT_FOUND_LAYOUT = DefaultLayoutAPI(
-            image=self.asset(path="Images/404.png"),
+            image=self.asset(path="Images/404.png", url=True),
             title="Resource Not Found",
             description="Unable to find the resource you are looking for.",
             details="Please check the url path."
         ).build()
         self.GLOBAL_LOADING_LAYOUT = DefaultLayoutAPI(
-            image=self.asset(path="Images/loading.gif"),
+            image=self.asset(path="Images/loading.gif", url=True),
             title="Loading...",
             description="This resource is loading its content.",
             details="Please wait a moment."
         ).build()
         self.GLOBAL_MAINTENANCE_LAYOUT = DefaultLayoutAPI(
-            image=self.asset(path="Images/maintenance.png"),
+            image=self.asset(path="Images/maintenance.png", url=True),
             title="Resource Under Maintenance",
             description="This resource is temporarily down for maintenance.",
             details="Please try again later."
         ).build()
         self.GLOBAL_DEVELOPMENT_LAYOUT = DefaultLayoutAPI(
-            image=self.asset(path="Images/development.png"),
+            image=self.asset(path="Images/development.png", url=True),
             title="Resource Under Development",
             description="This resource is currently under development.",
             details="Please try again later."
         ).build()
         self.GLOBAL_NOT_INDEXED_LAYOUT = DefaultLayoutAPI(
-            image=self.asset(path="Images/indexed.png"),
+            image=self.asset(path="Images/indexed.png", url=True),
             title="Resource Not Indexed",
             description="This resource is not indexed at any page.",
             details="Please try again later."
         ).build()
-        self.pages()
 
-    def _init_navigation_(self) -> None:
-        for endpoint, page in self._pages_.items():
-            if page._navigation_ or getattr(page.navigation, "__func__", None) is not PageAPI.navigation:
-                self._log_.debug(lambda: f"Init Navigation: Preserving Custom Navigation for {endpoint}")
-                continue
-            if not page.parent and not page.children:
-                page._navigation_ = []
-                self._log_.debug(lambda: f"Init Navigation: Loaded Page = {endpoint} with No Navigation")
-                continue
-            if page.parent and not page.children:
-                page._navigation_ = page.parent._navigation_
-                self._log_.debug(lambda: f"Init Navigation: Loaded Page = {endpoint} with Parent Navigation")
-                continue
-            currents = []
-            for b in page.backwards():
-                backward = PaginatorAPI(
-                    href=b.endpoint,
-                    label=[IconAPI(icon="bi bi-arrow-bar-left"), TextAPI(text=f"  {b.button}")],
-                    background="white",
-                    outline_color="black",
-                    outline_style="solid",
-                    outline_width="1px",
-                )
-                currents.append(NavigatorAPI(element=backward, typename="header-navigation"))
-            for c in page.currents():
-                forwards = []
-                for f in page.forwards(c):
-                    forward = PaginatorAPI(
-                        href=f.endpoint,
-                        label=[TextAPI(text=f.button)],
-                        background="white"
-                    )
-                    forwards.append(DropdownAPI(element=forward))
-                dropdown = DropdownContainerAPI(
-                    elements=forwards,
-                    background="white",
-                    align_end=True
-                ) if forwards else None
-                current = PaginatorAPI(
-                    href=c.endpoint,
-                    label=[TextAPI(text=c.button)],
-                    dropdown=dropdown,
-                    background="white",
-                    outline_color="black",
-                    outline_style="solid",
-                    outline_width="1px",
-                )
-                currents.append(NavigatorAPI(element=current, typename="header-navigation"))
-            page._navigation_ = NavigatorContainerAPI(elements=currents).build()
-
-    def _init_header_(self) -> Component:
+    def __init_header_layout__(self) -> Component:
         return html.Div(children=[
             html.Div(children=[
-                html.Div(children=[html.Img(src=self.asset(path="Images/logo.png"), className="header-image")], className="header-logo"),
+                html.Div(children=[html.Img(src=self.asset(path="Images/logo.png", url=True), className="header-image")], className="header-logo"),
                 html.Div(children=[html.H1(self._name_, className="header-title"), html.H4(self._team_, className="header-team")], className="header-title-team"),
                 html.Div(children=[self._description_], id=self.GLOBAL_DESCRIPTION_ID, className="header-description")
             ], className="header-information-block"),
@@ -389,7 +323,7 @@ class AppAPI:
             ], className="header-control-block")
         ], className="header")
 
-    def _init_content_(self) -> Component:
+    def __init_content_layout__(self) -> Component:
         return html.Div(children=[
                 dbc.Collapse(children=[html.Div(children=[
                     self.GLOBAL_LOADING_LAYOUT
@@ -400,7 +334,7 @@ class AppAPI:
                 ], id=self.GLOBAL_CONTENT_ID, className="page-content"),
         ], className="content")
 
-    def _init_footer_(self) -> Component:
+    def __init_footer_layout__(self) -> Component:
         return html.Div(children=[
             html.Div(children=[
                 *ButtonAPI(
@@ -455,7 +389,7 @@ class AppAPI:
             ]), className="footer-panel footer-panel-right", color="dark", inverse=True), id=self.GLOBAL_TERMINAL_COLLAPSE_ID, is_open=False)
         ], className="footer")
 
-    def _init_hidden_(self) -> Component:
+    def __init_hidden_layout__(self) -> Component:
         hidden: list = [dcc.Location(id=self.GLOBAL_LOCATION_ID, refresh=False)]
         hidden.extend(StorageAPI(id=self.GLOBAL_LOADING_TRIGGER_ID, persistence="memory").build())
         hidden.extend(StorageAPI(id=self.GLOBAL_ROUTING_STORAGE_ID, persistence="memory").build())
@@ -471,33 +405,99 @@ class AppAPI:
         return html.Div(children=hidden, className="hidden")
 
     def _init_layout_(self) -> None:
-        header = self._init_header_()
+        self.components()
+        self._log_.debug(lambda: "Init Layout: Loaded Components")
+        self.__init_default_layout__()
+        self._log_.debug(lambda: "Init Pages: Loaded Default Layout")
+        header = self.__init_header_layout__()
         self._log_.debug(lambda: "Init Layout: Loaded Header Layout")
-        content = self._init_content_()
+        content = self.__init_content_layout__()
         self._log_.debug(lambda: "Init Layout: Loaded Content Layout")
-        footer = self._init_footer_()
+        footer = self.__init_footer_layout__()
         self._log_.debug(lambda: "Init Layout: Loaded Footer Layout")
-        hidden = self._init_hidden_()
+        hidden = self.__init_hidden_layout__()
         self._log_.debug(lambda: "Init Layout: Loaded Hidden Layout")
         layout = html.Div(children=[header, content, footer, hidden], className="app")
         self.app.layout = layout
         self._log_.debug(lambda: "Init Layout: Loaded App Layout")
 
-    def _init_callbacks_(self) -> None:
+    def _init_pages_(self) -> None:
+        self._pages_: dict[str, PageAPI] = {}
+        self.pages()
+        self._log_.debug(lambda: "Init Pages: Loaded Custom Pages")
+
+    def _init_navigation_(self) -> None:
+        for endpoint, page in self._pages_.items():
+            if page._navigation_ or getattr(page.navigation, "__func__", None) is not PageAPI.navigation:
+                self._log_.debug(lambda: f"Init Navigation: Preserving Custom Navigation for {endpoint}")
+                continue
+            if not page.parent and not page.children:
+                page._navigation_ = []
+                self._log_.debug(lambda: f"Init Navigation: Loaded Page = {endpoint} with No Navigation")
+                continue
+            if page.parent and not page.children:
+                page._navigation_ = page.parent._navigation_
+                self._log_.debug(lambda: f"Init Navigation: Loaded Page = {endpoint} with Parent Navigation")
+                continue
+            currents = []
+            for b in page.backwards():
+                backward = PaginatorAPI(
+                    href=b.endpoint,
+                    label=[IconAPI(icon="bi bi-arrow-bar-left"), TextAPI(text=f"  {b.button}")],
+                    background="white",
+                    outline_color="black",
+                    outline_style="solid",
+                    outline_width="1px",
+                )
+                currents.append(NavigatorAPI(element=backward, typename="header-navigation"))
+            for c in page.currents():
+                forwards = []
+                for f in page.forwards(c):
+                    forward = PaginatorAPI(
+                        href=f.endpoint,
+                        label=[TextAPI(text=f.button)],
+                        background="white"
+                    )
+                    forwards.append(DropdownAPI(element=forward))
+                dropdown = DropdownContainerAPI(
+                    elements=forwards,
+                    background="white",
+                    align_end=True
+                ) if forwards else None
+                current = PaginatorAPI(
+                    href=c.endpoint,
+                    label=[TextAPI(text=c.button)],
+                    dropdown=dropdown,
+                    background="white",
+                    outline_color="black",
+                    outline_style="solid",
+                    outline_width="1px",
+                )
+                currents.append(NavigatorAPI(element=current, typename="header-navigation"))
+            page._navigation_ = NavigatorContainerAPI(elements=currents).build()
+
+    def __init_injections__(self):
         def _click_py_(_, *, original_inputs, **__):
             clicks = original_inputs[0]
             if not clicks: raise PreventUpdate
-        _click_js_ = self.asset(path="Callbacks/Click.js", resolve=True)
+        _click_js_ = self.asset(path="Callbacks/Click.js")
         def _trigger_py_(_, *, inject_inputs):
             trigger = inject_inputs[0]
             if not trigger: raise PreventUpdate
             return TriggerAPI(**trigger).trigger().dict()
-        _trigger_js_ = self.asset(path="Callbacks/Trigger.js", resolve=True)
+        _trigger_js_ = self.asset(path="Callbacks/Trigger.js")
         def _clean_py_(_, *, inject_inputs, **__):
             clicks = inject_inputs[0]
             trigger = inject_inputs[1]
             if not clicks and not trigger: raise PreventUpdate
-        _clean_js_ = self.asset(path="Callbacks/Clean.js", resolve=True)
+            return TriggerAPI(**trigger).trigger().dict()
+        _clean_js_ = self.asset(path="Callbacks/Clean.js")
+        def _reset_py_(_, *, inject_inputs, **__):
+            clicks = inject_inputs[0]
+            trigger = inject_inputs[1]
+            if not clicks and not trigger: raise PreventUpdate
+            return TriggerAPI(**trigger).trigger().dict()
+        _reset_js_ = self.asset(path="Callbacks/Reset.js")
         common_injections = [
             ("_on_click_", [], (_click_py_, _click_js_)),
             ("_on_clean_memory_", [
@@ -515,7 +515,7 @@ class AppAPI:
             ("_on_clean_reset_", [
                 Input("GLOBAL_CLEAN_RESET_BUTTON_ID", "n_clicks"),
                 Input("GLOBAL_CLEAN_RESET_TRIGGER_ID", "data")
-            ], (_clean_py_, _clean_js_))
+            ], (_reset_py_, _reset_js_), "clean_reset")
         ]
         page_injections = [
             ("_on_loading_", [
@@ -534,11 +534,21 @@ class AppAPI:
                 State("PAGE_UNLOADING_TRIGGER_ID", "data"),
             ], (_trigger_py_, _trigger_js_))
         ]
-        app_injections = [
+        global_injections = [
             ("_on_loading_", [Input("GLOBAL_LOADING_TRIGGER_ID", "data")], (None, None)),
             ("_on_reloading_", [Input("GLOBAL_RELOADING_TRIGGER_ID", "data")], (None, None)),
             ("_on_unloading_", [Input("GLOBAL_UNLOADING_TRIGGER_ID", "data")], (None, None))
         ]
+        return common_injections, page_injections, global_injections
+
+    def __init_semaphores__(self):
+        self._global_callbacks_map_: dict[str, int] = {}
+        self._page_callbacks_map_: dict[str, dict[str, int]] = {}
+
+    def _init_callbacks_(self) -> None:
+        self.__init_semaphores__()
+        self._log_.debug(lambda: "Init Callbacks: Loaded Semaphores")
+        common_injections, page_injections, app_injections = self.__init_injections__()
         for context in [self] + list(self._pages_.values()):
             is_page = isinstance(context, PageAPI)
             callback_injections = common_injections + (page_injections if is_page else app_injections)
@@ -621,32 +631,37 @@ class AppAPI:
                         callback_type = "Server"
                     self._log_.info(lambda: f"Init Callbacks: Loaded {callback_type}-Side Callback: {callback_name}")
 
-    def asset(self, path: str, resolve: bool = False) -> str:
+    def asset(self, *, path: str, url: bool = False) -> str:
         if (self._library_assets_ / path).exists():
-            if resolve:
+            self._log_.debug(lambda: f"Resolve Asset: Asset Found = {path} (Library)")
+            if url:
+                return self.app.get_asset_url(path)
+            else:
                 return (self._library_assets_ / path).read_text(encoding="utf-8")
-            return self.app.get_asset_url(path)
         if (self._application_assets_ / path).exists():
-            if resolve:
+            self._log_.debug(lambda: f"Resolve Asset: Asset Found = {path} (Application)")
+            if url:
+                return (self._anchor_ / self._application_assets_url_ / path).as_posix()
+            else:
                 return (self._application_assets_ / path).read_text(encoding="utf-8")
-            return (self._anchor_ / self._application_assets_url_ / path).as_posix()
-        if resolve:
-            self._log_.warning(lambda: f"Resolve Asset: Could not find {path}")
-            return ""
-        return self.app.get_asset_url(path)
+        raise RuntimeError(f"Resolve Asset: Asset Not Found: {path}")
 
     def identify(self, *, page: str = None, type: str, name: str, portable: str = "", **kwargs) -> dict:
         page = page or "global"
-        return {"app": self.__class__.__name__, "page": page, "type": type, "name": name, "portable": portable, **kwargs}
+        cid = {"app": self.__class__.__name__, "page": page, "type": type, "name": name, "portable": portable, **kwargs}
+        self._log_.debug(lambda: f"Identify Component: Identified Component = {cid}")
+        return cid
 
     def register(self, *, page: str = "global", type: str, name: str, portable: str = "", **kwargs) -> dict:
         cid = self.identify(page=page, type=type, name=name, portable=portable, **kwargs)
         key = (cid["app"], cid["page"], cid["type"], cid["name"], cid["portable"])
-        if key in self._ids_: raise RuntimeError(f"Duplicate Dash ID detected: {cid}")
-        self._ids_.add(key)
-        return cid
+        if key not in self._ids_:
+            self._ids_.add(key)
+            self._log_.debug(lambda: f"Register Component: Registered Component = {cid}")
+            return cid
+        raise RuntimeError(f"Duplicate Dash ID detected: {cid}")
 
-    def resolve(self, path: PurePath | str, relative: bool, footer: bool = None) -> str:
+    def resolve(self, *, path: PurePath | str, relative: bool, footer: bool = None) -> str:
         path = inspect_file(path, header=False, builder=PurePosixPath)
         self._log_.debug(lambda: f"Resolve Path: Received = {path}")
         path = self._anchor_ / path if relative else path
@@ -654,27 +669,31 @@ class AppAPI:
         self._log_.debug(lambda: f"Resolve Path: Resolved = {resolve}")
         return resolve
 
-    def anchorize(self, path: PurePath | str, relative: bool = True) -> str:
-        return self.resolve(path, relative=relative, footer=False)
+    def anchorize(self, *, path: PurePath | str, relative: bool = True) -> str:
+        anchor = self.resolve(path=path, relative=relative, footer=False)
+        self._log_.debug(lambda: f"Anchorize Path: Resolved = {anchor}")
+        return anchor
 
-    def endpointize(self, path: PurePath | str, relative: bool = True) -> str:
-        return self.resolve(path, relative=relative, footer=True)
+    def endpointize(self, *, path: PurePath | str, relative: bool = True) -> str:
+        endpoint = self.resolve(path=path, relative=relative, footer=True)
+        self._log_.debug(lambda: f"Endpointize Path: Resolved = {endpoint}")
+        return endpoint
 
-    def locate(self, endpoint: str) -> tuple[str, PageAPI | None]:
+    def locate(self, *, endpoint: str) -> tuple[str, PageAPI | None]:
         page = self._pages_.get(endpoint, None)
-        if page: self._log_.debug(lambda: f"Locate Page: Found = {endpoint}")
-        else: self._log_.debug(lambda: f"Locate Page: Not Found = {endpoint}")
+        self._log_.debug(lambda: f"Locate Page: {'Found' if page else 'Not Found'} = {endpoint}")
         return endpoint, page
 
-    def redirect(self, endpoint: str) -> tuple[str, PageAPI | None]:
+    def redirect(self, *, endpoint: str) -> tuple[str, PageAPI | None]:
         endpoint, page = self.locate(endpoint=endpoint)
         while page and page.endpoint != page.redirect:
             self._log_.debug(lambda: f"Redirect Page: Redirect = {page.endpoint} -> {page.redirect}")
             endpoint, page = self.locate(endpoint=page.redirect)
         return endpoint, page
 
-    def index(self, endpoint: str, page: PageAPI) -> None:
+    def index(self, *, endpoint: str, page: PageAPI) -> None:
         self._pages_[endpoint] = page
+        self._log_.debug(lambda: f"Index Page: Indexed = {endpoint}")
 
     def link(self, page: PageAPI) -> None:
         relative_path = inspect_file(page.path, header=True, builder=PurePosixPath)
@@ -726,23 +745,11 @@ class AppAPI:
         page.attach(parent=intermediate_parent)
         page._init_()
 
-    def loader(self, name: str) -> dict:
-        self._loaders_.append(name)
-        return self.GLOBAL_LOADING_TRIGGER_ID
-
-    def reloader(self, name: str) -> dict:
-        self._reloaders_.append(name)
-        return self.GLOBAL_RELOADING_TRIGGER_ID
-
-    def unloader(self, name: str) -> dict:
-        self._unloaders_.append(name)
-        return self.GLOBAL_UNLOADING_TRIGGER_ID
-
     @clientside_callback(
         Input("GLOBAL_ROUTING_STORAGE_ID", "data")
     )
-    def _global_routing_location_callback_(self):
-        return self.asset(path="Callbacks/Routing.js", resolve=True)
+    def _global_async_routing_location_callback_(self):
+        return self.asset(path="Callbacks/Routing.js")
 
     @serverside_callback(
         Output("GLOBAL_LOCATION_ID", "pathname"),
@@ -759,7 +766,7 @@ class AppAPI:
         State("GLOBAL_RELOADING_TRIGGER_ID", "data"),
         on_init=Injection.Hidden
     )
-    def _global_update_location_callback_(self, path: str, location: dict, loading: dict, reloading: dict):
+    def _global_async_update_location_callback_(self, path: str, location: dict, loading: dict, reloading: dict):
         self._log_.debug(lambda: f"Update Location Callback: Received Path = {path}")
         anchor = self.anchorize(path=path, relative=False)
         self._log_.debug(lambda: f"Update Location Callback: Parsed Anchor = {anchor}")
@@ -817,7 +824,7 @@ class AppAPI:
         State("GLOBAL_LOCATION_STORAGE_ID", "data"),
         on_click=Injection.Hidden
     )
-    def _global_backward_location_callback_(self, _, location: dict):
+    def _global_async_backward_location_callback_(self, _, location: dict):
         location = LocationAPI(**location)
         path = location.backward(step=True)
         if not path:
@@ -830,8 +837,8 @@ class AppAPI:
         Input("GLOBAL_REFRESH_BUTTON_ID", "n_clicks"),
         Input("GLOBAL_REFRESH_TRIGGER_ID", "data")
     )
-    def _global_refresh_location_callback_(self):
-        return self.asset(path="Callbacks/Refresh.js", resolve=True)
+    def _global_async_refresh_location_callback_(self):
+        return self.asset(path="Callbacks/Refresh.js")
 
     @serverside_callback(
         Output("GLOBAL_LOCATION_ID", "pathname"),
@@ -840,7 +847,7 @@ class AppAPI:
         State("GLOBAL_LOCATION_STORAGE_ID", "data"),
         on_click=Injection.Hidden
     )
-    def _global_forward_location_callback_(self, _, location: dict):
+    def _global_async_forward_location_callback_(self, _, location: dict):
         location = LocationAPI(**location)
         path = location.forward(step=True)
         if not path:
@@ -849,24 +856,16 @@ class AppAPI:
         self._log_.debug(lambda: f"Forward Location Callback: Navigating to {path}")
         return path, location.dict()
 
-    def _global_collapse_button_callback_(self, name: str, was_open: bool, classname: str = None):
-        is_open = not was_open
-        self._log_.debug(lambda: f"{name} Callback: {'Expanding' if is_open else 'Collapsing'}")
-        if not classname: return is_open
-        elif is_open: classname = classname.replace("down", "up")
-        else: classname = classname.replace("up", "down")
-        return is_open, classname
-
-    @serverside_callback(
+    @clientside_callback(
         Output("GLOBAL_SIDEBAR_COLLAPSE_ID", "is_open"),
         Input("GLOBAL_SIDEBAR_BUTTON_ID", "n_clicks"),
         State("GLOBAL_SIDEBAR_COLLAPSE_ID", "is_open"),
         on_click=Injection.Hidden
     )
-    def _global_sidebar_button_callback_(self, _, was_open: bool):
-        return self._global_collapse_button_callback_(name="Sidebar", was_open=was_open)
+    def _global_async_sidebar_button_callback_(self):
+        return self.asset(path="Callbacks/Collapse.js")
 
-    @serverside_callback(
+    @clientside_callback(
         Output("GLOBAL_CONTACTS_COLLAPSE_ID", "is_open"),
         Output("GLOBAL_CONTACTS_ARROW_ID", "className"),
         Input("GLOBAL_CONTACTS_BUTTON_ID", "n_clicks"),
@@ -874,15 +873,15 @@ class AppAPI:
         State("GLOBAL_CONTACTS_ARROW_ID", "className"),
         on_click=Injection.Hidden
     )
-    def _global_contacts_button_callback_(self, _, was_open: bool, classname: str):
-        return self._global_collapse_button_callback_(name="Contacts", was_open=was_open, classname=classname)
+    def _global_async_contacts_button_callback_(self):
+        return self.asset(path="Callbacks/Collapse.js")
 
     @clientside_callback(
         Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
         State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
     )
-    def _global_import_snapshot_callback_(self):
-        return self.asset(path="Callbacks/Import.js", resolve=True)
+    def _global_async_import_snapshot_callback_(self):
+        return self.asset(path="Callbacks/Import.js")
 
     @clientside_callback(
         Output("GLOBAL_EXPORT_DOWNLOAD_ID", "data"),
@@ -901,45 +900,40 @@ class AppAPI:
         State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "is_open"}, "is_open"),
         State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "active_tab"}, "active_tab")
     )
-    def _global_export_snapshot_callback_(self):
-        return self.asset(path="Callbacks/Export.js", resolve=True)
+    def _global_async_export_snapshot_callback_(self):
+        return self.asset(path="Callbacks/Export.js")
 
-    @serverside_callback(
+    @clientside_callback(
         Output("GLOBAL_MEMORY_STORAGE_ID", "data"),
         State("GLOBAL_MEMORY_STORAGE_ID", "storage_type"),
         on_clean_memory=Injection.Hidden
     )
-    def _global_clean_memory_callback_(self, memory: str):
-        self._log_.debug(lambda: f"Clean Callback: Cleaned Memory (Type = {memory.capitalize()})")
-        return dict()
+    def _global_async_clean_memory_callback_(self):
+        return self.asset(path="Callbacks/Clear.js")
 
-    @serverside_callback(
+    @clientside_callback(
         Output("GLOBAL_SESSION_STORAGE_ID", "data"),
         State("GLOBAL_SESSION_STORAGE_ID", "storage_type"),
         on_clean_session=Injection.Hidden
     )
-    def _global_clean_session_callback_(self, session: str):
-        self._log_.debug(lambda: f"Clean Callback: Cleaned Session (Type = {session.capitalize()})")
-        return dict()
+    def _global_async_clean_session_callback_(self):
+        return self.asset(path="Callbacks/Clear.js")
 
-    @serverside_callback(
+    @clientside_callback(
         Output("GLOBAL_LOCAL_STORAGE_ID", "data"),
         State("GLOBAL_LOCAL_STORAGE_ID", "storage_type"),
         on_clean_local=Injection.Hidden
     )
-    def _global_clean_local_callback_(self, local: str):
-        self._log_.debug(lambda: f"Clean Callback: Cleaned Local (Type = {local.capitalize()})")
-        return dict()
+    def _global_async_clean_local_callback_(self):
+        return self.asset(path="Callbacks/Clear.js")
 
-    @serverside_callback(
+    @clientside_callback(
         Output("GLOBAL_MEMORY_STORAGE_ID", "data"),
         Output("GLOBAL_SESSION_STORAGE_ID", "data"),
         Output("GLOBAL_LOCAL_STORAGE_ID", "data"),
-        Output("GLOBAL_REFRESH_TRIGGER_ID", "data"),
         State("GLOBAL_MEMORY_STORAGE_ID", "storage_type"),
         State("GLOBAL_SESSION_STORAGE_ID", "storage_type"),
         State("GLOBAL_LOCAL_STORAGE_ID", "storage_type"),
-        State("GLOBAL_REFRESH_TRIGGER_ID", "data"),
         on_clean_reset=Injection.Hidden
     )
     def _global_clean_reset_callback_(self, memory: str, session: str, local: str, refresh: dict):
@@ -953,22 +947,22 @@ class AppAPI:
     @serverside_callback(
         Input("GLOBAL_MEMORY_STORAGE_ID", "data")
     )
-    def _global_debug_memory_callback_(self, data):
+    def _global_async_debug_memory_callback_(self, data):
         self._log_.debug(lambda: f"Global Memory Storage: {data if data else 'Empty'}")
 
     @serverside_callback(
         Input("GLOBAL_SESSION_STORAGE_ID", "data")
     )
-    def _global_debug_session_callback_(self, data):
+    def _global_async_debug_session_callback_(self, data):
         self._log_.debug(lambda: f"Global Session Storage: {data if data else 'Empty'}")
 
     @serverside_callback(
         Input("GLOBAL_LOCAL_STORAGE_ID", "data")
     )
-    def _global_debug_local_callback_(self, data):
+    def _global_async_debug_local_callback_(self, data):
         self._log_.debug(lambda: f"Global Local Storage: {data if data else 'Empty'}")
 
-    @serverside_callback(
+    @clientside_callback(
         Output("GLOBAL_TERMINAL_COLLAPSE_ID", "is_open"),
         Output("GLOBAL_TERMINAL_ARROW_ID", "className"),
         Input("GLOBAL_TERMINAL_BUTTON_ID", "n_clicks"),
@@ -976,15 +970,15 @@ class AppAPI:
         State("GLOBAL_TERMINAL_ARROW_ID", "className"),
         on_click=Injection.Hidden
     )
-    def _global_terminal_button_callback_(self, _, was_open: bool, classname: str):
-        return self._global_collapse_button_callback_(name="Terminal", was_open=was_open, classname=classname)
+    def _global_async_terminal_button_callback_(self):
+        return self.asset(path="Callbacks/Collapse.js")
 
     @serverside_callback(
         Output("GLOBAL_TERMINAL_ID", "children"),
         Input("GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID", "n_intervals"),
         State("GLOBAL_TERMINAL_ID", "children")
     )
-    def _global_terminal_stream_callback_(self, _, terminal: list[Component]):
+    def _global_async_terminal_stream_callback_(self, _, terminal: list[Component]):
         logs = self._log_.web.stream()
         if not logs: raise PreventUpdate
         terminal = terminal or []
@@ -1026,3 +1020,6 @@ class AppAPI:
         self._log_.info(lambda: f"Mounting Server at {path}")
         app.mount(path, WSGIMiddleware(self.app.server))
         return app
+
+    def __repr__(self) -> str:
+        return repr(f"{self.__class__.__name__} @ {self._host_url_}")
