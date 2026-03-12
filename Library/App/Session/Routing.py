@@ -7,17 +7,20 @@ from Library.App.Session import StorageAPI
 class RoutingAPI(StorageAPI):
 
     href: str | None = field(default=None, init=True, repr=True)
+    refresh: bool = field(default=False, init=True, repr=True)
     external: bool = field(default=False, init=True, repr=True)
     replace: bool = field(default=False, init=True, repr=True)
 
-    def redirect(self, href: str, *, external: bool = False) -> Self:
+    def redirect(self, href: str, *, refresh: bool = False, external: bool = False) -> Self:
         self.trigger()
         self.href = href
+        self.refresh = refresh
         self.external = external
         return self
 
     def clear(self) -> Self:
         self.href = None
+        self.refresh = False
         self.external = False
         self.replace = False
         return self
