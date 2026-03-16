@@ -1,3 +1,6 @@
+import time
+from pathlib import PurePosixPath
+
 import dash
 from dash import dcc, html
 import dash_bootstrap_components as dbc
@@ -6,8 +9,6 @@ from dash.exceptions import PreventUpdate
 import flask
 from fastapi import FastAPI
 from fastapi.middleware.wsgi import WSGIMiddleware
-
-from pathlib import PurePosixPath
 
 from Library.App import *
 from Library.Logging import *
@@ -31,11 +32,11 @@ class AppAPI:
     GLOBAL_SIDEBAR_COLLAPSE_ID: dict
 
     GLOBAL_BACKWARD_BUTTON_ID: dict
-    GLOBAL_BACKWARD_TRIGGER_ID: dict
+    GLOBAL_BACKWARD_ASYNC_ID: dict
     GLOBAL_REFRESH_BUTTON_ID: dict
-    GLOBAL_REFRESH_TRIGGER_ID: dict
+    GLOBAL_REFRESH_ASYNC_ID: dict
     GLOBAL_FORWARD_BUTTON_ID: dict
-    GLOBAL_FORWARD_TRIGGER_ID: dict
+    GLOBAL_FORWARD_ASYNC_ID: dict
 
     GLOBAL_CONTACTS_ARROW_ID: dict
     GLOBAL_CONTACTS_BUTTON_ID: dict
@@ -52,23 +53,23 @@ class AppAPI:
     GLOBAL_TERMINAL_BUTTON_ID: dict
     GLOBAL_TERMINAL_COLLAPSE_ID: dict
 
-    GLOBAL_LOADING_TRIGGER_ID: dict
+    GLOBAL_LOADING_ASYNC_ID: dict
     GLOBAL_ROUTING_STORAGE_ID: dict
-    GLOBAL_RELOADING_TRIGGER_ID: dict
-    GLOBAL_UNLOADING_TRIGGER_ID: dict
+    GLOBAL_RELOADING_ASYNC_ID: dict
+    GLOBAL_UNLOADING_ASYNC_ID: dict
 
     GLOBAL_MEMORY_STORAGE_ID: dict
     GLOBAL_SESSION_STORAGE_ID: dict
     GLOBAL_LOCAL_STORAGE_ID: dict
 
     GLOBAL_CLEAN_MEMORY_BUTTON_ID: dict
-    GLOBAL_CLEAN_MEMORY_TRIGGER_ID: dict
+    GLOBAL_CLEAN_MEMORY_ASYNC_ID: dict
     GLOBAL_CLEAN_SESSION_BUTTON_ID: dict
-    GLOBAL_CLEAN_SESSION_TRIGGER_ID: dict
+    GLOBAL_CLEAN_SESSION_ASYNC_ID: dict
     GLOBAL_CLEAN_LOCAL_BUTTON_ID: dict
-    GLOBAL_CLEAN_LOCAL_TRIGGER_ID: dict
+    GLOBAL_CLEAN_LOCAL_ASYNC_ID: dict
     GLOBAL_CLEAN_RESET_BUTTON_ID: dict
-    GLOBAL_CLEAN_RESET_TRIGGER_ID: dict
+    GLOBAL_CLEAN_RESET_ASYNC_ID: dict
 
     GLOBAL_HIGH_FREQUENCY_INTERVAL_ID: dict
     GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID: dict
@@ -199,11 +200,11 @@ class AppAPI:
         self.GLOBAL_SIDEBAR_COLLAPSE_ID: dict = self.register(type="collapse", name="sidebar")
 
         self.GLOBAL_BACKWARD_BUTTON_ID: dict = self.register(type="button", name="backward")
-        self.GLOBAL_BACKWARD_TRIGGER_ID = self.register(type="trigger", name="backward")
+        self.GLOBAL_BACKWARD_ASYNC_ID = self.register(type="asyncer", name="backward")
         self.GLOBAL_REFRESH_BUTTON_ID: dict = self.register(type="button", name="refresh")
-        self.GLOBAL_REFRESH_TRIGGER_ID = self.register(type="trigger", name="refresh")
+        self.GLOBAL_REFRESH_ASYNC_ID = self.register(type="asyncer", name="refresh")
         self.GLOBAL_FORWARD_BUTTON_ID: dict = self.register(type="button", name="forward")
-        self.GLOBAL_FORWARD_TRIGGER_ID = self.register(type="trigger", name="forward")
+        self.GLOBAL_FORWARD_ASYNC_ID = self.register(type="asyncer", name="forward")
 
         self.GLOBAL_CONTACTS_ARROW_ID: dict = self.register(type="icon", name="contacts")
         self.GLOBAL_CONTACTS_BUTTON_ID: dict = self.register(type="button", name="contacts")
@@ -220,23 +221,23 @@ class AppAPI:
         self.GLOBAL_TERMINAL_BUTTON_ID: dict = self.register(type="button", name="terminal")
         self.GLOBAL_TERMINAL_COLLAPSE_ID: dict = self.register(type="collapse", name="terminal")
 
-        self.GLOBAL_LOADING_TRIGGER_ID: dict = self.register(type="trigger", name="loading")
+        self.GLOBAL_LOADING_ASYNC_ID: dict = self.register(type="asyncer", name="loading")
         self.GLOBAL_ROUTING_STORAGE_ID: dict = self.register(type="storage", name="routing")
-        self.GLOBAL_RELOADING_TRIGGER_ID: dict = self.register(type="trigger", name="reloading")
-        self.GLOBAL_UNLOADING_TRIGGER_ID: dict = self.register(type="trigger", name="unloading")
+        self.GLOBAL_RELOADING_ASYNC_ID: dict = self.register(type="asyncer", name="reloading")
+        self.GLOBAL_UNLOADING_ASYNC_ID: dict = self.register(type="asyncer", name="unloading")
 
         self.GLOBAL_MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory", portable="data")
         self.GLOBAL_SESSION_STORAGE_ID: dict = self.register(type="storage", name="session", portable="data")
         self.GLOBAL_LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local", portable="data")
 
         self.GLOBAL_CLEAN_MEMORY_BUTTON_ID: dict = self.register(type="button", name="memory")
-        self.GLOBAL_CLEAN_MEMORY_TRIGGER_ID: dict = self.register(type="trigger", name="memory")
+        self.GLOBAL_CLEAN_MEMORY_ASYNC_ID: dict = self.register(type="asyncer", name="memory")
         self.GLOBAL_CLEAN_SESSION_BUTTON_ID: dict = self.register(type="button", name="session")
-        self.GLOBAL_CLEAN_SESSION_TRIGGER_ID: dict = self.register(type="trigger", name="session")
+        self.GLOBAL_CLEAN_SESSION_ASYNC_ID: dict = self.register(type="asyncer", name="session")
         self.GLOBAL_CLEAN_LOCAL_BUTTON_ID: dict = self.register(type="button", name="local")
-        self.GLOBAL_CLEAN_LOCAL_TRIGGER_ID: dict = self.register(type="trigger", name="local")
+        self.GLOBAL_CLEAN_LOCAL_ASYNC_ID: dict = self.register(type="asyncer", name="local")
         self.GLOBAL_CLEAN_RESET_BUTTON_ID: dict = self.register(type="button", name="reset")
-        self.GLOBAL_CLEAN_RESET_TRIGGER_ID: dict = self.register(type="trigger", name="reset")
+        self.GLOBAL_CLEAN_RESET_ASYNC_ID: dict = self.register(type="asyncer", name="reset")
 
         self.GLOBAL_HIGH_FREQUENCY_INTERVAL_ID: dict = self.register(type="interval", name="high")
         self.GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID: dict = self.register(type="interval", name="medium")
@@ -315,9 +316,9 @@ class AppAPI:
                 ], className="header-navigation-block", id=self.GLOBAL_NAVIGATION_ID),
                 html.Div(children=[
                     *ButtonContainerAPI(elements=[
-                        ButtonAPI(id=self.GLOBAL_BACKWARD_BUTTON_ID, label=[IconAPI(icon="bi bi-arrow-left")], trigger=self.GLOBAL_BACKWARD_TRIGGER_ID),
-                        ButtonAPI(id=self.GLOBAL_REFRESH_BUTTON_ID, label=[IconAPI(icon="bi bi-arrow-repeat")], trigger=self.GLOBAL_REFRESH_TRIGGER_ID),
-                        ButtonAPI(id=self.GLOBAL_FORWARD_BUTTON_ID, label=[IconAPI(icon="bi bi-arrow-right")], trigger=self.GLOBAL_FORWARD_TRIGGER_ID)
+                        ButtonAPI(id=self.GLOBAL_BACKWARD_BUTTON_ID, label=[IconAPI(icon="bi bi-arrow-left")], asyncer=self.GLOBAL_BACKWARD_ASYNC_ID),
+                        ButtonAPI(id=self.GLOBAL_REFRESH_BUTTON_ID, label=[IconAPI(icon="bi bi-arrow-repeat")], asyncer=self.GLOBAL_REFRESH_ASYNC_ID),
+                        ButtonAPI(id=self.GLOBAL_FORWARD_BUTTON_ID, label=[IconAPI(icon="bi bi-arrow-right")], asyncer=self.GLOBAL_FORWARD_ASYNC_ID)
                     ], background="primary").build()
                 ], className="header-location-block")
             ], className="header-control-block")
@@ -358,22 +359,22 @@ class AppAPI:
                 *ButtonAPI(
                     id=self.GLOBAL_CLEAN_MEMORY_BUTTON_ID, background="danger",
                     label=[IconAPI(icon="bi bi-eraser-fill"), TextAPI(text="  Clean Memory  ")],
-                    trigger=self.GLOBAL_CLEAN_MEMORY_TRIGGER_ID
+                    asyncer=self.GLOBAL_CLEAN_MEMORY_ASYNC_ID
                 ).build(),
                 *ButtonAPI(
                     id=self.GLOBAL_CLEAN_SESSION_BUTTON_ID, background="danger",
                     label=[IconAPI(icon="bi bi-eraser-fill"), TextAPI(text="  Clean Session  ")],
-                    trigger=self.GLOBAL_CLEAN_SESSION_TRIGGER_ID
+                    asyncer=self.GLOBAL_CLEAN_SESSION_ASYNC_ID
                 ).build(),
                 *ButtonAPI(
                     id=self.GLOBAL_CLEAN_LOCAL_BUTTON_ID, background="danger",
                     label=[IconAPI(icon="bi bi-eraser-fill"), TextAPI(text="  Clean Local  ")],
-                    trigger=self.GLOBAL_CLEAN_LOCAL_TRIGGER_ID
+                    asyncer=self.GLOBAL_CLEAN_LOCAL_ASYNC_ID
                 ).build(),
                 *ButtonAPI(
                     id=self.GLOBAL_CLEAN_RESET_BUTTON_ID, background="danger",
                     label=[IconAPI(icon="bi bi-trash"), TextAPI(text="  Clean & Reset  ")],
-                    trigger=self.GLOBAL_CLEAN_RESET_TRIGGER_ID
+                    asyncer=self.GLOBAL_CLEAN_RESET_ASYNC_ID
                 ).build(),
                 *ButtonAPI(
                     id=self.GLOBAL_TERMINAL_BUTTON_ID, background="primary",
@@ -391,12 +392,12 @@ class AppAPI:
 
     def __init_hidden_layout__(self) -> Component:
         hidden: list = [dcc.Location(id=self.GLOBAL_LOCATION_ID, refresh=False)]
-        hidden.extend(StorageAPI(id=self.GLOBAL_LOADING_TRIGGER_ID, persistence="memory").build())
-        hidden.extend(StorageAPI(id=self.GLOBAL_ROUTING_STORAGE_ID, persistence="memory").build())
-        hidden.extend(StorageAPI(id=self.GLOBAL_RELOADING_TRIGGER_ID, persistence="memory").build())
-        hidden.extend(StorageAPI(id=self.GLOBAL_UNLOADING_TRIGGER_ID, persistence="memory").build())
-        hidden.extend(StorageAPI(id=self.GLOBAL_MEMORY_STORAGE_ID, persistence="memory").build())
         hidden.extend(StorageAPI(id=self.GLOBAL_LOCATION_STORAGE_ID, persistence="session").build())
+        hidden.extend(StorageAPI(id=self.GLOBAL_LOADING_ASYNC_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.GLOBAL_ROUTING_STORAGE_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.GLOBAL_RELOADING_ASYNC_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.GLOBAL_UNLOADING_ASYNC_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.GLOBAL_MEMORY_STORAGE_ID, persistence="memory").build())
         hidden.extend(StorageAPI(id=self.GLOBAL_SESSION_STORAGE_ID, persistence="session").build())
         hidden.extend(StorageAPI(id=self.GLOBAL_LOCAL_STORAGE_ID, persistence="local").build())
         hidden.extend(IntervalAPI(id=self.GLOBAL_HIGH_FREQUENCY_INTERVAL_ID, interval=self._high_frequency_interval_).build())
@@ -476,160 +477,74 @@ class AppAPI:
                 currents.append(NavigatorAPI(element=current, typename="header-navigation"))
             page._navigation_ = NavigatorContainerAPI(elements=currents).build()
 
-    def __init_injections__(self):
-        def _click_py_(_, *, original_inputs, **__):
-            clicks = original_inputs[0]
-            if not clicks: raise PreventUpdate
-        _click_js_ = self.asset(path="Callbacks/Click.js")
-        def _trigger_py_(_, *, inject_inputs):
-            trigger = inject_inputs[0]
-            if not trigger: raise PreventUpdate
-            return TriggerAPI(**trigger).trigger().dict()
-        _trigger_js_ = self.asset(path="Callbacks/Trigger.js")
-        def _clean_py_(_, *, inject_inputs, **__):
-            clicks = inject_inputs[0]
-            trigger = inject_inputs[1]
-            if not clicks and not trigger: raise PreventUpdate
-            return TriggerAPI(**trigger).trigger().dict()
-        _clean_js_ = self.asset(path="Callbacks/Clean.js")
-        def _reset_py_(_, *, inject_inputs, **__):
-            clicks = inject_inputs[0]
-            trigger = inject_inputs[1]
-            if not clicks and not trigger: raise PreventUpdate
-            return TriggerAPI(**trigger).trigger().dict()
-        _reset_js_ = self.asset(path="Callbacks/Reset.js")
-        common_injections = [
-            ("_on_click_", [], (_click_py_, _click_js_)),
-            ("_on_clean_memory_", [
-                Input("GLOBAL_CLEAN_MEMORY_BUTTON_ID", "n_clicks"),
-                Input("GLOBAL_CLEAN_MEMORY_TRIGGER_ID", "data")
-            ], (_clean_py_, _clean_js_)),
-            ("_on_clean_session_", [
-                Input("GLOBAL_CLEAN_SESSION_BUTTON_ID", "n_clicks"),
-                Input("GLOBAL_CLEAN_SESSION_TRIGGER_ID", "data")
-            ], (_clean_py_, _clean_js_)),
-            ("_on_clean_local_", [
-                Input("GLOBAL_CLEAN_LOCAL_BUTTON_ID", "n_clicks"),
-                Input("GLOBAL_CLEAN_LOCAL_TRIGGER_ID", "data")
-            ], (_clean_py_, _clean_js_)),
-            ("_on_clean_reset_", [
-                Input("GLOBAL_CLEAN_RESET_BUTTON_ID", "n_clicks"),
-                Input("GLOBAL_CLEAN_RESET_TRIGGER_ID", "data")
-            ], (_reset_py_, _reset_js_), "clean_reset")
-        ]
-        page_injections = [
-            ("_on_loading_", [
-                Output("PAGE_LOADING_TRIGGER_ID", "data"),
-                Input("GLOBAL_LOADING_TRIGGER_ID", "data"),
-                State("PAGE_LOADING_TRIGGER_ID", "data"),
-            ], (_trigger_py_, _trigger_js_)),
-            ("_on_reloading_", [
-                Output("PAGE_RELOADING_TRIGGER_ID", "data"),
-                Input("GLOBAL_RELOADING_TRIGGER_ID", "data"),
-                State("PAGE_RELOADING_TRIGGER_ID", "data"),
-            ], (_trigger_py_, _trigger_js_)),
-            ("_on_unloading_", [
-                Output("PAGE_UNLOADING_TRIGGER_ID", "data"),
-                Input("GLOBAL_UNLOADING_TRIGGER_ID", "data"),
-                State("PAGE_UNLOADING_TRIGGER_ID", "data"),
-            ], (_trigger_py_, _trigger_js_))
-        ]
-        global_injections = [
-            ("_on_loading_", [Input("GLOBAL_LOADING_TRIGGER_ID", "data")], (None, None)),
-            ("_on_reloading_", [Input("GLOBAL_RELOADING_TRIGGER_ID", "data")], (None, None)),
-            ("_on_unloading_", [Input("GLOBAL_UNLOADING_TRIGGER_ID", "data")], (None, None))
-        ]
-        return common_injections, page_injections, global_injections
+    def __register_callback__(self, context, func, name, is_page):
+        is_client = getattr(func, "js", False)
+        args = list(getattr(func, "args", []))
+        kwargs = getattr(func, "kwargs", {})
+        target = getattr(context, name)() if is_client else getattr(context, name)
+        for injection in self._injector_.match(func):
+            mode = InjectionType.coerce(getattr(func, injection.flag, False))
+            if mode is not InjectionType.Disabled:
+                injection.register(page=context.endpoint if is_page else None)
+                py, js = injection(app=self, is_page=is_page)
+                extras = injection.args(is_page)
+                inject_func = js if is_client else py
+                if is_client:
+                    target, args = inject_clientside_callback(
+                        mode=mode,
+                        injected_func=inject_func,
+                        injected_args=extras,
+                        original_js=target,
+                        original_args=args
+                    )
+                else:
+                    target, args = inject_serverside_callback(
+                        mode=mode,
+                        injected_func=inject_func,
+                        injected_args=extras,
+                        original_func=target,
+                        original_args=args
+                    )
+        for attr in ["running", "cancel", "progress", "interval", "progress_default"]:
+            val = getattr(func, attr, None)
+            if val is not None:
+                if attr == "running":
+                    kwargs[attr] = [
+                        (i[0].build(context), i[1], i[2]) if isinstance(i, (list, tuple)) and len(i) == 3 and isinstance(i[0], Trigger) else i
+                        for i in val
+                    ]
+                elif attr in ["cancel", "progress"] and isinstance(val, list):
+                    kwargs[attr] = [i.build(context) if isinstance(i, Trigger) else i for i in val]
+                elif isinstance(val, Trigger):
+                    kwargs[attr] = val.build(context)
+                else:
+                    kwargs[attr] = val
 
-    def __init_semaphores__(self):
-        self._global_callbacks_map_: dict[str, int] = {}
-        self._page_callbacks_map_: dict[str, dict[str, int]] = {}
+        args = [a.build(context=context) if isinstance(a, Trigger) else a for a in args]
+        if is_client:
+            self.app.clientside_callback(target, *args, **kwargs)
+            self._log_.info(lambda: f"Init Callbacks: Loaded Client-Side Callback: {name}")
+        else:
+            self.app.callback(*args, **kwargs)(target)
+            self._log_.info(lambda: f"Init Callbacks: Loaded Server-Side Callback: {name}")
 
-    def _init_callbacks_(self) -> None:
-        self.__init_semaphores__()
-        self._log_.debug(lambda: "Init Callbacks: Loaded Semaphores")
-        common_injections, page_injections, app_injections = self.__init_injections__()
+    def __register_callbacks__(self):
         for context in [self] + list(self._pages_.values()):
             is_page = isinstance(context, PageAPI)
-            callback_injections = common_injections + (page_injections if is_page else app_injections)
-            for cls in reversed(getmro(context)):
-                if cls is object:
-                    continue
-                for callback_name, func in cls.__dict__.items():
-                    if not iscallable(func):
+            processed = set()
+            for cls in getmro(context):
+                if cls is object: continue
+                for name, func in cls.__dict__.items():
+                    if name in processed or not iscallable(func) or not getattr(func, "callback", False):
                         continue
-                    if not getattr(func, "_callback_", False):
-                        continue
-                    is_client: bool = func._callback_js_
-                    kwargs: dict = func._callback_kwargs_
-                    args = list(func._callback_args_)
-                    target = getattr(context, callback_name)() if is_client else getattr(context, callback_name)
-                    for flag_attr, extras, _ in callback_injections:
-                        mode = Injection.coerce(getattr(func, flag_attr, False))
-                        if mode is Injection.Prepend or mode is Injection.Append:
-                            all_out, all_in, all_st, all_oth, *_ = organize(args, extras, mode)
-                            args = [*all_out, *all_in, *all_st, *all_oth]
-                    for flag_attr, extras, (py_func, js_func) in callback_injections:
-                        mode = Injection.coerce(getattr(func, flag_attr, False))
-                        inject_func = js_func if is_client else py_func
-                        if mode is Injection.Hidden:
-                            if is_client:
-                                target, args = inject_clientside_callback(
-                                    inject_func=inject_func,
-                                    inject_args=extras,
-                                    original_js=target,
-                                    original_args=args,
-                                    mode=mode
-                                )
-                            else:
-                                target, args = inject_serverside_callback(
-                                    inject_func=inject_func,
-                                    inject_args=extras,
-                                    original_func=target,
-                                    original_args=args,
-                                    mode=mode
-                                )
-                    on_init = getattr(func, "_on_init_", Injection.Disabled)
-                    kwargs["prevent_initial_call"] = Injection.coerce(on_init) is Injection.Disabled
-                    running = getattr(func, "_callback_running_", None)
-                    if running:
-                        kwargs["running"] = [
-                            (item[0].build(context), item[1], item[2])
-                            if isinstance(item, (tuple, list)) and len(item) == 3 and isinstance(item[0], Trigger)
-                            else item
-                            for item in running
-                        ]
-                    cancel = getattr(func, "_callback_cancel_", None)
-                    if cancel:
-                        kwargs["cancel"] = [
-                            item.build(context) if isinstance(item, Trigger) else item
-                            for item in cancel
-                        ]
-                    progress = getattr(func, "_callback_progress_", None)
-                    if progress:
-                        if isinstance(progress, list):
-                            kwargs["progress"] = [
-                                item.build(context) if isinstance(item, Trigger) else item
-                                for item in progress
-                            ]
-                        elif isinstance(progress, Trigger):
-                            kwargs["progress"] = progress.build(context)
-                        else:
-                            kwargs["progress"] = progress
-                    interval = getattr(func, "_callback_interval_", None)
-                    if interval is not None:
-                        kwargs["interval"] = interval
-                    progress_default = getattr(func, "_callback_progress_default_", None)
-                    if progress_default is not None:
-                        kwargs["progress_default"] = progress_default
-                    args = [a.build(context=context) if isinstance(a, Trigger) else a for a in args]
-                    if is_client:
-                        self.app.clientside_callback(target, *args, **kwargs)
-                        callback_type = "Client"
-                    else:
-                        self.app.callback(*args, **kwargs)(target)
-                        callback_type = "Server"
-                    self._log_.info(lambda: f"Init Callbacks: Loaded {callback_type}-Side Callback: {callback_name}")
+                    processed.add(name)
+                    self.__register_callback__(context, func, name, is_page)
+
+    def _init_callbacks_(self) -> None:
+        self._injector_ = InjectorAPI(self)
+        self._log_.debug(lambda: "Init Callbacks: Loaded Injector")
+        self.__register_callbacks__()
+        self._log_.debug(lambda: "Init Callbacks: Loaded Callbacks")
 
     def asset(self, *, path: str, url: bool = False) -> str:
         if (self._library_assets_ / path).exists():
@@ -758,13 +673,13 @@ class AppAPI:
         Output("GLOBAL_NAVIGATION_ID", "children"),
         Output("GLOBAL_SIDEBAR_ID", "children"),
         Output("GLOBAL_CONTENT_ID", "children"),
-        Output("GLOBAL_LOADING_TRIGGER_ID", "data"),
-        Output("GLOBAL_RELOADING_TRIGGER_ID", "data"),
+        Output("GLOBAL_LOADING_ASYNC_ID", "data"),
+        Output("GLOBAL_RELOADING_ASYNC_ID", "data"),
         Input("GLOBAL_LOCATION_ID", "pathname"),
         State("GLOBAL_LOCATION_STORAGE_ID", "data"),
-        State("GLOBAL_LOADING_TRIGGER_ID", "data"),
-        State("GLOBAL_RELOADING_TRIGGER_ID", "data"),
-        on_init=Injection.Hidden
+        State("GLOBAL_LOADING_ASYNC_ID", "data"),
+        State("GLOBAL_RELOADING_ASYNC_ID", "data"),
+        on_init=InjectionType.Hidden
     )
     def _global_async_update_location_callback_(self, path: str, location: dict, loading: dict, reloading: dict):
         self._log_.debug(lambda: f"Update Location Callback: Received Path = {path}")
@@ -822,7 +737,7 @@ class AppAPI:
         Output("GLOBAL_LOCATION_STORAGE_ID", "data"),
         Input("GLOBAL_BACKWARD_BUTTON_ID", "n_clicks"),
         State("GLOBAL_LOCATION_STORAGE_ID", "data"),
-        on_click=Injection.Hidden
+        on_click=InjectionType.Hidden
     )
     def _global_async_backward_location_callback_(self, _, location: dict):
         location = LocationAPI(**location)
@@ -835,7 +750,8 @@ class AppAPI:
 
     @clientside_callback(
         Input("GLOBAL_REFRESH_BUTTON_ID", "n_clicks"),
-        Input("GLOBAL_REFRESH_TRIGGER_ID", "data")
+        Input("GLOBAL_REFRESH_ASYNC_ID", "data"),
+        on_click=InjectionType.Hidden
     )
     def _global_async_refresh_location_callback_(self):
         return self.asset(path="Callbacks/Refresh.js")
@@ -845,7 +761,7 @@ class AppAPI:
         Output("GLOBAL_LOCATION_STORAGE_ID", "data"),
         Input("GLOBAL_FORWARD_BUTTON_ID", "n_clicks"),
         State("GLOBAL_LOCATION_STORAGE_ID", "data"),
-        on_click=Injection.Hidden
+        on_click=InjectionType.Hidden
     )
     def _global_async_forward_location_callback_(self, _, location: dict):
         location = LocationAPI(**location)
@@ -860,7 +776,7 @@ class AppAPI:
         Output("GLOBAL_SIDEBAR_COLLAPSE_ID", "is_open"),
         Input("GLOBAL_SIDEBAR_BUTTON_ID", "n_clicks"),
         State("GLOBAL_SIDEBAR_COLLAPSE_ID", "is_open"),
-        on_click=Injection.Hidden
+        on_click=InjectionType.Hidden
     )
     def _global_async_sidebar_button_callback_(self):
         return self.asset(path="Callbacks/Collapse.js")
@@ -871,7 +787,7 @@ class AppAPI:
         Input("GLOBAL_CONTACTS_BUTTON_ID", "n_clicks"),
         State("GLOBAL_CONTACTS_COLLAPSE_ID", "is_open"),
         State("GLOBAL_CONTACTS_ARROW_ID", "className"),
-        on_click=Injection.Hidden
+        on_click=InjectionType.Hidden
     )
     def _global_async_contacts_button_callback_(self):
         return self.asset(path="Callbacks/Collapse.js")
@@ -887,80 +803,102 @@ class AppAPI:
         Output("GLOBAL_EXPORT_DOWNLOAD_ID", "data"),
         Input("GLOBAL_EXPORT_ID", "n_clicks"),
         State("GLOBAL_LOCATION_ID", "pathname"),
-        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "data"}, "data"),
-        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "value"}, "value"),
-        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "input"}, "input"),
-        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "filter"}, "filter"),
-        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "date"}, "date"),
-        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "checked"}, "checked"),
-        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "start_date"}, "start_date"),
-        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "end_date"}, "end_date"),
-        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "options"}, "options"),
-        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "disabled"}, "disabled"),
-        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "is_open"}, "is_open"),
-        State({"page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "active_tab"}, "active_tab")
+        State({"app": dash.ALL, "page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "data"}, "data"),
+        State({"app": dash.ALL, "page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "value"}, "value"),
+        State({"app": dash.ALL, "page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "input"}, "input"),
+        State({"app": dash.ALL, "page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "filter"}, "filter"),
+        State({"app": dash.ALL, "page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "date"}, "date"),
+        State({"app": dash.ALL, "page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "checked"}, "checked"),
+        State({"app": dash.ALL, "page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "start_date"}, "start_date"),
+        State({"app": dash.ALL, "page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "end_date"}, "end_date"),
+        State({"app": dash.ALL, "page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "options"}, "options"),
+        State({"app": dash.ALL, "page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "disabled"}, "disabled"),
+        State({"app": dash.ALL, "page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "is_open"}, "is_open"),
+        State({"app": dash.ALL, "page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "active_tab"}, "active_tab")
     )
     def _global_async_export_snapshot_callback_(self):
         return self.asset(path="Callbacks/Export.js")
 
     @clientside_callback(
         Output("GLOBAL_MEMORY_STORAGE_ID", "data"),
-        State("GLOBAL_MEMORY_STORAGE_ID", "storage_type"),
-        on_clean_memory=Injection.Hidden
+        on_clean_memory=InjectionType.Hidden
     )
     def _global_async_clean_memory_callback_(self):
         return self.asset(path="Callbacks/Clear.js")
 
     @clientside_callback(
         Output("GLOBAL_SESSION_STORAGE_ID", "data"),
-        State("GLOBAL_SESSION_STORAGE_ID", "storage_type"),
-        on_clean_session=Injection.Hidden
+        on_clean_session=InjectionType.Hidden
     )
     def _global_async_clean_session_callback_(self):
         return self.asset(path="Callbacks/Clear.js")
 
     @clientside_callback(
         Output("GLOBAL_LOCAL_STORAGE_ID", "data"),
-        State("GLOBAL_LOCAL_STORAGE_ID", "storage_type"),
-        on_clean_local=Injection.Hidden
+        on_clean_local=InjectionType.Hidden
     )
     def _global_async_clean_local_callback_(self):
         return self.asset(path="Callbacks/Clear.js")
 
     @clientside_callback(
-        Output("GLOBAL_MEMORY_STORAGE_ID", "data"),
-        Output("GLOBAL_SESSION_STORAGE_ID", "data"),
-        Output("GLOBAL_LOCAL_STORAGE_ID", "data"),
-        State("GLOBAL_MEMORY_STORAGE_ID", "storage_type"),
-        State("GLOBAL_SESSION_STORAGE_ID", "storage_type"),
-        State("GLOBAL_LOCAL_STORAGE_ID", "storage_type"),
-        on_clean_reset=Injection.Hidden
+        Output("GLOBAL_CLEAN_MEMORY_ASYNC_ID", "data"),
+        Output("GLOBAL_CLEAN_SESSION_ASYNC_ID", "data"),
+        Output("GLOBAL_CLEAN_LOCAL_ASYNC_ID", "data"),
+        State("GLOBAL_CLEAN_MEMORY_ASYNC_ID", "data"),
+        State("GLOBAL_CLEAN_SESSION_ASYNC_ID", "data"),
+        State("GLOBAL_CLEAN_LOCAL_ASYNC_ID", "data"),
+        on_clean_reset=InjectionType.Hidden
     )
-    def _global_clean_reset_callback_(self, memory: str, session: str, local: str, refresh: dict):
-        memory = self._global_clean_memory_callback_(memory=memory)
-        session = self._global_clean_session_callback_(session=session)
-        local = self._global_clean_local_callback_(local=local)
-        self._log_.debug(lambda: f"Clean Reset Callback: Refreshing")
-        refresh = TriggerAPI(**refresh).trigger().dict()
-        return memory, session, local, refresh
+    def _global_async_clean_reset_callback_(self):
+        return self.asset(path="Callbacks/Reset.js")
+
+    @serverside_callback(
+        Output("GLOBAL_REFRESH_ASYNC_ID", "data"),
+        State("GLOBAL_REFRESH_ASYNC_ID", "data"),
+        State("GLOBAL_LOCATION_ID", "pathname"),
+        on_clean_reset=InjectionType.Hidden
+    )
+    def _global_sync_clean_reset_callback_(self, refresh: dict, pathname: str):
+        self._injector_.on_clean_memory.reset()
+        self._injector_.on_clean_session.reset()
+        self._injector_.on_clean_local.reset()
+        self._log_.debug(lambda: f"Clean Reset Sync: Waiting")
+        endpoint = self.endpointize(path=pathname, relative=False)
+        target_memory = self._injector_.on_clean_memory.count(page=endpoint)
+        target_session = self._injector_.on_clean_session.count(page=endpoint)
+        target_local = self._injector_.on_clean_local.count(page=endpoint)
+        attempts = 0
+        while attempts < 100:
+            if (self._injector_.on_clean_memory.index >= target_memory and
+                self._injector_.on_clean_session.index >= target_session and
+                self._injector_.on_clean_local.index >= target_local):
+                break
+            time.sleep(0.01)
+            attempts += 1
+        self._log_.debug(lambda: f"Clean Reset Sync: Refreshing")
+        refresh = TriggerAPI(**(refresh or {}))
+        return refresh.trigger().dict()
 
     @serverside_callback(
         Input("GLOBAL_MEMORY_STORAGE_ID", "data")
     )
     def _global_async_update_memory_callback_(self, data):
         self._log_.info(lambda: f"Global Memory Storage: {data if data else 'Empty'}")
+        if not data: self._injector_.on_clean_memory.increment()
 
     @serverside_callback(
         Input("GLOBAL_SESSION_STORAGE_ID", "data")
     )
     def _global_async_update_session_callback_(self, data):
         self._log_.info(lambda: f"Global Session Storage: {data if data else 'Empty'}")
+        if not data: self._injector_.on_clean_session.increment()
 
     @serverside_callback(
         Input("GLOBAL_LOCAL_STORAGE_ID", "data")
     )
     def _global_async_update_local_callback_(self, data):
         self._log_.info(lambda: f"Global Local Storage: {data if data else 'Empty'}")
+        if not data: self._injector_.on_clean_local.increment()
 
     @clientside_callback(
         Output("GLOBAL_TERMINAL_COLLAPSE_ID", "is_open"),
@@ -968,7 +906,7 @@ class AppAPI:
         Input("GLOBAL_TERMINAL_BUTTON_ID", "n_clicks"),
         State("GLOBAL_TERMINAL_COLLAPSE_ID", "is_open"),
         State("GLOBAL_TERMINAL_ARROW_ID", "className"),
-        on_click=Injection.Hidden
+        on_click=InjectionType.Hidden
     )
     def _global_async_terminal_button_callback_(self):
         return self.asset(path="Callbacks/Collapse.js")

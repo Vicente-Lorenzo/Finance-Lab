@@ -1,3 +1,3 @@
-(function(...args) {
-    return args.map(() => ({}));
+(function() {
+    return {};
 })

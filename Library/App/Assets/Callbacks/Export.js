@@ -1,5 +1,5 @@
-(function(n_clicks, pathname, ...args) {
-    if (!n_clicks) return window.dash_clientside.no_update;
+(function(clicks, pathname, ...args) {
+    if (!clicks) return window.dash_clientside.no_update;
     const context = window.dash_clientside.callback_context;
     const states = context.states_list;
     const components = [];

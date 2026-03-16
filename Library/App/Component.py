@@ -282,7 +282,8 @@ class ButtonAPI(ComponentAPI):
     external: bool = field(default=None)
     download: DownloadAPI | dict = field(default=None)
     upload: UploadAPI | dict = field(default=None)
-    trigger: StorageAPI | dict = field(default=None)
+    asyncer: StorageAPI | dict = field(default=None)
+    syncer: StorageAPI | dict = field(default=None)
 
     def arguments(self) -> dict:
         kwargs = super().arguments()
@@ -301,11 +302,16 @@ class ButtonAPI(ComponentAPI):
         label = self.flatten(element=self.label)
         button = dbc.Button(label, **self.arguments())
         addons = []
-        if self.trigger:
-            if isinstance(self.trigger, dict):
-                addons.append(StorageAPI(id=self.trigger, data=TriggerAPI().dict()))
+        if self.asyncer:
+            if isinstance(self.asyncer, dict):
+                addons.append(StorageAPI(id=self.asyncer, data=TriggerAPI().dict()))
             else:
-                addons.append(self.trigger)
+                addons.append(self.asyncer)
+        if self.syncer:
+            if isinstance(self.syncer, dict):
+                addons.append(StorageAPI(id=self.syncer, data=TriggerAPI().dict()))
+            else:
+                addons.append(self.syncer)
         if self.download:
             if isinstance(self.download, dict):
                 addons.append(DownloadAPI(id=self.download))

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import dash
-import inspect
 from enum import Enum
 from functools import wraps
 from abc import ABC, abstractmethod
@@ -59,21 +58,6 @@ class State(Trigger):
         component, property = super().build(context=context)
         return dash.State(component_id=component, component_property=property, allow_optional=self.allow_optional)
 
-class Injection(Enum):
-    Disabled = 0
-    Hidden = 1
-    Prepend = 2
-    Append = 3
-    @classmethod
-    def coerce(cls, value) -> Self:
-        if isinstance(value, cls):
-            return value
-        if value is False:
-            return cls.Disabled
-        if value is True:
-            return cls.Hidden
-        return cls.Disabled
-
 def flatten(*args) -> list:
     flat = []
     for arg in args:
@@ -92,75 +76,199 @@ def sort(*args):
         else: others.append(arg)
     return outputs, inputs, states, others
 
-def organize(original_args: list, inject_args: list, mode: Injection):
+class InjectionType(Enum):
+    Disabled = 0
+    Hidden = 1
+    Prepend = 2
+    Append = 3
+    @classmethod
+    def coerce(cls, value) -> Self:
+        if isinstance(value, cls):
+            return value
+        if value is False:
+            return cls.Disabled
+        if value is True:
+            return cls.Hidden
+        return cls.Disabled
+
+def inject_callback_args(mode: InjectionType, injected_args: list | tuple, original_args: list | tuple):
+    i_out, i_in, i_st, i_oth = sort(injected_args)
     o_out, o_in, o_st, o_oth = sort(original_args)
-    i_out, i_in, i_st, i_oth = sort(inject_args)
-    if mode == Injection.Prepend:
-        all_out, all_in, all_st, all_oth = i_out + o_out, i_in + o_in, i_st + o_st, i_oth + o_oth
+    n_i_in, n_o_in = len(i_in), len(o_in)
+    n_i_st, n_o_st = len(i_st), len(o_st)
+    if mode == InjectionType.Prepend:
+        all_out = i_out + o_out
+        all_in = i_in + o_in
+        all_st = i_st + o_st
+        all_oth = i_oth + o_oth
+        s_i_in = slice(0, n_i_in)
+        s_o_in = slice(n_i_in, n_i_in + n_o_in)
+        st_start = n_i_in + n_o_in
+        s_i_st = slice(st_start, st_start + n_i_st)
+        s_o_st = slice(st_start + n_i_st, st_start + n_i_st + n_o_st)
     else:
-        all_out, all_in, all_st, all_oth = o_out + i_out, o_in + i_in, o_st + i_st, o_oth + i_oth
-    return all_out, all_in, all_st, all_oth, o_out, o_in, o_st, i_out, i_in, i_st
+        all_out = o_out + i_out
+        all_in = o_in + i_in
+        all_st = o_st + i_st
+        all_oth = o_oth + i_oth
+        s_o_in = slice(0, n_o_in)
+        s_i_in = slice(n_o_in, n_o_in + n_i_in)
+        st_start = n_o_in + n_i_in
+        s_o_st = slice(st_start, st_start + n_o_st)
+        s_i_st = slice(st_start + n_o_st, st_start + n_o_st + n_i_st)
+    all_args = [*all_out, *all_in, *all_st, *all_oth]
+    schema = {
+        "s_o_in": s_o_in, "s_i_in": s_i_in,
+        "s_o_st": s_o_st, "s_i_st": s_i_st,
+        "n_o_out": len(o_out), "n_i_out": len(i_out),
+        "n_all_out": len(all_out)
+    }
+    return all_args, schema
+
+def inject_serverside_callback(
+        mode: InjectionType,
+        injected_func: Callable | None,
+        injected_args: tuple | list,
+        original_func: Callable,
+        original_args: tuple | list):
+    all_args, schema = inject_callback_args(mode, injected_args, original_args)
+    @wraps(original_func)
+    def wrapped(*args, **kwargs):
+        original_inputs = args[schema["s_o_in"]]
+        original_states = args[schema["s_o_st"]]
+        injected_inputs = args[schema["s_i_in"]]
+        injected_states = args[schema["s_i_st"]]
+        original_outputs = original_func(*original_inputs, *original_states, **kwargs)
+        injected_outputs = None
+        if injected_func and mode != InjectionType.Disabled:
+            payload = {
+                "original_outputs": original_outputs,
+                "injected_inputs": list(injected_inputs),
+                "injected_states": list(injected_states),
+                "original_inputs": list(original_inputs),
+                "original_states": list(original_states)
+            }
+            injected_outputs = injected_func(payload)
+        n_o_out = schema["n_o_out"]
+        o_res_list = [original_outputs] if n_o_out == 1 else list(original_outputs) if n_o_out > 1 else []
+        if n_o_out > 1 and not isinstance(original_outputs, (list, tuple)):
+            raise ValueError(f"Expected {n_o_out} outputs from original function.")
+        i_res_list = []
+        n_i_out = schema["n_i_out"]
+        if n_i_out > 0:
+            if injected_outputs is None: i_res_list = [dash.no_update] * n_i_out
+            elif n_i_out == 1: i_res_list = [injected_outputs]
+            else:
+                if not isinstance(injected_outputs, (list, tuple)): raise ValueError(f"Expected {n_i_out} outputs from injected function.")
+                i_res_list = list(injected_outputs)
+        final_list = i_res_list + o_res_list if mode == InjectionType.Prepend else o_res_list + i_res_list
+        n_all_out = schema["n_all_out"]
+        if n_all_out == 0: return None
+        if n_all_out == 1: return final_list[0]
+        return tuple(final_list)
+    return wrapped, all_args
+
+def inject_clientside_callback(
+        mode: InjectionType,
+        injected_func: str | None,
+        injected_args: tuple | list,
+        original_js: str,
+        original_args: tuple | list):
+    all_args, schema = inject_callback_args(mode, injected_args, original_args)
+    handler_src = "null" if (injected_func is None or mode == InjectionType.Disabled) else f"({injected_func})"
+    no_update = "window.dash_clientside.no_update"
+    s_o_in, s_i_in = schema["s_o_in"], schema["s_i_in"]
+    s_o_st, s_i_st = schema["s_o_st"], schema["s_i_st"]
+    js_concat = "iResList.concat(oResList)" if mode == InjectionType.Prepend else "oResList.concat(iResList)"
+    wrapped_js = f"""
+    function() {{
+        const originalFn = {original_js};
+        const injectedFn = {handler_src};
+        const args = Array.from(arguments);
+        const originalInputs = args.slice({s_o_in.start}, {s_o_in.stop});
+        const injectedInputs = args.slice({s_i_in.start}, {s_i_in.stop});
+        const originalStates = args.slice({s_o_st.start}, {s_o_st.stop});
+        const injectedStates = args.slice({s_i_st.start}, {s_i_st.stop});
+        const originalOutputs = originalFn(...originalInputs, ...originalStates);
+        let injectedOutputs = null;
+        if (injectedFn) {{
+            const payload = {{
+                original_outputs: originalOutputs,
+                injected_inputs: injectedInputs,
+                injected_states: injectedStates,
+                original_inputs: originalInputs,
+                original_states: originalStates
+            }};
+            injectedOutputs = injectedFn(payload);
+            if (injectedOutputs === {no_update}) return {no_update};
+        }}
+        const oResList = ({schema["n_o_out"]} > 1) ? originalOutputs : (({schema["n_o_out"]} === 1) ? [originalOutputs] : []);
+        const iResList = ({schema["n_i_out"]} > 0) ? (Array.isArray(injectedOutputs) ? injectedOutputs : [injectedOutputs ?? {no_update}]) : [];
+        const finalList = {js_concat};
+        if ({schema["n_all_out"]} <= 1) return finalList.length > 0 ? finalList[0] : undefined;
+        return finalList;
+    }}
+    """
+    return wrapped_js, all_args
 
 def callback(
-        *callback_args,
-        callback_js: bool,
-        on_init: bool | Injection,
-        on_click: bool | Injection,
-        on_loading: bool | Injection,
-        on_reloading: bool | Injection,
-        on_unloading: bool | Injection,
-        on_clean_memory: bool | Injection,
-        on_clean_session: bool | Injection,
-        on_clean_local: bool | Injection,
-        on_clean_reset: bool | Injection,
+        *args,
+        js: bool,
+        on_click: bool | InjectionType,
+        on_loading: bool | InjectionType,
+        on_reloading: bool | InjectionType,
+        on_unloading: bool | InjectionType,
+        on_clean_memory: bool | InjectionType,
+        on_clean_session: bool | InjectionType,
+        on_clean_local: bool | InjectionType,
+        on_clean_reset: bool | InjectionType,
         running: list[tuple] = None,
         progress: list[Component] | Component = None,
         cancel: list[Component] = None,
         interval: int = None,
         progress_default: Any = None,
-        **callback_kwargs):
+        **kwargs):
     def decorator(func):
-        func._callback_ = True
-        func._callback_js_ = callback_js
-        func._callback_kwargs_ = callback_kwargs
-        func._on_init_ = on_init
-        func._on_click_ = on_click
-        func._on_loading_ = on_loading
-        func._on_reloading_ = on_reloading
-        func._on_unloading_ = on_unloading
-        func._on_clean_memory_ = on_clean_memory
-        func._on_clean_session_ = on_clean_session
-        func._on_clean_local_ = on_clean_local
-        func._on_clean_reset_ = on_clean_reset
-        func._callback_running_ = running
-        func._callback_progress_ = progress
-        func._callback_cancel_ = cancel
-        func._callback_interval_ = interval
-        func._callback_progress_default_ = progress_default
-        func._callback_args_ = flatten(*sort(callback_args))
+        func.callback = True
+        func.js = js
+        func.kwargs = kwargs
+        func.on_click = on_click
+        func.on_loading = on_loading
+        func.on_reloading = on_reloading
+        func.on_unloading = on_unloading
+        func.on_clean_memory = on_clean_memory
+        func.on_clean_session = on_clean_session
+        func.on_clean_local = on_clean_local
+        func.on_clean_reset = on_clean_reset
+        func.running = running
+        func.progress = progress
+        func.cancel = cancel
+        func.interval = interval
+        func.progress_default = progress_default
+        func.args = flatten(*sort(args))
         return func
     return decorator
 
 def clientside_callback(
-        *callback_args,
-        on_init: bool | Injection = Injection.Disabled,
-        on_click: bool | Injection = Injection.Disabled,
-        on_loading: bool | Injection = Injection.Disabled,
-        on_reloading: bool | Injection = Injection.Disabled,
-        on_unloading: bool | Injection = Injection.Disabled,
-        on_clean_memory: bool | Injection = Injection.Disabled,
-        on_clean_session: bool | Injection = Injection.Disabled,
-        on_clean_local: bool | Injection = Injection.Disabled,
-        on_clean_reset: bool | Injection = Injection.Disabled,
+        *args,
+        on_init: bool | InjectionType = InjectionType.Disabled,
+        on_click: bool | InjectionType = InjectionType.Disabled,
+        on_loading: bool | InjectionType = InjectionType.Disabled,
+        on_reloading: bool | InjectionType = InjectionType.Disabled,
+        on_unloading: bool | InjectionType = InjectionType.Disabled,
+        on_clean_memory: bool | InjectionType = InjectionType.Disabled,
+        on_clean_session: bool | InjectionType = InjectionType.Disabled,
+        on_clean_local: bool | InjectionType = InjectionType.Disabled,
+        on_clean_reset: bool | InjectionType = InjectionType.Disabled,
         running: list[tuple] = None,
         progress: list[Component] | Component = None,
         cancel: list[Component] = None,
         interval: int = None,
         progress_default: Any = None,
-        **callback_kwargs):
+        **kwargs):
     return callback(
-        *callback_args,
-        callback_js=True,
+        *args,
+        js=True,
         on_init=on_init,
         on_click=on_click,
         on_loading=on_loading,
@@ -175,20 +283,21 @@ def clientside_callback(
         cancel=cancel,
         interval=interval,
         progress_default=progress_default,
-        **callback_kwargs
+        prevent_initial_call=InjectionType.coerce(on_init) is InjectionType.Disabled,
+        **kwargs
     )
 
 def serverside_callback(
-        *callback_args,
-        on_init: bool | Injection = Injection.Disabled,
-        on_click: bool | Injection = Injection.Disabled,
-        on_loading: bool | Injection = Injection.Disabled,
-        on_reloading: bool | Injection = Injection.Disabled,
-        on_unloading: bool | Injection = Injection.Disabled,
-        on_clean_memory: bool | Injection = Injection.Disabled,
-        on_clean_session: bool | Injection = Injection.Disabled,
-        on_clean_local: bool | Injection = Injection.Disabled,
-        on_clean_reset: bool | Injection = Injection.Disabled,
+        *args,
+        on_init: bool | InjectionType = InjectionType.Disabled,
+        on_click: bool | InjectionType = InjectionType.Disabled,
+        on_loading: bool | InjectionType = InjectionType.Disabled,
+        on_reloading: bool | InjectionType = InjectionType.Disabled,
+        on_unloading: bool | InjectionType = InjectionType.Disabled,
+        on_clean_memory: bool | InjectionType = InjectionType.Disabled,
+        on_clean_session: bool | InjectionType = InjectionType.Disabled,
+        on_clean_local: bool | InjectionType = InjectionType.Disabled,
+        on_clean_reset: bool | InjectionType = InjectionType.Disabled,
         background: bool = False,
         memoize: bool = False,
         manager: str = None,
@@ -197,10 +306,10 @@ def serverside_callback(
         cancel: list[Component] = None,
         interval: int = None,
         progress_default: Any = None,
-        **callback_kwargs):
+        **kwargs):
     return callback(
-        *callback_args,
-        callback_js=False,
+        *args,
+        js=False,
         on_init=on_init,
         on_click=on_click,
         on_loading=on_loading,
@@ -211,107 +320,13 @@ def serverside_callback(
         on_clean_local=on_clean_local,
         on_clean_reset=on_clean_reset,
         background=background,
+        memoize=memoize,
         manager=manager,
         running=running,
         progress=progress,
         cancel=cancel,
         interval=interval,
         progress_default=progress_default,
-        memoize=memoize,
-        **callback_kwargs
+        prevent_initial_call=InjectionType.coerce(on_init) is InjectionType.Disabled,
+        **kwargs
     )
-
-def _inject_callback_(original_args, inject_args, inject_func, mode):
-    all_out, all_in, all_st, all_oth, o_out, o_in, o_st, i_out, i_in, i_st = organize(original_args, inject_args, mode)
-    all_args = [*all_out, *all_in, *all_st, *all_oth]
-    prepend = mode == Injection.Prepend
-    inject_func = inject_func if mode == Injection.Hidden else None
-    return all_args, prepend, inject_func, len(o_out), len(o_in), len(o_st), len(i_out), len(i_in), len(i_st), len(all_out), len(all_in), len(all_st)
-
-def inject_serverside_callback(
-        inject_func: Callable | None,
-        inject_args: tuple | list,
-        original_func: Callable,
-        original_args: tuple | list,
-        mode: Injection):
-    all_args, prepend, inject_func, n_o_out, n_o_in, n_o_st, n_i_out, n_i_in, n_i_st, n_all_out, n_all_in, n_all_st = _inject_callback_(original_args, inject_args, inject_func, mode)
-    wants_kwargs = False
-    accepted_params = set()
-    if inject_func:
-        sig = inspect.signature(inject_func)
-        wants_kwargs = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
-        accepted_params = set(sig.parameters.keys())
-    @wraps(original_func)
-    def wrapped(*args, **kwargs):
-        input_vals = args[:n_all_in]
-        state_vals = args[n_all_in:]
-        if prepend:
-            inject_inputs, original_inputs = input_vals[:n_i_in], input_vals[n_i_in:]
-            inject_states, original_states = state_vals[:n_i_st], state_vals[n_i_st:]
-        else:
-            original_inputs, inject_inputs = input_vals[:n_o_in], input_vals[n_o_in:]
-            original_states, inject_states = state_vals[:n_o_st], state_vals[n_o_st:]
-        original_result = original_func(*original_inputs, *original_states, **kwargs)
-        inject_result = None
-        if inject_func:
-            available_kwargs = {
-                "inject_inputs": inject_inputs,
-                "inject_states": inject_states,
-                "original_inputs": original_inputs,
-                "original_states": original_states
-            }
-            if wants_kwargs:
-                kwargs_to_pass = available_kwargs
-            else:
-                kwargs_to_pass = {k: v for k, v in available_kwargs.items() if k in accepted_params}
-            inject_result = inject_func(original_result, **kwargs_to_pass)
-        o_res_list = [original_result] if n_o_out == 1 else list(original_result) if n_o_out > 1 else []
-        if n_o_out > 1 and not isinstance(original_result, (list, tuple)):
-            raise ValueError(f"Expected {n_o_out} outputs from original function.")
-        i_res_list = []
-        if n_i_out > 0:
-            if inject_result is None: i_res_list = [dash.no_update] * n_i_out
-            elif n_i_out == 1: i_res_list = [inject_result]
-            else:
-                if not isinstance(inject_result, (list, tuple)): raise ValueError(f"Expected {n_i_out} outputs from inject function.")
-                i_res_list = list(inject_result)
-        final_list = i_res_list + o_res_list if prepend else o_res_list + i_res_list
-        if n_all_out == 0: return None
-        if n_all_out == 1: return final_list[0]
-        return tuple(final_list)
-    return wrapped, all_args
-
-def inject_clientside_callback(
-        inject_func: str | None,
-        inject_args: tuple | list,
-        original_js: str,
-        original_args: tuple | list,
-        mode: Injection):
-    all_args, prepend, inject_func, n_o_out, n_o_in, n_o_st, n_i_out, n_i_in, n_i_st, n_all_out, n_all_in, n_all_st = _inject_callback_(original_args, inject_args, inject_func, mode)
-    handler_src = "null" if inject_func is None else f"({inject_func})"
-    no_update = "window.dash_clientside.no_update"
-    wrapped_js = f"""
-    function() {{
-        const originalFn = {original_js};
-        const injectFn = {handler_src};
-        const args = Array.from(arguments);
-        const inputVals = args.slice(0, {n_all_in});
-        const stateVals = args.slice({n_all_in});
-        const injectInputs = {str(prepend).lower()} ? inputVals.slice(0, {n_i_in}) : inputVals.slice({n_o_in});
-        const originalInputs = {str(prepend).lower()} ? inputVals.slice({n_i_in}) : inputVals.slice(0, {n_o_in});
-        const injectStates = {str(prepend).lower()} ? stateVals.slice(0, {n_i_st}) : stateVals.slice({n_o_st});
-        const originalStates = {str(prepend).lower()} ? stateVals.slice({n_i_st}) : stateVals.slice(0, {n_o_st});
-        const originalResult = originalFn(...originalInputs, ...originalStates);
-        let injectResult = null;
-        if (injectFn) {{
-            injectResult = injectFn(originalResult, injectInputs, injectStates, originalInputs, originalStates);
-            if (injectResult === {no_update}) return {no_update};
-        }}
-        const oResList = ({n_o_out} > 1) ? originalResult : (({n_o_out} === 1) ? [originalResult] : []);
-        const iResList = ({n_i_out} > 0) ? (Array.isArray(injectResult) ? injectResult : [injectResult ?? {no_update}]) : [];
-        const finalList = {str(prepend).lower()} ? iResList.concat(oResList) : oResList.concat(iResList);
-        if ({n_all_out} <= 1) return finalList.length > 0 ? finalList[0] : undefined;
-        return finalList;
-    }}
-    """
-    return wrapped_js, all_args

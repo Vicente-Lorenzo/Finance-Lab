@@ -3,15 +3,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING: from Library.App import AppAPI
+from Library.Logging import *
 from Library.App.Callback import *
 from Library.App.Component import *
-from Library.Logging import *
 
 class PageAPI:
 
-    PAGE_LOADING_TRIGGER_ID: dict
-    PAGE_RELOADING_TRIGGER_ID: dict
-    PAGE_UNLOADING_TRIGGER_ID: dict
+    PAGE_LOADING_ASYNC_ID: dict
+    PAGE_RELOADING_ASYNC_ID: dict
+    PAGE_UNLOADING_ASYNC_ID: dict
 
     PAGE_MEMORY_STORAGE_ID: dict
     PAGE_SESSION_STORAGE_ID: dict
@@ -142,38 +142,23 @@ class PageAPI:
 
     @clientside_callback(
         Output("PAGE_MEMORY_STORAGE_ID", "data"),
-        State("PAGE_MEMORY_STORAGE_ID", "storage_type"),
-        on_clean_memory=Injection.Hidden
+        on_clean_memory=InjectionType.Hidden
     )
     def _page_async_clean_memory_callback_(self):
         return self.app.asset(path="Callbacks/Clear.js")
 
     @clientside_callback(
         Output("PAGE_SESSION_STORAGE_ID", "data"),
-        State("PAGE_SESSION_STORAGE_ID", "storage_type"),
-        on_clean_session=Injection.Hidden
+        on_clean_session=InjectionType.Hidden
     )
     def _page_async_clean_session_callback_(self):
         return self.app.asset(path="Callbacks/Clear.js")
 
     @clientside_callback(
         Output("PAGE_LOCAL_STORAGE_ID", "data"),
-        State("PAGE_LOCAL_STORAGE_ID", "storage_type"),
-        on_clean_local=Injection.Hidden
+        on_clean_local=InjectionType.Hidden
     )
     def _page_async_clean_local_callback_(self):
-        return self.app.asset(path="Callbacks/Clear.js")
-
-    @clientside_callback(
-        Output("PAGE_MEMORY_STORAGE_ID", "data"),
-        Output("PAGE_SESSION_STORAGE_ID", "data"),
-        Output("PAGE_LOCAL_STORAGE_ID", "data"),
-        State("PAGE_MEMORY_STORAGE_ID", "storage_type"),
-        State("PAGE_SESSION_STORAGE_ID", "storage_type"),
-        State("PAGE_LOCAL_STORAGE_ID", "storage_type"),
-        on_clean_reset=Injection.Prepend
-    )
-    def _page_async_clean_reset_callback_(self):
         return self.app.asset(path="Callbacks/Clear.js")
 
     @serverside_callback(
@@ -181,23 +166,26 @@ class PageAPI:
     )
     def _page_async_update_memory_callback_(self, data):
         self._log_.info(lambda: f"Page Memory Storage: {data if data else 'Empty'}")
+        if not data: self.app._injector_.on_clean_memory.increment()
 
     @serverside_callback(
         Input("PAGE_SESSION_STORAGE_ID", "data")
     )
     def _page_async_update_session_callback_(self, data):
         self._log_.info(lambda: f"Page Session Storage: {data if data else 'Empty'}")
+        if not data: self.app._injector_.on_clean_session.increment()
 
     @serverside_callback(
         Input("PAGE_LOCAL_STORAGE_ID", "data")
     )
     def _page_async_update_local_callback_(self, data):
         self._log_.info(lambda: f"Page Local Storage: {data if data else 'Empty'}")
+        if not data: self.app._injector_.on_clean_local.increment()
 
     def __init_ids__(self) -> None:
-        self.PAGE_LOADING_TRIGGER_ID: dict = self.register(type="trigger", name="loading")
-        self.PAGE_RELOADING_TRIGGER_ID: dict = self.register(type="trigger", name="reloading")
-        self.PAGE_UNLOADING_TRIGGER_ID: dict = self.register(type="trigger", name="unloading")
+        self.PAGE_LOADING_ASYNC_ID: dict = self.register(type="asyncer", name="loading")
+        self.PAGE_RELOADING_ASYNC_ID: dict = self.register(type="asyncer", name="reloading")
+        self.PAGE_UNLOADING_ASYNC_ID: dict = self.register(type="asyncer", name="unloading")
 
         self.PAGE_MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory", portable="data")
         self.PAGE_SESSION_STORAGE_ID: dict = self.register(type="storage", name="session", portable="data")
@@ -206,9 +194,9 @@ class PageAPI:
 
     def __init_hidden_layout_(self) -> list[Component]:
         hidden: list = []
-        hidden.extend(StorageAPI(id=self.PAGE_LOADING_TRIGGER_ID, persistence="memory").build())
-        hidden.extend(StorageAPI(id=self.PAGE_RELOADING_TRIGGER_ID, persistence="memory").build())
-        hidden.extend(StorageAPI(id=self.PAGE_UNLOADING_TRIGGER_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.PAGE_LOADING_ASYNC_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.PAGE_RELOADING_ASYNC_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.PAGE_UNLOADING_ASYNC_ID, persistence="memory").build())
         hidden.extend(StorageAPI(id=self.PAGE_MEMORY_STORAGE_ID, persistence="memory").build())
         hidden.extend(StorageAPI(id=self.PAGE_SESSION_STORAGE_ID, persistence="session").build())
         hidden.extend(StorageAPI(id=self.PAGE_LOCAL_STORAGE_ID, persistence="local").build())
