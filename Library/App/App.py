@@ -200,11 +200,11 @@ class AppAPI:
         self.GLOBAL_SIDEBAR_COLLAPSE_ID: dict = self.register(type="collapse", name="sidebar")
 
         self.GLOBAL_BACKWARD_BUTTON_ID: dict = self.register(type="button", name="backward")
-        self.GLOBAL_BACKWARD_ASYNC_ID = self.register(type="asyncer", name="backward")
+        self.GLOBAL_BACKWARD_ASYNC_ID: dict = self.register(type="asyncer", name="backward")
         self.GLOBAL_REFRESH_BUTTON_ID: dict = self.register(type="button", name="refresh")
-        self.GLOBAL_REFRESH_ASYNC_ID = self.register(type="asyncer", name="refresh")
+        self.GLOBAL_REFRESH_ASYNC_ID: dict = self.register(type="asyncer", name="refresh")
         self.GLOBAL_FORWARD_BUTTON_ID: dict = self.register(type="button", name="forward")
-        self.GLOBAL_FORWARD_ASYNC_ID = self.register(type="asyncer", name="forward")
+        self.GLOBAL_FORWARD_ASYNC_ID: dict = self.register(type="asyncer", name="forward")
 
         self.GLOBAL_CONTACTS_ARROW_ID: dict = self.register(type="icon", name="contacts")
         self.GLOBAL_CONTACTS_BUTTON_ID: dict = self.register(type="button", name="contacts")

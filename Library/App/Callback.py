@@ -14,6 +14,8 @@ from Library.Utility.Typing import hasattribute, getattribute
 class ComponentID:
     def __set_name__(self, owner, name):
         self.name = name
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}: {getattr(self, 'name', 'Unbound')}>"
 
 class Trigger(ABC):
     def __init__(self, component: str | dict | ComponentID, property: str):

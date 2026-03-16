@@ -64,11 +64,11 @@ class FormAPI(PageAPI):
         self._next_button_label_: str = next_button_label
 
     def __init_ids__(self) -> None:
-        self.FORM_ACTION_BUTTON_ID = self.register(type="button", name="action")
-        self.FORM_BACK_INTERNAL_ID = self.register(type="button", name="internal-back")
-        self.FORM_BACK_EXTERNAL_ID = self.register(type="button", name="external-back")
-        self.FORM_NEXT_INTERNAL_ID = self.register(type="button", name="internal-next")
-        self.FORM_NEXT_EXTERNAL_ID = self.register(type="button", name="external-next")
+        self.FORM_ACTION_BUTTON_ID: dict = self.register(type="button", name="action")
+        self.FORM_BACK_INTERNAL_ID: dict = self.register(type="button", name="internal-back")
+        self.FORM_BACK_EXTERNAL_ID: dict = self.register(type="button", name="external-back")
+        self.FORM_NEXT_INTERNAL_ID: dict = self.register(type="button", name="internal-next")
+        self.FORM_NEXT_EXTERNAL_ID: dict = self.register(type="button", name="external-next")
         super().__init_ids__()
 
     def __init_button_layout__(self) -> list[Component]:
