@@ -23,7 +23,8 @@ from Library.App.Component import (
     DropdownAPI,
     DropdownContainerAPI,
     NavigatorAPI,
-    NavigatorContainerAPI
+    NavigatorContainerAPI,
+    LoadingAPI
 )
 from Library.App.Layout import (
     LayoutAPI,
@@ -46,15 +47,18 @@ from Library.App.Callback import (
 )
 from Library.App.Injection import (
     InjectionAPI,
-    ClickInjectionAPI,
-    CleanInjectionAPI,
-    CleanMemoryInjectionAPI,
-    CleanSessionInjectionAPI,
-    CleanLocalInjectionAPI,
-    CleanResetInjectionAPI,
+    OnClickInjectionAPI,
+    OnCleanInjectionAPI,
+    OnCleanMemoryInjectionAPI,
+    OnCleanSessionInjectionAPI,
+    OnCleanLocalInjectionAPI,
+    OnCleanResetInjectionAPI,
+    OnLoadingInjectionAPI,
+    OnReloadingInjectionAPI,
+    OnUnloadingInjectionAPI,
     LoadingInjectionAPI,
-    ReloadingInjectionAPI,
-    UnloadingInjectionAPI,
+    LoadingContentInjectionAPI,
+    LoadingSidebarInjectionAPI,
     InjectorAPI
 )
 from Library.App.Page import PageAPI
@@ -86,6 +90,7 @@ __all__ = [
     "DropdownContainerAPI",
     "NavigatorAPI",
     "NavigatorContainerAPI",
+    "LoadingAPI",
     "LayoutAPI",
     "DefaultLayoutAPI",
     "ComponentID",
@@ -101,15 +106,18 @@ __all__ = [
     "clientside_callback",
     "serverside_callback",
     "InjectionAPI",
-    "ClickInjectionAPI",
-    "CleanInjectionAPI",
-    "CleanMemoryInjectionAPI",
-    "CleanSessionInjectionAPI",
-    "CleanLocalInjectionAPI",
-    "CleanResetInjectionAPI",
+    "OnClickInjectionAPI",
+    "OnCleanInjectionAPI",
+    "OnCleanMemoryInjectionAPI",
+    "OnCleanSessionInjectionAPI",
+    "OnCleanLocalInjectionAPI",
+    "OnCleanResetInjectionAPI",
+    "OnLoadingInjectionAPI",
+    "OnReloadingInjectionAPI",
+    "OnUnloadingInjectionAPI",
     "LoadingInjectionAPI",
-    "ReloadingInjectionAPI",
-    "UnloadingInjectionAPI",
+    "LoadingContentInjectionAPI",
+    "LoadingSidebarInjectionAPI",
     "InjectorAPI",
     "AppAPI"
 ]

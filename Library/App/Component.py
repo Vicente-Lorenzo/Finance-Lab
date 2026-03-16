@@ -528,3 +528,24 @@ class NavigatorContainerAPI(ContainerAPI):
         if self.in_card is not None: kwargs.update(card=self.in_card)
         if self.in_navbar is not None: kwargs.update(navbar=self.in_navbar)
         return kwargs
+
+@dataclass(kw_only=True)
+class LoadingAPI(ComponentAPI):
+
+    classname: str | None = field(default="loading")
+    builder: type[Component] = field(default=html.Div)
+
+    spinner_color: str = field(default="primary")
+    spinner_type: str = field(default="border")
+
+    def build(self) -> list[Component]:
+        spinner = dbc.Spinner(color=self.spinner_color, type=self.spinner_type)
+        if self.size is not None:
+            spinner.spinner_style = {"width": self.size, "height": self.size}
+        else:
+            spinner.spinner_style = {"width": "3rem", "height": "3rem"}
+            
+        elements = self.flatten(element=self.element if self.element is not None else [spinner])
+        elements, hidden = self.organize(elements=elements)
+        component = self.builder(elements, **self.arguments())
+        return self.serialize(elements=[component], hidden=hidden)

@@ -326,13 +326,20 @@ class AppAPI:
 
     def __init_content_layout__(self) -> Component:
         return html.Div(children=[
-                dbc.Collapse(children=[html.Div(children=[
-                    self.GLOBAL_LOADING_LAYOUT
-                ], id=self.GLOBAL_SIDEBAR_ID, className="sidebar-content")
+                dbc.Collapse(children=[
+                    html.Div(children=[
+                        html.Div(children=[
+                            self.GLOBAL_LOADING_LAYOUT
+                        ], id=self.GLOBAL_SIDEBAR_ID, className="sidebar-content"),
+                        *LoadingAPI(id=self.GLOBAL_SIDEBAR_LOADING_ID, hidden=True).build()
+                    ], className="sidebar-wrapper")
                 ], id=self.GLOBAL_SIDEBAR_COLLAPSE_ID, is_open=False, className="sidebar-collapse"),
                 html.Div(children=[
-                    self.GLOBAL_LOADING_LAYOUT
-                ], id=self.GLOBAL_CONTENT_ID, className="page-content"),
+                    html.Div(children=[
+                        self.GLOBAL_LOADING_LAYOUT
+                    ], id=self.GLOBAL_CONTENT_ID, className="page-content"),
+                    *LoadingAPI(id=self.GLOBAL_CONTENT_LOADING_ID, hidden=True).build()
+                ], className="content-wrapper"),
         ], className="content")
 
     def __init_footer_layout__(self) -> Component:
@@ -482,10 +489,14 @@ class AppAPI:
         args = list(getattr(func, "args", []))
         kwargs = getattr(func, "kwargs", {})
         target = getattr(context, name)() if is_client else getattr(context, name)
+        running_extras = []
+        cancel_extras = []
         for injection in self._injector_.match(func):
             mode = InjectionType.coerce(getattr(func, injection.flag, False))
             if mode is not InjectionType.Disabled:
                 injection.register(page=context.endpoint if is_page else None)
+                running_extras.extend(injection.running())
+                cancel_extras.extend(injection.cancel())
                 py, js = injection(app=self, is_page=is_page)
                 extras = injection.args(is_page)
                 inject_func = js if is_client else py
@@ -507,6 +518,10 @@ class AppAPI:
                     )
         for attr in ["running", "cancel", "progress", "interval", "progress_default"]:
             val = getattr(func, attr, None)
+            if attr == "running" and running_extras:
+                val = (val or []) + running_extras
+            elif attr == "cancel" and cancel_extras:
+                val = (val or []) + cancel_extras
             if val is not None:
                 if attr == "running":
                     kwargs[attr] = [
@@ -519,7 +534,6 @@ class AppAPI:
                     kwargs[attr] = val.build(context)
                 else:
                     kwargs[attr] = val
-
         args = [a.build(context=context) if isinstance(a, Trigger) else a for a in args]
         if is_client:
             self.app.clientside_callback(target, *args, **kwargs)

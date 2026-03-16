@@ -16,11 +16,17 @@ class InjectionAPI(ABC):
     @abstractmethod
     def args(self, is_page: bool) -> list:
         pass
+    @staticmethod
+    def running() -> list[tuple]:
+        return []
+    @staticmethod
+    def cancel() -> list[Any]:
+        return []
     @abstractmethod
     def py(self, payload: dict) -> Any:
         pass
     @abstractmethod
-    def js(self, app) -> str:
+    def js(self, app) -> str | None:
         pass
     def __call__(self, app, is_page: bool) -> Tuple[Callable | None, str | None]:
         return self.py, self.js(app)
@@ -46,7 +52,7 @@ class InjectionAPI(ABC):
                 total += sum(v for k, v in self.mapping.items() if k != "global")
             return total
 
-class ClickInjectionAPI(InjectionAPI):
+class OnClickInjectionAPI(InjectionAPI):
     def __init__(self):
         super().__init__(flag="on_click")
     def args(self, is_page: bool) -> list:
@@ -59,7 +65,7 @@ class ClickInjectionAPI(InjectionAPI):
     def js(self, app) -> str:
         return app.asset(path="Callbacks/Click.js")
 
-class CleanInjectionAPI(InjectionAPI, ABC):
+class OnCleanInjectionAPI(InjectionAPI, ABC):
     def py(self, payload: dict) -> Any:
         injected_inputs = payload.get("injected_inputs", [])
         clicks = injected_inputs[0] if len(injected_inputs) > 0 else None
@@ -69,7 +75,7 @@ class CleanInjectionAPI(InjectionAPI, ABC):
     def js(self, app) -> str:
         return app.asset(path="Callbacks/Clean.js")
 
-class CleanMemoryInjectionAPI(CleanInjectionAPI):
+class OnCleanMemoryInjectionAPI(OnCleanInjectionAPI):
     def __init__(self):
         super().__init__(flag="on_clean_memory")
     def args(self, is_page: bool) -> list:
@@ -79,7 +85,7 @@ class CleanMemoryInjectionAPI(CleanInjectionAPI):
             Input(AppAPI.GLOBAL_CLEAN_MEMORY_ASYNC_ID, "data")
         ]
 
-class CleanSessionInjectionAPI(CleanInjectionAPI):
+class OnCleanSessionInjectionAPI(OnCleanInjectionAPI):
     def __init__(self):
         super().__init__(flag="on_clean_session")
     def args(self, is_page: bool) -> list:
@@ -89,7 +95,7 @@ class CleanSessionInjectionAPI(CleanInjectionAPI):
             Input(AppAPI.GLOBAL_CLEAN_SESSION_ASYNC_ID, "data")
         ]
 
-class CleanLocalInjectionAPI(CleanInjectionAPI):
+class OnCleanLocalInjectionAPI(OnCleanInjectionAPI):
     def __init__(self):
         super().__init__(flag="on_clean_local")
     def args(self, is_page: bool) -> list:
@@ -99,7 +105,7 @@ class CleanLocalInjectionAPI(CleanInjectionAPI):
             Input(AppAPI.GLOBAL_CLEAN_LOCAL_ASYNC_ID, "data")
         ]
 
-class CleanResetInjectionAPI(CleanInjectionAPI):
+class OnCleanResetInjectionAPI(OnCleanInjectionAPI):
     def __init__(self):
         super().__init__(flag="on_clean_reset")
     def args(self, is_page: bool) -> list:
@@ -109,7 +115,7 @@ class CleanResetInjectionAPI(CleanInjectionAPI):
             Input(AppAPI.GLOBAL_CLEAN_RESET_ASYNC_ID, "data")
         ]
 
-class LoadingInjectionAPI(InjectionAPI):
+class OnLoadingInjectionAPI(InjectionAPI):
     def __init__(self, flag: str = "on_loading"):
         super().__init__(flag=flag)
     def args(self, is_page: bool) -> list:
@@ -133,7 +139,7 @@ class LoadingInjectionAPI(InjectionAPI):
     def __call__(self, app, is_page: bool) -> Tuple[Callable | None, str | None]:
         return (self.py, self.js(app)) if is_page else (None, None)
 
-class ReloadingInjectionAPI(LoadingInjectionAPI):
+class OnReloadingInjectionAPI(OnLoadingInjectionAPI):
     def __init__(self):
         super().__init__(flag="on_reloading")
     def args(self, is_page: bool) -> list:
@@ -148,7 +154,7 @@ class ReloadingInjectionAPI(LoadingInjectionAPI):
             Input(AppAPI.GLOBAL_RELOADING_ASYNC_ID, "data")
         ]
 
-class UnloadingInjectionAPI(LoadingInjectionAPI):
+class OnUnloadingInjectionAPI(OnLoadingInjectionAPI):
     def __init__(self):
         super().__init__(flag="on_unloading")
     def args(self, is_page: bool) -> list:
@@ -163,18 +169,56 @@ class UnloadingInjectionAPI(LoadingInjectionAPI):
             Input(AppAPI.GLOBAL_UNLOADING_ASYNC_ID, "data")
         ]
 
+class LoadingInjectionAPI(InjectionAPI):
+    def __init__(self):
+        super().__init__(flag="loading")
+    def args(self, is_page: bool) -> list: return []
+    def py(self, payload: dict) -> Any: return None
+    def js(self, app) -> str | None: return None
+    def __call__(self, app, is_page: bool): return None, None
+    def running(self) -> list[tuple]:
+        from Library.App import AppAPI
+        return [
+            (Output(AppAPI.GLOBAL_CONTENT_LOADING_ID, "style"), {"display": "flex"}, {"display": "none"}),
+            (Output(AppAPI.GLOBAL_SIDEBAR_LOADING_ID, "style"), {"display": "flex"}, {"display": "none"})
+        ]
+
+class LoadingContentInjectionAPI(InjectionAPI):
+    def __init__(self):
+        super().__init__(flag="loading_content")
+    def args(self, is_page: bool) -> list: return []
+    def py(self, payload: dict) -> Any: return None
+    def js(self, app) -> str | None: return None
+    def __call__(self, app, is_page: bool): return None, None
+    def running(self) -> list[tuple]:
+        from Library.App import AppAPI
+        return [(Output(AppAPI.GLOBAL_CONTENT_LOADING_ID, "style"), {"display": "flex"}, {"display": "none"})]
+
+class LoadingSidebarInjectionAPI(InjectionAPI):
+    def __init__(self):
+        super().__init__(flag="loading_sidebar")
+    def args(self, is_page: bool) -> list: return []
+    def py(self, payload: dict) -> Any: return None
+    def js(self, app) -> str | None: return None
+    def __call__(self, app, is_page: bool): return None, None
+    def running(self) -> list[tuple]:
+        from Library.App import AppAPI
+        return [(Output(AppAPI.GLOBAL_SIDEBAR_LOADING_ID, "style"), {"display": "flex"}, {"display": "none"})]
+
 class InjectorAPI:
     def __init__(self, app):
         self.app = app
-        self.on_click = ClickInjectionAPI()
-        self.on_clean_memory = CleanMemoryInjectionAPI()
-        self.on_clean_session = CleanSessionInjectionAPI()
-        self.on_clean_local = CleanLocalInjectionAPI()
-        self.on_clean_reset = CleanResetInjectionAPI()
-        self.on_loading = LoadingInjectionAPI()
-        self.on_reloading = ReloadingInjectionAPI()
-        self.on_unloading = UnloadingInjectionAPI()
-        
+        self.on_click = OnClickInjectionAPI()
+        self.on_clean_memory = OnCleanMemoryInjectionAPI()
+        self.on_clean_session = OnCleanSessionInjectionAPI()
+        self.on_clean_local = OnCleanLocalInjectionAPI()
+        self.on_clean_reset = OnCleanResetInjectionAPI()
+        self.on_loading = OnLoadingInjectionAPI()
+        self.on_reloading = OnReloadingInjectionAPI()
+        self.on_unloading = OnUnloadingInjectionAPI()
+        self.loading = LoadingInjectionAPI()
+        self.loading_content = LoadingContentInjectionAPI()
+        self.loading_sidebar = LoadingSidebarInjectionAPI()
         self.injections = [
             self.on_click,
             self.on_clean_memory,
@@ -183,9 +227,11 @@ class InjectorAPI:
             self.on_clean_reset,
             self.on_loading,
             self.on_reloading,
-            self.on_unloading
+            self.on_unloading,
+            self.loading,
+            self.loading_content,
+            self.loading_sidebar
         ]
-
     def match(self, func) -> list[InjectionAPI]:
         matched = []
         for inj in self.injections:

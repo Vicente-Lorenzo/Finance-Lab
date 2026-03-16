@@ -230,6 +230,9 @@ def callback(
         on_clean_session: bool | InjectionType,
         on_clean_local: bool | InjectionType,
         on_clean_reset: bool | InjectionType,
+        loading: bool | InjectionType = InjectionType.Disabled,
+        loading_content: bool | InjectionType = InjectionType.Disabled,
+        loading_sidebar: bool | InjectionType = InjectionType.Disabled,
         running: list[tuple] = None,
         progress: list[Component] | Component = None,
         cancel: list[Component] = None,
@@ -248,6 +251,9 @@ def callback(
         func.on_clean_session = on_clean_session
         func.on_clean_local = on_clean_local
         func.on_clean_reset = on_clean_reset
+        func.loading = loading
+        func.loading_content = loading_content
+        func.loading_sidebar = loading_sidebar
         func.running = running
         func.progress = progress
         func.cancel = cancel
@@ -268,6 +274,9 @@ def clientside_callback(
         on_clean_session: bool | InjectionType = InjectionType.Disabled,
         on_clean_local: bool | InjectionType = InjectionType.Disabled,
         on_clean_reset: bool | InjectionType = InjectionType.Disabled,
+        loading: bool | InjectionType = InjectionType.Disabled,
+        loading_content: bool | InjectionType = InjectionType.Disabled,
+        loading_sidebar: bool | InjectionType = InjectionType.Disabled,
         running: list[tuple] = None,
         progress: list[Component] | Component = None,
         cancel: list[Component] = None,
@@ -286,6 +295,9 @@ def clientside_callback(
         on_clean_session=on_clean_session,
         on_clean_local=on_clean_local,
         on_clean_reset=on_clean_reset,
+        loading=loading,
+        loading_content=loading_content,
+        loading_sidebar=loading_sidebar,
         running=running,
         progress=progress,
         cancel=cancel,
@@ -306,6 +318,9 @@ def serverside_callback(
         on_clean_session: bool | InjectionType = InjectionType.Disabled,
         on_clean_local: bool | InjectionType = InjectionType.Disabled,
         on_clean_reset: bool | InjectionType = InjectionType.Disabled,
+        loading: bool | InjectionType = InjectionType.Disabled,
+        loading_content: bool | InjectionType = InjectionType.Disabled,
+        loading_sidebar: bool | InjectionType = InjectionType.Disabled,
         background: bool = False,
         memoize: bool = False,
         manager: str = None,
@@ -327,6 +342,9 @@ def serverside_callback(
         on_clean_session=on_clean_session,
         on_clean_local=on_clean_local,
         on_clean_reset=on_clean_reset,
+        loading=loading,
+        loading_content=loading_content,
+        loading_sidebar=loading_sidebar,
         background=background,
         memoize=memoize,
         manager=manager,
