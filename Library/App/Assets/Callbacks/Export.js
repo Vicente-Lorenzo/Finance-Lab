@@ -1,4 +1,4 @@
-(function(clicks, pathname, ...args) {
+(function(clicks, pathname) {
     if (!clicks) return window.dash_clientside.no_update;
     const context = window.dash_clientside.callback_context;
     const states = context.states_list;
