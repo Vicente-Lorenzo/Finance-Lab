@@ -96,9 +96,9 @@ class AppAPI:
                  anchor: str = None,
                  debug: bool = False,
                  terminal_limit: int = 100,
-                 high_frequency_interval: int = 100,
-                 medium_frequency_interval: int = 1000,
-                 low_frequency_interval: int = 60000) -> None:
+                 high_frequency_interval: int = 1000,
+                 medium_frequency_interval: int = 60 * 1000,
+                 low_frequency_interval: int = 60 * 60 * 1000) -> None:
 
         self._log_ = HandlerLoggingAPI(AppAPI.__name__)
 
@@ -913,7 +913,7 @@ class AppAPI:
 
     @serverside_callback(
         Output(GLOBAL_TERMINAL_ID, "children"),
-        Input(GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID, "n_intervals"),
+        Input(GLOBAL_HIGH_FREQUENCY_INTERVAL_ID, "n_intervals"),
         State(GLOBAL_TERMINAL_ID, "children")
     )
     def _global_async_terminal_stream_callback_(self, _, terminal: list[Component]):
