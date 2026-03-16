@@ -1,21 +1,22 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from typing_extensions import Self
 
 if TYPE_CHECKING: from Library.App import AppAPI
-from Library.Logging import *
-from Library.App.Callback import *
-from Library.App.Component import *
+from Library.Logging import HandlerLoggingAPI
+from Library.App.Callback import ComponentID, Output, Input, InjectionType, clientside_callback, serverside_callback
+from Library.App.Component import Component, StorageAPI
 
 class PageAPI:
 
-    PAGE_LOADING_ASYNC_ID: dict
-    PAGE_RELOADING_ASYNC_ID: dict
-    PAGE_UNLOADING_ASYNC_ID: dict
+    PAGE_LOADING_ASYNC_ID: ComponentID | dict = ComponentID()
+    PAGE_RELOADING_ASYNC_ID: ComponentID | dict = ComponentID()
+    PAGE_UNLOADING_ASYNC_ID: ComponentID | dict = ComponentID()
 
-    PAGE_MEMORY_STORAGE_ID: dict
-    PAGE_SESSION_STORAGE_ID: dict
-    PAGE_LOCAL_STORAGE_ID: dict
+    PAGE_MEMORY_STORAGE_ID: ComponentID | dict = ComponentID()
+    PAGE_SESSION_STORAGE_ID: ComponentID | dict = ComponentID()
+    PAGE_LOCAL_STORAGE_ID: ComponentID | dict = ComponentID()
 
     def __init__(self, *,
                  app: AppAPI,
@@ -141,42 +142,42 @@ class PageAPI:
         self._log_.info(lambda: f"Merged {page} (Old) into {self} (New)")
 
     @clientside_callback(
-        Output("PAGE_MEMORY_STORAGE_ID", "data"),
+        Output(PAGE_MEMORY_STORAGE_ID, "data"),
         on_clean_memory=InjectionType.Hidden
     )
     def _page_async_clean_memory_callback_(self):
         return self.app.asset(path="Callbacks/Clear.js")
 
     @clientside_callback(
-        Output("PAGE_SESSION_STORAGE_ID", "data"),
+        Output(PAGE_SESSION_STORAGE_ID, "data"),
         on_clean_session=InjectionType.Hidden
     )
     def _page_async_clean_session_callback_(self):
         return self.app.asset(path="Callbacks/Clear.js")
 
     @clientside_callback(
-        Output("PAGE_LOCAL_STORAGE_ID", "data"),
+        Output(PAGE_LOCAL_STORAGE_ID, "data"),
         on_clean_local=InjectionType.Hidden
     )
     def _page_async_clean_local_callback_(self):
         return self.app.asset(path="Callbacks/Clear.js")
 
     @serverside_callback(
-        Input("PAGE_MEMORY_STORAGE_ID", "data")
+        Input(PAGE_MEMORY_STORAGE_ID, "data")
     )
     def _page_async_update_memory_callback_(self, data):
         self._log_.info(lambda: f"Page Memory Storage: {data if data else 'Empty'}")
         if not data: self.app._injector_.on_clean_memory.increment()
 
     @serverside_callback(
-        Input("PAGE_SESSION_STORAGE_ID", "data")
+        Input(PAGE_SESSION_STORAGE_ID, "data")
     )
     def _page_async_update_session_callback_(self, data):
         self._log_.info(lambda: f"Page Session Storage: {data if data else 'Empty'}")
         if not data: self.app._injector_.on_clean_session.increment()
 
     @serverside_callback(
-        Input("PAGE_LOCAL_STORAGE_ID", "data")
+        Input(PAGE_LOCAL_STORAGE_ID, "data")
     )
     def _page_async_update_local_callback_(self, data):
         self._log_.info(lambda: f"Page Local Storage: {data if data else 'Empty'}")
@@ -192,7 +193,7 @@ class PageAPI:
         self.PAGE_LOCAL_STORAGE_ID: dict = self.register(type="storage", name="local", portable="data")
         self.ids()
 
-    def __init_hidden_layout_(self) -> list[Component]:
+    def __init_hidden_layout__(self) -> list[Component]:
         hidden: list = []
         hidden.extend(StorageAPI(id=self.PAGE_LOADING_ASYNC_ID, persistence="memory").build())
         hidden.extend(StorageAPI(id=self.PAGE_RELOADING_ASYNC_ID, persistence="memory").build())
@@ -203,7 +204,7 @@ class PageAPI:
         return self.normalize(hidden)
 
     def __init_content_layout__(self) -> list[Component]:
-        hidden = self.__init_hidden_layout_()
+        hidden = self.__init_hidden_layout__()
         self._log_.debug(lambda: f"Loaded Hidden Layout")
         content = self.normalize(self._content_ or self.content())
         return self.normalize([*content, *hidden])

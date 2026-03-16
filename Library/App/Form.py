@@ -4,15 +4,16 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING: from Library.App import AppAPI
 from Library.App.Page import PageAPI
+from Library.App.Callback import ComponentID
 from Library.App.Component import Component, IconAPI, TextAPI, ButtonAPI, PaginatorAPI, ContainerAPI
 
 class FormAPI(PageAPI):
 
-    FORM_BACK_INTERNAL_ID: dict
-    FORM_BACK_EXTERNAL_ID: dict
-    FORM_ACTION_BUTTON_ID: dict
-    FORM_NEXT_INTERNAL_ID: dict
-    FORM_NEXT_EXTERNAL_ID: dict
+    FORM_BACK_INTERNAL_ID: ComponentID | dict = ComponentID()
+    FORM_BACK_EXTERNAL_ID: ComponentID | dict = ComponentID()
+    FORM_ACTION_BUTTON_ID: ComponentID | dict = ComponentID()
+    FORM_NEXT_INTERNAL_ID: ComponentID | dict = ComponentID()
+    FORM_NEXT_EXTERNAL_ID: ComponentID | dict = ComponentID()
 
     def __init__(self, *,
                  app: AppAPI,
@@ -113,7 +114,7 @@ class FormAPI(PageAPI):
         return self.normalize([*buttons])
 
     def __init_content_layout__(self) -> list[Component]:
-        hidden = self.__init_hidden_layout_()
+        hidden = self.__init_hidden_layout__()
         self._log_.debug(lambda: f"Loaded Hidden Layout")
         buttons = self.__init_button_layout__()
         buttons = ContainerAPI(elements=buttons, stylename="form-page-buttons").build()

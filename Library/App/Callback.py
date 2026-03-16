@@ -7,32 +7,38 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Callable, Any
 from typing_extensions import Self
 
-from Library.App.Component import Component
 if TYPE_CHECKING: from Library.App import AppAPI, PageAPI
+from Library.App.Component import Component
 from Library.Utility.Typing import hasattribute, getattribute
 
+class ComponentID:
+    def __set_name__(self, owner, name):
+        self.name = name
+
 class Trigger(ABC):
-    def __init__(self, component: str | dict, property: str):
-        self.component: str | dict = component
+    def __init__(self, component: str | dict | ComponentID, property: str):
+        self.component: str | dict | ComponentID = component
         self.property: str = property
+
     @abstractmethod
     def build(self, context: AppAPI | PageAPI) -> tuple[dict, str]:
         from Library.App.Page import PageAPI
         trigger: str = self.__class__.__name__
-        if isinstance(self.component, dict):
-            component = context.identify(**self.component)
+        component = self.component.name if isinstance(self.component, ComponentID) else self.component
+        if isinstance(component, dict):
+            cid = context.identify(**component)
             load: str = "Hardcode Dict"
-        elif hasattribute(context, self.component):
-            component = getattribute(context, self.component)
+        elif hasattribute(context, component):
+            cid = getattribute(context, component)
             load: str = "Page Attribute" if isinstance(context, PageAPI) else "Global Attribute"
-        elif isinstance(context, PageAPI) and hasattribute(context.app, self.component):
-            component = getattribute(context.app, self.component)
+        elif isinstance(context, PageAPI) and hasattribute(context.app, component):
+            cid = getattribute(context.app, component)
             load: str = "Global Attribute"
         else:
-            component = self.component
+            cid = component
             load: str = "Hardcode String"
-        context._log_.debug(lambda: f"Loaded {load} ({trigger}): {component} @ {self.property}")
-        return component, self.property
+        context._log_.debug(lambda: f"Loaded {load} ({trigger}): {cid} @ {self.property}")
+        return cid, self.property
 
 class Output(Trigger):
     def __init__(self, component: str | dict, property: str, allow_duplicate: bool = True):

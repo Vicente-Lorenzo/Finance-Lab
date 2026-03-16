@@ -73,50 +73,55 @@ class CleanMemoryInjectionAPI(CleanInjectionAPI):
     def __init__(self):
         super().__init__(flag="on_clean_memory")
     def args(self, is_page: bool) -> list:
+        from Library.App import AppAPI
         return [
-            Input("GLOBAL_CLEAN_MEMORY_BUTTON_ID", "n_clicks"),
-            Input("GLOBAL_CLEAN_MEMORY_ASYNC_ID", "data")
+            Input(AppAPI.GLOBAL_CLEAN_MEMORY_BUTTON_ID, "n_clicks"),
+            Input(AppAPI.GLOBAL_CLEAN_MEMORY_ASYNC_ID, "data")
         ]
 
 class CleanSessionInjectionAPI(CleanInjectionAPI):
     def __init__(self):
         super().__init__(flag="on_clean_session")
     def args(self, is_page: bool) -> list:
+        from Library.App import AppAPI
         return [
-            Input("GLOBAL_CLEAN_SESSION_BUTTON_ID", "n_clicks"),
-            Input("GLOBAL_CLEAN_SESSION_ASYNC_ID", "data")
+            Input(AppAPI.GLOBAL_CLEAN_SESSION_BUTTON_ID, "n_clicks"),
+            Input(AppAPI.GLOBAL_CLEAN_SESSION_ASYNC_ID, "data")
         ]
 
 class CleanLocalInjectionAPI(CleanInjectionAPI):
     def __init__(self):
         super().__init__(flag="on_clean_local")
     def args(self, is_page: bool) -> list:
+        from Library.App import AppAPI
         return [
-            Input("GLOBAL_CLEAN_LOCAL_BUTTON_ID", "n_clicks"),
-            Input("GLOBAL_CLEAN_LOCAL_ASYNC_ID", "data")
+            Input(AppAPI.GLOBAL_CLEAN_LOCAL_BUTTON_ID, "n_clicks"),
+            Input(AppAPI.GLOBAL_CLEAN_LOCAL_ASYNC_ID, "data")
         ]
 
 class CleanResetInjectionAPI(CleanInjectionAPI):
     def __init__(self):
         super().__init__(flag="on_clean_reset")
     def args(self, is_page: bool) -> list:
+        from Library.App import AppAPI
         return [
-            Input("GLOBAL_CLEAN_RESET_BUTTON_ID", "n_clicks"),
-            Input("GLOBAL_CLEAN_RESET_ASYNC_ID", "data")
+            Input(AppAPI.GLOBAL_CLEAN_RESET_BUTTON_ID, "n_clicks"),
+            Input(AppAPI.GLOBAL_CLEAN_RESET_ASYNC_ID, "data")
         ]
 
 class LoadingInjectionAPI(InjectionAPI):
     def __init__(self, flag: str = "on_loading"):
         super().__init__(flag=flag)
     def args(self, is_page: bool) -> list:
+        from Library.App import AppAPI, PageAPI
         if is_page:
             return [
-                Output("PAGE_LOADING_ASYNC_ID", "data"),
-                Input("GLOBAL_LOADING_ASYNC_ID", "data"),
-                State("PAGE_LOADING_ASYNC_ID", "data")
+                Output(PageAPI.PAGE_LOADING_ASYNC_ID, "data"),
+                Input(AppAPI.GLOBAL_LOADING_ASYNC_ID, "data"),
+                State(PageAPI.PAGE_LOADING_ASYNC_ID, "data")
             ]
         return [
-            Input("GLOBAL_LOADING_ASYNC_ID", "data")
+            Input(AppAPI.GLOBAL_LOADING_ASYNC_ID, "data")
         ]
     def py(self, payload: dict) -> Any:
         injected_inputs = payload.get("injected_inputs", [])
@@ -132,28 +137,30 @@ class ReloadingInjectionAPI(LoadingInjectionAPI):
     def __init__(self):
         super().__init__(flag="on_reloading")
     def args(self, is_page: bool) -> list:
+        from Library.App import AppAPI, PageAPI
         if is_page:
             return [
-                Output("PAGE_RELOADING_ASYNC_ID", "data"),
-                Input("GLOBAL_RELOADING_ASYNC_ID", "data"),
-                State("PAGE_RELOADING_ASYNC_ID", "data")
+                Output(PageAPI.PAGE_RELOADING_ASYNC_ID, "data"),
+                Input(AppAPI.GLOBAL_RELOADING_ASYNC_ID, "data"),
+                State(PageAPI.PAGE_RELOADING_ASYNC_ID, "data")
             ]
         return [
-            Input("GLOBAL_RELOADING_ASYNC_ID", "data")
+            Input(AppAPI.GLOBAL_RELOADING_ASYNC_ID, "data")
         ]
 
 class UnloadingInjectionAPI(LoadingInjectionAPI):
     def __init__(self):
         super().__init__(flag="on_unloading")
     def args(self, is_page: bool) -> list:
+        from Library.App import AppAPI, PageAPI
         if is_page:
             return [
-                Output("PAGE_UNLOADING_ASYNC_ID", "data"),
-                Input("GLOBAL_UNLOADING_ASYNC_ID", "data"),
-                State("PAGE_UNLOADING_ASYNC_ID", "data")
+                Output(PageAPI.PAGE_UNLOADING_ASYNC_ID, "data"),
+                Input(AppAPI.GLOBAL_UNLOADING_ASYNC_ID, "data"),
+                State(PageAPI.PAGE_UNLOADING_ASYNC_ID, "data")
             ]
         return [
-            Input("GLOBAL_UNLOADING_ASYNC_ID", "data")
+            Input(AppAPI.GLOBAL_UNLOADING_ASYNC_ID, "data")
         ]
 
 class InjectorAPI:

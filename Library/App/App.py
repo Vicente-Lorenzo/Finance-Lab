@@ -20,60 +20,60 @@ from Library.Utility.IO import *
 
 class AppAPI:
 
-    GLOBAL_LOCATION_ID: dict
-    GLOBAL_LOCATION_STORAGE_ID: dict
-    GLOBAL_DESCRIPTION_ID: dict
-    GLOBAL_NAVIGATION_ID: dict
-    GLOBAL_CONTENT_ID: dict
-    GLOBAL_CONTENT_LOADING_ID: dict
-    GLOBAL_SIDEBAR_ID: dict
-    GLOBAL_SIDEBAR_BUTTON_ID: dict
-    GLOBAL_SIDEBAR_LOADING_ID: dict
-    GLOBAL_SIDEBAR_COLLAPSE_ID: dict
+    GLOBAL_LOCATION_ID: ComponentID | dict = ComponentID()
+    GLOBAL_LOCATION_STORAGE_ID: ComponentID | dict = ComponentID()
+    GLOBAL_DESCRIPTION_ID: ComponentID | dict = ComponentID()
+    GLOBAL_NAVIGATION_ID: ComponentID | dict = ComponentID()
+    GLOBAL_CONTENT_ID: ComponentID | dict = ComponentID()
+    GLOBAL_CONTENT_LOADING_ID: ComponentID | dict = ComponentID()
+    GLOBAL_SIDEBAR_ID: ComponentID | dict = ComponentID()
+    GLOBAL_SIDEBAR_BUTTON_ID: ComponentID | dict = ComponentID()
+    GLOBAL_SIDEBAR_LOADING_ID: ComponentID | dict = ComponentID()
+    GLOBAL_SIDEBAR_COLLAPSE_ID: ComponentID | dict = ComponentID()
 
-    GLOBAL_BACKWARD_BUTTON_ID: dict
-    GLOBAL_BACKWARD_ASYNC_ID: dict
-    GLOBAL_REFRESH_BUTTON_ID: dict
-    GLOBAL_REFRESH_ASYNC_ID: dict
-    GLOBAL_FORWARD_BUTTON_ID: dict
-    GLOBAL_FORWARD_ASYNC_ID: dict
+    GLOBAL_BACKWARD_BUTTON_ID: ComponentID | dict = ComponentID()
+    GLOBAL_BACKWARD_ASYNC_ID: ComponentID | dict = ComponentID()
+    GLOBAL_REFRESH_BUTTON_ID: ComponentID | dict = ComponentID()
+    GLOBAL_REFRESH_ASYNC_ID: ComponentID | dict = ComponentID()
+    GLOBAL_FORWARD_BUTTON_ID: ComponentID | dict = ComponentID()
+    GLOBAL_FORWARD_ASYNC_ID: ComponentID | dict = ComponentID()
 
-    GLOBAL_CONTACTS_ARROW_ID: dict
-    GLOBAL_CONTACTS_BUTTON_ID: dict
-    GLOBAL_CONTACTS_COLLAPSE_ID: dict
-    GLOBAL_CONTACTS_ID: dict
+    GLOBAL_CONTACTS_ARROW_ID: ComponentID | dict = ComponentID()
+    GLOBAL_CONTACTS_BUTTON_ID: ComponentID | dict = ComponentID()
+    GLOBAL_CONTACTS_COLLAPSE_ID: ComponentID | dict = ComponentID()
+    GLOBAL_CONTACTS_ID: ComponentID | dict = ComponentID()
 
-    GLOBAL_IMPORT_ID: dict
-    GLOBAL_IMPORT_UPLOAD_ID: dict
-    GLOBAL_EXPORT_ID: dict
-    GLOBAL_EXPORT_DOWNLOAD_ID: dict
+    GLOBAL_IMPORT_ID: ComponentID | dict = ComponentID()
+    GLOBAL_IMPORT_UPLOAD_ID: ComponentID | dict = ComponentID()
+    GLOBAL_EXPORT_ID: ComponentID | dict = ComponentID()
+    GLOBAL_EXPORT_DOWNLOAD_ID: ComponentID | dict = ComponentID()
 
-    GLOBAL_TERMINAL_ID: dict
-    GLOBAL_TERMINAL_ARROW_ID: dict
-    GLOBAL_TERMINAL_BUTTON_ID: dict
-    GLOBAL_TERMINAL_COLLAPSE_ID: dict
+    GLOBAL_TERMINAL_ID: ComponentID | dict = ComponentID()
+    GLOBAL_TERMINAL_ARROW_ID: ComponentID | dict = ComponentID()
+    GLOBAL_TERMINAL_BUTTON_ID: ComponentID | dict = ComponentID()
+    GLOBAL_TERMINAL_COLLAPSE_ID: ComponentID | dict = ComponentID()
 
-    GLOBAL_LOADING_ASYNC_ID: dict
-    GLOBAL_ROUTING_STORAGE_ID: dict
-    GLOBAL_RELOADING_ASYNC_ID: dict
-    GLOBAL_UNLOADING_ASYNC_ID: dict
+    GLOBAL_LOADING_ASYNC_ID: ComponentID | dict = ComponentID()
+    GLOBAL_ROUTING_STORAGE_ID: ComponentID | dict = ComponentID()
+    GLOBAL_RELOADING_ASYNC_ID: ComponentID | dict = ComponentID()
+    GLOBAL_UNLOADING_ASYNC_ID: ComponentID | dict = ComponentID()
 
-    GLOBAL_MEMORY_STORAGE_ID: dict
-    GLOBAL_SESSION_STORAGE_ID: dict
-    GLOBAL_LOCAL_STORAGE_ID: dict
+    GLOBAL_MEMORY_STORAGE_ID: ComponentID | dict = ComponentID()
+    GLOBAL_SESSION_STORAGE_ID: ComponentID | dict = ComponentID()
+    GLOBAL_LOCAL_STORAGE_ID: ComponentID | dict = ComponentID()
 
-    GLOBAL_CLEAN_MEMORY_BUTTON_ID: dict
-    GLOBAL_CLEAN_MEMORY_ASYNC_ID: dict
-    GLOBAL_CLEAN_SESSION_BUTTON_ID: dict
-    GLOBAL_CLEAN_SESSION_ASYNC_ID: dict
-    GLOBAL_CLEAN_LOCAL_BUTTON_ID: dict
-    GLOBAL_CLEAN_LOCAL_ASYNC_ID: dict
-    GLOBAL_CLEAN_RESET_BUTTON_ID: dict
-    GLOBAL_CLEAN_RESET_ASYNC_ID: dict
+    GLOBAL_CLEAN_MEMORY_BUTTON_ID: ComponentID | dict = ComponentID()
+    GLOBAL_CLEAN_MEMORY_ASYNC_ID: ComponentID | dict = ComponentID()
+    GLOBAL_CLEAN_SESSION_BUTTON_ID: ComponentID | dict = ComponentID()
+    GLOBAL_CLEAN_SESSION_ASYNC_ID: ComponentID | dict = ComponentID()
+    GLOBAL_CLEAN_LOCAL_BUTTON_ID: ComponentID | dict = ComponentID()
+    GLOBAL_CLEAN_LOCAL_ASYNC_ID: ComponentID | dict = ComponentID()
+    GLOBAL_CLEAN_RESET_BUTTON_ID: ComponentID | dict = ComponentID()
+    GLOBAL_CLEAN_RESET_ASYNC_ID: ComponentID | dict = ComponentID()
 
-    GLOBAL_HIGH_FREQUENCY_INTERVAL_ID: dict
-    GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID: dict
-    GLOBAL_LOW_FREQUENCY_INTERVAL_ID: dict
+    GLOBAL_HIGH_FREQUENCY_INTERVAL_ID: ComponentID | dict = ComponentID()
+    GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID: ComponentID | dict = ComponentID()
+    GLOBAL_LOW_FREQUENCY_INTERVAL_ID: ComponentID | dict = ComponentID()
 
     GLOBAL_NOT_FOUND_LAYOUT: Component
     GLOBAL_LOADING_LAYOUT: Component
@@ -661,24 +661,24 @@ class AppAPI:
         page._init_()
 
     @clientside_callback(
-        Input("GLOBAL_ROUTING_STORAGE_ID", "data")
+        Input(GLOBAL_ROUTING_STORAGE_ID, "data")
     )
     def _global_async_routing_location_callback_(self):
         return self.asset(path="Callbacks/Routing.js")
 
     @serverside_callback(
-        Output("GLOBAL_LOCATION_ID", "pathname"),
-        Output("GLOBAL_LOCATION_STORAGE_ID", "data"),
-        Output("GLOBAL_DESCRIPTION_ID", "children"),
-        Output("GLOBAL_NAVIGATION_ID", "children"),
-        Output("GLOBAL_SIDEBAR_ID", "children"),
-        Output("GLOBAL_CONTENT_ID", "children"),
-        Output("GLOBAL_LOADING_ASYNC_ID", "data"),
-        Output("GLOBAL_RELOADING_ASYNC_ID", "data"),
-        Input("GLOBAL_LOCATION_ID", "pathname"),
-        State("GLOBAL_LOCATION_STORAGE_ID", "data"),
-        State("GLOBAL_LOADING_ASYNC_ID", "data"),
-        State("GLOBAL_RELOADING_ASYNC_ID", "data"),
+        Output(GLOBAL_LOCATION_ID, "pathname"),
+        Output(GLOBAL_LOCATION_STORAGE_ID, "data"),
+        Output(GLOBAL_DESCRIPTION_ID, "children"),
+        Output(GLOBAL_NAVIGATION_ID, "children"),
+        Output(GLOBAL_SIDEBAR_ID, "children"),
+        Output(GLOBAL_CONTENT_ID, "children"),
+        Output(GLOBAL_LOADING_ASYNC_ID, "data"),
+        Output(GLOBAL_RELOADING_ASYNC_ID, "data"),
+        Input(GLOBAL_LOCATION_ID, "pathname"),
+        State(GLOBAL_LOCATION_STORAGE_ID, "data"),
+        State(GLOBAL_LOADING_ASYNC_ID, "data"),
+        State(GLOBAL_RELOADING_ASYNC_ID, "data"),
         on_init=InjectionType.Hidden
     )
     def _global_async_update_location_callback_(self, path: str, location: dict, loading: dict, reloading: dict):
@@ -733,10 +733,10 @@ class AppAPI:
         return anchor, location.dict(), description, navigation, sidebar, content, loading, reloading
 
     @serverside_callback(
-        Output("GLOBAL_LOCATION_ID", "pathname"),
-        Output("GLOBAL_LOCATION_STORAGE_ID", "data"),
-        Input("GLOBAL_BACKWARD_BUTTON_ID", "n_clicks"),
-        State("GLOBAL_LOCATION_STORAGE_ID", "data"),
+        Output(GLOBAL_LOCATION_ID, "pathname"),
+        Output(GLOBAL_LOCATION_STORAGE_ID, "data"),
+        Input(GLOBAL_BACKWARD_BUTTON_ID, "n_clicks"),
+        State(GLOBAL_LOCATION_STORAGE_ID, "data"),
         on_click=InjectionType.Hidden
     )
     def _global_async_backward_location_callback_(self, _, location: dict):
@@ -749,18 +749,18 @@ class AppAPI:
         return path, location.dict()
 
     @clientside_callback(
-        Input("GLOBAL_REFRESH_BUTTON_ID", "n_clicks"),
-        Input("GLOBAL_REFRESH_ASYNC_ID", "data"),
+        Input(GLOBAL_REFRESH_BUTTON_ID, "n_clicks"),
+        Input(GLOBAL_REFRESH_ASYNC_ID, "data"),
         on_click=InjectionType.Hidden
     )
     def _global_async_refresh_location_callback_(self):
         return self.asset(path="Callbacks/Refresh.js")
 
     @serverside_callback(
-        Output("GLOBAL_LOCATION_ID", "pathname"),
-        Output("GLOBAL_LOCATION_STORAGE_ID", "data"),
-        Input("GLOBAL_FORWARD_BUTTON_ID", "n_clicks"),
-        State("GLOBAL_LOCATION_STORAGE_ID", "data"),
+        Output(GLOBAL_LOCATION_ID, "pathname"),
+        Output(GLOBAL_LOCATION_STORAGE_ID, "data"),
+        Input(GLOBAL_FORWARD_BUTTON_ID, "n_clicks"),
+        State(GLOBAL_LOCATION_STORAGE_ID, "data"),
         on_click=InjectionType.Hidden
     )
     def _global_async_forward_location_callback_(self, _, location: dict):
@@ -773,36 +773,36 @@ class AppAPI:
         return path, location.dict()
 
     @clientside_callback(
-        Output("GLOBAL_SIDEBAR_COLLAPSE_ID", "is_open"),
-        Input("GLOBAL_SIDEBAR_BUTTON_ID", "n_clicks"),
-        State("GLOBAL_SIDEBAR_COLLAPSE_ID", "is_open"),
+        Output(GLOBAL_SIDEBAR_COLLAPSE_ID, "is_open"),
+        Input(GLOBAL_SIDEBAR_BUTTON_ID, "n_clicks"),
+        State(GLOBAL_SIDEBAR_COLLAPSE_ID, "is_open"),
         on_click=InjectionType.Hidden
     )
     def _global_async_sidebar_button_callback_(self):
         return self.asset(path="Callbacks/Collapse.js")
 
     @clientside_callback(
-        Output("GLOBAL_CONTACTS_COLLAPSE_ID", "is_open"),
-        Output("GLOBAL_CONTACTS_ARROW_ID", "className"),
-        Input("GLOBAL_CONTACTS_BUTTON_ID", "n_clicks"),
-        State("GLOBAL_CONTACTS_COLLAPSE_ID", "is_open"),
-        State("GLOBAL_CONTACTS_ARROW_ID", "className"),
+        Output(GLOBAL_CONTACTS_COLLAPSE_ID, "is_open"),
+        Output(GLOBAL_CONTACTS_ARROW_ID, "className"),
+        Input(GLOBAL_CONTACTS_BUTTON_ID, "n_clicks"),
+        State(GLOBAL_CONTACTS_COLLAPSE_ID, "is_open"),
+        State(GLOBAL_CONTACTS_ARROW_ID, "className"),
         on_click=InjectionType.Hidden
     )
     def _global_async_contacts_button_callback_(self):
         return self.asset(path="Callbacks/Collapse.js")
 
     @clientside_callback(
-        Input("GLOBAL_IMPORT_UPLOAD_ID", "contents"),
-        State("GLOBAL_IMPORT_UPLOAD_ID", "filename")
+        Input(GLOBAL_IMPORT_UPLOAD_ID, "contents"),
+        State(GLOBAL_IMPORT_UPLOAD_ID, "filename")
     )
     def _global_async_import_snapshot_callback_(self):
         return self.asset(path="Callbacks/Import.js")
 
     @clientside_callback(
-        Output("GLOBAL_EXPORT_DOWNLOAD_ID", "data"),
-        Input("GLOBAL_EXPORT_ID", "n_clicks"),
-        State("GLOBAL_LOCATION_ID", "pathname"),
+        Output(GLOBAL_EXPORT_DOWNLOAD_ID, "data"),
+        Input(GLOBAL_EXPORT_ID, "n_clicks"),
+        State(GLOBAL_LOCATION_ID, "pathname"),
         State({"app": dash.ALL, "page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "data"}, "data"),
         State({"app": dash.ALL, "page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "value"}, "value"),
         State({"app": dash.ALL, "page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "input"}, "input"),
@@ -820,42 +820,42 @@ class AppAPI:
         return self.asset(path="Callbacks/Export.js")
 
     @clientside_callback(
-        Output("GLOBAL_MEMORY_STORAGE_ID", "data"),
+        Output(GLOBAL_MEMORY_STORAGE_ID, "data"),
         on_clean_memory=InjectionType.Hidden
     )
     def _global_async_clean_memory_callback_(self):
         return self.asset(path="Callbacks/Clear.js")
 
     @clientside_callback(
-        Output("GLOBAL_SESSION_STORAGE_ID", "data"),
+        Output(GLOBAL_SESSION_STORAGE_ID, "data"),
         on_clean_session=InjectionType.Hidden
     )
     def _global_async_clean_session_callback_(self):
         return self.asset(path="Callbacks/Clear.js")
 
     @clientside_callback(
-        Output("GLOBAL_LOCAL_STORAGE_ID", "data"),
+        Output(GLOBAL_LOCAL_STORAGE_ID, "data"),
         on_clean_local=InjectionType.Hidden
     )
     def _global_async_clean_local_callback_(self):
         return self.asset(path="Callbacks/Clear.js")
 
     @clientside_callback(
-        Output("GLOBAL_CLEAN_MEMORY_ASYNC_ID", "data"),
-        Output("GLOBAL_CLEAN_SESSION_ASYNC_ID", "data"),
-        Output("GLOBAL_CLEAN_LOCAL_ASYNC_ID", "data"),
-        State("GLOBAL_CLEAN_MEMORY_ASYNC_ID", "data"),
-        State("GLOBAL_CLEAN_SESSION_ASYNC_ID", "data"),
-        State("GLOBAL_CLEAN_LOCAL_ASYNC_ID", "data"),
+        Output(GLOBAL_CLEAN_MEMORY_ASYNC_ID, "data"),
+        Output(GLOBAL_CLEAN_SESSION_ASYNC_ID, "data"),
+        Output(GLOBAL_CLEAN_LOCAL_ASYNC_ID, "data"),
+        State(GLOBAL_CLEAN_MEMORY_ASYNC_ID, "data"),
+        State(GLOBAL_CLEAN_SESSION_ASYNC_ID, "data"),
+        State(GLOBAL_CLEAN_LOCAL_ASYNC_ID, "data"),
         on_clean_reset=InjectionType.Hidden
     )
     def _global_async_clean_reset_callback_(self):
         return self.asset(path="Callbacks/Reset.js")
 
     @serverside_callback(
-        Output("GLOBAL_REFRESH_ASYNC_ID", "data"),
-        State("GLOBAL_REFRESH_ASYNC_ID", "data"),
-        State("GLOBAL_LOCATION_ID", "pathname"),
+        Output(GLOBAL_REFRESH_ASYNC_ID, "data"),
+        State(GLOBAL_REFRESH_ASYNC_ID, "data"),
+        State(GLOBAL_LOCATION_ID, "pathname"),
         on_clean_reset=InjectionType.Hidden
     )
     def _global_sync_clean_reset_callback_(self, refresh: dict, pathname: str):
@@ -880,41 +880,41 @@ class AppAPI:
         return refresh.trigger().dict()
 
     @serverside_callback(
-        Input("GLOBAL_MEMORY_STORAGE_ID", "data")
+        Input(GLOBAL_MEMORY_STORAGE_ID, "data")
     )
     def _global_async_update_memory_callback_(self, data):
         self._log_.info(lambda: f"Global Memory Storage: {data if data else 'Empty'}")
         if not data: self._injector_.on_clean_memory.increment()
 
     @serverside_callback(
-        Input("GLOBAL_SESSION_STORAGE_ID", "data")
+        Input(GLOBAL_SESSION_STORAGE_ID, "data")
     )
     def _global_async_update_session_callback_(self, data):
         self._log_.info(lambda: f"Global Session Storage: {data if data else 'Empty'}")
         if not data: self._injector_.on_clean_session.increment()
 
     @serverside_callback(
-        Input("GLOBAL_LOCAL_STORAGE_ID", "data")
+        Input(GLOBAL_LOCAL_STORAGE_ID, "data")
     )
     def _global_async_update_local_callback_(self, data):
         self._log_.info(lambda: f"Global Local Storage: {data if data else 'Empty'}")
         if not data: self._injector_.on_clean_local.increment()
 
     @clientside_callback(
-        Output("GLOBAL_TERMINAL_COLLAPSE_ID", "is_open"),
-        Output("GLOBAL_TERMINAL_ARROW_ID", "className"),
-        Input("GLOBAL_TERMINAL_BUTTON_ID", "n_clicks"),
-        State("GLOBAL_TERMINAL_COLLAPSE_ID", "is_open"),
-        State("GLOBAL_TERMINAL_ARROW_ID", "className"),
+        Output(GLOBAL_TERMINAL_COLLAPSE_ID, "is_open"),
+        Output(GLOBAL_TERMINAL_ARROW_ID, "className"),
+        Input(GLOBAL_TERMINAL_BUTTON_ID, "n_clicks"),
+        State(GLOBAL_TERMINAL_COLLAPSE_ID, "is_open"),
+        State(GLOBAL_TERMINAL_ARROW_ID, "className"),
         on_click=InjectionType.Hidden
     )
     def _global_async_terminal_button_callback_(self):
         return self.asset(path="Callbacks/Collapse.js")
 
     @serverside_callback(
-        Output("GLOBAL_TERMINAL_ID", "children"),
-        Input("GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID", "n_intervals"),
-        State("GLOBAL_TERMINAL_ID", "children")
+        Output(GLOBAL_TERMINAL_ID, "children"),
+        Input(GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID, "n_intervals"),
+        State(GLOBAL_TERMINAL_ID, "children")
     )
     def _global_async_terminal_stream_callback_(self, _, terminal: list[Component]):
         logs = self._log_.web.stream()
