@@ -52,6 +52,7 @@ class AppAPI:
     GLOBAL_TERMINAL_ARROW_ID: ComponentID | dict = ComponentID()
     GLOBAL_TERMINAL_BUTTON_ID: ComponentID | dict = ComponentID()
     GLOBAL_TERMINAL_COLLAPSE_ID: ComponentID | dict = ComponentID()
+    GLOBAL_NOTIFICATION_ID: ComponentID | dict = ComponentID()
 
     GLOBAL_LOADING_ASYNC_ID: ComponentID | dict = ComponentID()
     GLOBAL_ROUTING_STORAGE_ID: ComponentID | dict = ComponentID()
@@ -96,6 +97,9 @@ class AppAPI:
                  anchor: str = None,
                  debug: bool = False,
                  terminal_limit: int = 100,
+                 notification_limit: int = 10,
+                 notification_duration: int | None = 5000,
+                 notification_position: str = "bottom-right",
                  high_frequency_interval: int = 1000,
                  medium_frequency_interval: int = 60 * 1000,
                  low_frequency_interval: int = 60 * 60 * 1000) -> None:
@@ -146,11 +150,6 @@ class AppAPI:
         self._endpoint_: str = inspect_file_path(anchor, header=True, footer=True, builder=PurePosixPath)
         self._log_.debug(lambda: f"Defined Endpoint = {self._endpoint_}")
 
-        self._debug_: bool = debug
-        self._log_.debug(lambda: f"Defined Debug = {self._debug_}")
-        self._terminal_limit_: int = terminal_limit
-        self._log_.debug(lambda: f"Defined Terminal = {self._terminal_limit_}")
-
         self._library_: Path = traceback_current_module(resolve=True)
         self._log_.debug(lambda: f"Defined Library = {self._library_}")
         self._library_assets_: Path = self._library_ / "Assets"
@@ -163,6 +162,17 @@ class AppAPI:
         self._log_.debug(lambda: f"Defined Application Assets = {self._application_assets_}")
         self._application_assets_url_: str = "_application_"
         self._log_.debug(lambda: f"Defined Application Assets URL = {self._application_assets_url_}")
+
+        self._debug_: bool = debug
+        self._log_.debug(lambda: f"Defined Debug = {self._debug_}")
+        self._terminal_limit_: int = terminal_limit
+        self._log_.debug(lambda: f"Defined Terminal Limit = {self._terminal_limit_}")
+        self._notification_limit_: int = notification_limit
+        self._log_.debug(lambda: f"Defined Notification Limit = {self._notification_limit_}")
+        self._notification_duration_: int | None = notification_duration
+        self._log_.debug(lambda: f"Defined Notification Duration = {self._notification_duration_}")
+        self._notification_position_: str = notification_position
+        self._log_.debug(lambda: f"Defined Notification Position = {self._notification_position_}")
 
         self._high_frequency_interval_: int = high_frequency_interval
         self._log_.debug(lambda: f"Defined High Frequency Interval = {self._high_frequency_interval_}")
@@ -185,6 +195,9 @@ class AppAPI:
 
         self._init_callbacks_()
         self._log_.info(lambda: "Initialized Callbacks")
+
+        self._init_notifications_()
+        self._log_.info(lambda: "Initialized Notifications")
 
     def __init_ids__(self) -> None:
         self._ids_: set = set()
@@ -220,6 +233,7 @@ class AppAPI:
         self.GLOBAL_TERMINAL_ARROW_ID: dict = self.register(type="icon", name="terminal")
         self.GLOBAL_TERMINAL_BUTTON_ID: dict = self.register(type="button", name="terminal")
         self.GLOBAL_TERMINAL_COLLAPSE_ID: dict = self.register(type="collapse", name="terminal")
+        self.GLOBAL_NOTIFICATION_ID: dict = self.register(type="div", name="notification")
 
         self.GLOBAL_LOADING_ASYNC_ID: dict = self.register(type="asyncer", name="loading")
         self.GLOBAL_ROUTING_STORAGE_ID: dict = self.register(type="storage", name="routing")
@@ -277,70 +291,75 @@ class AppAPI:
             image=self.asset(path="Images/404.png", url=True),
             title="Resource Not Found",
             description="Unable to find the resource you are looking for.",
-            details="Please check the url path."
+            details="Please check the url path.",
+            classname="empty"
         ).build()
         self.GLOBAL_LOADING_LAYOUT = DefaultLayoutAPI(
             image=self.asset(path="Images/loading.gif", url=True),
             title="Loading...",
             description="This resource is loading its content.",
-            details="Please wait a moment."
+            details="Please wait a moment.",
+            classname="loading"
         ).build()
         self.GLOBAL_MAINTENANCE_LAYOUT = DefaultLayoutAPI(
             image=self.asset(path="Images/maintenance.png", url=True),
             title="Resource Under Maintenance",
             description="This resource is temporarily down for maintenance.",
-            details="Please try again later."
+            details="Please try again later.",
+            classname="maintenance"
         ).build()
         self.GLOBAL_DEVELOPMENT_LAYOUT = DefaultLayoutAPI(
             image=self.asset(path="Images/development.png", url=True),
             title="Resource Under Development",
             description="This resource is currently under development.",
-            details="Please try again later."
+            details="Please try again later.",
+            classname="development"
         ).build()
         self.GLOBAL_NOT_INDEXED_LAYOUT = DefaultLayoutAPI(
             image=self.asset(path="Images/indexed.png", url=True),
             title="Resource Not Indexed",
             description="This resource is not indexed at any page.",
-            details="Please try again later."
+            details="Please try again later.",
+            classname="empty"
         ).build()
 
     def __init_header_layout__(self) -> Component:
         return html.Div(children=[
             html.Div(children=[
-                html.Div(children=[html.Img(src=self.asset(path="Images/logo.png", url=True), className="header-image")], className="header-logo"),
-                html.Div(children=[html.H1(self._name_, className="header-title"), html.H4(self._team_, className="header-team")], className="header-title-team"),
-                html.Div(children=[self._description_], id=self.GLOBAL_DESCRIPTION_ID, className="header-description")
-            ], className="header-information-block"),
+                html.Div(children=[html.Img(src=self.asset(path="Images/logo.png", url=True), className="image")], className="logo"),
+                html.Div(children=[html.H1(self._name_, className="title"), html.H4(self._team_, className="team")], className="titles"),
+                html.Div(children=[self._description_], id=self.GLOBAL_DESCRIPTION_ID, className="description")
+            ], className="information"),
             html.Div(children=[
                 html.Div(children=[
-                ], className="header-navigation-block", id=self.GLOBAL_NAVIGATION_ID),
+                ], className="navigation", id=self.GLOBAL_NAVIGATION_ID),
                 html.Div(children=[
                     *ButtonContainerAPI(elements=[
                         ButtonAPI(id=self.GLOBAL_BACKWARD_BUTTON_ID, label=[IconAPI(icon="bi bi-arrow-left")], asyncer=self.GLOBAL_BACKWARD_ASYNC_ID),
                         ButtonAPI(id=self.GLOBAL_REFRESH_BUTTON_ID, label=[IconAPI(icon="bi bi-arrow-repeat")], asyncer=self.GLOBAL_REFRESH_ASYNC_ID),
                         ButtonAPI(id=self.GLOBAL_FORWARD_BUTTON_ID, label=[IconAPI(icon="bi bi-arrow-right")], asyncer=self.GLOBAL_FORWARD_ASYNC_ID)
                     ], background="primary").build()
-                ], className="header-location-block")
-            ], className="header-control-block")
+                ], className="location")
+            ], className="controls")
         ], className="header")
 
-    def __init_content_layout__(self) -> Component:
+    def __init_body_layout__(self) -> Component:
         return html.Div(children=[
                 dbc.Collapse(children=[
                     html.Div(children=[
                         html.Div(children=[
                             self.GLOBAL_LOADING_LAYOUT
-                        ], id=self.GLOBAL_SIDEBAR_ID, className="sidebar-content"),
+                        ], id=self.GLOBAL_SIDEBAR_ID, className="page"),
                         *LoadingAPI(id=self.GLOBAL_SIDEBAR_LOADING_ID, hidden=True).build()
-                    ], className="sidebar-wrapper")
-                ], id=self.GLOBAL_SIDEBAR_COLLAPSE_ID, is_open=False, className="sidebar-collapse"),
+                    ], className="sidebar")
+                ], id=self.GLOBAL_SIDEBAR_COLLAPSE_ID, is_open=False, className="collapse"),
                 html.Div(children=[
                     html.Div(children=[
                         self.GLOBAL_LOADING_LAYOUT
-                    ], id=self.GLOBAL_CONTENT_ID, className="page-content"),
+                    ], id=self.GLOBAL_CONTENT_ID, className="page"),
                     *LoadingAPI(id=self.GLOBAL_CONTENT_LOADING_ID, hidden=True).build()
-                ], className="content-wrapper"),
-        ], className="content")
+                ], className="content"),
+        ], className="body")
 
     def __init_footer_layout__(self) -> Component:
         return html.Div(children=[
@@ -360,8 +379,12 @@ class AppAPI:
                 *ButtonAPI(
                     id=self.GLOBAL_EXPORT_ID, download=self.GLOBAL_EXPORT_DOWNLOAD_ID, background="warning",
                     label=[TextAPI(text="Export Snapshot  "), IconAPI(icon="bi bi-download")]
-                ).build()
-            ], className="footer-left"),
+                ).build(),
+                dbc.Collapse(dbc.Card(dbc.CardBody([
+                    html.Div(children=[html.B("Team: "), html.Span(self._team_)]),
+                    html.Div(children=[html.B("Contact: "), html.A(self._contact_, href=f"mailto:{self._contact_}")])
+                ]), className="panel"), id=self.GLOBAL_CONTACTS_COLLAPSE_ID, is_open=False)
+            ], className="left"),
             html.Div(children=[
                 *ButtonAPI(
                     id=self.GLOBAL_CLEAN_MEMORY_BUTTON_ID, background="danger",
@@ -386,16 +409,18 @@ class AppAPI:
                 *ButtonAPI(
                     id=self.GLOBAL_TERMINAL_BUTTON_ID, background="primary",
                     label=[IconAPI(icon="bi bi-terminal"), TextAPI(text="  Terminal  "), IconAPI(icon="bi bi-caret-down-fill", id=self.GLOBAL_TERMINAL_ARROW_ID)]
-                ).build()
-            ], className="footer-right"),
-            dbc.Collapse(dbc.Card(dbc.CardBody([
-                html.Div(children=[html.B("Team: "), html.Span(self._team_)]),
-                html.Div(children=[html.B("Contact: "), html.A(self._contact_, href=f"mailto:{self._contact_}")])
-            ]), className="footer-panel footer-panel-left"), id=self.GLOBAL_CONTACTS_COLLAPSE_ID, is_open=False),
-            dbc.Collapse(dbc.Card(dbc.CardBody([
-                html.Pre([], id=self.GLOBAL_TERMINAL_ID)
-            ]), className="footer-panel footer-panel-right", color="dark", inverse=True), id=self.GLOBAL_TERMINAL_COLLAPSE_ID, is_open=False)
+                ).build(),
+                dbc.Collapse(dbc.Card(dbc.CardBody([
+                    html.Pre([], id=self.GLOBAL_TERMINAL_ID)
+                ]), className="panel", color="dark", inverse=True), id=self.GLOBAL_TERMINAL_COLLAPSE_ID, is_open=False)
+            ], className="right"),
         ], className="footer")
+
+    def __init_notification_layout__(self) -> Component:
+        return html.Div(
+            id=self.GLOBAL_NOTIFICATION_ID, 
+            className=f"notifications {self._notification_position_}"
+        )
 
     def __init_hidden_layout__(self) -> Component:
         hidden: list = [dcc.Location(id=self.GLOBAL_LOCATION_ID, refresh=False)]
@@ -419,13 +444,15 @@ class AppAPI:
         self._log_.debug(lambda: "Init Pages: Loaded Default Layout")
         header = self.__init_header_layout__()
         self._log_.debug(lambda: "Init Layout: Loaded Header Layout")
-        content = self.__init_content_layout__()
-        self._log_.debug(lambda: "Init Layout: Loaded Content Layout")
+        body = self.__init_body_layout__()
+        self._log_.debug(lambda: "Init Layout: Loaded Body Layout")
         footer = self.__init_footer_layout__()
         self._log_.debug(lambda: "Init Layout: Loaded Footer Layout")
+        notification = self.__init_notification_layout__()
+        self._log_.debug(lambda: "Init Layout: Loaded Notification Layout")
         hidden = self.__init_hidden_layout__()
         self._log_.debug(lambda: "Init Layout: Loaded Hidden Layout")
-        layout = html.Div(children=[header, content, footer, hidden], className="app")
+        layout = html.Div(children=[header, body, footer, notification, hidden], className="app")
         self.app.layout = layout
         self._log_.debug(lambda: "Init Layout: Loaded App Layout")
 
@@ -559,6 +586,10 @@ class AppAPI:
         self._log_.debug(lambda: "Init Callbacks: Loaded Injector")
         self.__register_callbacks__()
         self._log_.debug(lambda: "Init Callbacks: Loaded Callbacks")
+
+    def _init_notifications_(self) -> None:
+        self.notify = NotifierAPI(duration=self._notification_duration_)
+        self._log_.debug(lambda: "Init Notifications: Loaded NotifierAPI")
 
     def asset(self, *, path: str, url: bool = False) -> str:
         if (self._library_assets_ / path).exists():
@@ -925,17 +956,31 @@ class AppAPI:
     def _global_async_terminal_button_callback_(self):
         return self.asset(path="Callbacks/Collapse.js")
 
+    @staticmethod
+    def _global_async_stream_callback_(logs: list[Component], elements: list[Component], limit: int):
+        if not logs: raise PreventUpdate
+        if not elements: return logs[-limit:]
+        patch = dash.Patch()
+        patch.extend(logs)
+        overflow = len(elements) + len(logs) - limit
+        for _ in range(overflow): del patch[0]
+        return patch
+
     @serverside_callback(
         Output(GLOBAL_TERMINAL_ID, "children"),
         Input(GLOBAL_HIGH_FREQUENCY_INTERVAL_ID, "n_intervals"),
         State(GLOBAL_TERMINAL_ID, "children")
     )
     def _global_async_terminal_stream_callback_(self, _, terminal: list[Component]):
-        logs = self._log_.web.stream()
-        if not logs: raise PreventUpdate
-        terminal = terminal or []
-        terminal.extend(logs)
-        return terminal[-self._terminal_limit_:]
+        return self._global_async_stream_callback_(logs=self._log_.web.stream(), elements=terminal, limit=self._terminal_limit_)
+
+    @serverside_callback(
+        Output(GLOBAL_NOTIFICATION_ID, "children"),
+        Input(GLOBAL_HIGH_FREQUENCY_INTERVAL_ID, "n_intervals"),
+        State(GLOBAL_NOTIFICATION_ID, "children")
+    )
+    def _global_async_notification_stream_callback_(self, _, notifications: list[Component]):
+        return self._global_async_stream_callback_(logs=self.notify.stream(), elements=notifications, limit=self._notification_limit_)
 
     def ids(self) -> None:
         """

@@ -1,0 +1,82 @@
+.notifications {
+    position: fixed;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+    padding: 0 0 0 0;
+}
+
+.notifications > * {
+    pointer-events: auto;
+}
+
+.notifications.top-right { top: 0; right: 0; }
+.notifications.top-left { top: 0; left: 0; }
+.notifications.bottom-right { bottom: 55px; right: 5px; }
+.notifications.bottom-left { bottom: 55px; left: 5px; }
+.notifications.top-center { top: 0; left: 50%; transform: translateX(-50%); }
+.notifications.bottom-center { bottom: 55px; left: 50%; transform: translateX(-50%); }
+
+.notification {
+    min-width: 250px;
+    max-width: 350px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border: none;
+    overflow: hidden;
+    pointer-events: auto;
+}
+
+.notification .title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.notification .icon {
+    font-size: 1.1rem;
+}
+
+.notification .toast-header {
+    color: white;
+    border-bottom: none;
+    font-weight: bold;
+    padding: 10px 15px 10px 15px;
+}
+
+.notification .toast-body {
+    font-weight: 500;
+    color: var(--bs-dark);
+}
+
+.notification .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+.notification.level-debug { background-color: rgba(0, 255, 0, 0.15); }
+.notification.level-debug .toast-header { background-color: #00FF00; color: black; }
+.notification.level-debug .btn-close { filter: none; }
+.notification.level-debug .toast-body { background-color: transparent; }
+
+.notification.level-info { background-color: rgba(0, 135, 255, 0.15); }
+.notification.level-info .toast-header { background-color: #0087FF; color: white; }
+.notification.level-info .toast-body { background-color: transparent; }
+
+.notification.level-alert { background-color: rgba(255, 135, 0, 0.15); }
+.notification.level-alert .toast-header { background-color: #FF8700; color: black; }
+.notification.level-alert .btn-close { filter: none; }
+.notification.level-alert .toast-body { background-color: transparent; }
+
+.notification.level-warning { background-color: rgba(255, 193, 7, 0.15); }
+.notification.level-warning .toast-header { background-color: #FFC107; color: black; }
+.notification.level-warning .btn-close { filter: none; }
+.notification.level-warning .toast-body { background-color: transparent; }
+
+.notification.level-error { background-color: rgba(255, 0, 0, 0.15); }
+.notification.level-error .toast-header { background-color: #FF0000; color: white; }
+.notification.level-error .toast-body { background-color: transparent; }
+
+.notification.level-exception { background-color: rgba(255, 0, 95, 0.15); }
+.notification.level-exception .toast-header { background-color: #FF005F; color: white; }
+.notification.level-exception .toast-body { background-color: transparent; }

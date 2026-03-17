@@ -535,17 +535,46 @@ class LoadingAPI(ComponentAPI):
     classname: str | None = field(default="loading")
     builder: type[Component] = field(default=html.Div)
 
-    spinner_color: str = field(default="primary")
-    spinner_type: str = field(default="border")
+    color: str = field(default="primary")
+    type: str = field(default="border")
 
     def build(self) -> list[Component]:
-        spinner = dbc.Spinner(color=self.spinner_color, type=self.spinner_type)
-        if self.size is not None:
-            spinner.spinner_style = {"width": self.size, "height": self.size}
-        else:
-            spinner.spinner_style = {"width": "3rem", "height": "3rem"}
-            
-        elements = self.flatten(element=self.element if self.element is not None else [spinner])
+        elements = self.flatten(element=self.element if self.element is not None else [])
         elements, hidden = self.organize(elements=elements)
-        component = self.builder(elements, **self.arguments())
-        return self.serialize(elements=[component], hidden=hidden)
+        spinner_kwargs: dict[str, Any] = {"spinner_class_name": "spinner"}
+        if self.color is not None: spinner_kwargs.update(color=self.color)
+        if self.type is not None: spinner_kwargs.update(type=self.type)
+        if self.size is not None: spinner_kwargs.update(size=self.size)
+        spinner = dbc.Spinner(elements, **spinner_kwargs) if elements else dbc.Spinner(**spinner_kwargs)
+        return self.serialize(elements=[self.builder(spinner, **self.arguments())], hidden=hidden)
+
+@dataclass(kw_only=True)
+class NotificationAPI(ComponentAPI):
+
+    classname: str | None = field(default="notification")
+    builder: type[Component] = field(default=dbc.Toast)
+
+    icon: str = field(default=None)
+    header: str = field(default=None)
+    duration: int | None = field(default=5000)
+    dismissable: bool = field(default=True)
+    persistence: str | bool = field(default=None)
+
+    def __post_init__(self):
+        if self.background is not None:
+            self.stylename = parse_classname(classname=self.background, stylename=self.stylename)
+        super().__post_init__()
+
+    def arguments(self) -> dict:
+        kwargs = super().arguments()
+        header_elements = []
+        if self.icon is not None:
+            header_elements.extend(IconAPI(icon=self.icon).build())
+        if self.header is not None:
+            header_elements.extend(TextAPI(text=self.header).build())
+        if header_elements:
+            kwargs.update(header=html.Div(header_elements, className="title"))
+        if self.duration is not None: kwargs.update(duration=self.duration)
+        if self.dismissable is not None: kwargs.update(dismissable=self.dismissable)
+        if self.persistence is not None: kwargs.update(persistence=self.persistence)
+        return kwargs

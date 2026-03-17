@@ -1,15 +1,4 @@
-.sidebar-content {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    min-height: 0;
-    height: 100%;
-    overflow: auto;
-    padding: 0 0 0 0;
-}
-
-.page-content {
+.page {
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;

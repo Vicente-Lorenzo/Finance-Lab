@@ -1,45 +1,13 @@
-.sidebar-collapse {
-    height: 100%;
-    overflow: hidden;
-    transition: width 0.25s ease;
-}
-
-.sidebar-collapse:not(.show) {
-    width: 0;
-    pointer-events: none;
-}
-
-.sidebar-collapse.show {
-    width: 40%;
-}
-
-.sidebar-wrapper {
-    width: 100%;
-    height: 100%;
-    border-right: 1px solid #ccc;
-    background: rgba(250,250,250,0.9);
-    position: relative;
-    display: flex;
-    flex-direction: column;
-}
-
-.sidebar-wrapper > .sidebar-content {
-    width: 100%;
-    height: 100%;
-    padding: 10px;
-    overflow: auto;
-}
-
 .content {
     flex: 1 1 auto;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     min-height: 0;
     overflow: hidden;
     z-index: 1;
 }
 
-.content-wrapper {
+.content .page {
     flex: 1 1 auto;
     position: relative;
     display: flex;

@@ -1,7 +1,7 @@
 from dash import html
 from abc import ABC, abstractmethod
 
-from Library.App.Component import Component
+from Library.App.Component import Component, parse_classname
 
 class LayoutAPI(Component, ABC):
 
@@ -29,8 +29,8 @@ class DefaultLayoutAPI(LayoutAPI):
 
     def build(self) -> Component:
         return html.Div([
-            html.Img(src=self._image_, alt=self._title_, className="default-layout-image"),
-            html.H2(self._title_, className="default-layout-title"),
-            html.P(self._description_, className="default-layout-description"),
-            html.P(self._details_, className="default-layout-details"),
-        ], className=f"default-layout default-layout-{self._classname_}")
+            html.Img(src=self._image_, alt=self._title_, className="image"),
+            html.H2(self._title_, className="title"),
+            html.P(self._description_, className="description"),
+            html.P(self._details_, className="details"),
+        ], className=parse_classname(basename="layout", classname=self._classname_))
