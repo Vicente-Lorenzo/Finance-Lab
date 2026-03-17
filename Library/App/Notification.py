@@ -24,18 +24,22 @@ class NotifierAPI:
         VerboseLevel.Exception: "bi bi-exclamation-octagon-fill"
     }
 
-    def __init__(self, duration: int) -> None:
+    def __init__(self, duration: int | None, dismissable: bool, persistence: bool | str) -> None:
         self._buffer_: deque[Component] = deque()
         self._lock_: RLock = RLock()
-        self._duration_: int = duration
+        self._duration_: int | None = duration
+        self._dismissable_: bool = dismissable
+        self._persistence_: bool | str = persistence
 
-    def _push_(self, verbose: VerboseLevel, message: str, duration: int = None) -> None:
+    def _push_(self, verbose: VerboseLevel, message: str, duration: int = None, dismissable: bool = None, persistence: bool | str = None) -> None:
         toast = NotificationAPI(
             element=message,
             header=verbose.name,
             icon=self._ICONS_.get(verbose, "bi bi-info-circle-fill"),
             background=self._COLORS_.get(verbose, "primary"),
-            duration=duration if duration is not None else self._duration_
+            duration=duration if duration is not None else self._duration_,
+            dismissable=dismissable if dismissable is not None else self._dismissable_,
+            persistence=persistence if persistence is not None else self._persistence_
         ).build()
         with self._lock_:
             self._buffer_.extend(toast)

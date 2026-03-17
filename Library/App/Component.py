@@ -558,7 +558,7 @@ class NotificationAPI(ComponentAPI):
     header: str = field(default=None)
     duration: int | None = field(default=5000)
     dismissable: bool = field(default=True)
-    persistence: str | bool = field(default=None)
+    persistence: bool | str = field(default=None)
 
     def __post_init__(self):
         if self.background is not None:

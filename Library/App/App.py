@@ -100,6 +100,8 @@ class AppAPI:
                  notification_limit: int = 10,
                  notification_duration: int | None = 5000,
                  notification_position: str = "bottom-right",
+                 notification_dismissable: bool = True,
+                 notification_persistence: bool | str = None,
                  high_frequency_interval: int = 1000,
                  medium_frequency_interval: int = 60 * 1000,
                  low_frequency_interval: int = 60 * 60 * 1000) -> None:
@@ -173,6 +175,10 @@ class AppAPI:
         self._log_.debug(lambda: f"Defined Notification Duration = {self._notification_duration_}")
         self._notification_position_: str = notification_position
         self._log_.debug(lambda: f"Defined Notification Position = {self._notification_position_}")
+        self._notification_dismissable_: bool = notification_dismissable
+        self._log_.debug(lambda: f"Defined Notification Dismissable = {self._notification_dismissable_}")
+        self._notification_persistence_: bool | str = notification_persistence
+        self._log_.debug(lambda: f"Defined Notification Persistence = {self._notification_persistence_}")
 
         self._high_frequency_interval_: int = high_frequency_interval
         self._log_.debug(lambda: f"Defined High Frequency Interval = {self._high_frequency_interval_}")
@@ -588,7 +594,11 @@ class AppAPI:
         self._log_.debug(lambda: "Init Callbacks: Loaded Callbacks")
 
     def _init_notifications_(self) -> None:
-        self.notify = NotifierAPI(duration=self._notification_duration_)
+        self.notify = NotifierAPI(
+            duration=self._notification_duration_,
+            dismissable=self._notification_dismissable_,
+            persistence=self._notification_persistence_
+        )
         self._log_.debug(lambda: "Init Notifications: Loaded NotifierAPI")
 
     def asset(self, *, path: str, url: bool = False) -> str:
