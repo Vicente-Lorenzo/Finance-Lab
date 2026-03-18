@@ -85,7 +85,7 @@ class FormAPI(PageAPI):
                 outline_color="black",
                 outline_style="solid",
                 outline_width="1px",
-                stylename="form-page-button"
+                stylename="button"
             ))
         if self._add_action_button_:
             buttons.append(ButtonAPI(
@@ -95,7 +95,7 @@ class FormAPI(PageAPI):
                 outline_color="black",
                 outline_style="solid",
                 outline_width="1px",
-                stylename="form-page-button"
+                stylename="button"
             ))
         if self._add_next_button_:
             target: str = self.app.endpointize(path=self._add_next_button_, relative=True) if isinstance(self._add_next_button_, str) else None
@@ -109,7 +109,7 @@ class FormAPI(PageAPI):
                 outline_color="black",
                 outline_style="solid",
                 outline_width="1px",
-                stylename="form-page-button"
+                stylename="button"
             ))
         return self.normalize([*buttons])
 
@@ -117,8 +117,8 @@ class FormAPI(PageAPI):
         hidden = self.__init_hidden_layout__()
         self._log_.debug(lambda: f"Loaded Hidden Layout")
         buttons = self.__init_button_layout__()
-        buttons = ContainerAPI(elements=buttons, stylename="form-page-buttons").build()
+        buttons = ContainerAPI(elements=buttons, classname="controls").build()
         self._log_.debug(lambda: f"Loaded Buttons Layout")
         content = self.normalize(self._content_ or self.content())
-        content = ContainerAPI(elements=content, stylename="form-page-content").build()
-        return self.normalize([*content, *buttons, *hidden])
+        form = ContainerAPI(elements=[*content, *buttons], classname="form").build()
+        return self.normalize([*form, *hidden])
