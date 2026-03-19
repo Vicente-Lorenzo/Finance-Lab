@@ -78,6 +78,10 @@
     margin: 0 0 0 0;
 }
 
+.header .navigation .navigator {
+    gap: 25px;
+}
+
 .header .location {
     display: flex;
     flex-direction: row;

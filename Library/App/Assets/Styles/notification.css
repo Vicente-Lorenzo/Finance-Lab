@@ -6,18 +6,14 @@
     gap: 10px;
     pointer-events: none;
     padding: 0 0 0 0;
+    margin: 0 0 0 0;
+    bottom: 55px;
+    right: 5px;
 }
 
 .notifications > * {
     pointer-events: auto;
 }
-
-.notifications.top-right { top: 0; right: 0; }
-.notifications.top-left { top: 0; left: 0; }
-.notifications.bottom-right { bottom: 55px; right: 5px; }
-.notifications.bottom-left { bottom: 55px; left: 5px; }
-.notifications.top-center { top: 0; left: 50%; transform: translateX(-50%); }
-.notifications.bottom-center { bottom: 55px; left: 50%; transform: translateX(-50%); }
 
 .notification {
     min-width: 250px;

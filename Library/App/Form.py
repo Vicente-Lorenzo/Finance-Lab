@@ -122,3 +122,8 @@ class FormAPI(PageAPI):
         content = self.normalize(self._content_ or self.content())
         form = ContainerAPI(elements=[*content, *buttons], classname="form").build()
         return self.normalize([*form, *hidden])
+
+    def __init_sidebar_layout__(self) -> list[Component]:
+        sidebar = self.normalize(self._sidebar_ or self.sidebar())
+        form = ContainerAPI(elements=[*sidebar], classname="form").build()
+        return self.normalize([*form])

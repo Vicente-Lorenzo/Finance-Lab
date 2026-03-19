@@ -2,24 +2,9 @@
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
-    min-width: 0;
-    min-height: 0;
-    height: 100%;
-    width: 100%;
-    overflow: auto;
-    padding: 20px 20px 20px 20px;
-    box-sizing: border-box;
-    text-align: center;
-}
-
-.sidebar .page {
     justify-content: flex-start;
-    align-items: center;
-    gap: 20px 20px;
-}
-
-.content .page {
-    justify-content: center;
-    align-items: center;
-    gap: 20px 20px;
+    align-items: flex-start;
+    text-align: left;
+    position: relative;
+    overflow: auto;
 }

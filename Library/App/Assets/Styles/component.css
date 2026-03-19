@@ -1,6 +1,6 @@
 .container.paginator .external {
     opacity: 0;
-    transition: opacity 0.50s ease;
+    transition: opacity 0.25s ease;
     pointer-events: none;
 }
 

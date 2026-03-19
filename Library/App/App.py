@@ -99,7 +99,6 @@ class AppAPI:
                  terminal_limit: int = 100,
                  notification_limit: int = 10,
                  notification_duration: int | None = 5000,
-                 notification_position: str = "bottom-right",
                  notification_dismissable: bool = True,
                  notification_persistence: bool | str = None,
                  high_frequency_interval: int = 1000,
@@ -173,8 +172,6 @@ class AppAPI:
         self._log_.debug(lambda: f"Defined Notification Limit = {self._notification_limit_}")
         self._notification_duration_: int | None = notification_duration
         self._log_.debug(lambda: f"Defined Notification Duration = {self._notification_duration_}")
-        self._notification_position_: str = notification_position
-        self._log_.debug(lambda: f"Defined Notification Position = {self._notification_position_}")
         self._notification_dismissable_: bool = notification_dismissable
         self._log_.debug(lambda: f"Defined Notification Dismissable = {self._notification_dismissable_}")
         self._notification_persistence_: bool | str = notification_persistence
@@ -264,6 +261,24 @@ class AppAPI:
         self.GLOBAL_LOW_FREQUENCY_INTERVAL_ID: dict = self.register(type="interval", name="low")
         self.ids()
 
+    def __init_stylesheets__(self) -> list[str]:
+        stylesheets = [dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP]
+        if self._application_assets_.exists():
+            for css_file in sorted(self._application_assets_.rglob("*.css")):
+                rel_path = css_file.relative_to(self._application_assets_).as_posix()
+                stylesheets.append(self.asset(path=rel_path, url=True))
+                self._log_.debug(lambda p=rel_path: f"Init Stylesheets: Caching Stylesheet = {p}")
+        return stylesheets
+
+    def __init_scripts__(self) -> list[str]:
+        scripts = []
+        if self._application_assets_.exists():
+            for js_file in sorted(self._application_assets_.rglob("*.js")):
+                rel_path = js_file.relative_to(self._application_assets_).as_posix()
+                scripts.append(self.asset(path=rel_path, url=True))
+                self._log_.debug(lambda p=rel_path: f"Init Scripts: Caching Script = {p}")
+        return scripts
+
     def __init_assets__(self):
         def serve_application(filename: str):
             return flask.send_from_directory(self._application_assets_, filename)
@@ -274,6 +289,10 @@ class AppAPI:
         )
 
     def _init_app_(self) -> None:
+        stylesheets = self.__init_stylesheets__()
+        self._log_.debug(lambda: "Init App: Loaded Stylesheets")
+        scripts = self.__init_scripts__()
+        self._log_.debug(lambda: "Init App: Loaded Scripts")
         self.app = dash.Dash(
             name=self._name_,
             title=self._title_,
@@ -282,7 +301,8 @@ class AppAPI:
             requests_pathname_prefix=self._endpoint_,
             assets_url_path=self._library_assets_url_,
             assets_folder=inspect_path(self._library_assets_),
-            external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
+            external_stylesheets=stylesheets,
+            external_scripts=scripts,
             suppress_callback_exceptions=True,
             prevent_initial_callbacks=True
         )
@@ -425,7 +445,7 @@ class AppAPI:
     def __init_notification_layout__(self) -> Component:
         return html.Div(
             id=self.GLOBAL_NOTIFICATION_ID, 
-            className=f"notifications {self._notification_position_}"
+            className="notifications"
         )
 
     def __init_hidden_layout__(self) -> Component:
@@ -599,7 +619,7 @@ class AppAPI:
             dismissable=self._notification_dismissable_,
             persistence=self._notification_persistence_
         )
-        self._log_.debug(lambda: "Init Notifications: Loaded NotifierAPI")
+        self._log_.debug(lambda: "Init Notifications: Loaded Notifier")
 
     def asset(self, *, path: str, url: bool = False) -> str:
         if (self._library_assets_ / path).exists():
