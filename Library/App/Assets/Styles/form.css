@@ -2,19 +2,69 @@
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.content .form .wrapper {
     justify-content: center;
     align-items: center;
     text-align: center;
-    position: relative;
 }
 
-.form .controls {
-    position: absolute;
-    bottom: 20px;
+.sidebar .form .wrapper {
+    justify-content: flex-start;
+    align-items: flex-start;
+    text-align: left;
+}
+
+.form .step {
+    flex: 0 0 auto;
+    margin: 20px 0 20px 0;
     display: flex;
     flex-direction: row;
     justify-content: center;
     align-items: center;
+    text-align: center;
+}
+
+.form .step .markdown {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.form .step .markdown p {
+    margin: 0;
+    text-align: center;
+}
+
+.form .wrapper {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    overflow: auto;
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+}
+
+.form .controls {
+    flex: 0 0 auto;
+    margin: 20px 0 20px 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
 }
 
 .form .button {

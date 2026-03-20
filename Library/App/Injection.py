@@ -61,9 +61,9 @@ class OnClickInjectionAPI(InjectionAPI):
         original_inputs = payload.get("original_inputs", [])
         clicks = original_inputs[0] if original_inputs else None
         if not clicks: raise PreventUpdate
-        return payload.get("original_outputs")
+        return None
     def js(self, app) -> str:
-        return app.asset(path="Callbacks/Click.js")
+        return app.asset(path="Callbacks/Click.js", url=False)
 
 class OnCleanInjectionAPI(InjectionAPI, ABC):
     def py(self, payload: dict) -> Any:
@@ -71,9 +71,9 @@ class OnCleanInjectionAPI(InjectionAPI, ABC):
         clicks = injected_inputs[0] if len(injected_inputs) > 0 else None
         trigger = injected_inputs[1] if len(injected_inputs) > 1 else None
         if not clicks and not trigger: raise PreventUpdate
-        return payload.get("original_outputs")
+        return None
     def js(self, app) -> str:
-        return app.asset(path="Callbacks/Clean.js")
+        return app.asset(path="Callbacks/Clean.js", url=False)
 
 class OnCleanMemoryInjectionAPI(OnCleanInjectionAPI):
     def __init__(self):
@@ -115,58 +115,75 @@ class OnCleanResetInjectionAPI(OnCleanInjectionAPI):
             Input(AppAPI.GLOBAL_CLEAN_RESET_ASYNC_ID, "data")
         ]
 
-class OnLoadingInjectionAPI(InjectionAPI):
-    def __init__(self, flag: str = "on_loading"):
-        super().__init__(flag=flag)
-    def args(self, is_page: bool) -> list:
-        from Library.App import AppAPI, PageAPI
-        if is_page:
-            return [
-                Output(PageAPI.PAGE_LOADING_ASYNC_ID, "data"),
-                Input(AppAPI.GLOBAL_LOADING_ASYNC_ID, "data"),
-                State(PageAPI.PAGE_LOADING_ASYNC_ID, "data")
-            ]
-        return [
-            Input(AppAPI.GLOBAL_LOADING_ASYNC_ID, "data")
-        ]
+class OnSyncInjectionAPI(InjectionAPI, ABC):
     def py(self, payload: dict) -> Any:
         injected_inputs = payload.get("injected_inputs", [])
         trigger = injected_inputs[0] if injected_inputs else None
         if not trigger: raise PreventUpdate
         return TriggerAPI(**trigger).trigger().dict()
     def js(self, app) -> str:
-        return app.asset(path="Callbacks/Trigger.js")
+        return app.asset(path="Callbacks/Trigger.js", url=False)
     def __call__(self, app, is_page: bool) -> Tuple[Callable | None, str | None]:
         return (self.py, self.js(app)) if is_page else (None, None)
 
-class OnReloadingInjectionAPI(OnLoadingInjectionAPI):
+class OnEnterInjectionAPI(OnSyncInjectionAPI):
     def __init__(self):
-        super().__init__(flag="on_reloading")
+        super().__init__(flag="on_enter")
     def args(self, is_page: bool) -> list:
         from Library.App import AppAPI, PageAPI
         if is_page:
             return [
-                Output(PageAPI.PAGE_RELOADING_ASYNC_ID, "data"),
-                Input(AppAPI.GLOBAL_RELOADING_ASYNC_ID, "data"),
-                State(PageAPI.PAGE_RELOADING_ASYNC_ID, "data")
+                Output(PageAPI.PAGE_ENTER_ASYNC_ID, "data"),
+                Input(AppAPI.GLOBAL_ENTER_ASYNC_ID, "data"),
+                State(PageAPI.PAGE_ENTER_ASYNC_ID, "data")
             ]
         return [
-            Input(AppAPI.GLOBAL_RELOADING_ASYNC_ID, "data")
+            Input(AppAPI.GLOBAL_ENTER_ASYNC_ID, "data")
         ]
 
-class OnUnloadingInjectionAPI(OnLoadingInjectionAPI):
+class OnReenterInjectionAPI(OnSyncInjectionAPI):
     def __init__(self):
-        super().__init__(flag="on_unloading")
+        super().__init__(flag="on_reenter")
     def args(self, is_page: bool) -> list:
         from Library.App import AppAPI, PageAPI
         if is_page:
             return [
-                Output(PageAPI.PAGE_UNLOADING_ASYNC_ID, "data"),
-                Input(AppAPI.GLOBAL_UNLOADING_ASYNC_ID, "data"),
-                State(PageAPI.PAGE_UNLOADING_ASYNC_ID, "data")
+                Output(PageAPI.PAGE_REENTER_ASYNC_ID, "data"),
+                Input(AppAPI.GLOBAL_REENTER_ASYNC_ID, "data"),
+                State(PageAPI.PAGE_REENTER_ASYNC_ID, "data")
             ]
         return [
-            Input(AppAPI.GLOBAL_UNLOADING_ASYNC_ID, "data")
+            Input(AppAPI.GLOBAL_REENTER_ASYNC_ID, "data")
+        ]
+
+class OnRouteInjectionAPI(OnSyncInjectionAPI):
+    def __init__(self):
+        super().__init__(flag="on_route")
+    def args(self, is_page: bool) -> list:
+        from Library.App import AppAPI, PageAPI
+        if is_page:
+            return [
+                Output(PageAPI.PAGE_ROUTE_ASYNC_ID, "data"),
+                Input(AppAPI.GLOBAL_ROUTE_ASYNC_ID, "data"),
+                State(PageAPI.PAGE_ROUTE_ASYNC_ID, "data")
+            ]
+        return [
+            Input(AppAPI.GLOBAL_ROUTE_ASYNC_ID, "data")
+        ]
+
+class OnLeaveInjectionAPI(OnSyncInjectionAPI):
+    def __init__(self):
+        super().__init__(flag="on_leave")
+    def args(self, is_page: bool) -> list:
+        from Library.App import AppAPI, PageAPI
+        if is_page:
+            return [
+                Output(PageAPI.PAGE_LEAVE_ASYNC_ID, "data"),
+                Input(AppAPI.GLOBAL_LEAVE_ASYNC_ID, "data"),
+                State(PageAPI.PAGE_LEAVE_ASYNC_ID, "data")
+            ]
+        return [
+            Input(AppAPI.GLOBAL_LEAVE_ASYNC_ID, "data")
         ]
 
 class LoadingInjectionAPI(InjectionAPI):
@@ -213,9 +230,10 @@ class InjectorAPI:
         self.on_clean_session = OnCleanSessionInjectionAPI()
         self.on_clean_local = OnCleanLocalInjectionAPI()
         self.on_clean_reset = OnCleanResetInjectionAPI()
-        self.on_loading = OnLoadingInjectionAPI()
-        self.on_reloading = OnReloadingInjectionAPI()
-        self.on_unloading = OnUnloadingInjectionAPI()
+        self.on_enter = OnEnterInjectionAPI()
+        self.on_reenter = OnReenterInjectionAPI()
+        self.on_route = OnRouteInjectionAPI()
+        self.on_leave = OnLeaveInjectionAPI()
         self.loading = LoadingInjectionAPI()
         self.loading_content = LoadingContentInjectionAPI()
         self.loading_sidebar = LoadingSidebarInjectionAPI()
@@ -225,9 +243,10 @@ class InjectorAPI:
             self.on_clean_session,
             self.on_clean_local,
             self.on_clean_reset,
-            self.on_loading,
-            self.on_reloading,
-            self.on_unloading,
+            self.on_enter,
+            self.on_reenter,
+            self.on_route,
+            self.on_leave,
             self.loading,
             self.loading_content,
             self.loading_sidebar

@@ -54,10 +54,11 @@ class AppAPI:
     GLOBAL_TERMINAL_COLLAPSE_ID: ComponentID | dict = ComponentID()
     GLOBAL_NOTIFICATION_ID: ComponentID | dict = ComponentID()
 
-    GLOBAL_LOADING_ASYNC_ID: ComponentID | dict = ComponentID()
+    GLOBAL_ENTER_ASYNC_ID: ComponentID | dict = ComponentID()
+    GLOBAL_REENTER_ASYNC_ID: ComponentID | dict = ComponentID()
+    GLOBAL_ROUTE_ASYNC_ID: ComponentID | dict = ComponentID()
+    GLOBAL_LEAVE_ASYNC_ID: ComponentID | dict = ComponentID()
     GLOBAL_ROUTING_STORAGE_ID: ComponentID | dict = ComponentID()
-    GLOBAL_RELOADING_ASYNC_ID: ComponentID | dict = ComponentID()
-    GLOBAL_UNLOADING_ASYNC_ID: ComponentID | dict = ComponentID()
 
     GLOBAL_MEMORY_STORAGE_ID: ComponentID | dict = ComponentID()
     GLOBAL_SESSION_STORAGE_ID: ComponentID | dict = ComponentID()
@@ -238,10 +239,11 @@ class AppAPI:
         self.GLOBAL_TERMINAL_COLLAPSE_ID: dict = self.register(type="collapse", name="terminal")
         self.GLOBAL_NOTIFICATION_ID: dict = self.register(type="div", name="notification")
 
-        self.GLOBAL_LOADING_ASYNC_ID: dict = self.register(type="asyncer", name="loading")
+        self.GLOBAL_ENTER_ASYNC_ID: dict = self.register(type="asyncer", name="enter")
+        self.GLOBAL_REENTER_ASYNC_ID: dict = self.register(type="asyncer", name="reenter")
+        self.GLOBAL_ROUTE_ASYNC_ID: dict = self.register(type="asyncer", name="route")
+        self.GLOBAL_LEAVE_ASYNC_ID: dict = self.register(type="asyncer", name="leave")
         self.GLOBAL_ROUTING_STORAGE_ID: dict = self.register(type="storage", name="routing")
-        self.GLOBAL_RELOADING_ASYNC_ID: dict = self.register(type="asyncer", name="reloading")
-        self.GLOBAL_UNLOADING_ASYNC_ID: dict = self.register(type="asyncer", name="unloading")
 
         self.GLOBAL_MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory", portable="data")
         self.GLOBAL_SESSION_STORAGE_ID: dict = self.register(type="storage", name="session", portable="data")
@@ -289,10 +291,6 @@ class AppAPI:
         )
 
     def _init_app_(self) -> None:
-        stylesheets = self.__init_stylesheets__()
-        self._log_.debug(lambda: "Init App: Loaded Stylesheets")
-        scripts = self.__init_scripts__()
-        self._log_.debug(lambda: "Init App: Loaded Scripts")
         self.app = dash.Dash(
             name=self._name_,
             title=self._title_,
@@ -301,12 +299,16 @@ class AppAPI:
             requests_pathname_prefix=self._endpoint_,
             assets_url_path=self._library_assets_url_,
             assets_folder=inspect_path(self._library_assets_),
-            external_stylesheets=stylesheets,
-            external_scripts=scripts,
             suppress_callback_exceptions=True,
             prevent_initial_callbacks=True
         )
         self._log_.debug(lambda: "Init App: Loaded App")
+        stylesheets = self.__init_stylesheets__()
+        self.app.config.external_stylesheets = stylesheets
+        self._log_.debug(lambda: "Init App: Loaded Stylesheets")
+        scripts = self.__init_scripts__()
+        self.app.config.external_scripts = scripts
+        self._log_.debug(lambda: "Init App: Loaded Scripts")
         self.__init_ids__()
         self._log_.debug(lambda: "Init App: Loaded IDs")
         self.__init_assets__()
@@ -451,10 +453,11 @@ class AppAPI:
     def __init_hidden_layout__(self) -> Component:
         hidden: list = [dcc.Location(id=self.GLOBAL_LOCATION_ID, refresh=False)]
         hidden.extend(StorageAPI(id=self.GLOBAL_LOCATION_STORAGE_ID, persistence="session").build())
-        hidden.extend(StorageAPI(id=self.GLOBAL_LOADING_ASYNC_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.GLOBAL_ENTER_ASYNC_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.GLOBAL_REENTER_ASYNC_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.GLOBAL_ROUTE_ASYNC_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.GLOBAL_LEAVE_ASYNC_ID, persistence="memory").build())
         hidden.extend(StorageAPI(id=self.GLOBAL_ROUTING_STORAGE_ID, persistence="memory").build())
-        hidden.extend(StorageAPI(id=self.GLOBAL_RELOADING_ASYNC_ID, persistence="memory").build())
-        hidden.extend(StorageAPI(id=self.GLOBAL_UNLOADING_ASYNC_ID, persistence="memory").build())
         hidden.extend(StorageAPI(id=self.GLOBAL_MEMORY_STORAGE_ID, persistence="memory").build())
         hidden.extend(StorageAPI(id=self.GLOBAL_SESSION_STORAGE_ID, persistence="session").build())
         hidden.extend(StorageAPI(id=self.GLOBAL_LOCAL_STORAGE_ID, persistence="local").build())
@@ -621,19 +624,29 @@ class AppAPI:
         )
         self._log_.debug(lambda: "Init Notifications: Loaded Notifier")
 
-    def asset(self, *, path: str, url: bool = False) -> str:
+    def asset(self, *, path: str, url: bool = True) -> str:
+        def read_content(file_path: Path) -> str:
+            if file_path.suffix.lower() in [".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg", ".webp"]:
+                import base64
+                suffix = file_path.suffix.lower().strip(".")
+                if suffix == "jpg": suffix = "jpeg"
+                elif suffix == "svg": suffix = "svg+xml"
+                mime_type = f"image/{suffix}"
+                encoded = base64.b64encode(file_path.read_bytes()).decode("utf-8")
+                return f"data:{mime_type};base64,{encoded}"
+            return file_path.read_text(encoding="utf-8")
         if (self._library_assets_ / path).exists():
             self._log_.debug(lambda: f"Resolve Asset: Asset Found = {path} (Library)")
             if url:
                 return self.app.get_asset_url(path)
             else:
-                return (self._library_assets_ / path).read_text(encoding="utf-8")
+                return read_content(self._library_assets_ / path)
         if (self._application_assets_ / path).exists():
             self._log_.debug(lambda: f"Resolve Asset: Asset Found = {path} (Application)")
             if url:
                 return (self._anchor_ / self._application_assets_url_ / path).as_posix()
             else:
-                return (self._application_assets_ / path).read_text(encoding="utf-8")
+                return read_content(self._application_assets_ / path)
         raise RuntimeError(f"Resolve Asset: Asset Not Found: {path}")
 
     def identify(self, *, page: str = None, type: str, name: str, portable: str = "", **kwargs) -> dict:
@@ -739,7 +752,7 @@ class AppAPI:
         Input(GLOBAL_ROUTING_STORAGE_ID, "data")
     )
     def _global_async_routing_location_callback_(self):
-        return self.asset(path="Callbacks/Routing.js")
+        return self.asset(path="Callbacks/Routing.js", url=False)
 
     @serverside_callback(
         Output(GLOBAL_LOCATION_ID, "pathname"),
@@ -748,42 +761,56 @@ class AppAPI:
         Output(GLOBAL_NAVIGATION_ID, "children"),
         Output(GLOBAL_SIDEBAR_ID, "children"),
         Output(GLOBAL_CONTENT_ID, "children"),
-        Output(GLOBAL_LOADING_ASYNC_ID, "data"),
-        Output(GLOBAL_RELOADING_ASYNC_ID, "data"),
+        Output(GLOBAL_ENTER_ASYNC_ID, "data"),
+        Output(GLOBAL_REENTER_ASYNC_ID, "data"),
+        Output(GLOBAL_ROUTE_ASYNC_ID, "data"),
+        Output(GLOBAL_LEAVE_ASYNC_ID, "data"),
         Input(GLOBAL_LOCATION_ID, "pathname"),
         State(GLOBAL_LOCATION_STORAGE_ID, "data"),
-        State(GLOBAL_LOADING_ASYNC_ID, "data"),
-        State(GLOBAL_RELOADING_ASYNC_ID, "data"),
+        State(GLOBAL_ENTER_ASYNC_ID, "data"),
+        State(GLOBAL_REENTER_ASYNC_ID, "data"),
+        State(GLOBAL_ROUTE_ASYNC_ID, "data"),
+        State(GLOBAL_LEAVE_ASYNC_ID, "data"),
         on_init=InjectionType.Hidden
     )
-    def _global_async_update_location_callback_(self, path: str, location: dict, loading: dict, reloading: dict):
+    def _global_async_update_location_callback_(self, path: str, location: dict, enter: dict, reenter: dict, route: dict, leave: dict):
         self._log_.debug(lambda: f"Update Location Callback: Received Path = {path}")
         anchor = self.anchorize(path=path, relative=False)
         self._log_.debug(lambda: f"Update Location Callback: Parsed Anchor = {anchor}")
         endpoint = self.endpointize(path=path, relative=False)
         self._log_.debug(lambda: f"Update Location Callback: Parsed Endpoint = {endpoint}")
-        location = LocationAPI(**location)
-        loading = TriggerAPI(**loading)
-        reloading = TriggerAPI(**reloading)
+        location = LocationAPI(**(location or {}))
+        enter = TriggerAPI(**(enter or {}))
+        reenter = TriggerAPI(**(reenter or {}))
+        route = TriggerAPI(**(route or {}))
+        leave = TriggerAPI(**(leave or {}))
         if location.current() == endpoint:
             self._log_.debug(lambda: "Update Location Callback: Current Page Detected")
-            loading = dash.no_update
-            reloading = reloading.trigger().dict()
+            enter = dash.no_update
+            reenter = reenter.trigger().dict()
+            route = route.trigger().dict()
+            leave = dash.no_update
         elif location.backward(step=False) == endpoint:
             self._log_.debug(lambda: "Update Location Callback: Backward Page Detected")
             location.backward(step=True)
-            loading = loading.trigger().dict()
-            reloading = dash.no_update
+            enter = enter.trigger().dict()
+            reenter = dash.no_update
+            route = route.trigger().dict()
+            leave = leave.trigger().dict()
         elif location.forward(step=False) == endpoint:
             self._log_.debug(lambda: "Update Location Callback: Forward Page Detected")
             location.forward(step=True)
-            loading = loading.trigger().dict()
-            reloading = dash.no_update
+            enter = enter.trigger().dict()
+            reenter = dash.no_update
+            route = route.trigger().dict()
+            leave = leave.trigger().dict()
         else:
             self._log_.debug(lambda: "Update Location Callback: New Page Detected")
             location.register(path=endpoint)
-            loading = loading.trigger().dict()
-            reloading = dash.no_update
+            enter = enter.trigger().dict()
+            reenter = dash.no_update
+            route = route.trigger().dict()
+            leave = leave.trigger().dict()
         redirect, page = self.redirect(endpoint=endpoint)
         anchor = self.anchorize(path=redirect, relative=False)
         self._log_.debug(lambda: f"Update Location Callback: Normalized Anchor")
@@ -805,7 +832,7 @@ class AppAPI:
             self._log_.debug(lambda: f"Update Location Callback: Updated Sidebar")
             content = self.GLOBAL_NOT_FOUND_LAYOUT
             self._log_.debug(lambda: f"Update Location Callback: Updated Content")
-        return anchor, location.dict(), description, navigation, sidebar, content, loading, reloading
+        return anchor, location.dict(), description, navigation, sidebar, content, enter, reenter, route, leave
 
     @serverside_callback(
         Output(GLOBAL_LOCATION_ID, "pathname"),
@@ -829,7 +856,7 @@ class AppAPI:
         on_click=InjectionType.Hidden
     )
     def _global_async_refresh_location_callback_(self):
-        return self.asset(path="Callbacks/Refresh.js")
+        return self.asset(path="Callbacks/Refresh.js", url=False)
 
     @serverside_callback(
         Output(GLOBAL_LOCATION_ID, "pathname"),
@@ -854,7 +881,7 @@ class AppAPI:
         on_click=InjectionType.Hidden
     )
     def _global_async_sidebar_button_callback_(self):
-        return self.asset(path="Callbacks/Collapse.js")
+        return self.asset(path="Callbacks/Collapse.js", url=False)
 
     @clientside_callback(
         Output(GLOBAL_CONTACTS_COLLAPSE_ID, "is_open"),
@@ -865,14 +892,14 @@ class AppAPI:
         on_click=InjectionType.Hidden
     )
     def _global_async_contacts_button_callback_(self):
-        return self.asset(path="Callbacks/Collapse.js")
+        return self.asset(path="Callbacks/Collapse.js", url=False)
 
     @clientside_callback(
         Input(GLOBAL_IMPORT_UPLOAD_ID, "contents"),
         State(GLOBAL_IMPORT_UPLOAD_ID, "filename")
     )
     def _global_async_import_snapshot_callback_(self):
-        return self.asset(path="Callbacks/Import.js")
+        return self.asset(path="Callbacks/Import.js", url=False)
 
     @clientside_callback(
         Output(GLOBAL_EXPORT_DOWNLOAD_ID, "data"),
@@ -892,28 +919,28 @@ class AppAPI:
         State({"app": dash.ALL, "page": dash.ALL, "type": dash.ALL, "name": dash.ALL, "portable": "active_tab"}, "active_tab")
     )
     def _global_async_export_snapshot_callback_(self):
-        return self.asset(path="Callbacks/Export.js")
+        return self.asset(path="Callbacks/Export.js", url=False)
 
     @clientside_callback(
         Output(GLOBAL_MEMORY_STORAGE_ID, "data"),
         on_clean_memory=InjectionType.Hidden
     )
     def _global_async_clean_memory_callback_(self):
-        return self.asset(path="Callbacks/Clear.js")
+        return self.asset(path="Callbacks/Clear.js", url=False)
 
     @clientside_callback(
         Output(GLOBAL_SESSION_STORAGE_ID, "data"),
         on_clean_session=InjectionType.Hidden
     )
     def _global_async_clean_session_callback_(self):
-        return self.asset(path="Callbacks/Clear.js")
+        return self.asset(path="Callbacks/Clear.js", url=False)
 
     @clientside_callback(
         Output(GLOBAL_LOCAL_STORAGE_ID, "data"),
         on_clean_local=InjectionType.Hidden
     )
     def _global_async_clean_local_callback_(self):
-        return self.asset(path="Callbacks/Clear.js")
+        return self.asset(path="Callbacks/Clear.js", url=False)
 
     @clientside_callback(
         Output(GLOBAL_CLEAN_MEMORY_ASYNC_ID, "data"),
@@ -925,7 +952,7 @@ class AppAPI:
         on_clean_reset=InjectionType.Hidden
     )
     def _global_async_clean_reset_callback_(self):
-        return self.asset(path="Callbacks/Reset.js")
+        return self.asset(path="Callbacks/Reset.js", url=False)
 
     @serverside_callback(
         Output(GLOBAL_REFRESH_ASYNC_ID, "data"),
@@ -984,7 +1011,7 @@ class AppAPI:
         on_click=InjectionType.Hidden
     )
     def _global_async_terminal_button_callback_(self):
-        return self.asset(path="Callbacks/Collapse.js")
+        return self.asset(path="Callbacks/Collapse.js", url=False)
 
     @staticmethod
     def _global_async_stream_callback_(logs: list[Component], elements: list[Component], limit: int):

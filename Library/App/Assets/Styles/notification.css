@@ -50,29 +50,29 @@
     filter: invert(1) grayscale(100%) brightness(200%);
 }
 
-.notification.level-debug { background-color: rgba(0, 255, 0, 0.15); }
+.notification.level-debug { background-color: #D9FFD9; }
 .notification.level-debug .toast-header { background-color: #00FF00; color: black; }
 .notification.level-debug .btn-close { filter: none; }
 .notification.level-debug .toast-body { background-color: transparent; }
 
-.notification.level-info { background-color: rgba(0, 135, 255, 0.15); }
+.notification.level-info { background-color: #D9EDFF; }
 .notification.level-info .toast-header { background-color: #0087FF; color: white; }
 .notification.level-info .toast-body { background-color: transparent; }
 
-.notification.level-alert { background-color: rgba(255, 135, 0, 0.15); }
+.notification.level-alert { background-color: #FFEDD9; }
 .notification.level-alert .toast-header { background-color: #FF8700; color: black; }
 .notification.level-alert .btn-close { filter: none; }
 .notification.level-alert .toast-body { background-color: transparent; }
 
-.notification.level-warning { background-color: rgba(255, 193, 7, 0.15); }
+.notification.level-warning { background-color: #FFF6DA; }
 .notification.level-warning .toast-header { background-color: #FFC107; color: black; }
 .notification.level-warning .btn-close { filter: none; }
 .notification.level-warning .toast-body { background-color: transparent; }
 
-.notification.level-error { background-color: rgba(255, 0, 0, 0.15); }
+.notification.level-error { background-color: #FFD9D9; }
 .notification.level-error .toast-header { background-color: #FF0000; color: white; }
 .notification.level-error .toast-body { background-color: transparent; }
 
-.notification.level-exception { background-color: rgba(255, 0, 95, 0.15); }
+.notification.level-exception { background-color: #FFD9E7; }
 .notification.level-exception .toast-header { background-color: #FF005F; color: white; }
 .notification.level-exception .toast-body { background-color: transparent; }

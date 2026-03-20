@@ -146,17 +146,16 @@ def inject_serverside_callback(
         original_states = args[schema["s_o_st"]]
         injected_inputs = args[schema["s_i_in"]]
         injected_states = args[schema["s_i_st"]]
-        original_outputs = original_func(*original_inputs, *original_states, **kwargs)
         injected_outputs = None
         if injected_func and mode != InjectionType.Disabled:
             payload = {
-                "original_outputs": original_outputs,
                 "injected_inputs": list(injected_inputs),
                 "injected_states": list(injected_states),
                 "original_inputs": list(original_inputs),
                 "original_states": list(original_states)
             }
             injected_outputs = injected_func(payload)
+        original_outputs = original_func(*original_inputs, *original_states, **kwargs)
         n_o_out = schema["n_o_out"]
         o_res_list = [original_outputs] if n_o_out == 1 else list(original_outputs) if n_o_out > 1 else []
         if n_o_out > 1 and not isinstance(original_outputs, (list, tuple)):
@@ -197,11 +196,9 @@ def inject_clientside_callback(
         const injectedInputs = args.slice({s_i_in.start}, {s_i_in.stop});
         const originalStates = args.slice({s_o_st.start}, {s_o_st.stop});
         const injectedStates = args.slice({s_i_st.start}, {s_i_st.stop});
-        const originalOutputs = originalFn(...originalInputs, ...originalStates);
         let injectedOutputs = null;
         if (injectedFn) {{
             const payload = {{
-                original_outputs: originalOutputs,
                 injected_inputs: injectedInputs,
                 injected_states: injectedStates,
                 original_inputs: originalInputs,
@@ -210,6 +207,7 @@ def inject_clientside_callback(
             injectedOutputs = injectedFn(payload);
             if (injectedOutputs === {no_update}) return {no_update};
         }}
+        const originalOutputs = originalFn(...originalInputs, ...originalStates);
         const oResList = ({schema["n_o_out"]} > 1) ? originalOutputs : (({schema["n_o_out"]} === 1) ? [originalOutputs] : []);
         const iResList = ({schema["n_i_out"]} > 0) ? (Array.isArray(injectedOutputs) ? injectedOutputs : [injectedOutputs ?? {no_update}]) : [];
         const finalList = {js_concat};
@@ -222,10 +220,12 @@ def inject_clientside_callback(
 def callback(
         *args,
         js: bool,
+        on_init: bool | InjectionType,
         on_click: bool | InjectionType,
-        on_loading: bool | InjectionType,
-        on_reloading: bool | InjectionType,
-        on_unloading: bool | InjectionType,
+        on_enter: bool | InjectionType,
+        on_reenter: bool | InjectionType,
+        on_route: bool | InjectionType,
+        on_leave: bool | InjectionType,
         on_clean_memory: bool | InjectionType,
         on_clean_session: bool | InjectionType,
         on_clean_local: bool | InjectionType,
@@ -239,14 +239,23 @@ def callback(
         interval: int = None,
         progress_default: Any = None,
         **kwargs):
+    kwargs["prevent_initial_call"] = (
+        InjectionType.coerce(on_init) is InjectionType.Disabled and
+        InjectionType.coerce(on_enter) is InjectionType.Disabled and
+        InjectionType.coerce(on_reenter) is InjectionType.Disabled and
+        InjectionType.coerce(on_route) is InjectionType.Disabled and
+        InjectionType.coerce(on_leave) is InjectionType.Disabled
+    )
     def decorator(func):
         func.callback = True
         func.js = js
         func.kwargs = kwargs
+        func.on_init = on_init
         func.on_click = on_click
-        func.on_loading = on_loading
-        func.on_reloading = on_reloading
-        func.on_unloading = on_unloading
+        func.on_enter = on_enter
+        func.on_reenter = on_reenter
+        func.on_route = on_route
+        func.on_leave = on_leave
         func.on_clean_memory = on_clean_memory
         func.on_clean_session = on_clean_session
         func.on_clean_local = on_clean_local
@@ -267,9 +276,10 @@ def clientside_callback(
         *args,
         on_init: bool | InjectionType = InjectionType.Disabled,
         on_click: bool | InjectionType = InjectionType.Disabled,
-        on_loading: bool | InjectionType = InjectionType.Disabled,
-        on_reloading: bool | InjectionType = InjectionType.Disabled,
-        on_unloading: bool | InjectionType = InjectionType.Disabled,
+        on_enter: bool | InjectionType = InjectionType.Disabled,
+        on_reenter: bool | InjectionType = InjectionType.Disabled,
+        on_route: bool | InjectionType = InjectionType.Disabled,
+        on_leave: bool | InjectionType = InjectionType.Disabled,
         on_clean_memory: bool | InjectionType = InjectionType.Disabled,
         on_clean_session: bool | InjectionType = InjectionType.Disabled,
         on_clean_local: bool | InjectionType = InjectionType.Disabled,
@@ -288,9 +298,10 @@ def clientside_callback(
         js=True,
         on_init=on_init,
         on_click=on_click,
-        on_loading=on_loading,
-        on_reloading=on_reloading,
-        on_unloading=on_unloading,
+        on_enter=on_enter,
+        on_reenter=on_reenter,
+        on_route=on_route,
+        on_leave=on_leave,
         on_clean_memory=on_clean_memory,
         on_clean_session=on_clean_session,
         on_clean_local=on_clean_local,
@@ -303,7 +314,6 @@ def clientside_callback(
         cancel=cancel,
         interval=interval,
         progress_default=progress_default,
-        prevent_initial_call=InjectionType.coerce(on_init) is InjectionType.Disabled,
         **kwargs
     )
 
@@ -311,9 +321,10 @@ def serverside_callback(
         *args,
         on_init: bool | InjectionType = InjectionType.Disabled,
         on_click: bool | InjectionType = InjectionType.Disabled,
-        on_loading: bool | InjectionType = InjectionType.Disabled,
-        on_reloading: bool | InjectionType = InjectionType.Disabled,
-        on_unloading: bool | InjectionType = InjectionType.Disabled,
+        on_enter: bool | InjectionType = InjectionType.Disabled,
+        on_reenter: bool | InjectionType = InjectionType.Disabled,
+        on_route: bool | InjectionType = InjectionType.Disabled,
+        on_leave: bool | InjectionType = InjectionType.Disabled,
         on_clean_memory: bool | InjectionType = InjectionType.Disabled,
         on_clean_session: bool | InjectionType = InjectionType.Disabled,
         on_clean_local: bool | InjectionType = InjectionType.Disabled,
@@ -335,9 +346,10 @@ def serverside_callback(
         js=False,
         on_init=on_init,
         on_click=on_click,
-        on_loading=on_loading,
-        on_reloading=on_reloading,
-        on_unloading=on_unloading,
+        on_enter=on_enter,
+        on_reenter=on_reenter,
+        on_route=on_route,
+        on_leave=on_leave,
         on_clean_memory=on_clean_memory,
         on_clean_session=on_clean_session,
         on_clean_local=on_clean_local,
@@ -353,6 +365,5 @@ def serverside_callback(
         cancel=cancel,
         interval=interval,
         progress_default=progress_default,
-        prevent_initial_call=InjectionType.coerce(on_init) is InjectionType.Disabled,
         **kwargs
     )

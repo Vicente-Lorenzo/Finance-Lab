@@ -13,7 +13,6 @@
 .header .information {
     display: flex;
     flex-direction: row;
-    justify-content: flex-start;
     padding: 0 0 0 0;
     margin: 0 0 0 0;
 }
@@ -33,7 +32,6 @@
 .header .titles {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
     padding: 0 15px 0 0;
     margin: auto auto auto auto;
 }
@@ -41,7 +39,6 @@
 .header .title {
     display: flex;
     flex-direction: row;
-    justify-content: flex-start;
     font-size: 32px;
     font-weight: bold;
     padding: 0 0 0 0;
@@ -51,7 +48,6 @@
 .header .team {
     display: flex;
     flex-direction: row;
-    justify-content: flex-start;
     font-size: 18px;
     font-weight: normal;
     padding: 0 0 0 0;
@@ -61,7 +57,6 @@
 .header .description {
     display: flex;
     flex-direction: row;
-    justify-content: flex-start;
     font-size: 24px;
     font-weight: normal;
     border-left: 1px solid black;

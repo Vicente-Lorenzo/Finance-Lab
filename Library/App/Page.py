@@ -10,9 +10,10 @@ from Library.App.Component import Component, StorageAPI
 
 class PageAPI:
 
-    PAGE_LOADING_ASYNC_ID: ComponentID | dict = ComponentID()
-    PAGE_RELOADING_ASYNC_ID: ComponentID | dict = ComponentID()
-    PAGE_UNLOADING_ASYNC_ID: ComponentID | dict = ComponentID()
+    PAGE_ENTER_ASYNC_ID: ComponentID | dict = ComponentID()
+    PAGE_REENTER_ASYNC_ID: ComponentID | dict = ComponentID()
+    PAGE_ROUTE_ASYNC_ID: ComponentID | dict = ComponentID()
+    PAGE_LEAVE_ASYNC_ID: ComponentID | dict = ComponentID()
 
     PAGE_MEMORY_STORAGE_ID: ComponentID | dict = ComponentID()
     PAGE_SESSION_STORAGE_ID: ComponentID | dict = ComponentID()
@@ -146,21 +147,21 @@ class PageAPI:
         on_clean_memory=InjectionType.Hidden
     )
     def _page_async_clean_memory_callback_(self):
-        return self.app.asset(path="Callbacks/Clear.js")
+        return self.app.asset(path="Callbacks/Clear.js", url=False)
 
     @clientside_callback(
         Output(PAGE_SESSION_STORAGE_ID, "data"),
         on_clean_session=InjectionType.Hidden
     )
     def _page_async_clean_session_callback_(self):
-        return self.app.asset(path="Callbacks/Clear.js")
+        return self.app.asset(path="Callbacks/Clear.js", url=False)
 
     @clientside_callback(
         Output(PAGE_LOCAL_STORAGE_ID, "data"),
         on_clean_local=InjectionType.Hidden
     )
     def _page_async_clean_local_callback_(self):
-        return self.app.asset(path="Callbacks/Clear.js")
+        return self.app.asset(path="Callbacks/Clear.js", url=False)
 
     @serverside_callback(
         Input(PAGE_MEMORY_STORAGE_ID, "data")
@@ -184,9 +185,10 @@ class PageAPI:
         if not data: self.app._injector_.on_clean_local.increment()
 
     def __init_ids__(self) -> None:
-        self.PAGE_LOADING_ASYNC_ID: dict = self.register(type="asyncer", name="loading")
-        self.PAGE_RELOADING_ASYNC_ID: dict = self.register(type="asyncer", name="reloading")
-        self.PAGE_UNLOADING_ASYNC_ID: dict = self.register(type="asyncer", name="unloading")
+        self.PAGE_ENTER_ASYNC_ID: dict = self.register(type="asyncer", name="enter")
+        self.PAGE_REENTER_ASYNC_ID: dict = self.register(type="asyncer", name="reenter")
+        self.PAGE_ROUTE_ASYNC_ID: dict = self.register(type="asyncer", name="route")
+        self.PAGE_LEAVE_ASYNC_ID: dict = self.register(type="asyncer", name="leave")
 
         self.PAGE_MEMORY_STORAGE_ID: dict = self.register(type="storage", name="memory", portable="data")
         self.PAGE_SESSION_STORAGE_ID: dict = self.register(type="storage", name="session", portable="data")
@@ -195,9 +197,10 @@ class PageAPI:
 
     def __init_hidden_layout__(self) -> list[Component]:
         hidden: list = []
-        hidden.extend(StorageAPI(id=self.PAGE_LOADING_ASYNC_ID, persistence="memory").build())
-        hidden.extend(StorageAPI(id=self.PAGE_RELOADING_ASYNC_ID, persistence="memory").build())
-        hidden.extend(StorageAPI(id=self.PAGE_UNLOADING_ASYNC_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.PAGE_ENTER_ASYNC_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.PAGE_REENTER_ASYNC_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.PAGE_ROUTE_ASYNC_ID, persistence="memory").build())
+        hidden.extend(StorageAPI(id=self.PAGE_LEAVE_ASYNC_ID, persistence="memory").build())
         hidden.extend(StorageAPI(id=self.PAGE_MEMORY_STORAGE_ID, persistence="memory").build())
         hidden.extend(StorageAPI(id=self.PAGE_SESSION_STORAGE_ID, persistence="session").build())
         hidden.extend(StorageAPI(id=self.PAGE_LOCAL_STORAGE_ID, persistence="local").build())

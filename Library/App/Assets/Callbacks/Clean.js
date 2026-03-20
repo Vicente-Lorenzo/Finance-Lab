@@ -1,6 +1,5 @@
 /**
  * @param {Object} payload
- * @param {Array} payload.original_outputs
  * @param {Array} payload.injected_inputs
  * @param {Array} payload.injected_states
  * @param {Array} payload.original_inputs
@@ -8,5 +7,5 @@
  */
 (function(payload) {
     if (!payload.injected_inputs[0] && !payload.injected_inputs[1]) return window.dash_clientside.no_update;
-    return payload.original_outputs;
+    return null;
 })
