@@ -779,11 +779,11 @@ class AppAPI:
         self._log_.debug(lambda: f"Update Location Callback: Parsed Anchor = {anchor}")
         endpoint = self.endpointize(path=path, relative=False)
         self._log_.debug(lambda: f"Update Location Callback: Parsed Endpoint = {endpoint}")
-        location = LocationAPI(**(location or {}))
-        enter = TriggerAPI(**(enter or {}))
-        reenter = TriggerAPI(**(reenter or {}))
-        route = TriggerAPI(**(route or {}))
-        leave = TriggerAPI(**(leave or {}))
+        location = LocationAPI(**location)
+        enter = TriggerAPI(**enter)
+        reenter = TriggerAPI(**reenter)
+        route = TriggerAPI(**route)
+        leave = TriggerAPI(**leave)
         if location.current() == endpoint:
             self._log_.debug(lambda: "Update Location Callback: Current Page Detected")
             enter = dash.no_update
@@ -852,8 +852,7 @@ class AppAPI:
 
     @clientside_callback(
         Input(GLOBAL_REFRESH_BUTTON_ID, "n_clicks"),
-        Input(GLOBAL_REFRESH_ASYNC_ID, "data"),
-        on_click=InjectionType.Hidden
+        Input(GLOBAL_REFRESH_ASYNC_ID, "data")
     )
     def _global_async_refresh_location_callback_(self):
         return self.asset(path="Callbacks/Refresh.js", url=False)
@@ -970,7 +969,7 @@ class AppAPI:
         target_session = self._injector_.on_clean_session.count(page=endpoint)
         target_local = self._injector_.on_clean_local.count(page=endpoint)
         attempts = 0
-        while attempts < 100:
+        while attempts < 1000:
             if (self._injector_.on_clean_memory.index >= target_memory and
                 self._injector_.on_clean_session.index >= target_session and
                 self._injector_.on_clean_local.index >= target_local):
@@ -978,7 +977,7 @@ class AppAPI:
             time.sleep(0.01)
             attempts += 1
         self._log_.debug(lambda: f"Clean Reset Sync: Refreshing")
-        refresh = TriggerAPI(**(refresh or {}))
+        refresh = TriggerAPI(**refresh)
         return refresh.trigger().dict()
 
     @serverside_callback(

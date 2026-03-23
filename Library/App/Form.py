@@ -34,11 +34,10 @@ class FormAPI(PageAPI):
                  add_current_children: bool = True,
                  add_forward_parent: bool = False,
                  add_forward_children: bool = True,
-                 add_step_label: bool = False,
-                 add_back_button: str | bool = False,
+                 add_step_label: str = None,
+                 add_back_button: bool | str = False,
                  add_action_button: str = None,
-                 add_next_button: str | bool = False,
-                 step_label: str = "Step",
+                 add_next_button: bool | str = False,
                  back_button_label: str = "Back",
                  next_button_label: str = "Next") -> None:
 
@@ -61,11 +60,10 @@ class FormAPI(PageAPI):
             add_forward_children=add_forward_children
         )
 
-        self._add_step_label_: bool = add_step_label
+        self._add_step_label_: str = add_step_label
         self._add_back_button_: str | bool = add_back_button
         self._add_action_button_: str = add_action_button
         self._add_next_button_: str | bool = add_next_button
-        self._step_label_: str = step_label
         self._back_button_label_: str = back_button_label
         self._next_button_label_: str = next_button_label
 
@@ -82,7 +80,7 @@ class FormAPI(PageAPI):
     def __init_step_layout__(self) -> list[Component]:
         steps = []
         if self._add_step_label_:
-            steps.append(MarkdownAPI(text=self._step_label_, font_size="30px", font_weight="bold", font_color="var(--bs-primary)"))
+            steps.append(MarkdownAPI(text=self._add_step_label_, font_size="30px", font_weight="bold", font_color="var(--bs-primary)"))
         return self.normalize(steps)
 
     def __init_controls_layout__(self) -> list[Component]:

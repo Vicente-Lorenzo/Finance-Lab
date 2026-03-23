@@ -14,5 +14,4 @@
     } catch (e) {
         console.error("Import Snapshot: Failed to Parse", filename, e);
     }
-    return window.dash_clientside.no_update;
 })

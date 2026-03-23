@@ -24,7 +24,7 @@
 
 .form .step {
     flex: 0 0 auto;
-    margin: 20px 0 20px 0;
+    margin: 5% 0 2% 0;
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -59,7 +59,7 @@
 
 .form .controls {
     flex: 0 0 auto;
-    margin: 20px 0 20px 0;
+    margin: 2% 0 3% 0;
     display: flex;
     flex-direction: row;
     justify-content: center;

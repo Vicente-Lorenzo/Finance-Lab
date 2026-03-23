@@ -7,5 +7,4 @@
  */
 (function(payload) {
     if (!payload.injected_inputs[0] && !payload.injected_inputs[1]) return window.dash_clientside.no_update;
-    return null;
 })
