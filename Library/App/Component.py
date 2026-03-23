@@ -578,3 +578,56 @@ class NotificationAPI(ComponentAPI):
         if self.dismissable is not None: kwargs.update(dismissable=self.dismissable)
         if self.persistence is not None: kwargs.update(persistence=self.persistence)
         return kwargs
+
+@dataclass(kw_only=True)
+class GraphAPI(ComponentAPI):
+
+    classname: str | None = field(default="graph")
+    builder: type[Component] = field(default=dcc.Graph)
+
+    figure: Any = field(default=None)
+    config: dict = field(default=None)
+
+    def arguments(self) -> dict:
+        kwargs = super().arguments()
+        if self.figure is not None: kwargs.update(figure=self.figure)
+        if self.config is not None: kwargs.update(config=self.config)
+        return kwargs
+
+@dataclass(kw_only=True)
+class ModalAPI(ComponentAPI):
+
+    classname: str | None = field(default="modal")
+    builder: type[Component] = field(default=dbc.Modal)
+
+    header: list[Component] | str = field(default=None)
+    body: list[Component] = field(default_factory=list)
+    footer: list[Component] = field(default_factory=list)
+
+    is_open: bool = field(default=False)
+    size: str = field(default=None)
+    centered: bool = field(default=None)
+    scrollable: bool = field(default=None)
+    backdrop: bool | str = field(default=None)
+
+    def arguments(self) -> dict:
+        kwargs = super().arguments()
+        if self.is_open is not None: kwargs.update(is_open=self.is_open)
+        if self.size is not None: kwargs.update(size=self.size)
+        if self.centered is not None: kwargs.update(centered=self.centered)
+        if self.scrollable is not None: kwargs.update(scrollable=self.scrollable)
+        if self.backdrop is not None: kwargs.update(backdrop=self.backdrop)
+        return kwargs
+
+    def build(self) -> list[Component]:
+        elements = []
+        if self.header is not None:
+            header_elem = [dbc.ModalTitle(self.header)] if isinstance(self.header, str) else self.flatten(element=self.header)
+            elements.append(dbc.ModalHeader(header_elem))
+        if self.body is not None:
+            elements.append(dbc.ModalBody(self.flatten(element=self.body)))
+        if self.footer is not None:
+            elements.append(dbc.ModalFooter(self.flatten(element=self.footer)))
+        elements, hidden = self.organize(elements=elements)
+        component = self.builder(elements, **self.arguments())
+        return self.serialize(elements=[component], hidden=hidden)

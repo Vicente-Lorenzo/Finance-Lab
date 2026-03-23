@@ -73,6 +73,12 @@ class AppAPI:
     GLOBAL_CLEAN_RESET_BUTTON_ID: ComponentID | dict = ComponentID()
     GLOBAL_CLEAN_RESET_ASYNC_ID: ComponentID | dict = ComponentID()
 
+    GLOBAL_MODAL_ID: ComponentID | dict = ComponentID()
+    GLOBAL_MODAL_HEADER_ID: ComponentID | dict = ComponentID()
+    GLOBAL_MODAL_BODY_ID: ComponentID | dict = ComponentID()
+    GLOBAL_MODAL_FOOTER_ID: ComponentID | dict = ComponentID()
+    GLOBAL_MODAL_BUTTON_ID: ComponentID | dict = ComponentID()
+
     GLOBAL_HIGH_FREQUENCY_INTERVAL_ID: ComponentID | dict = ComponentID()
     GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID: ComponentID | dict = ComponentID()
     GLOBAL_LOW_FREQUENCY_INTERVAL_ID: ComponentID | dict = ComponentID()
@@ -258,9 +264,16 @@ class AppAPI:
         self.GLOBAL_CLEAN_RESET_BUTTON_ID: dict = self.register(type="button", name="reset")
         self.GLOBAL_CLEAN_RESET_ASYNC_ID: dict = self.register(type="asyncer", name="reset")
 
+        self.GLOBAL_MODAL_ID: dict = self.register(type="modal", name="global")
+        self.GLOBAL_MODAL_HEADER_ID: dict = self.register(type="div", name="modal_header")
+        self.GLOBAL_MODAL_BODY_ID: dict = self.register(type="div", name="modal_body")
+        self.GLOBAL_MODAL_FOOTER_ID: dict = self.register(type="div", name="modal_footer")
+        self.GLOBAL_MODAL_BUTTON_ID: dict = self.register(type="button", name="modal_close")
+
         self.GLOBAL_HIGH_FREQUENCY_INTERVAL_ID: dict = self.register(type="interval", name="high")
         self.GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID: dict = self.register(type="interval", name="medium")
         self.GLOBAL_LOW_FREQUENCY_INTERVAL_ID: dict = self.register(type="interval", name="low")
+
         self.ids()
 
     def __init_stylesheets__(self) -> list[str]:
@@ -466,6 +479,24 @@ class AppAPI:
         hidden.extend(IntervalAPI(id=self.GLOBAL_LOW_FREQUENCY_INTERVAL_ID, interval=self._low_frequency_interval_).build())
         return html.Div(children=hidden, className="hidden")
 
+    def __init_modal_layout__(self) -> Component:
+        return html.Div(children=ModalAPI(
+            id=self.GLOBAL_MODAL_ID,
+            size="lg",
+            centered=True,
+            is_open=False,
+            header=[
+                html.Div(id=self.GLOBAL_MODAL_HEADER_ID)
+            ],
+            body=[
+                html.Div(id=self.GLOBAL_MODAL_BODY_ID)
+            ],
+            footer=[
+                html.Div(id=self.GLOBAL_MODAL_FOOTER_ID, style={"flex": "1"}),
+                *ButtonAPI(id=self.GLOBAL_MODAL_BUTTON_ID, label=[TextAPI(text="Close")], background="primary").build()
+            ]
+        ).build(), className="modal")
+
     def _init_layout_(self) -> None:
         self.components()
         self._log_.debug(lambda: "Init Layout: Loaded Components")
@@ -481,7 +512,9 @@ class AppAPI:
         self._log_.debug(lambda: "Init Layout: Loaded Notification Layout")
         hidden = self.__init_hidden_layout__()
         self._log_.debug(lambda: "Init Layout: Loaded Hidden Layout")
-        layout = html.Div(children=[header, body, footer, notification, hidden], className="app")
+        modal = self.__init_modal_layout__()
+        self._log_.debug(lambda: "Init Layout: Loaded Modal Layout")
+        layout = html.Div(children=[header, body, footer, notification, hidden, modal], className="app")
         self.app.layout = layout
         self._log_.debug(lambda: "Init Layout: Loaded App Layout")
 
@@ -1029,6 +1062,13 @@ class AppAPI:
     )
     def _global_async_terminal_stream_callback_(self, _, terminal: list[Component]):
         return self._global_async_stream_callback_(logs=self._log_.web.stream(), elements=terminal, limit=self._terminal_limit_)
+
+    @clientside_callback(
+        Output(GLOBAL_MODAL_ID, "is_open"),
+        Input(GLOBAL_MODAL_BUTTON_ID, "n_clicks")
+    )
+    def _global_async_dismiss_modal_callback_(self):
+        return self.asset(path="Callbacks/Dismiss.js", url=False)
 
     @serverside_callback(
         Output(GLOBAL_NOTIFICATION_ID, "children"),

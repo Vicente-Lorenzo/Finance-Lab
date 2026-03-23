@@ -25,7 +25,9 @@ from Library.App.Component import (
     NavigatorAPI,
     NavigatorContainerAPI,
     LoadingAPI,
-    NotificationAPI
+    NotificationAPI,
+    GraphAPI,
+    ModalAPI
 )
 from Library.App.Layout import (
     LayoutAPI,
@@ -95,6 +97,8 @@ __all__ = [
     "NavigatorContainerAPI",
     "LoadingAPI",
     "NotificationAPI",
+    "GraphAPI",
+    "ModalAPI",
     "LayoutAPI",
     "DefaultLayoutAPI",
     "ComponentID",
