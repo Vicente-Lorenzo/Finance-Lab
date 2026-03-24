@@ -1,8 +1,8 @@
 import io
 import base64
+from dash import dcc
 from typing import Any
 from dataclasses import dataclass, field
-from dash import dcc
 
 from Library.App.Component import ComponentAPI, Component, ImageAPI, IframeAPI
 

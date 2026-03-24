@@ -4,8 +4,8 @@ from dash import html, dcc
 import dash_bootstrap_components as dbc
 from dataclasses import dataclass, field
 
-from Library.App import TriggerAPI
-from Library.Utility import Component
+from Library.App.Session import TriggerAPI
+from Library.Utility.HTML import Component
 
 def parse_id(id: dict = None) -> dict:
     return id or {}
