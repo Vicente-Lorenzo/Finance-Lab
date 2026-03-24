@@ -1,0 +1,55 @@
+.plotly {
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    flex: 1 1 auto;
+}
+
+.matplotlib {
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.seaborn {
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.bokeh {
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    flex: 1 1 auto;
+    border: none;
+    display: block;
+}
+
+.altair {
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    flex: 1 1 auto;
+    border: none;
+    display: block;
+}
+
+.panel {
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    flex: 1 1 auto;
+    border: none;
+    display: block;
+}

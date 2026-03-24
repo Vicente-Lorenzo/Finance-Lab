@@ -483,8 +483,11 @@ class AppAPI:
         return html.Div(children=ModalAPI(
             id=self.GLOBAL_MODAL_ID,
             size="lg",
+            open=False,
+            fade=False,
             centered=True,
-            is_open=False,
+            keyboard=True,
+            backdrop=True,
             header=[
                 html.Div(id=self.GLOBAL_MODAL_HEADER_ID)
             ],

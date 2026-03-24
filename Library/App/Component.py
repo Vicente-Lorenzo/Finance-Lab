@@ -330,6 +330,36 @@ class ButtonAPI(ComponentAPI):
         return self.serialize(elements=button, hidden=hidden)
 
 @dataclass(kw_only=True)
+class ImageAPI(ComponentAPI):
+
+    classname: str | None = field(default="image")
+    builder: type[Component] = field(default=html.Img)
+
+    src: str = field(default=None)
+    alt: str = field(default=None)
+
+    def arguments(self) -> dict:
+        kwargs = super().arguments()
+        if self.src is not None: kwargs.update(src=self.src)
+        if self.alt is not None: kwargs.update(alt=self.alt)
+        return kwargs
+
+@dataclass(kw_only=True)
+class IframeAPI(ComponentAPI):
+
+    classname: str | None = field(default="iframe")
+    builder: type[Component] = field(default=html.Iframe)
+
+    src: str = field(default=None)
+    srcdoc: str = field(default=None)
+
+    def arguments(self) -> dict:
+        kwargs = super().arguments()
+        if self.src is not None: kwargs.update(src=self.src)
+        if self.srcdoc is not None: kwargs.update(srcDoc=self.srcdoc)
+        return kwargs
+
+@dataclass(kw_only=True)
 class ContainerAPI(ComponentAPI):
 
     basename: str = field(default="container")
@@ -580,21 +610,6 @@ class NotificationAPI(ComponentAPI):
         return kwargs
 
 @dataclass(kw_only=True)
-class GraphAPI(ComponentAPI):
-
-    classname: str | None = field(default="graph")
-    builder: type[Component] = field(default=dcc.Graph)
-
-    figure: Any = field(default=None)
-    config: dict = field(default=None)
-
-    def arguments(self) -> dict:
-        kwargs = super().arguments()
-        if self.figure is not None: kwargs.update(figure=self.figure)
-        if self.config is not None: kwargs.update(config=self.config)
-        return kwargs
-
-@dataclass(kw_only=True)
 class ModalAPI(ComponentAPI):
 
     classname: str | None = field(default="modal")
@@ -604,19 +619,25 @@ class ModalAPI(ComponentAPI):
     body: list[Component] = field(default_factory=list)
     footer: list[Component] = field(default_factory=list)
 
-    is_open: bool = field(default=False)
     size: str = field(default=None)
+    fade: bool = field(default=None)
+    open: bool = field(default=False)
     centered: bool = field(default=None)
-    scrollable: bool = field(default=None)
+    keyboard: bool = field(default=None)
     backdrop: bool | str = field(default=None)
+    scrollable: bool = field(default=None)
+    fullscreen: bool | str = field(default=None)
 
     def arguments(self) -> dict:
         kwargs = super().arguments()
-        if self.is_open is not None: kwargs.update(is_open=self.is_open)
         if self.size is not None: kwargs.update(size=self.size)
+        if self.fade is not None: kwargs.update(fade=self.fade)
+        if self.open is not None: kwargs.update(is_open=self.open)
         if self.centered is not None: kwargs.update(centered=self.centered)
-        if self.scrollable is not None: kwargs.update(scrollable=self.scrollable)
+        if self.keyboard is not None: kwargs.update(keyboard=self.keyboard)
         if self.backdrop is not None: kwargs.update(backdrop=self.backdrop)
+        if self.scrollable is not None: kwargs.update(scrollable=self.scrollable)
+        if self.fullscreen is not None: kwargs.update(fullscreen=self.fullscreen)
         return kwargs
 
     def build(self) -> list[Component]:

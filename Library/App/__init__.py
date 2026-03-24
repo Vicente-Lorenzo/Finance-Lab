@@ -15,6 +15,8 @@ from Library.App.Component import (
     DownloadAPI,
     UploadAPI,
     ButtonAPI,
+    ImageAPI,
+    IframeAPI,
     ContainerAPI,
     RowContainerAPI,
     ColContainerAPI,
@@ -26,8 +28,16 @@ from Library.App.Component import (
     NavigatorContainerAPI,
     LoadingAPI,
     NotificationAPI,
-    GraphAPI,
     ModalAPI
+)
+from Library.App.Chart import (
+    PlotlyAPI,
+    MatplotlibAPI,
+    BokehAPI,
+    AltairAPI,
+    PanelAPI,
+    HoloviewsAPI,
+    ChartAPI
 )
 from Library.App.Layout import (
     LayoutAPI,
@@ -87,6 +97,8 @@ __all__ = [
     "DownloadAPI",
     "UploadAPI",
     "ButtonAPI",
+    "ImageAPI",
+    "IframeAPI",
     "RowContainerAPI",
     "ColContainerAPI",
     "ButtonContainerAPI",
@@ -97,7 +109,13 @@ __all__ = [
     "NavigatorContainerAPI",
     "LoadingAPI",
     "NotificationAPI",
-    "GraphAPI",
+    "PlotlyAPI",
+    "MatplotlibAPI",
+    "BokehAPI",
+    "AltairAPI",
+    "PanelAPI",
+    "HoloviewsAPI",
+    "ChartAPI",
     "ModalAPI",
     "LayoutAPI",
     "DefaultLayoutAPI",
