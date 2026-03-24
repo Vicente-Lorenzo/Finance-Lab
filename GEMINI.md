@@ -32,7 +32,7 @@
  - **`Library/App`:** Core Dash wrappers (`AppAPI`, `PageAPI`, `ComponentAPI`) for the Web UI.
  - **`Library/Database`:** Database abstraction layer (`DatabaseAPI`, `QueryAPI`) supporting Oracle, Postgres, and SQL Server.
  - **`Library/Dataclass`:** Data structures (`BarAPI`, `TickAPI`, `TradeAPI`, `SymbolAPI`) and type definitions.
- - **`Library/DataFrame`:** Pandas/Polars/Numpy configuration and wrappers.
+ - **`Library/Dataframe`:** Pandas/Polars/Numpy configuration and wrappers (inheritable `DataframeAPI`).
  - **`Library/Formulas`:** Financial and utility formulas (`DateTime`, `Spot`, `Historical`).
  - **`Library/Workflow`:** Business logic and frontend pages implementation.
  - **`Library/Models`:** AI/ML Agents (`AgentAPI`, `DDPG`, `Noise`, `Memory`).

@@ -5,8 +5,8 @@ from typing_extensions import Self
 
 if TYPE_CHECKING: from Library.App import AppAPI
 from Library.Logging import HandlerLoggingAPI
-from Library.App.Callback import ComponentID, Output, Input, InjectionType, clientside_callback, serverside_callback
 from Library.App.Component import Component, StorageAPI
+from Library.App.Callback import ComponentID, Output, Input, InjectionType, clientside_callback, serverside_callback
 
 class PageAPI:
 
