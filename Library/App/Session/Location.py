@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from Library.App.Session import StorageAPI
+from Library.App.Session.Storage import StorageAPI
 
 @dataclass(kw_only=True)
 class LocationAPI(StorageAPI):

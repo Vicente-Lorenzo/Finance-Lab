@@ -17,7 +17,7 @@ def test_basic_component():
 
 def test_component_with_props():
     div = html.Div("x", id="foo", className="bar")
-    assert htmlize(div) == '<div id="foo" className="bar">x</div>'
+    assert htmlize(div) == '<div id="foo" class="bar">x</div>'
 
 def test_nested():
     comp = html.Div([html.H1("A"), html.P("B")])
