@@ -12,6 +12,8 @@ pl.Config.set_tbl_width_chars(1000)
 pl.Config.set_fmt_str_lengths(1000)
 pl.Config.set_fmt_table_cell_list_len(-1)
 
+from Library.Dataframe.Dataframe import DataframeAPI
+
 __all__ = [
-    "np", "pd", "pl"
+    "np", "pd", "pl", "DataframeAPI"
 ]

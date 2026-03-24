@@ -1,4 +1,4 @@
-from Library.DataFrame import pl
+from Library.Dataframe import pl
 from Library.Dataclass import IndicatorConfigurationAPI
 from Library.Robots.Analyst import SeriesAPI, MarketAPI, IndicatorsAPI
 

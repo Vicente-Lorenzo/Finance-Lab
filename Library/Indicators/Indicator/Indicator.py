@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from Library.DataFrame import pl
+from Library.Dataframe import pl
 
 class IndicatorAPI(ABC):
     

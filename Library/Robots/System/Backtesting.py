@@ -6,7 +6,7 @@ from itertools import count
 from queue import Queue
 from typing import Type, Iterator, Callable
 
-from Library.DataFrame import pl
+from Library.Dataframe import pl
 from Library.Classes import *
 from Library.Database import DatabaseAPI
 from Library.Parameters import ParametersAPI, Parameters

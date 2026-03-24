@@ -4,7 +4,7 @@ from datetime import datetime
 from dataclasses import dataclass, field, InitVar
 
 from Library.Dataclass import overridefield, DataclassAPI, TimestampAPI, PriceAPI, SymbolAPI
-from Library.Utility import cast
+from Library.Utility.Typing import cast
 
 class TickMode(Enum):
     Accurate = 0

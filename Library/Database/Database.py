@@ -2,14 +2,13 @@ import atexit
 from typing import Callable
 from abc import ABC, abstractmethod
 
-from Library.DataFrame import pd, pl
-from Library.Logging import HandlerLoggingAPI
-from Library.Dataclass import DataclassAPI
-from Library.Database import QueryAPI
-from Library.Utility import PathAPI, traceback_package
 from Library.Statistics import Timer
+from Library.Database import QueryAPI
+from Library.Logging import HandlerLoggingAPI
+from Library.Dataframe import pd, pl, DataframeAPI
+from Library.Utility import PathAPI, traceback_package
 
-class DatabaseAPI(ABC):
+class DatabaseAPI(DataframeAPI, ABC):
 
     _PARAMETER_TOKEN_: Callable[[int], str] = None
     _CHECK_DATATYPE_MAPPING_: dict = None
@@ -47,13 +46,13 @@ class DatabaseAPI(ABC):
                  legacy: bool,
                  migrate: bool,
                  autocommit: bool) -> None:
+        super().__init__(legacy=legacy)
 
         self._host_: str = host
         self._port_: int = port
         self._user_: str = user
         self._password_: str = password
         self._admin_: bool = admin
-        self._legacy_: bool = legacy
         self._migrate_: bool = migrate
         self._autocommit_: bool = autocommit
 
@@ -217,32 +216,6 @@ class DatabaseAPI(ABC):
             self.disconnect()
             return True
 
-    def flatten(self, data) -> list:
-        if isinstance(data, pd.DataFrame):
-            return data.to_dicts(orient="records")
-        if isinstance(data, pd.Series):
-            return data.to_list()
-        if isinstance(data, pl.DataFrame):
-            return data.to_dicts()
-        if isinstance(data, pl.Series):
-            return data.to_list()
-        if isinstance(data, DataclassAPI):
-            return [data.dict()]
-        if not isinstance(data, (tuple, list, set)):
-            return [data] if data else []
-        if all(isinstance(item, (list, tuple, set)) for item in data):
-            return list(data)
-        flat = []
-        for item in data:
-            flat.extend(self.flatten(item))
-        return flat
-
-    def format(self, data, schema: dict = None) -> pd.DataFrame | pl.DataFrame:
-        data: list = self.flatten(data)
-        schema: dict = schema if schema else self._STRUCTURE_
-        df: pl.DataFrame = pl.DataFrame(data=data, schema=schema, orient="row", strict=False)
-        return df.to_pandas() if self._legacy_ else df
-
     def _query_(self, query: QueryAPI, **kwargs):
         kwargs = {**self._defaults_, **kwargs}
         sql, configuration = query.compile(self._PARAMETER_TOKEN_, **kwargs)
@@ -381,7 +354,7 @@ class DatabaseAPI(ABC):
                 desc[0]: self._DESCRIPTION_DATATYPE_MAPPING_.get(desc[1])
                 for desc in self._cursor_.description
             } if self._cursor_.description else {}
-            df = self.format(data=rows, schema=schema)
+            df = self.frame(data=rows, schema=schema or self._STRUCTURE_)
             timer.stop()
             return timer, df
         except Exception as e:

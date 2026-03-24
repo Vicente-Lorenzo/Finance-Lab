@@ -2,7 +2,7 @@ from datetime import datetime
 from dataclasses import dataclass, field, InitVar
 
 from Library.Dataclass import overridefield, DataclassAPI, TimestampAPI, PriceAPI, SymbolAPI, TickAPI
-from Library.Utility import cast
+from Library.Utility.Typing import cast
 
 @dataclass(slots=True)
 class BarAPI(DataclassAPI):

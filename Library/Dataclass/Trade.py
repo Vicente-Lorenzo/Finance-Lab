@@ -2,7 +2,7 @@ from datetime import datetime
 from dataclasses import dataclass, field, InitVar
 
 from Library.Dataclass import overridefield, SymbolAPI, PositionAPI, TimestampAPI
-from Library.Utility import cast
+from Library.Utility.Typing import cast
 
 @dataclass(slots=True, kw_only=True)
 class TradeAPI(PositionAPI):

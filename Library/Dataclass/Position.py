@@ -3,7 +3,7 @@ from datetime import datetime
 from dataclasses import dataclass, field, InitVar
 
 from Library.Dataclass import overridefield, DataclassAPI, TimestampAPI, PriceAPI, PnLAPI, SymbolAPI
-from Library.Utility import cast
+from Library.Utility.Typing import cast
 
 class PositionType(Enum):
     Normal = 0

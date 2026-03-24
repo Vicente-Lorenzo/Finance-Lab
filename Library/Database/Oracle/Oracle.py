@@ -1,7 +1,7 @@
 import oracledb
 from typing import Callable
 
-from Library.DataFrame import pl
+from Library.Dataframe import pl
 from Library.Database import DatabaseAPI
 
 class OracleDatabaseAPI(DatabaseAPI):

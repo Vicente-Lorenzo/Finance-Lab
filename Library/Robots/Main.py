@@ -3,7 +3,7 @@ from typing import Type
 from pathlib import Path
 from argparse import ArgumentParser
 
-from Library.DataFrame import pl
+from Library.Dataframe import pl
 from Library.Logging import *
 from Library.Classes import VerboseType, AssetType, SpreadType, CommissionType, SwapType, SystemType, StrategyType
 from Library.Parameters import ParametersAPI, Parameters

@@ -1,4 +1,4 @@
-from Library.DataFrame import pl
+from Library.Dataframe import pl
 from Library.Dataclass import *
 from Library.Database import PostgresDatabaseAPI
 

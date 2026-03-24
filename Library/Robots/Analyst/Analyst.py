@@ -1,6 +1,6 @@
 import math
 
-from Library.DataFrame import pl
+from Library.Dataframe import pl
 from Library.Database import DatabaseAPI
 from Library.Dataclass import BarAPI
 from Library.Parameters import Parameters

@@ -1,4 +1,4 @@
-from Library.DataFrame import pl
+from Library.Dataframe import pl
 
 class SeriesAPI:
 
