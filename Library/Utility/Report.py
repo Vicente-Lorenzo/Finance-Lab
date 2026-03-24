@@ -1,4 +1,6 @@
-from Library.Utility import PathAPI, htmlize, format
+from Library.Utility.Path import PathAPI
+from Library.Utility.HTML import htmlize
+from Library.Utility.Typing import format
 
 class ReportAPI:
 

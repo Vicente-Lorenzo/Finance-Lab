@@ -1,5 +1,5 @@
-from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
+from PIL import Image, ImageDraw, ImageFont
 
 from Library.Dataframe import pl
 

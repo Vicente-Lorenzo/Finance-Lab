@@ -5,8 +5,9 @@ from pathlib import PurePath, Path
 from re import Pattern, compile, search
 from dataclasses import dataclass, field, InitVar
 
-from Library.Dataclass import DataclassAPI
-from Library.Utility import contains, is_notebook, find_notebook
+from Library.Utility.Typing import contains
+from Library.Utility.Runtime import is_notebook, find_notebook
+from Library.Dataclass.Dataclass import DataclassAPI
 
 def inspect_separator(*, builder: type[PurePath] = Path) -> str:
     return builder(".")._flavour.sep
@@ -81,15 +82,13 @@ def traceback_depth_module_path(*, header: bool = None, footer: bool = None, res
 
 def traceback_origin() -> str:
     depth: int = 0
-    origin: str | None = None
     try:
         while origin := traceback_depth(depth=depth):
             depth += 1
     except ValueError:
         depth -= 1
         origin = traceback_depth(depth=depth)
-    finally:
-        return origin
+    return origin
 
 def traceback_origin_file(*, header: bool = None, resolve: bool = False, builder: type[PurePath] = Path) -> PurePath | Path:
     traceback: str = traceback_origin()
