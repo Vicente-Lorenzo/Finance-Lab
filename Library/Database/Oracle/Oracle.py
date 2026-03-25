@@ -151,7 +151,7 @@ class OracleDatabaseAPI(DatabaseAPI):
             for name, dtype in self._STRUCTURE_.items()
         )
 
-    def _connect_(self, admin: bool):
+    def _driver_(self, admin: bool):
         database = "ORCL" if admin else (self.database or None)
         dsn = oracledb.makedsn(
             host=self._host_,

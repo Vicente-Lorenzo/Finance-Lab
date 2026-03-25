@@ -1,14 +1,14 @@
-import atexit
 from typing import Callable
 from abc import ABC, abstractmethod
 
+from Library.API.API import API
 from Library.Statistics import Timer
 from Library.Database import QueryAPI
 from Library.Logging import HandlerLoggingAPI
 from Library.Dataframe import pd, pl, DataframeAPI
 from Library.Utility import PathAPI, traceback_package
 
-class DatabaseAPI(DataframeAPI, ABC):
+class DatabaseAPI(API, DataframeAPI, ABC):
 
     _PARAMETER_TOKEN_: Callable[[int], str] = None
     _CHECK_DATATYPE_MAPPING_: dict = None
@@ -67,7 +67,6 @@ class DatabaseAPI(DataframeAPI, ABC):
         self._connection_ = None
         self._transaction_ = None
         self._cursor_ = None
-        self._guard_ = None
 
         self._log_ = HandlerLoggingAPI(self.__class__.__name__, **self._defaults_)
 
@@ -88,20 +87,20 @@ class DatabaseAPI(DataframeAPI, ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _connect_(self, admin: bool):
+    def _driver_(self, admin: bool):
         raise NotImplementedError
 
     def connected(self) -> bool:
-        return self._connection_ is not None
+        return self._connection_ is not None and self._cursor_ is not None
+
+    def disconnected(self) -> bool:
+        return self._connection_ is None and self._cursor_ is None
 
     def autocommited(self) -> bool:
         return self._autocommit_ is True
 
     def transitioned(self) -> bool:
         return self._transaction_ is True
-
-    def cursored(self) -> bool:
-        return self._cursor_ is not None
 
     def databased(self) -> bool:
         return self.database is not None
@@ -114,9 +113,6 @@ class DatabaseAPI(DataframeAPI, ABC):
 
     def structured(self) -> bool:
         return self._STRUCTURE_ is not None
-
-    def guarded(self) -> bool:
-        return self._guard_ is not None
 
     def commit(self):
         if not self.connected():
@@ -150,71 +146,28 @@ class DatabaseAPI(DataframeAPI, ABC):
             self._log_.info(lambda: f"Rollback Operation: Closed Transaction ({timer.result()})")
         return self
 
-    def connect(self, admin: bool = False):
-        try:
-            if self.connected() and self.cursored():
-                self._log_.debug(lambda: "Connect Operation: Skipped (Already Connected)")
-                return self
-            if self.connected() or self.cursored():
-                self._log_.warning(lambda: "Connect Operation: Disconnecting (Bad Connection)")
-                self.disconnect()
-            timer = Timer()
-            timer.start()
-            self._connection_ = self._connect_(admin=admin or self._admin_)
-            self._transaction_ = False
-            self._cursor_ = self._connection_.cursor()
-            if not self.guarded():
-                self._guard_ = self.disconnect
-                try: atexit.register(self._guard_)
-                except: pass
-            timer.stop()
-            self._log_.info(lambda: f"Connect Operation: Connected ({timer.result()})")
-            return self
-        except Exception as e:
-            self._log_.error(lambda: f"Connect Operation: Failed")
-            self._log_.exception(lambda: str(e))
-            raise
+    def _connect_(self, admin: bool = False):
+        self._connection_ = self._driver_(admin=admin or self._admin_)
+        self._transaction_ = False
+        self._cursor_ = self._connection_.cursor()
 
     def __enter__(self):
         return self.migration() if self._migrate_ else self.connect()
 
-    def disconnect(self):
-        try:
-            if not self.connected() and not self.cursored():
-                self._log_.debug(lambda: "Disconnect Operation: Skipped (Not Connected)")
-                return self
-            timer = Timer()
-            timer.start()
-            if self.cursored():
-                self._cursor_.close()
-                self._cursor_ = None
-            if self.connected():
-                self._connection_.close()
-                self._connection_ = None
-            timer.stop()
-            if self.guarded():
-                try: atexit.unregister(self._guard_)
-                except: pass
-                self._guard_ = None
-            self._log_.info(lambda: f"Disconnect Operation: Disconnected ({timer.result()})")
-            return self
-        except Exception as e:
-            self._log_.error(lambda: f"Disconnect Operation: Failed")
-            self._log_.exception(lambda: str(e))
-            raise
+    def _disconnect_(self):
+        if self._cursor_ is not None:
+            self._cursor_.close()
+            self._cursor_ = None
+        if self._connection_ is not None:
+            self._connection_.close()
+            self._connection_ = None
 
     def __exit__(self, exception_type, exception_value, exception_traceback):
         if exception_type or exception_value or exception_traceback:
-            self._log_.exception(lambda: f"Exception type: {exception_type}")
-            self._log_.exception(lambda: f"Exception value: {exception_value}")
-            self._log_.exception(lambda: f"Traceback: {exception_traceback}")
             self.rollback()
-            self.disconnect()
-            return False
         else:
             self.commit()
-            self.disconnect()
-            return True
+        return super().__exit__(exception_type, exception_value, exception_traceback)
 
     def _query_(self, query: QueryAPI, **kwargs):
         kwargs = {**self._defaults_, **kwargs}
@@ -377,7 +330,3 @@ class DatabaseAPI(DataframeAPI, ABC):
         timer, df =  self._fetch_(lambda: self._cursor_.fetchall())
         self._log_.info(lambda: f"Fetch All Operation: Fetched {len(df)} data points ({timer.result()})")
         return df
-
-    def __del__(self):
-        try: self.disconnect()
-        except: pass

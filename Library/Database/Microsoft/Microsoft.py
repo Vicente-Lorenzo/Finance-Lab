@@ -157,7 +157,7 @@ class MicrosoftDatabaseAPI(DatabaseAPI):
             for name, dtype in self._STRUCTURE_.items()
         )
 
-    def _connect_(self, admin: bool):
+    def _driver_(self, admin: bool):
         database = "master" if admin else (self.database or None)
         connection = pymssql.connect(
             server=self._host_,
