@@ -1,13 +1,9 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING: from Library.App import AppAPI
+from Library.App import AppType
 from Library.App.Page import PageAPI
 from Library.App.Callback import ComponentID
 from Library.App.Component import Component, IconAPI, TextAPI, MarkdownAPI, ButtonAPI, PaginatorAPI, ContainerAPI
 
-class FormAPI(PageAPI):
+class FormAPI(PageAPI[AppType]):
 
     FORM_BACK_PAGINATOR_ID: ComponentID | dict = ComponentID()
     FORM_BACK_INTERNAL_ID: ComponentID | dict = ComponentID()
@@ -18,7 +14,7 @@ class FormAPI(PageAPI):
     FORM_NEXT_EXTERNAL_ID: ComponentID | dict = ComponentID()
 
     def __init__(self, *,
-                 app: AppAPI,
+                 app: AppType,
                  path: str,
                  anchor: str = None,
                  endpoint: str = None,

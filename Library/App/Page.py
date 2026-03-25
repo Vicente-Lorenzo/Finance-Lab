@@ -1,14 +1,12 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
+from typing import Generic
 from typing_extensions import Self
 
-if TYPE_CHECKING: from Library.App import AppAPI
+from Library.App import AppType
 from Library.Logging import HandlerLoggingAPI
 from Library.App.Component import Component, StorageAPI
 from Library.App.Callback import ComponentID, Output, Input, InjectionType, clientside_callback, serverside_callback
 
-class PageAPI:
+class PageAPI(Generic[AppType]):
 
     PAGE_ENTER_ASYNC_ID: ComponentID | dict = ComponentID()
     PAGE_REENTER_ASYNC_ID: ComponentID | dict = ComponentID()
@@ -20,7 +18,7 @@ class PageAPI:
     PAGE_LOCAL_STORAGE_ID: ComponentID | dict = ComponentID()
 
     def __init__(self, *,
-                 app: AppAPI,
+                 app: AppType,
                  path: str,
                  anchor: str = None,
                  endpoint: str = None,
@@ -39,7 +37,7 @@ class PageAPI:
 
         self._log_ = HandlerLoggingAPI(PageAPI.__name__)
 
-        self.app: AppAPI = app
+        self.app: AppType = app
         self.path: str = path
         self.button: str = button
         self.description: str = description

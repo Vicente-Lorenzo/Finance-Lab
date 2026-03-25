@@ -1,3 +1,5 @@
+from typing import TypeVar
+AppType = TypeVar("AppType", bound="AppAPI")
 from Library.App import Session
 from Library.App.Session import *
 from Library.App.Component import (
@@ -81,6 +83,7 @@ from Library.App.Form import FormAPI
 from Library.App.App import AppAPI
 
 __all__ = [
+    "AppType",
     *Session.__all__,
     "Component",
     "parse_id",
