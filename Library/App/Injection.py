@@ -7,8 +7,9 @@ from Library.App.Session import TriggerAPI
 from Library.App.Callback import Input, Output, State, InjectionType
 
 class InjectionAPI(ABC):
-    def __init__(self, flag: str):
+    def __init__(self, flag: str, default: InjectionType):
         self.flag = flag
+        self.default = default
         self.mapping: dict[str, int] = {}
         self.counter: int = 0
         self.index: int = 0
@@ -17,17 +18,17 @@ class InjectionAPI(ABC):
     def args(self, is_page: bool) -> list:
         pass
     @staticmethod
+    def py(payload: dict) -> Any:
+        return None
+    @staticmethod
+    def js(app) -> str | None:
+        return None
+    @staticmethod
     def running() -> list[tuple]:
         return []
     @staticmethod
     def cancel() -> list[Any]:
         return []
-    @abstractmethod
-    def py(self, payload: dict) -> Any:
-        pass
-    @abstractmethod
-    def js(self, app) -> str | None:
-        pass
     def __call__(self, app, is_page: bool) -> Tuple[Callable | None, str | None]:
         return self.py, self.js(app)
     def register(self, page: str = None) -> None:
@@ -54,14 +55,13 @@ class InjectionAPI(ABC):
 
 class OnClickInjectionAPI(InjectionAPI):
     def __init__(self):
-        super().__init__(flag="on_click")
+        super().__init__(flag="on_click", default=InjectionType.Hidden)
     def args(self, is_page: bool) -> list:
         return []
     def py(self, payload: dict) -> Any:
         original_inputs = payload.get("original_inputs", [])
         clicks = original_inputs[0] if original_inputs else None
         if not clicks: raise PreventUpdate
-        return None
     def js(self, app) -> str:
         return app.asset(path="Callbacks/Click.js", url=False)
 
@@ -71,49 +71,40 @@ class OnCleanInjectionAPI(InjectionAPI, ABC):
         clicks = injected_inputs[0] if len(injected_inputs) > 0 else None
         trigger = injected_inputs[1] if len(injected_inputs) > 1 else None
         if not clicks and not trigger: raise PreventUpdate
-        return None
     def js(self, app) -> str:
         return app.asset(path="Callbacks/Clean.js", url=False)
 
 class OnCleanMemoryInjectionAPI(OnCleanInjectionAPI):
     def __init__(self):
-        super().__init__(flag="on_clean_memory")
+        super().__init__(flag="on_clean_memory", default=InjectionType.Hidden)
     def args(self, is_page: bool) -> list:
         from Library.App import AppAPI
-        return [
-            Input(AppAPI.GLOBAL_CLEAN_MEMORY_BUTTON_ID, "n_clicks"),
-            Input(AppAPI.GLOBAL_CLEAN_MEMORY_ASYNC_ID, "data")
-        ]
+        return [Input(AppAPI.GLOBAL_CLEAN_MEMORY_BUTTON_ID, "n_clicks"),
+                Input(AppAPI.GLOBAL_CLEAN_MEMORY_ASYNC_ID, "data")]
 
 class OnCleanSessionInjectionAPI(OnCleanInjectionAPI):
     def __init__(self):
-        super().__init__(flag="on_clean_session")
+        super().__init__(flag="on_clean_session", default=InjectionType.Hidden)
     def args(self, is_page: bool) -> list:
         from Library.App import AppAPI
-        return [
-            Input(AppAPI.GLOBAL_CLEAN_SESSION_BUTTON_ID, "n_clicks"),
-            Input(AppAPI.GLOBAL_CLEAN_SESSION_ASYNC_ID, "data")
-        ]
+        return [Input(AppAPI.GLOBAL_CLEAN_SESSION_BUTTON_ID, "n_clicks"),
+                Input(AppAPI.GLOBAL_CLEAN_SESSION_ASYNC_ID, "data")]
 
 class OnCleanLocalInjectionAPI(OnCleanInjectionAPI):
     def __init__(self):
-        super().__init__(flag="on_clean_local")
+        super().__init__(flag="on_clean_local", default=InjectionType.Hidden)
     def args(self, is_page: bool) -> list:
         from Library.App import AppAPI
-        return [
-            Input(AppAPI.GLOBAL_CLEAN_LOCAL_BUTTON_ID, "n_clicks"),
-            Input(AppAPI.GLOBAL_CLEAN_LOCAL_ASYNC_ID, "data")
-        ]
+        return [Input(AppAPI.GLOBAL_CLEAN_LOCAL_BUTTON_ID, "n_clicks"),
+                Input(AppAPI.GLOBAL_CLEAN_LOCAL_ASYNC_ID, "data")]
 
 class OnCleanResetInjectionAPI(OnCleanInjectionAPI):
     def __init__(self):
-        super().__init__(flag="on_clean_reset")
+        super().__init__(flag="on_clean_reset", default=InjectionType.Hidden)
     def args(self, is_page: bool) -> list:
         from Library.App import AppAPI
-        return [
-            Input(AppAPI.GLOBAL_CLEAN_RESET_BUTTON_ID, "n_clicks"),
-            Input(AppAPI.GLOBAL_CLEAN_RESET_ASYNC_ID, "data")
-        ]
+        return [Input(AppAPI.GLOBAL_CLEAN_RESET_BUTTON_ID, "n_clicks"),
+                Input(AppAPI.GLOBAL_CLEAN_RESET_ASYNC_ID, "data")]
 
 class OnSyncInjectionAPI(InjectionAPI, ABC):
     def py(self, payload: dict) -> Any:
@@ -128,99 +119,80 @@ class OnSyncInjectionAPI(InjectionAPI, ABC):
 
 class OnEnterInjectionAPI(OnSyncInjectionAPI):
     def __init__(self):
-        super().__init__(flag="on_enter")
+        super().__init__(flag="on_enter", default=InjectionType.Hidden)
     def args(self, is_page: bool) -> list:
         from Library.App import AppAPI, PageAPI
         if is_page:
-            return [
-                Output(PageAPI.PAGE_ENTER_ASYNC_ID, "data"),
-                Input(AppAPI.GLOBAL_ENTER_ASYNC_ID, "data"),
-                State(PageAPI.PAGE_ENTER_ASYNC_ID, "data")
-            ]
-        return [
-            Input(AppAPI.GLOBAL_ENTER_ASYNC_ID, "data")
-        ]
+            return [Output(PageAPI.PAGE_ENTER_ASYNC_ID, "data"),
+                    Input(AppAPI.GLOBAL_ENTER_ASYNC_ID, "data"),
+                    State(PageAPI.PAGE_ENTER_ASYNC_ID, "data")]
+        return [Input(AppAPI.GLOBAL_ENTER_ASYNC_ID, "data")]
 
 class OnReenterInjectionAPI(OnSyncInjectionAPI):
     def __init__(self):
-        super().__init__(flag="on_reenter")
+        super().__init__(flag="on_reenter", default=InjectionType.Hidden)
     def args(self, is_page: bool) -> list:
         from Library.App import AppAPI, PageAPI
         if is_page:
-            return [
-                Output(PageAPI.PAGE_REENTER_ASYNC_ID, "data"),
-                Input(AppAPI.GLOBAL_REENTER_ASYNC_ID, "data"),
-                State(PageAPI.PAGE_REENTER_ASYNC_ID, "data")
-            ]
-        return [
-            Input(AppAPI.GLOBAL_REENTER_ASYNC_ID, "data")
-        ]
+            return [Output(PageAPI.PAGE_REENTER_ASYNC_ID, "data"),
+                    Input(AppAPI.GLOBAL_REENTER_ASYNC_ID, "data"),
+                    State(PageAPI.PAGE_REENTER_ASYNC_ID, "data")]
+        return [Input(AppAPI.GLOBAL_REENTER_ASYNC_ID, "data")]
 
 class OnRouteInjectionAPI(OnSyncInjectionAPI):
     def __init__(self):
-        super().__init__(flag="on_route")
+        super().__init__(flag="on_route", default=InjectionType.Hidden)
     def args(self, is_page: bool) -> list:
         from Library.App import AppAPI, PageAPI
         if is_page:
-            return [
-                Output(PageAPI.PAGE_ROUTE_ASYNC_ID, "data"),
-                Input(AppAPI.GLOBAL_ROUTE_ASYNC_ID, "data"),
-                State(PageAPI.PAGE_ROUTE_ASYNC_ID, "data")
-            ]
-        return [
-            Input(AppAPI.GLOBAL_ROUTE_ASYNC_ID, "data")
-        ]
+            return [Output(PageAPI.PAGE_ROUTE_ASYNC_ID, "data"),
+                    Input(AppAPI.GLOBAL_ROUTE_ASYNC_ID, "data"),
+                    State(PageAPI.PAGE_ROUTE_ASYNC_ID, "data")]
+        return [Input(AppAPI.GLOBAL_ROUTE_ASYNC_ID, "data")]
 
 class OnLeaveInjectionAPI(OnSyncInjectionAPI):
     def __init__(self):
-        super().__init__(flag="on_leave")
+        super().__init__(flag="on_leave", default=InjectionType.Hidden)
     def args(self, is_page: bool) -> list:
         from Library.App import AppAPI, PageAPI
         if is_page:
-            return [
-                Output(PageAPI.PAGE_LEAVE_ASYNC_ID, "data"),
-                Input(AppAPI.GLOBAL_LEAVE_ASYNC_ID, "data"),
-                State(PageAPI.PAGE_LEAVE_ASYNC_ID, "data")
-            ]
-        return [
-            Input(AppAPI.GLOBAL_LEAVE_ASYNC_ID, "data")
-        ]
+            return [Output(PageAPI.PAGE_LEAVE_ASYNC_ID, "data"),
+                    Input(AppAPI.GLOBAL_LEAVE_ASYNC_ID, "data"),
+                    State(PageAPI.PAGE_LEAVE_ASYNC_ID, "data")]
+        return [Input(AppAPI.GLOBAL_LEAVE_ASYNC_ID, "data")]
 
 class LoadingInjectionAPI(InjectionAPI):
     def __init__(self):
-        super().__init__(flag="loading")
+        super().__init__(flag="loading", default=InjectionType.Hidden)
     def args(self, is_page: bool) -> list: return []
-    def py(self, payload: dict) -> Any: return None
-    def js(self, app) -> str | None: return None
-    def __call__(self, app, is_page: bool): return None, None
     def running(self) -> list[tuple]:
         from Library.App import AppAPI
-        return [
-            (Output(AppAPI.GLOBAL_CONTENT_LOADING_ID, "style"), {"display": "flex"}, {"display": "none"}),
-            (Output(AppAPI.GLOBAL_SIDEBAR_LOADING_ID, "style"), {"display": "flex"}, {"display": "none"})
-        ]
+        return [(Output(AppAPI.GLOBAL_CONTENT_LOADING_ID, "style"), {"display": "flex"}, {"display": "none"}),
+                (Output(AppAPI.GLOBAL_SIDEBAR_LOADING_ID, "style"), {"display": "flex"}, {"display": "none"})]
 
 class LoadingContentInjectionAPI(InjectionAPI):
     def __init__(self):
-        super().__init__(flag="loading_content")
+        super().__init__(flag="loading_content", default=InjectionType.Hidden)
     def args(self, is_page: bool) -> list: return []
-    def py(self, payload: dict) -> Any: return None
-    def js(self, app) -> str | None: return None
-    def __call__(self, app, is_page: bool): return None, None
     def running(self) -> list[tuple]:
         from Library.App import AppAPI
         return [(Output(AppAPI.GLOBAL_CONTENT_LOADING_ID, "style"), {"display": "flex"}, {"display": "none"})]
 
 class LoadingSidebarInjectionAPI(InjectionAPI):
     def __init__(self):
-        super().__init__(flag="loading_sidebar")
+        super().__init__(flag="loading_sidebar", default=InjectionType.Hidden)
     def args(self, is_page: bool) -> list: return []
-    def py(self, payload: dict) -> Any: return None
-    def js(self, app) -> str | None: return None
-    def __call__(self, app, is_page: bool): return None, None
     def running(self) -> list[tuple]:
         from Library.App import AppAPI
         return [(Output(AppAPI.GLOBAL_SIDEBAR_LOADING_ID, "style"), {"display": "flex"}, {"display": "none"})]
+
+class EmailInjectionAPI(InjectionAPI):
+    def __init__(self):
+        super().__init__(flag="email", default=InjectionType.Append)
+    def args(self, is_page: bool) -> list:
+        from Library.App import AppAPI
+        return [Output(AppAPI.GLOBAL_EMAIL_STORAGE_ID, "data"),
+                State(AppAPI.GLOBAL_EMAIL_STORAGE_ID, "data")]
 
 class InjectorAPI:
     def __init__(self, app):
@@ -237,6 +209,7 @@ class InjectorAPI:
         self.loading = LoadingInjectionAPI()
         self.loading_content = LoadingContentInjectionAPI()
         self.loading_sidebar = LoadingSidebarInjectionAPI()
+        self.email = EmailInjectionAPI()
         self.injections = [
             self.on_click,
             self.on_clean_memory,
@@ -249,12 +222,14 @@ class InjectorAPI:
             self.on_leave,
             self.loading,
             self.loading_content,
-            self.loading_sidebar
+            self.loading_sidebar,
+            self.email
         ]
     def match(self, func) -> list[InjectionAPI]:
         matched = []
         for inj in self.injections:
-            mode = InjectionType.coerce(getattr(func, inj.flag, False))
+            mode = getattr(func, inj.flag, False)
+            mode = InjectionType.coerce(mode)
             if mode is not InjectionType.Disabled:
                 matched.append(inj)
         return matched

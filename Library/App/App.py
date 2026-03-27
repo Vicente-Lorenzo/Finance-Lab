@@ -79,6 +79,8 @@ class AppAPI:
     GLOBAL_MODAL_FOOTER_ID: ComponentID | dict = ComponentID()
     GLOBAL_MODAL_BUTTON_ID: ComponentID | dict = ComponentID()
 
+    GLOBAL_EMAIL_STORAGE_ID: ComponentID | dict = ComponentID()
+
     GLOBAL_HIGH_FREQUENCY_INTERVAL_ID: ComponentID | dict = ComponentID()
     GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID: ComponentID | dict = ComponentID()
     GLOBAL_LOW_FREQUENCY_INTERVAL_ID: ComponentID | dict = ComponentID()
@@ -269,6 +271,8 @@ class AppAPI:
         self.GLOBAL_MODAL_BODY_ID: dict = self.register(type="div", name="modal_body")
         self.GLOBAL_MODAL_FOOTER_ID: dict = self.register(type="div", name="modal_footer")
         self.GLOBAL_MODAL_BUTTON_ID: dict = self.register(type="button", name="modal_close")
+
+        self.GLOBAL_EMAIL_STORAGE_ID: dict = self.register(type="storage", name="email")
 
         self.GLOBAL_HIGH_FREQUENCY_INTERVAL_ID: dict = self.register(type="interval", name="high")
         self.GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID: dict = self.register(type="interval", name="medium")
@@ -474,6 +478,7 @@ class AppAPI:
         hidden.extend(StorageAPI(id=self.GLOBAL_MEMORY_STORAGE_ID, persistence="memory").build())
         hidden.extend(StorageAPI(id=self.GLOBAL_SESSION_STORAGE_ID, persistence="session").build())
         hidden.extend(StorageAPI(id=self.GLOBAL_LOCAL_STORAGE_ID, persistence="local").build())
+        hidden.extend(StorageAPI(id=self.GLOBAL_EMAIL_STORAGE_ID, persistence="memory").build())
         hidden.extend(IntervalAPI(id=self.GLOBAL_HIGH_FREQUENCY_INTERVAL_ID, interval=self._high_frequency_interval_).build())
         hidden.extend(IntervalAPI(id=self.GLOBAL_MEDIUM_FREQUENCY_INTERVAL_ID, interval=self._medium_frequency_interval_).build())
         hidden.extend(IntervalAPI(id=self.GLOBAL_LOW_FREQUENCY_INTERVAL_ID, interval=self._low_frequency_interval_).build())
@@ -584,7 +589,8 @@ class AppAPI:
         running_extras = []
         cancel_extras = []
         for injection in self._injector_.match(func):
-            mode = InjectionType.coerce(getattr(func, injection.flag, False))
+            mode = getattr(func, injection.flag, False)
+            mode = InjectionType.coerce(mode, injection.default)
             if mode is not InjectionType.Disabled:
                 injection.register(page=context.endpoint if is_page else None)
                 running_extras.extend(injection.running())
@@ -928,6 +934,12 @@ class AppAPI:
     )
     def _global_async_contacts_button_callback_(self):
         return self.asset(path="Callbacks/Collapse.js", url=False)
+
+    @clientside_callback(
+        Input(GLOBAL_EMAIL_STORAGE_ID, "data")
+    )
+    def _global_async_email_client_callback_(self):
+        return self.asset(path="Callbacks/Email.js", url=False)
 
     @clientside_callback(
         Input(GLOBAL_IMPORT_UPLOAD_ID, "contents"),

@@ -90,13 +90,11 @@ class InjectionType(Enum):
     Prepend = 2
     Append = 3
     @classmethod
-    def coerce(cls, value) -> Self:
+    def coerce(cls, value, default: InjectionType = Hidden) -> Self:
         if isinstance(value, cls):
             return value
-        if value is False:
-            return cls.Disabled
         if value is True:
-            return cls.Hidden
+            return default
         return cls.Disabled
 
 def inject_callback_args(mode: InjectionType, injected_args: list | tuple, original_args: list | tuple):
@@ -230,14 +228,15 @@ def callback(
         on_clean_session: bool | InjectionType,
         on_clean_local: bool | InjectionType,
         on_clean_reset: bool | InjectionType,
-        loading: bool | InjectionType = InjectionType.Disabled,
-        loading_content: bool | InjectionType = InjectionType.Disabled,
-        loading_sidebar: bool | InjectionType = InjectionType.Disabled,
-        running: list[tuple] = None,
-        progress: list[Component] | Component = None,
-        cancel: list[Component] = None,
-        interval: int = None,
-        progress_default: Any = None,
+        loading: bool | InjectionType,
+        loading_content: bool | InjectionType,
+        loading_sidebar: bool | InjectionType,
+        email: bool | InjectionType,
+        running: list[tuple],
+        progress: Component | list[Component],
+        cancel: list[Component],
+        interval: int,
+        progress_default: Any,
         **kwargs):
     kwargs["prevent_initial_call"] = (
         InjectionType.coerce(on_init) is InjectionType.Disabled and
@@ -266,6 +265,7 @@ def callback(
         func.running = running
         func.progress = progress
         func.cancel = cancel
+        func.email = email
         func.interval = interval
         func.progress_default = progress_default
         func.args = flatten(*sort(args))
@@ -287,6 +287,7 @@ def clientside_callback(
         loading: bool | InjectionType = InjectionType.Disabled,
         loading_content: bool | InjectionType = InjectionType.Disabled,
         loading_sidebar: bool | InjectionType = InjectionType.Disabled,
+        email: bool | InjectionType = InjectionType.Disabled,
         running: list[tuple] = None,
         progress: list[Component] | Component = None,
         cancel: list[Component] = None,
@@ -309,6 +310,7 @@ def clientside_callback(
         loading=loading,
         loading_content=loading_content,
         loading_sidebar=loading_sidebar,
+        email=email,
         running=running,
         progress=progress,
         cancel=cancel,
@@ -332,6 +334,7 @@ def serverside_callback(
         loading: bool | InjectionType = InjectionType.Disabled,
         loading_content: bool | InjectionType = InjectionType.Disabled,
         loading_sidebar: bool | InjectionType = InjectionType.Disabled,
+        email: bool | InjectionType = InjectionType.Disabled,
         background: bool = False,
         memoize: bool = False,
         manager: str = None,
@@ -357,6 +360,7 @@ def serverside_callback(
         loading=loading,
         loading_content=loading_content,
         loading_sidebar=loading_sidebar,
+        email=email,
         background=background,
         memoize=memoize,
         manager=manager,
