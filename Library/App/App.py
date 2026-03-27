@@ -16,7 +16,7 @@ from Library.Utility.HTML import *
 from Library.Utility.Path import *
 from Library.Utility.Typing import *
 from Library.Utility.Runtime import *
-from Library.Utility.IO import *
+from Library.Utility.File import *
 
 class AppAPI:
 
@@ -670,7 +670,7 @@ class AppAPI:
                 mime_type = f"image/{suffix}"
                 encoded = base64.b64encode(file_path.read_bytes()).decode("utf-8")
                 return f"data:{mime_type};base64,{encoded}"
-            return file_path.read_text(encoding="utf-8")
+            return str(FileAPI(file_path, encoding="utf-8"))
         if (self._library_assets_ / path).exists():
             self._log_.debug(lambda: f"Resolve Asset: Asset Found = {path} (Library)")
             if url:

@@ -1,20 +1,17 @@
 import re
 from typing import Callable
 
-from Library.Utility import PathAPI, format
+from Library.Utility import FileAPI, format
 
-class QueryAPI:
+class QueryAPI(FileAPI):
 
     _INTERPOLATION_PARAMETER_TOKEN_ = re.compile(r"::([A-Za-z_]\w*)::")
     _NAMED_PARAMETER_TOKEN_ = re.compile(r":([A-Za-z_]\w*):")
     _POSITIONAL_PARAMETER_TOKEN_ = re.compile(r":\?:")
     _PARAMETER_TOKEN_ = re.compile(rf"{_POSITIONAL_PARAMETER_TOKEN_.pattern}|{_NAMED_PARAMETER_TOKEN_.pattern}")
 
-    def __init__(self, data: str | PathAPI):
-        self._query_: str = data.file.read_text() if isinstance(data, PathAPI) else data
-
     def compile(self, token: Callable[[int], str], **kwargs) -> tuple[str, list[int | str]]:
-        query = str(self._query_)
+        query = str(self)
         interpolation = set(self._INTERPOLATION_PARAMETER_TOKEN_.findall(query))
         if interpolation:
             missing = interpolation.difference(kwargs.keys())
@@ -64,6 +61,3 @@ class QueryAPI:
         query, configuration = self.compile(token, **kwargs)
         parameters = self.bind(configuration, *args, **kwargs) if configuration else None
         return query, configuration, parameters
-
-    def __repr__(self) -> str:
-        return repr(self._query_)

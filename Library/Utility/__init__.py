@@ -4,7 +4,8 @@ from Library.Utility.HTML import (
     Component,
     formatize,
     stylize,
-    htmlize
+    htmlize,
+    HtmlAPI
 )
 from Library.Utility.Typing import (
     isclass,
@@ -96,6 +97,7 @@ from Library.Utility.Path import (
     traceback_package_module_path,
     PathAPI
 )
+from Library.Utility.File import FileAPI
 from Library.Utility.IO import (
     is_readable,
     is_writable,
@@ -110,12 +112,11 @@ from Library.Utility.IO import (
     copy,
     smartlink
 )
-from Library.Utility.Report import ReportAPI
 
 __all__ = [
     "gantt",
     "image",
-    "Component", "formatize", "stylize", "htmlize",
+    "Component", "formatize", "stylize", "htmlize", "HtmlAPI",
     "isclass", "iscallable", "ismethod", "isproperty", "getclass", "getmro", "getslots", "getclasses",
     "hasmember", "getmember", "hasattribute", "getattribute", "hasmethod", "getmethod", "hasproperty", "getproperty",
     "getvariable", "findvariable",
@@ -133,8 +134,8 @@ __all__ = [
     "traceback_regex", "traceback_regex_file", "traceback_regex_file_path", "traceback_regex_module", "traceback_regex_module_path",
     "traceback_package", "traceback_package_file", "traceback_package_file_path", "traceback_package_module", "traceback_package_module_path",
     "PathAPI",
+    "FileAPI",
     "is_readable", "is_writable",
     "mkdir", "remove", "read_text", "write_text", "read_json", "write_json",
-    "symlink", "hardlink", "copy", "smartlink",
-    "ReportAPI"
+    "symlink", "hardlink", "copy", "smartlink"
 ]

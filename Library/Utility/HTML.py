@@ -1,4 +1,9 @@
+from pathlib import Path
 from dash.development.base_component import Component
+
+from Library.Utility.Path import PathAPI
+from Library.Utility.File import FileAPI
+from Library.Utility.Typing import format
 
 def formatize(name: str, value: object) -> str:
     import html
@@ -47,3 +52,19 @@ def htmlize(node: str | int | float | list | tuple | Component) -> str:
         children = htmlize(node.children)
         return f"<{tag}{attributes}>{children}</{tag}>"
     raise TypeError(f"Unsupported type for htmlize(): {type(node)}")
+
+class HtmlAPI(FileAPI):
+
+    def __init__(self, data: str | Path | PathAPI, **kwargs):
+        from dash import html
+        super().__init__(data)
+        self._html_ = htmlize([html.Br() if not line else html.Div(children=line, **kwargs) for line in self._data_.split("\n")])
+
+    def __call__(self, *args, **kwargs) -> str:
+        return format(self._html_, *args, **kwargs)
+
+    def __str__(self) -> str:
+        return self._html_
+
+    def __repr__(self) -> str:
+        return repr(self._html_)
