@@ -189,10 +189,9 @@ class LoadingSidebarInjectionAPI(InjectionAPI):
 class EmailInjectionAPI(InjectionAPI):
     def __init__(self):
         super().__init__(flag="email", default=InjectionType.Append)
-    def args(self, is_page: bool) -> list:
+    def args(self, is_page: bool) -> list: # This should only inject the Output
         from Library.App import AppAPI
-        return [Output(AppAPI.GLOBAL_EMAIL_STORAGE_ID, "data"),
-                State(AppAPI.GLOBAL_EMAIL_STORAGE_ID, "data")]
+        return [Output(AppAPI.GLOBAL_EMAIL_STORAGE_ID, "data")] # Only inject the Output
 
 class InjectorAPI:
     def __init__(self, app):
