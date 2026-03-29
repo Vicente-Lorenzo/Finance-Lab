@@ -1,51 +1,52 @@
 name: Trading
 channels:
-    - defaults
+    - bloomberg
+    - pytorch
     - conda-forge
+    - defaults
 dependencies:
-    - python=3.10
+    - python=3.12
     - pip
-    - pip:
-        - tqdm
-        - wheel
-        - pytest
-        - setuptools
-
-        - numpy
-        - pandas
-        - polars
-        - panel
-        - bokeh
-        - altair
-        - hvplot
-        - seaborn
-        - holoviews
-        - matplotlib
-
-        - pillow
-        - selenium
-
-        - jupyter
-        - notebook
-        - ipykernel
-        - ipywidgets
-
-        - pymssql
-        - oracledb
-        - psycopg[binary]
-
-        - ta-lib
-        - blpapi
-        - xlwings
-        - yfinance
-
-        - dash
-        - dash-extensions
-        - dash-bootstrap-components
-        - fastapi
-        - flask
-
-        - torch
-        - torchaudio
-        - torchvision
-        - gymnasium
+    # --- Utils & Core ---
+    - tqdm
+    - wheel
+    - pytest
+    - setuptools
+    # --- Data Science & Visualization ---
+    - numpy
+    - pandas
+    - polars
+    - panel
+    - bokeh
+    - altair
+    - hvplot
+    - seaborn
+    - holoviews
+    - matplotlib
+    # --- Automation & Jupyter ---
+    - pillow
+    - selenium
+    - jupyter
+    - notebook
+    - ipykernel
+    - ipywidgets
+    # --- Database Drivers ---
+    - pymssql
+    - oracledb
+    - psycopg2-binary
+    # --- Finance Drivers ---
+    - ta-lib
+    - blpapi
+    - xlwings
+    - yfinance
+    # --- Web Frameworks ---
+    - dash
+    - dash-extensions
+    - dash-bootstrap-components
+    - fastapi
+    - flask
+    # --- Machine Learning & AI ---
+    - pytorch
+    - torchaudio
+    - torchvision
+    - gymnasium
