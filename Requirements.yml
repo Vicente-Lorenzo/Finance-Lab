@@ -1,18 +1,18 @@
-name: Trading
+name: Quant
 channels:
+    - defaults
+    - conda-forge
     - bloomberg
     - pytorch
-    - conda-forge
-    - defaults
 dependencies:
     - python=3.12
     - pip
-    # --- Utils & Core ---
+
     - tqdm
     - wheel
     - pytest
     - setuptools
-    # --- Data Science & Visualization ---
+
     - numpy
     - pandas
     - polars
@@ -23,29 +23,29 @@ dependencies:
     - seaborn
     - holoviews
     - matplotlib
-    # --- Automation & Jupyter ---
+
     - pillow
     - selenium
     - jupyter
     - notebook
     - ipykernel
     - ipywidgets
-    # --- Database Drivers ---
+
     - pymssql
     - oracledb
-    - psycopg2-binary
-    # --- Finance Drivers ---
+    - psycopg[c]
+
     - ta-lib
     - blpapi
     - xlwings
     - yfinance
-    # --- Web Frameworks ---
+
     - dash
     - dash-extensions
     - dash-bootstrap-components
     - fastapi
     - flask
-    # --- Machine Learning & AI ---
+
     - pytorch
     - torchaudio
     - torchvision

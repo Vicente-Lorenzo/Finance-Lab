@@ -8,7 +8,13 @@ This document outlines the step-by-step "Super Optimized" configuration for an i
 - **Storage:** Samsung 990 Pro 1TB (NVMe)
 - **GPU:** RTX 3060 Ti (CUDA enabled)
 
-## 🛠️ Step 1: Windows & WSL2 Pre-Flight Configuration
+## 🛠️ Step 1: Core Software Installation (IDEs)
+Before configuring the subsystems, install the JetBrains suite (using the JetBrains Toolbox is recommended) as these will be your primary development tools:
+1. **PyCharm Professional:** For the Python backend, AI modeling, and backtesting systems.
+2. **JetBrains Rider:** For C# development (`Sources/`) and compiling cTrader Robots/Indicators.
+3. **DataGrip:** For database management, querying, and verifying schemas.
+
+## ⚙️ Step 2: Windows & WSL2 Pre-Flight Configuration
 If you run into issues installing WSL, perform these pre-flight checks:
 
 1. **BIOS Check (Crucial):**
@@ -39,41 +45,18 @@ If you run into issues installing WSL, perform these pre-flight checks:
    ```ini
    [wsl2]
    memory=56GB
-   processors=28
+   processors=30
    swap=0
    guiApplications=false
    ```
+   *(Note: WSL RAM is aggressively set to 56GB and 30 cores. This dedicates maximum resources to WSL for model training, live deployment, database hosting, and the web app, leaving 8GB and 2 threads to the host OS).*
 
 6. **Restart WSL:**
    ```powershell
    wsl --shutdown
    ```
 
-## 🗄️ Step 2: Docker & QuantDB Setup
-1. **Install Docker Desktop:** Download and install Docker Desktop for Windows (x86_64). Ensure the **WSL 2 backend** is enabled in Settings.
-2. **Data Persistence:** Create a folder for database storage: `C:\QuantData\postgres`.
-3. **Launch QuantDB:** Open PowerShell and run this command to start the TimescaleDB container (Trust Mode/No Password):
-   ```powershell
-   docker run -d `
-     --name timescale-quant `
-     -p 5432:5432 `
-     -e POSTGRES_DB=QuantDB `
-     -e POSTGRES_HOST_AUTH_METHOD=trust `
-     -v C:\QuantData\postgres:/var/lib/postgresql/data `
-     timescale/timescaledb-ha:pg16
-   ```
-
-## 🌉 Step 3: cTrader Bridge (npiperelay)
-Because WSL2 cannot natively see Windows Named Pipes, we use a relay to bridge the C# robots and the Python backend.
-
-1. Download `npiperelay.exe` from GitHub and place it in a Windows folder (e.g., `C:\tools\`).
-2. Open your Ubuntu WSL terminal.
-3. Install `socat`:
-   ```bash
-   sudo apt update && sudo apt install socat -y
-   ```
-
-## 🐍 Step 4: Python Environment (WSL2)
+## 🐍 Step 3: Python Environment (WSL2)
 Set up the environment for the Python `Library`.
 
 1. Open your Ubuntu terminal.
@@ -85,19 +68,44 @@ Set up the environment for the Python `Library`.
 3. Restart your terminal to initialize Conda/Mamba.
 4. Create the project environment:
    ```bash
-   mamba env create --file /mnt/c/Users/Admin/OneDrive/Documents/cAlgo/Requirements.yml -n QuantEnv
+   mamba env create --file /mnt/c/Users/Admin/OneDrive/Documents/cAlgo/Requirements.yml
+   ```
+
+## 🗄️ Step 4: Docker & QuantDB Setup
+1. **Install Docker Desktop:** Download and install Docker Desktop for Windows (x86_64).
+2. Ensure the **WSL 2 backend** is enabled in Settings.
+3. **Data Persistence:** Create a folder for database storage: `C:\QuantDB`.
+4. **Launch QuantDB:** Open PowerShell and run this command to start the TimescaleDB container (Trust Mode/No Password):
+   ```powershell
+   docker run -d `
+     --name QuantDB `
+     -p 5432:5432 `
+     -e POSTGRES_DB=QuantDB `
+     -e POSTGRES_HOST_AUTH_METHOD=trust `
+     -v C:\QuantDB:/var/lib/postgresql/data `
+     timescale/timescaledb-ha:pg18
    ```
 
 ## ⚡ Step 5: Database "Super-Tuning"
-Connect to QuantDB (via PyCharm or DBeaver) and execute these queries to optimize for the i9-14900K and 64GB RAM:
+Connect to QuantDB via **DataGrip** (to verify connectivity and ensure everything is correct) and execute these queries to optimize for the system hardware:
    ```sql
-   ALTER SYSTEM SET shared_buffers = '16GB';
-   ALTER SYSTEM SET effective_cache_size = '42GB';
+   ALTER SYSTEM SET shared_buffers = '14GB';
+   ALTER SYSTEM SET effective_cache_size = '40GB';
    ALTER SYSTEM SET random_page_cost = 1.1;
-   ALTER SYSTEM SET max_worker_processes = 28;
+   ALTER SYSTEM SET max_worker_processes = 30;
    ALTER SYSTEM SET max_parallel_workers_per_gather = 8;
-   ALTER SYSTEM SET max_parallel_workers = 28;
+   ALTER SYSTEM SET max_parallel_workers = 30;
    SELECT pg_reload_conf();
+   ```
+
+## 🌉 Step 6: cTrader Bridge (npiperelay)
+Because WSL2 cannot natively see Windows Named Pipes, we use a relay to bridge the C# robots and the Python backend.
+
+1. Download `npiperelay.exe` from GitHub and place it in a Windows folder (e.g., `C:\tools\`).
+2. Open your Ubuntu WSL terminal.
+3. Install `socat`:
+   ```bash
+   sudo apt update && sudo apt install socat -y
    ```
 
 ## 🚀 Daily Launch Sequence
@@ -107,4 +115,4 @@ Whenever you start working on the project:
    ```bash
    socat UNIX-LISTEN:/tmp/ctrader_pipe,fork EXEC:"/mnt/c/tools/npiperelay.exe -ep -s //./pipe/YourPipeName",binary
    ```
-3. Run DRL agents or your Python backend in **PyCharm Professional** (using the `QuantEnv` WSL Interpreter).
+3. Run DRL agents or your Python backend in **PyCharm Professional** (using the `Quant` WSL Interpreter).
