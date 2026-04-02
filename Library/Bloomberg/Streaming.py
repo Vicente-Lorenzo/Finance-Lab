@@ -1,13 +1,22 @@
-from Library.Bloomberg.Service import ServiceAPI
+import blpapi
+from typing import Callable
+
+from Library.Service import ServiceAPI
+from Library.Bloomberg.Enums import ServiceURI
+
 
 class StreamingAPI(ServiceAPI):
-    _SERVICE_ = "//blp/mktdata"
 
-    def subscribe(self, tickers: list[str], fields: list[str], callback):
-        import blpapi
-        self._bloomberg_.connect()
-        if not self._bloomberg_._session_.openService(self._SERVICE_): raise RuntimeError(f"Failed to open service {self._SERVICE_}")
-        subscriptions = blpapi.SubscriptionList()
-        for ticker in tickers: subscriptions.add(ticker, ",".join(fields), "", blpapi.CorrelationId(ticker))
-        self._bloomberg_._session_.subscribe(subscriptions)
-        self._log_.info(lambda: f"Streaming Request: Subscribed to {len(tickers)} tickers")
+    _SERVICE_URI_ = ServiceURI.MKTDATA
+
+    def subscribe(self, tickers: list[str], fields: list[str], callback: Callable) -> None:
+        def _subscribe():
+            if not self._api_._session_.openService(self._SERVICE_URI_.value):
+                raise RuntimeError(f"Failed to open service {self._SERVICE_URI_.value}")
+            subscriptions = blpapi.SubscriptionList()
+            for ticker in tickers:
+                subscriptions.add(ticker, ",".join(fields), "", blpapi.CorrelationId(ticker))
+            self._api_._session_.subscribe(subscriptions)
+
+        timer = self._execute_(_subscribe)
+        self._log_.info(lambda: f"Subscribe Operation: Subscribed to {len(tickers)} tickers ({timer.result()})")
