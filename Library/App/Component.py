@@ -586,7 +586,7 @@ class NotificationAPI(ComponentAPI):
 
     icon: str = field(default=None)
     header: str = field(default=None)
-    duration: int | None = field(default=5000)
+    duration: int | None = field(default=None)
     dismissable: bool = field(default=True)
     persistence: bool | str = field(default=None)
 
@@ -604,7 +604,7 @@ class NotificationAPI(ComponentAPI):
             header_elements.extend(TextAPI(text=self.header).build())
         if header_elements:
             kwargs.update(header=html.Div(header_elements, className="title"))
-        if self.duration is not None: kwargs.update(duration=self.duration)
+        kwargs.update(duration=self.duration)
         if self.dismissable is not None: kwargs.update(dismissable=self.dismissable)
         if self.persistence is not None: kwargs.update(persistence=self.persistence)
         return kwargs

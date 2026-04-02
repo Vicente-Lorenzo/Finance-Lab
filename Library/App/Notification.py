@@ -3,6 +3,7 @@ from collections import deque
 
 from Library.Logging import VerboseLevel
 from Library.App.Component import Component, NotificationAPI
+from Library.Utility.Typing import MISSING
 
 class NotifierAPI:
 
@@ -31,15 +32,15 @@ class NotifierAPI:
         self._dismissable_: bool = dismissable
         self._persistence_: bool | str = persistence
 
-    def _push_(self, verbose: VerboseLevel, message: str, duration: int = None, dismissable: bool = None, persistence: bool | str = None) -> None:
+    def _push_(self, verbose: VerboseLevel, message: str, duration: int, dismissable: bool, persistence: bool | str) -> None:
         toast = NotificationAPI(
             element=message,
             header=verbose.name,
             icon=self._ICONS_.get(verbose, "bi bi-info-circle-fill"),
             background=self._COLORS_.get(verbose, "primary"),
-            duration=duration if duration is not None else self._duration_,
-            dismissable=dismissable if dismissable is not None else self._dismissable_,
-            persistence=persistence if persistence is not None else self._persistence_
+            duration=duration if duration is not MISSING else self._duration_,
+            dismissable=dismissable if dismissable is not MISSING else self._dismissable_,
+            persistence=persistence if persistence is not MISSING else self._persistence_
         ).build()
         with self._lock_:
             self._buffer_.extend(toast)
@@ -50,20 +51,20 @@ class NotifierAPI:
             self._buffer_.clear()
             return items
 
-    def debug(self, message: str, duration: int = None) -> None:
-        self._push_(VerboseLevel.Debug, message, duration)
+    def debug(self, message: str, duration: int = MISSING, dismissable: bool = MISSING, persistence: bool | str = MISSING) -> None:
+        self._push_(verbose=VerboseLevel.Debug, message=message, duration=duration, dismissable=dismissable, persistence=persistence)
 
-    def info(self, message: str, duration: int = None) -> None:
-        self._push_(VerboseLevel.Info, message, duration)
+    def info(self, message: str, duration: int = MISSING, dismissable: bool = MISSING, persistence: bool | str = MISSING) -> None:
+        self._push_(verbose=VerboseLevel.Info, message=message, duration=duration, dismissable=dismissable, persistence=persistence)
 
-    def alert(self, message: str, duration: int = None) -> None:
-        self._push_(VerboseLevel.Alert, message, duration)
+    def alert(self, message: str, duration: int = MISSING, dismissable: bool = MISSING, persistence: bool | str = MISSING) -> None:
+        self._push_(verbose=VerboseLevel.Alert, message=message, duration=duration, dismissable=dismissable, persistence=persistence)
 
-    def warning(self, message: str, duration: int = None) -> None:
-        self._push_(VerboseLevel.Warning, message, duration)
+    def warning(self, message: str, duration: int = MISSING, dismissable: bool = MISSING, persistence: bool | str = MISSING) -> None:
+        self._push_(verbose=VerboseLevel.Warning, message=message, duration=duration, dismissable=dismissable, persistence=persistence)
 
-    def error(self, message: str, duration: int = None) -> None:
-        self._push_(VerboseLevel.Error, message, duration)
+    def error(self, message: str, duration: int = MISSING, dismissable: bool = MISSING, persistence: bool | str = MISSING) -> None:
+        self._push_(verbose=VerboseLevel.Error, message=message, duration=duration, dismissable=dismissable, persistence=persistence)
 
-    def exception(self, message: str, duration: int = None) -> None:
-        self._push_(VerboseLevel.Exception, message, duration)
+    def exception(self, message: str, duration: int = MISSING, dismissable: bool = MISSING, persistence: bool | str = MISSING) -> None:
+        self._push_(verbose=VerboseLevel.Exception, message=message, duration=duration, dismissable=dismissable, persistence=persistence)
