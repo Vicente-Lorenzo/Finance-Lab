@@ -1,14 +1,14 @@
 from typing import Callable
 from abc import ABC, abstractmethod
 
-from Library.API.API import API
 from Library.Statistics import Timer
 from Library.Database import QueryAPI
+from Library.Service import ServiceAPI
 from Library.Logging import HandlerLoggingAPI
 from Library.Dataframe import pd, pl, DataframeAPI
 from Library.Utility import PathAPI, traceback_package
 
-class DatabaseAPI(API, DataframeAPI, ABC):
+class DatabaseAPI(ServiceAPI, DataframeAPI, ABC):
 
     _PARAMETER_TOKEN_: Callable[[int], str] = None
     _CHECK_DATATYPE_MAPPING_: dict = None
@@ -162,12 +162,12 @@ class DatabaseAPI(API, DataframeAPI, ABC):
             self._connection_.close()
             self._connection_ = None
 
-    def __exit__(self, exception_type, exception_value, exception_traceback):
-        if exception_type or exception_value or exception_traceback:
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type or exc_val or exc_tb:
             self.rollback()
         else:
             self.commit()
-        return super().__exit__(exception_type, exception_value, exception_traceback)
+        return super().__exit__(exc_type, exc_val, exc_tb)
 
     def _query_(self, query: QueryAPI, **kwargs):
         kwargs = {**self._defaults_, **kwargs}
@@ -245,26 +245,40 @@ class DatabaseAPI(API, DataframeAPI, ABC):
             self._log_.exception(lambda: str(e))
             raise
 
-    def _execute_(self, execute):
-        try:
-            self.connect()
-            timer = Timer()
-            timer.start()
-            execute()
-            self._transaction_ = True
-            timer.stop()
-            return timer
-        except Exception as e:
-            self.rollback()
-            self._log_.error(lambda: "Execute Operation: Failed")
-            self._log_.exception(lambda: str(e))
-            raise
+    def _frame_(self, result):
+        if result is None: rows = []
+        elif isinstance(result, list): rows = result
+        elif isinstance(result, tuple): rows = [result]
+        else: rows = list(result)
+        schema = {
+            desc[0]: self._DESCRIPTION_DATATYPE_MAPPING_.get(desc[1])
+            for desc in self._cursor_.description
+        } if self._cursor_.description else {}
+        return self.frame(data=rows, schema=schema or self._STRUCTURE_)
+
+    def fetchone(self) -> pd.DataFrame | pl.DataFrame:
+        timer, df = self._fetch_(fetch=lambda: self._frame_(self._cursor_.fetchone()), abort=self.rollback)
+        self._log_.info(lambda: f"Fetch One Operation: Fetched {len(df)} data points ({timer.result()})")
+        return df
+
+    def fetchmany(self, n: int) -> pd.DataFrame | pl.DataFrame:
+        timer, df = self._fetch_(fetch=lambda: self._frame_(self._cursor_.fetchmany(n)), abort=self.rollback)
+        self._log_.info(lambda: f"Fetch Many Operation: Fetched {len(df)} data points ({timer.result()})")
+        return df
+
+    def fetchall(self) -> pd.DataFrame | pl.DataFrame:
+        timer, df = self._fetch_(fetch=lambda: self._frame_(self._cursor_.fetchall()), abort=self.rollback)
+        self._log_.info(lambda: f"Fetch All Operation: Fetched {len(df)} data points ({timer.result()})")
+        return df
 
     def execute(self, query: QueryAPI, *args, **kwargs):
         sql, configuration, kwargs = self._query_(query, **kwargs)
         parameters = query.bind(configuration, *args, **kwargs) if configuration else None
-        if parameters is not None: timer = self._execute_(lambda: self._cursor_.execute(sql, parameters))
-        else: timer = self._execute_(lambda: self._cursor_.execute(sql))
+        def _execute_():
+            if parameters is not None: self._cursor_.execute(sql, parameters)
+            else: self._cursor_.execute(sql)
+            self._transaction_ = True
+        timer = self._execute_(execute=_execute_, abort=self.rollback)
         self._log_.info(lambda: f"Execute Operation: Executed ({timer.result()})")
         return self
 
@@ -285,48 +299,9 @@ class DatabaseAPI(API, DataframeAPI, ABC):
         for row in batch:
             if isinstance(row, dict): parameters.append(query.bind(configuration, **{**kwargs, **row}))
             else: parameters.append(query.bind(configuration, *row, **kwargs))
-        timer = self._execute_(lambda: self._cursor_.executemany(sql, parameters))
+        def _execute_():
+            self._cursor_.executemany(sql, parameters)
+            self._transaction_ = True
+        timer = self._execute_(execute=_execute_, abort=self.rollback)
         self._log_.info(lambda: f"Execute Many Operation: Executed ({timer.result()})")
         return self
-
-    def _fetch_(self, fetch):
-        try:
-            self.connect()
-            timer = Timer()
-            timer.start()
-            result = fetch()
-            if result is None:
-                rows = []
-            elif isinstance(result, list):
-                rows = result
-            elif isinstance(result, tuple):
-                rows = [result]
-            else:
-                rows = list(result)
-            schema = {
-                desc[0]: self._DESCRIPTION_DATATYPE_MAPPING_.get(desc[1])
-                for desc in self._cursor_.description
-            } if self._cursor_.description else {}
-            df = self.frame(data=rows, schema=schema or self._STRUCTURE_)
-            timer.stop()
-            return timer, df
-        except Exception as e:
-            self.rollback()
-            self._log_.error(lambda: "Failed at Fetch Operation")
-            self._log_.exception(lambda: str(e))
-            raise
-
-    def fetchone(self) -> pd.DataFrame | pl.DataFrame:
-        timer, df = self._fetch_(lambda: self._cursor_.fetchone())
-        self._log_.info(lambda: f"Fetch One Operation: Fetched {len(df)} data points ({timer.result()})")
-        return df
-
-    def fetchmany(self, n: int) -> pd.DataFrame | pl.DataFrame:
-        timer, df = self._fetch_(lambda: self._cursor_.fetchmany(n))
-        self._log_.info(lambda: f"Fetch Many Operation: Fetched {len(df)} data points ({timer.result()})")
-        return df
-
-    def fetchall(self) -> pd.DataFrame | pl.DataFrame:
-        timer, df =  self._fetch_(lambda: self._cursor_.fetchall())
-        self._log_.info(lambda: f"Fetch All Operation: Fetched {len(df)} data points ({timer.result()})")
-        return df
