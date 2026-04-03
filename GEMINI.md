@@ -29,17 +29,30 @@
 
  ## PROJECT STRUCTURE MAP
  ### Python (`Library/`)
- - **`Library/App`:** Core Dash wrappers (`AppAPI`, `PageAPI`, `ComponentAPI`) for the Web UI.
- - **`Library/Database`:** Database abstraction layer (`DatabaseAPI`, `QueryAPI`) supporting Oracle, Postgres, and SQL Server.
- - **`Library/Dataclass`:** Data structures (`BarAPI`, `TickAPI`, `TradeAPI`, `SymbolAPI`) and type definitions.
- - **`Library/Dataframe`:** Pandas/Polars/Numpy configuration and wrappers (inheritable `DataframeAPI`).
- - **`Library/Formulas`:** Financial and utility formulas (`DateTime`, `Spot`, `Historical`).
- - **`Library/Workflow`:** Business logic and frontend pages implementation.
- - **`Library/Models`:** AI/ML Agents (`AgentAPI`, `DDPG`, `Noise`, `Memory`).
- - **`Library/Robots`:** Python Trading Engine (System, Strategy, Analyst, Manager, Engine).
- - **`Library/Logging`:** Python logging handlers (Console, Telegram, File, Web).
- 
+ - **`Library/App`**: Core Dash wrappers (`AppAPI`, `PageAPI`, `ComponentAPI`) for the Web UI.
+ - **`Library/Bloomberg`**: Bloomberg API integration (Historical, Intraday, Reference, Streaming).
+ - **`Library/Database`**: Database abstraction layer (`DatabaseAPI`, `QueryAPI`) supporting Oracle, Postgres, and SQL Server.
+ - **`Library/Dataclass`**: Data structures (`BarAPI`, `TickAPI`, `TradeAPI`, `SymbolAPI`) and type definitions.
+ - **`Library/Dataframe`**: Pandas/Polars/Numpy configuration and wrappers (inheritable `DataframeAPI`).
+ - **`Library/Formulas`**: Financial and utility formulas (`DateTime`, `Spot`, `Historical`).
+ - **`Library/Indicators`**: Python implementation of Trading Indicators.
+ - **`Library/Logging`**: Python logging handlers (Console, Telegram, File, Web).
+ - **`Library/Models`**: AI/ML Agents (`AgentAPI`, `DDPG`, `Network`, `Noise`, `Memory`).
+ - **`Library/Parameters`**: Configuration management and Broker-specific settings.
+ - **`Library/Robots`**: Python Trading Engine (System, Strategy, Analyst, Manager, Engine, Protocol).
+ - **`Library/Security`**: Security and Asset Class definitions.
+ - **`Library/Service`**: System services and background processes.
+ - **`Library/Statistics`**: Performance profiling and timing utilities.
+ - **`Library/Utility`**: Extensive helper library (IO, Path, HTML, DateTime, Typing, etc.).
+ - **`Library/Warehouse`**: Data storage and retrieval layer for market data (Bars, Ticks, Trades).
+ - **`Library/Workflow`**: Business logic and frontend pages implementation.
+
  ### C# (`Sources/`)
- - **`Sources/Robots`:** cTrader Robots (inherit `RobotAPI`). Bridge to Python via Pipes.
- - **`Sources/Indicators`:** cTrader Indicators (inherit `IndicatorAPI`).
- - **`Sources/Logging`:** C# logging bridge.
+ - **`Sources/Robots`**: cTrader Robots (inherit `RobotAPI`). Bridge to Python via Pipes.
+ - **`Sources/Indicators`**: cTrader Indicators (inherit `IndicatorAPI`).
+ - **`Sources/Plugins`**: cTrader Plugins and Extensions.
+ - **`Sources/Logging`**: C# logging bridge.
+ - **`Sources/Export`**: Build artifacts and deployment exports.
+
+ ### Testing (`Tests/`)
+ - **`Tests/`**: Unit and integration tests for Python library components.
