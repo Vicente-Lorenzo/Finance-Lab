@@ -2,13 +2,13 @@ from typing import Callable
 from abc import ABC, abstractmethod
 
 from Library.Statistics import Timer
+from Library.Dataframe import pd, pl
 from Library.Database import QueryAPI
 from Library.Service import ServiceAPI
 from Library.Logging import HandlerLoggingAPI
-from Library.Dataframe import pd, pl, DataframeAPI
 from Library.Utility import PathAPI, traceback_package
 
-class DatabaseAPI(ServiceAPI, DataframeAPI, ABC):
+class DatabaseAPI(ServiceAPI, ABC):
 
     _PARAMETER_TOKEN_: Callable[[int], str] = None
     _CHECK_DATATYPE_MAPPING_: dict = None
@@ -257,17 +257,17 @@ class DatabaseAPI(ServiceAPI, DataframeAPI, ABC):
         return self.frame(data=rows, schema=schema or self._STRUCTURE_)
 
     def fetchone(self) -> pd.DataFrame | pl.DataFrame:
-        timer, df = self._fetch_(fetch=lambda: self._frame_(self._cursor_.fetchone()), abort=self.rollback)
+        timer, df = self._fetch_(callback=lambda: self._frame_(self._cursor_.fetchone()), abort=self.rollback)
         self._log_.info(lambda: f"Fetch One Operation: Fetched {len(df)} data points ({timer.result()})")
         return df
 
     def fetchmany(self, n: int) -> pd.DataFrame | pl.DataFrame:
-        timer, df = self._fetch_(fetch=lambda: self._frame_(self._cursor_.fetchmany(n)), abort=self.rollback)
+        timer, df = self._fetch_(callback=lambda: self._frame_(self._cursor_.fetchmany(n)), abort=self.rollback)
         self._log_.info(lambda: f"Fetch Many Operation: Fetched {len(df)} data points ({timer.result()})")
         return df
 
     def fetchall(self) -> pd.DataFrame | pl.DataFrame:
-        timer, df = self._fetch_(fetch=lambda: self._frame_(self._cursor_.fetchall()), abort=self.rollback)
+        timer, df = self._fetch_(callback=lambda: self._frame_(self._cursor_.fetchall()), abort=self.rollback)
         self._log_.info(lambda: f"Fetch All Operation: Fetched {len(df)} data points ({timer.result()})")
         return df
 
@@ -278,7 +278,7 @@ class DatabaseAPI(ServiceAPI, DataframeAPI, ABC):
             if parameters is not None: self._cursor_.execute(sql, parameters)
             else: self._cursor_.execute(sql)
             self._transaction_ = True
-        timer = self._execute_(execute=_execute_, abort=self.rollback)
+        timer = super()._execute_(callback=_execute_, abort=self.rollback)
         self._log_.info(lambda: f"Execute Operation: Executed ({timer.result()})")
         return self
 
@@ -302,6 +302,6 @@ class DatabaseAPI(ServiceAPI, DataframeAPI, ABC):
         def _execute_():
             self._cursor_.executemany(sql, parameters)
             self._transaction_ = True
-        timer = self._execute_(execute=_execute_, abort=self.rollback)
+        timer = super()._execute_(callback=_execute_, abort=self.rollback)
         self._log_.info(lambda: f"Execute Many Operation: Executed ({timer.result()})")
         return self

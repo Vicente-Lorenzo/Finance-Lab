@@ -1,7 +1,7 @@
  # Gemini Code Assist Project Guidelines
 
  ## PROJECT OVERVIEW
- This is a **multipurpose Quant Trading Framework** designed to work with **cTrader**.
+ This is a **multi-purpose Quant Trading Framework** designed to work with **cTrader**.
  - **Root Folder:** `cAlgo` (located in Documents for cTrader compatibility).
  - **`Library/` (Python):** Contains the core logic, AI models, Backtesting systems, and a Dash-based Frontend.
  - **`Sources/` (C#):** Contains cAlgo Robots and Indicators that interface with cTrader and communicate with the Python backend.
@@ -21,11 +21,13 @@
     - In `__post_init__`, keep arguments lowercase (e.g., `raw`) to avoid IDE hints/conflicts with class fields.
  3. **Type Hinting:**
     - Use `Self` from `typing_extensions` for methods returning an instance of the class (to ensure full compatibility).
+    - Use `from __future__ import annotations` to avoid string-based type hints (e.g., use `ServiceAPI` instead of `'ServiceAPI'`) for forward references.
  4. **Method Architecture:**
     - Favor `@staticmethod` for utility methods like `_decode_` that do not require instance state.
     - Use `InitVar` for raw inputs that are processed during initialization but not stored as fields.
  5. **Module Structure:**
     - Organize imports in a ladder-style (sorted by length or alphabetically in a clean visual block).
+    - `from __future__ import annotations` must be the first line, followed by a single blank line.
     - Separate generic imports (standard library, external packages) from project library imports (e.g., `Library.*`) with a single new line.
     - Ensure files are tidy: no trailing spaces or unnecessary newlines at the end of files.
  6. **Compact Style & Organization:**
@@ -46,7 +48,7 @@
  ## DOCUMENTATION MAINTENANCE
  If you detect changes to the project structure (new folders, modules, or significant architectural changes) that are not reflected in this `GEMINI.md` file:
  1. **Notify the User:** Explicitly mention the discrepancy.
- 2. **Propose an Update:** Generate the updated Markdown content for `GEMINI.md` to keep the "master" prompt synchronized with the actual codebase.
+ 2. **Propose an Update:** Generate the updated markdown content for `GEMINI.md` to keep the "master" prompt synchronized with the actual codebase.
 
  ## PROJECT STRUCTURE MAP
  ### Python (`Library/`)
