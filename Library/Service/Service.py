@@ -10,10 +10,14 @@ from Library.Dataframe import DataframeAPI
 
 class ServiceAPI(DataframeAPI, ABC):
 
-    def __init__(self, api: ServiceAPI = None, **kwargs) -> None:
+    def __init__(self,
+                 api: ServiceAPI = None,
+                 **kwargs) -> None:
         super().__init__(**kwargs)
+
         self._api_ = api or self
         self._guard_ = None
+
         self._log_: HandlerLoggingAPI = HandlerLoggingAPI(self.__class__.__name__)
 
     @property
@@ -55,7 +59,9 @@ class ServiceAPI(DataframeAPI, ABC):
 
     def guarded(self) -> bool: return self._guard_ is not None
 
-    def disconnected(self) -> bool: return not self.connected()
+    def disconnected(self) -> bool:
+        if not self._parent_: return self._api_.disconnected()
+        raise NotImplementedError(f"{self.__class__.__name__}.disconnected() is not implemented")
 
     def _disconnect_(self) -> None:
         if not self._parent_: return self._api_._disconnect_()

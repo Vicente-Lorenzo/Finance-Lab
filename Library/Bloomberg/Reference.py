@@ -8,7 +8,10 @@ class ReferenceAPI(ServiceAPI):
     _SERVICE_URI_  = "//blp/refdata"
     _REQUEST_TYPE_ = "ReferenceDataRequest"
 
-    def fetch(self, securities: str | list[str], fields: str | list[str], overrides: dict[str, str] = None) -> pd.DataFrame | pl.DataFrame:
+    def fetch(self,
+              securities: str | list[str],
+              fields: str | list[str],
+              overrides: dict[str, str] = None) -> pd.DataFrame | pl.DataFrame:
         securities = self._api_.flatten(securities)
         fields = self._api_.flatten(fields)
         def _fetch_():

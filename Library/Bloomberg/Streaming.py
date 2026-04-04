@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import blpapi
 from typing import Callable
 
@@ -5,29 +7,42 @@ from Library.Service import ServiceAPI
 
 class StreamingAPI(ServiceAPI):
 
-    _SERVICE_URI_ = "//blp/mktdata"
-
-    def subscribe(self, securities: str | list[str], fields: list[str], callback: Callable, frame: bool = False) -> None:
-        securities = self._api_.flatten(securities)
-        def _execute_():
-            if not self._api_._session_.openService(self._SERVICE_URI_):
-                raise RuntimeError(f"Failed to open service {self._SERVICE_URI_}")
-            subs = blpapi.SubscriptionList()
-            for s in securities:
-                subs.add(s, ",".join(fields), "", blpapi.CorrelationId(s))
-            self._api_._session_.subscribe(subs)
+    def subscribe(self,
+                  securities: str | list[str],
+                  fields: str | list[str],
+                  callback: Callable,
+                  frame: bool = True,
+                  limit: int = None) -> None:
+        securities = [securities] if isinstance(securities, str) else securities
+        fields = [fields] if isinstance(fields, str) else fields
+        try:
+            self.connect()
+            subscriptions = blpapi.SubscriptionList()
+            for security in securities:
+                subscriptions.add(security, fields, "", blpapi.CorrelationId(security))
+            self._api_._session_.subscribe(subscriptions)
+            count = 0
             while True:
-                ev = self._api_._session_.nextEvent(100)
-                if ev.eventType() == blpapi.Event.SUBSCRIPTION_DATA:
-                    for msg in ev:
-                        row = {"Security": str(msg.correlationId().value())}
-                        for i in range(msg.numElements()):
-                            f = msg.getElement(i)
-                            if not f.isNull(): row[str(f.name())] = f.getValue()
-                        callback(self._api_.frame([row]) if frame else row)
-                elif ev.eventType() in (blpapi.Event.RESPONSE, blpapi.Event.PARTIAL_RESPONSE):
-                    pass
-                elif ev.eventType() == blpapi.Event.TIMEOUT:
-                    continue
-        timer = super()._execute_(callback=_execute_)
-        self._log_.info(lambda: f"Subscribe Operation: Subscribed to {len(securities)} securities ({timer.result()})")
+                try:
+                    event = self._api_._session_.nextEvent(1000)
+                    if event.eventType() in [blpapi.Event.SUBSCRIPTION_DATA, blpapi.Event.RESPONSE, blpapi.Event.PARTIAL_RESPONSE]:
+                        for message in event:
+                            security = message.correlationId().value()
+                            data = {"Security": security}
+                            for field in fields:
+                                if message.hasElement(field):
+                                    element = message.getElement(field)
+                                    if not element.isNull():
+                                        data[field] = element.getValue()
+                            if len(data) > 1:
+                                callback(self.frame([data]) if frame else data)
+                                count += 1
+                                if limit is not None and count >= limit: return
+                    elif event.eventType() == blpapi.Event.TIMEOUT: continue
+                except KeyboardInterrupt:
+                    self._log_.info(lambda: "Streaming Operation: Interrupted by User")
+                    return
+        except Exception as e:
+            self._log_.error(lambda: "Streaming Operation: Failed")
+            self._log_.exception(lambda: str(e))
+            raise

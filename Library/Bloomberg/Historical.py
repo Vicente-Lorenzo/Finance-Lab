@@ -9,7 +9,12 @@ class HistoricalAPI(ServiceAPI):
     _SERVICE_URI_  = "//blp/refdata"
     _REQUEST_TYPE_ = "HistoricalDataRequest"
 
-    def fetch(self, securities: str | list[str], fields: str | list[str], start: str | date | datetime, stop: str | date | datetime = None, timeframe: str = "DAILY") -> pd.DataFrame | pl.DataFrame:
+    def fetch(self,
+              securities: str | list[str],
+              fields: str | list[str],
+              start: str | date | datetime,
+              stop: str | date | datetime = None,
+              timeframe: str = "DAILY") -> pd.DataFrame | pl.DataFrame:
         securities = self._api_.flatten(securities)
         fields = self._api_.flatten(fields)
         if isinstance(start, (date, datetime)): start = start.strftime("%Y%m%d")

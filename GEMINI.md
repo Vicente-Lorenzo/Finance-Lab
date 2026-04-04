@@ -20,22 +20,34 @@
     - Use `_naming_` (snake_case with leading and trailing underscores) for private attributes and methods.
     - In `__post_init__`, keep arguments lowercase (e.g., `raw`) to avoid IDE hints/conflicts with class fields.
  3. **Type Hinting:**
-    - Use `Self` from `typing_extensions` for methods returning an instance of the class (to ensure full compatibility).
-    - Use `from __future__ import annotations` to avoid string-based type hints (e.g., use `ServiceAPI` instead of `'ServiceAPI'`) for forward references.
+    - Use `Self` (ideally from `typing_extensions` or via future annotations) for methods returning an instance of the class.
+    - Use `from __future__ import annotations` as the first line ONLY when required for forward references or `Self` support.
  4. **Method Architecture:**
     - Favor `@staticmethod` for utility methods like `_decode_` that do not require instance state.
     - Use `InitVar` for raw inputs that are processed during initialization but not stored as fields.
  5. **Module Structure:**
     - Organize imports in a ladder-style (sorted by length or alphabetically in a clean visual block).
-    - `from __future__ import annotations` must be the first line, followed by a single blank line.
+    - If used, `from __future__ import annotations` must be the first line, followed by a single blank line.
     - Separate generic imports (standard library, external packages) from project library imports (e.g., `Library.*`) with a single new line.
     - Ensure files are tidy: no trailing spaces or unnecessary newlines at the end of files.
- 6. **Compact Style & Organization:**
+ 6. **Dataframe Conventions:**
+    - Capitalize internal/framework output columns (e.g., "Security", "Date", "Time", "Error") unless they are direct pass-throughs of user-specified fields.
+    - Prefer Polars (`pl`) for performance-critical logic, fallback to Pandas (`pd`) for Dash/Legacy compatibility.
+
+ ## COMPACT STYLE & ORGANIZATION
+ 1. **Method Density:**
     - Use a compact coding style by removing unnecessary empty lines within methods to keep logic dense.
+    - **EXCEPTION:** Complex `__init__` methods with multiple arguments should use wrapped definitions and preserve logic-block spacing (blank lines) for readability.
+ 2. **Spacing & Layout:**
     - Always have exactly one blank line after the `class` statement.
     - Ensure exactly one blank line separates individual methods or class definitions.
     - Maintain standard spacing within signatures, type hints, and assignments (e.g., `def func(a: int | str, b: float = 1.0) -> Self:`) to ensure readability.
-    - Order methods logically: simpler utility methods at the top, and more complex methods (those that utilize the simpler ones) towards the bottom.
+ 3. **Method Ordering:**
+    - Order methods logically by category:
+        1. Connection/Lifecycle methods (e.g., `connect`, `__enter__`).
+        2. Disconnection/Cleanup methods (e.g., `disconnect`, `__exit__`, `__del__`).
+        3. Business/Auxiliary logic.
+    - Within each category, order by complexity: simpler utility methods at the top, more complex methods towards the bottom.
 
  ## CONTEXT AWARENESS PROTOCOL
  Before answering code-related questions, execute this check:

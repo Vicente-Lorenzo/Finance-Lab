@@ -1,82 +1,103 @@
+from __future__ import annotations
+
 import blpapi
-from enum import Enum
 from datetime import datetime
 
-from Library.Service import ServiceAPI
+from Library.Statistics import Timer
 from Library.Dataframe import pd, pl
-
-class EventType(str, Enum):
-    TRADE    = "TRADE"
-    BID      = "BID"
-    ASK      = "ASK"
-    BID_BEST = "BID_BEST"
-    ASK_BEST = "ASK_BEST"
-    AT_TRADE = "AT_TRADE"
-    AT_BID   = "AT_BID"
-    AT_ASK   = "AT_ASK"
+from Library.Service import ServiceAPI
 
 class IntradayAPI(ServiceAPI):
 
-    _SERVICE_URI_       = "//blp/refdata"
-    _BAR_REQUEST_TYPE_  = "IntradayBarRequest"
-    _TICK_REQUEST_TYPE_ = "IntradayTickRequest"
-
-    def bars(self, security: str, start: datetime, stop: datetime = None, interval: int = 1, event_type: str | EventType = EventType.TRADE) -> pd.DataFrame | pl.DataFrame:
-        if isinstance(event_type, EventType): event_type = event_type.value
-        def _fetch_():
-            service = self._api_._service_(self._SERVICE_URI_)
-            request = service.createRequest(self._BAR_REQUEST_TYPE_)
+    def bars(self,
+             security: str,
+             start: datetime,
+             end: datetime = None,
+             interval: int = 1,
+             type: str = "TRADE") -> pd.DataFrame | pl.DataFrame:
+        try:
+            self.connect()
+            service = self._api_._service_("//blp/refdata")
+            request = service.createRequest("IntradayBarRequest")
             request.set("security", security)
-            request.set("eventType", event_type)
+            request.set("eventType", type)
             request.set("interval", interval)
-            request.set("startDateTime", start.strftime("%Y-%m-%dT%H:%M:%S"))
-            if stop: request.set("endDateTime", stop.strftime("%Y-%m-%dT%H:%M:%S"))
-            self._api_._session_.sendRequest(request)
+            request.set("startDateTime", start)
+            if end: request.set("endDateTime", end)
+            correlation = blpapi.CorrelationId(security)
+            self._api_._session_.sendRequest(request, correlationId=correlation)
+            timer = Timer()
+            timer.start()
             data = []
             while True:
-                event = self._api_._session_.nextEvent(500)
-                if event.eventType() in (blpapi.Event.RESPONSE, blpapi.Event.PARTIAL_RESPONSE):
-                    for msg in event:
-                        if not msg.hasElement("barData"): continue
-                        bar_data = msg.getElement("barData").getElement("barTickData")
-                        for i in range(bar_data.numValues()):
-                            bar = bar_data.getValueAsElement(i)
-                            row = {str(f.name()): f.getValue() for f in bar.elements() if not f.isNull()}
+                event = self._api_._session_.nextEvent(1000)
+                if event.eventType() in [blpapi.Event.RESPONSE, blpapi.Event.PARTIAL_RESPONSE]:
+                    for message in event:
+                        if not message.hasElement("barData"): continue
+                        bar_data = message.getElement("barData")
+                        if not bar_data.hasElement("barTickData"): continue
+                        bars = bar_data.getElement("barTickData")
+                        for i in range(bars.numValues()):
+                            bar = bars.getValueAsElement(i)
+                            row = {"Security": security}
+                            for j in range(bar.numElements()):
+                                element = bar.getElement(j)
+                                name = str(element.name())
+                                row[name.capitalize() if name == "time" else name] = element.getValue()
                             data.append(row)
-                if event.eventType() == blpapi.Event.RESPONSE: break
-                if event.eventType() == blpapi.Event.TIMEOUT: continue
-            return self._api_.frame(data)
-        timer, df = super()._fetch_(callback=_fetch_)
-        self._log_.info(lambda: f"Bars Operation: Fetched {len(df)} bars ({timer.result()})")
-        return df
+                    if event.eventType() == blpapi.Event.RESPONSE: break
+                elif event.eventType() == blpapi.Event.TIMEOUT: break
+            timer.stop()
+            df = self.frame(data).drop_nulls(subset=["Date"]) if data else self.frame(data)
+            self._log_.info(lambda: f"Bars Operation: Fetched {len(df)} bars ({timer.result()})")
+            return df
+        except Exception as e:
+            self._log_.error(lambda: "Bars Operation: Failed")
+            self._log_.exception(lambda: str(e))
+            raise
 
-    def ticks(self, security: str, start: datetime, stop: datetime = None, event_types: list[str | EventType] = None) -> pd.DataFrame | pl.DataFrame:
-        if event_types is None: event_types = [EventType.TRADE]
-        event_types = [e.value if isinstance(e, EventType) else e for e in event_types]
-        def _fetch_():
-            service = self._api_._service_(self._SERVICE_URI_)
-            request = service.createRequest(self._TICK_REQUEST_TYPE_)
+    def ticks(self,
+              security: str,
+              start: datetime,
+              end: datetime = None,
+              types: str | list[str] = "TRADE") -> pd.DataFrame | pl.DataFrame:
+        try:
+            self.connect()
+            service = self._api_._service_("//blp/refdata")
+            request = service.createRequest("IntradayTickRequest")
             request.set("security", security)
-            request.set("startDateTime", start.strftime("%Y-%m-%dT%H:%M:%S"))
-            if stop: request.set("endDateTime", stop.strftime("%Y-%m-%dT%H:%M:%S"))
-            ev_types = request.getElement("eventTypes")
-            for et in event_types: ev_types.appendValue(et)
+            request.set("eventTypes", [types] if isinstance(types, str) else types)
+            request.set("startDateTime", start)
+            if end: request.set("endDateTime", end)
             request.set("includeConditionCodes", True)
-            self._api_._session_.sendRequest(request)
+            correlation = blpapi.CorrelationId(security)
+            self._api_._session_.sendRequest(request, correlationId=correlation)
+            timer = Timer()
+            timer.start()
             data = []
             while True:
-                event = self._api_._session_.nextEvent(500)
-                if event.eventType() in (blpapi.Event.RESPONSE, blpapi.Event.PARTIAL_RESPONSE):
-                    for msg in event:
-                        if not msg.hasElement("tickData"): continue
-                        tick_data = msg.getElement("tickData").getElement("tickData")
-                        for i in range(tick_data.numValues()):
-                            tick = tick_data.getValueAsElement(i)
-                            row = {str(f.name()): f.getValue() for f in tick.elements() if not f.isNull()}
+                event = self._api_._session_.nextEvent(1000)
+                if event.eventType() in [blpapi.Event.RESPONSE, blpapi.Event.PARTIAL_RESPONSE]:
+                    for message in event:
+                        if not message.hasElement("tickData"): continue
+                        tick_data = message.getElement("tickData")
+                        if not tick_data.hasElement("tickData"): continue
+                        ticks = tick_data.getElement("tickData")
+                        for i in range(ticks.numValues()):
+                            tick = ticks.getValueAsElement(i)
+                            row = {"Security": security}
+                            for j in range(tick.numElements()):
+                                element = tick.getElement(j)
+                                name = str(element.name())
+                                row[name.capitalize() if name == "time" else name] = element.getValue()
                             data.append(row)
-                if event.eventType() == blpapi.Event.RESPONSE: break
-                if event.eventType() == blpapi.Event.TIMEOUT: continue
-            return self._api_.frame(data)
-        timer, df = super()._fetch_(callback=_fetch_)
-        self._log_.info(lambda: f"Ticks Operation: Fetched {len(df)} ticks ({timer.result()})")
-        return df
+                    if event.eventType() == blpapi.Event.RESPONSE: break
+                elif event.eventType() == blpapi.Event.TIMEOUT: break
+            timer.stop()
+            df = self.frame(data).drop_nulls(subset=["Time"]) if data else self.frame(data)
+            self._log_.info(lambda: f"Ticks Operation: Fetched {len(df)} ticks ({timer.result()})")
+            return df
+        except Exception as e:
+            self._log_.error(lambda: "Ticks Operation: Failed")
+            self._log_.exception(lambda: str(e))
+            raise
