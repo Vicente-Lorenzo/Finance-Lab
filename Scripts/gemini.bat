@@ -1,3 +1,3 @@
 cd /d "C:\Users\Admin\OneDrive\Documents\cAlgo"
-gemini
+gemini --model gemini-3.1-pro-preview
 cmd /k
