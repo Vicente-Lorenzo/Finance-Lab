@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import blpapi
 from typing import Callable
 
@@ -12,7 +10,8 @@ class StreamingAPI(ServiceAPI):
                   fields: str | list[str],
                   callback: Callable,
                   frame: bool = True,
-                  limit: int = None) -> None:
+                  limit: int = None,
+                  timeout: int = 0) -> None:
         securities = [securities] if isinstance(securities, str) else securities
         fields = [fields] if isinstance(fields, str) else fields
         try:
@@ -24,7 +23,7 @@ class StreamingAPI(ServiceAPI):
             count = 0
             while True:
                 try:
-                    event = self._api_._session_.nextEvent(1000)
+                    event = self._api_._session_.nextEvent(timeout)
                     if event.eventType() in [blpapi.Event.SUBSCRIPTION_DATA, blpapi.Event.RESPONSE, blpapi.Event.PARTIAL_RESPONSE]:
                         for message in event:
                             security = message.correlationId().value()
@@ -38,7 +37,9 @@ class StreamingAPI(ServiceAPI):
                                 callback(self.frame([data]) if frame else data)
                                 count += 1
                                 if limit is not None and count >= limit: return
-                    elif event.eventType() == blpapi.Event.TIMEOUT: continue
+                    elif event.eventType() == blpapi.Event.TIMEOUT:
+                        self._log_.warning(lambda: "Streaming Operation: Timeout reached while waiting for response")
+                        return
                 except KeyboardInterrupt:
                     self._log_.info(lambda: "Streaming Operation: Interrupted by User")
                     return

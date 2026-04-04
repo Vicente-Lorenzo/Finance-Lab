@@ -11,7 +11,8 @@ class ReferenceAPI(ServiceAPI):
     def fetch(self,
               securities: str | list[str],
               fields: str | list[str],
-              overrides: dict[str, str] = None) -> pd.DataFrame | pl.DataFrame:
+              overrides: dict[str, str] = None,
+              timeout: int = 0) -> pd.DataFrame | pl.DataFrame:
         securities = self._api_.flatten(securities)
         fields = self._api_.flatten(fields)
         def _fetch_():
@@ -30,7 +31,7 @@ class ReferenceAPI(ServiceAPI):
             self._api_._session_.sendRequest(request)
             data = []
             while True:
-                event = self._api_._session_.nextEvent(500)
+                event = self._api_._session_.nextEvent(timeout)
                 if event.eventType() in (blpapi.Event.RESPONSE, blpapi.Event.PARTIAL_RESPONSE):
                     for msg in event:
                         if not msg.hasElement("securityData"): continue
@@ -47,7 +48,9 @@ class ReferenceAPI(ServiceAPI):
                                     if not f.isNull(): row[str(f.name())] = f.getValue()
                             data.append(row)
                 if event.eventType() == blpapi.Event.RESPONSE: break
-                if event.eventType() == blpapi.Event.TIMEOUT: continue
+                if event.eventType() == blpapi.Event.TIMEOUT:
+                    self._log_.warning(lambda: "Fetch Operation: Timeout reached while waiting for response")
+                    break
             return self._api_.frame(data)
         timer, df = super()._fetch_(callback=_fetch_)
         self._log_.info(lambda: f"Fetch Operation: Fetched {len(df)} reference data points ({timer.result()})")

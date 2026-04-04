@@ -14,7 +14,8 @@ class HistoricalAPI(ServiceAPI):
               fields: str | list[str],
               start: str | date | datetime,
               stop: str | date | datetime = None,
-              timeframe: str = "DAILY") -> pd.DataFrame | pl.DataFrame:
+              timeframe: str = "DAILY",
+              timeout: int = 0) -> pd.DataFrame | pl.DataFrame:
         securities = self._api_.flatten(securities)
         fields = self._api_.flatten(fields)
         if isinstance(start, (date, datetime)): start = start.strftime("%Y%m%d")
@@ -32,7 +33,7 @@ class HistoricalAPI(ServiceAPI):
             self._api_._session_.sendRequest(request)
             data = []
             while True:
-                event = self._api_._session_.nextEvent(500)
+                event = self._api_._session_.nextEvent(timeout)
                 if event.eventType() in (blpapi.Event.RESPONSE, blpapi.Event.PARTIAL_RESPONSE):
                     for msg in event:
                         if not msg.hasElement("securityData"): continue
@@ -47,7 +48,9 @@ class HistoricalAPI(ServiceAPI):
                                 if str(f.name()) != "date" and not f.isNull(): row[str(f.name())] = f.getValue()
                             data.append(row)
                 if event.eventType() == blpapi.Event.RESPONSE: break
-                if event.eventType() == blpapi.Event.TIMEOUT: continue
+                if event.eventType() == blpapi.Event.TIMEOUT:
+                    self._log_.warning(lambda: "Fetch Operation: Timeout reached while waiting for response")
+                    break
             return self._api_.frame(data)
         timer, df = super()._fetch_(callback=_fetch_)
         self._log_.info(lambda: f"Fetch Operation: Fetched {len(df)} historical data points ({timer.result()})")
