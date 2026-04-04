@@ -13,41 +13,14 @@
     - Avoid unnecessary abstraction or complexity.
     - Prefer concise, readable, and performant code.
  
- ## CODING STYLE NUANCES
- 1. **No Documentation:** Do not include docstrings or comments in the code.
- 2. **Naming Conventions:**
-    - Use `CamelCase` for public fields and properties in dataclasses.
-    - Use `_naming_` (snake_case with leading and trailing underscores) for private attributes and methods.
-    - In `__post_init__`, keep arguments lowercase (e.g., `raw`) to avoid IDE hints/conflicts with class fields.
- 3. **Type Hinting:**
-    - Use `Self` (ideally from `typing_extensions` or via future annotations) for methods returning an instance of the class.
-    - Use `from __future__ import annotations` as the first line ONLY when required for forward references or `Self` support.
- 4. **Method Architecture:**
-    - Favor `@staticmethod` for utility methods like `_decode_` that do not require instance state.
-    - Use `InitVar` for raw inputs that are processed during initialization but not stored as fields.
- 5. **Module Structure:**
-    - Organize imports in a ladder-style (sorted by length or alphabetically in a clean visual block).
-    - If used, `from __future__ import annotations` must be the first line, followed by a single blank line.
-    - Separate generic imports (standard library, external packages) from project library imports (e.g., `Library.*`) with a single new line.
-    - Ensure files are tidy: no trailing spaces or unnecessary newlines at the end of files.
- 6. **Dataframe Conventions:**
-    - Capitalize internal/framework output columns (e.g., "Security", "Date", "Time", "Error") unless they are direct pass-throughs of user-specified fields.
-    - Prefer Polars (`pl`) for performance-critical logic, fallback to Pandas (`pd`) for Dash/Legacy compatibility.
-
- ## COMPACT STYLE & ORGANIZATION
- 1. **Method Density:**
-    - Use a compact coding style by removing unnecessary empty lines within methods to keep logic dense.
-    - **EXCEPTION:** Complex `__init__` methods with multiple arguments should use wrapped definitions and preserve logic-block spacing (blank lines) for readability.
- 2. **Spacing & Layout:**
-    - Always have exactly one blank line after the `class` statement.
-    - Ensure exactly one blank line separates individual methods or class definitions.
-    - Maintain standard spacing within signatures, type hints, and assignments (e.g., `def func(a: int | str, b: float = 1.0) -> Self:`) to ensure readability.
- 3. **Method Ordering:**
-    - Order methods logically by category:
-        1. Connection/Lifecycle methods (e.g., `connect`, `__enter__`).
-        2. Disconnection/Cleanup methods (e.g., `disconnect`, `__exit__`, `__del__`).
-        3. Business/Auxiliary logic.
-    - Within each category, order by complexity: simpler utility methods at the top, more complex methods towards the bottom.
+ ## CODING STYLE & ORGANIZATION
+ 1. **General:** No docstrings or comments. Maintain tidy files (no trailing spaces). One blank line after `class` and between methods.
+ 2. **Naming:** `CamelCase` for public members; `_naming_` (snake_case with leading/trailing underscores) for private ones. Use lowercase for `__post_init__` arguments.
+ 3. **Typing:** Use `Self` for instance returns. Use `from __future__ import annotations` as the first line only if required for forward references.
+ 4. **Imports:** Organized in a sorted ladder-style block. Separate external and project (`Library.*`) imports with one blank line.
+ 5. **Density:** Keep method bodies dense without internal blank lines (except complex `__init__`). Maintain standard spacing in signatures and assignments.
+ 6. **Architecture:** Order methods by category (Connection → Disconnection → Business) and then by complexity (simplest first). Use `@staticmethod` for stateless logic and `InitVar` for temporary inputs.
+ 7. **Dataframes:** Capitalize framework-level columns (e.g., "Date", "Security"). Prefer Polars (`pl`) for performance; use Pandas (`pd`) for compatibility.
 
  ## CONTEXT AWARENESS PROTOCOL
  Before answering code-related questions, execute this check:
