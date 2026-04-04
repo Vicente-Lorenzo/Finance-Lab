@@ -20,13 +20,19 @@
     - Use `_naming_` (snake_case with leading and trailing underscores) for private attributes and methods.
     - In `__post_init__`, keep arguments lowercase (e.g., `raw`) to avoid IDE hints/conflicts with class fields.
  3. **Type Hinting:**
-    - Use `Self` from `typing_extensions` for methods returning an instance of the class (for Python 3.10+ compatibility).
+    - Use `Self` from `typing_extensions` for methods returning an instance of the class (to ensure full compatibility).
  4. **Method Architecture:**
     - Favor `@staticmethod` for utility methods like `_decode_` that do not require instance state.
     - Use `InitVar` for raw inputs that are processed during initialization but not stored as fields.
  5. **Module Structure:**
     - Organize imports in a ladder-style (sorted by length or alphabetically in a clean visual block).
+    - Separate generic imports (standard library, external packages) from project library imports (e.g., `Library.*`) with a single new line.
     - Ensure files are tidy: no trailing spaces or unnecessary newlines at the end of files.
+ 6. **Compact Style & Organization:**
+    - Use a compact coding style by removing unnecessary empty lines within methods to keep logic dense.
+    - Ensure exactly one blank line separates individual methods or class definitions.
+    - Maintain standard spacing within signatures, type hints, and assignments (e.g., `def func(a: int | str, b: float = 1.0) -> Self:`) to ensure readability.
+    - Order methods logically: simpler utility methods at the top, and more complex methods (those that utilize the simpler ones) towards the bottom.
 
  ## CONTEXT AWARENESS PROTOCOL
  Before answering code-related questions, execute this check:
