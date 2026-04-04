@@ -32,6 +32,7 @@
     - Ensure files are tidy: no trailing spaces or unnecessary newlines at the end of files.
  6. **Compact Style & Organization:**
     - Use a compact coding style by removing unnecessary empty lines within methods to keep logic dense.
+    - Always have exactly one blank line after the `class` statement.
     - Ensure exactly one blank line separates individual methods or class definitions.
     - Maintain standard spacing within signatures, type hints, and assignments (e.g., `def func(a: int | str, b: float = 1.0) -> Self:`) to ensure readability.
     - Order methods logically: simpler utility methods at the top, and more complex methods (those that utilize the simpler ones) towards the bottom.

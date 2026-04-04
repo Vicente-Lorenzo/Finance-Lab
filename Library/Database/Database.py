@@ -20,16 +20,13 @@ class DatabaseAPI(ServiceAPI, ABC):
         super().__init_subclass__(**kwargs)
         if DatabaseAPI not in cls.__bases__: return
         module: str = traceback_package(package=cls.__module__)
-
         cls._CHECK_DATABASE_QUERY_ = QueryAPI(PathAPI(path="Check/Database.sql", module=module))
         cls._CHECK_SCHEMA_QUERY_ = QueryAPI(PathAPI(path="Check/Schema.sql", module=module))
         cls._CHECK_TABLE_QUERY_ = QueryAPI(PathAPI(path="Check/Table.sql", module=module))
         cls._CHECK_STRUCTURE_QUERY_ = QueryAPI(PathAPI(path="Check/Structure.sql", module=module))
-
         cls._CREATE_DATABASE_QUERY_ = QueryAPI(PathAPI(path="Create/Database.sql", module=module))
         cls._CREATE_SCHEMA_QUERY_ = QueryAPI(PathAPI(path="Create/Schema.sql", module=module))
         cls._CREATE_TABLE_QUERY_ = QueryAPI(PathAPI(path="Create/Table.sql", module=module))
-
         cls._DELETE_DATABASE_QUERY_ = QueryAPI(PathAPI(path="Delete/Database.sql", module=module))
         cls._DELETE_SCHEMA_QUERY_ = QueryAPI(PathAPI(path="Delete/Schema.sql", module=module))
         cls._DELETE_TABLE_QUERY_ = QueryAPI(PathAPI(path="Delete/Table.sql", module=module))
@@ -72,55 +69,39 @@ class DatabaseAPI(ServiceAPI, ABC):
 
     @staticmethod
     def _normalize_(dtype):
-        if isinstance(dtype, type) and issubclass(dtype, pl.DataType):
-            return dtype
-        if isinstance(dtype, pl.DataType):
-            return dtype.__class__
+        if isinstance(dtype, type) and issubclass(dtype, pl.DataType): return dtype
+        if isinstance(dtype, pl.DataType): return dtype.__class__
         raise TypeError(f"Not a valid Structure dtype: {dtype}")
 
     @abstractmethod
-    def _check_(self):
-        raise NotImplementedError
+    def _check_(self): raise NotImplementedError
 
     @abstractmethod
-    def _create_(self):
-        raise NotImplementedError
+    def _create_(self): raise NotImplementedError
 
     @abstractmethod
-    def _driver_(self, admin: bool):
-        raise NotImplementedError
+    def _driver_(self, admin: bool): raise NotImplementedError
 
-    def connected(self) -> bool:
-        return self._connection_ is not None and self._cursor_ is not None
+    def connected(self) -> bool: return self._connection_ is not None and self._cursor_ is not None
 
-    def disconnected(self) -> bool:
-        return self._connection_ is None and self._cursor_ is None
+    def disconnected(self) -> bool: return self._connection_ is None and self._cursor_ is None
 
-    def autocommited(self) -> bool:
-        return self._autocommit_ is True
+    def autocommited(self) -> bool: return self._autocommit_ is True
 
-    def transitioned(self) -> bool:
-        return self._transaction_ is True
+    def transitioned(self) -> bool: return self._transaction_ is True
 
-    def databased(self) -> bool:
-        return self.database is not None
+    def databased(self) -> bool: return self.database is not None
 
-    def schemed(self) -> bool:
-        return self.schema is not None
+    def schemed(self) -> bool: return self.schema is not None
 
-    def tabled(self) -> bool:
-        return self.table is not None
+    def tabled(self) -> bool: return self.table is not None
 
-    def structured(self) -> bool:
-        return self._STRUCTURE_ is not None
+    def structured(self) -> bool: return self._STRUCTURE_ is not None
 
     def commit(self):
-        if not self.connected():
-            self._log_.debug(lambda: "Commit Operation: Skipped (Not Connected)")
-        elif self.autocommited():
-            self._log_.debug(lambda: "Commit Operation: Skipped (Autocommit Enabled)")
-        elif not self.transitioned():
-            self._log_.debug(lambda: "Commit Operation: Skipped (No Open Transaction)")
+        if not self.connected(): self._log_.debug(lambda: "Commit Operation: Skipped (Not Connected)")
+        elif self.autocommited(): self._log_.debug(lambda: "Commit Operation: Skipped (Autocommit Enabled)")
+        elif not self.transitioned(): self._log_.debug(lambda: "Commit Operation: Skipped (No Open Transaction)")
         else:
             timer = Timer()
             timer.start()
@@ -131,12 +112,9 @@ class DatabaseAPI(ServiceAPI, ABC):
         return self
 
     def rollback(self):
-        if not self.connected():
-            self._log_.debug(lambda: "Rollback Operation: Skipped (Not Connected)")
-        elif self.autocommited():
-            self._log_.debug(lambda: "Rollback Operation: Skipped (Autocommit Enabled)")
-        elif not self.transitioned():
-            self._log_.debug(lambda: "Rollback Operation: Skipped (No Open Transaction)")
+        if not self.connected(): self._log_.debug(lambda: "Rollback Operation: Skipped (Not Connected)")
+        elif self.autocommited(): self._log_.debug(lambda: "Rollback Operation: Skipped (Autocommit Enabled)")
+        elif not self.transitioned(): self._log_.debug(lambda: "Rollback Operation: Skipped (No Open Transaction)")
         else:
             timer = Timer()
             timer.start()
@@ -151,8 +129,7 @@ class DatabaseAPI(ServiceAPI, ABC):
         self._transaction_ = False
         self._cursor_ = self._connection_.cursor()
 
-    def __enter__(self):
-        return self.migration() if self._migrate_ else self.connect()
+    def __enter__(self): return self.migration() if self._migrate_ else self.connect()
 
     def _disconnect_(self):
         if self._cursor_ is not None:
@@ -163,10 +140,8 @@ class DatabaseAPI(ServiceAPI, ABC):
             self._connection_ = None
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type or exc_val or exc_tb:
-            self.rollback()
-        else:
-            self.commit()
+        if exc_type or exc_val or exc_tb: self.rollback()
+        else: self.commit()
         return super().__exit__(exc_type, exc_val, exc_tb)
 
     def _query_(self, query: QueryAPI, **kwargs):
@@ -250,10 +225,7 @@ class DatabaseAPI(ServiceAPI, ABC):
         elif isinstance(result, list): rows = result
         elif isinstance(result, tuple): rows = [result]
         else: rows = list(result)
-        schema = {
-            desc[0]: self._DESCRIPTION_DATATYPE_MAPPING_.get(desc[1])
-            for desc in self._cursor_.description
-        } if self._cursor_.description else {}
+        schema = {desc[0]: self._DESCRIPTION_DATATYPE_MAPPING_.get(desc[1]) for desc in self._cursor_.description} if self._cursor_.description else {}
         return self.frame(data=rows, schema=schema or self._STRUCTURE_)
 
     def fetchone(self) -> pd.DataFrame | pl.DataFrame:

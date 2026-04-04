@@ -7,7 +7,7 @@ class StreamingAPI(ServiceAPI):
 
     _SERVICE_URI_ = "//blp/mktdata"
 
-    def subscribe(self, securities: str | list[str], fields: list[str], callback: Callable, frame: bool = True) -> None:
+    def subscribe(self, securities: str | list[str], fields: list[str], callback: Callable, frame: bool = False) -> None:
         securities = self._api_.flatten(securities)
         def _execute_():
             if not self._api_._session_.openService(self._SERVICE_URI_):
