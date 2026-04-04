@@ -1,15 +1,12 @@
 import blpapi
-
 from Library.Service import ServiceAPI
-from Library.Dataframe import DataframeAPI
-
 from Library.Bloomberg.Query import QueryAPI
 from Library.Bloomberg.Intraday import IntradayAPI
 from Library.Bloomberg.Streaming import StreamingAPI
 from Library.Bloomberg.Reference import ReferenceAPI
 from Library.Bloomberg.Historical import HistoricalAPI
 
-class BloombergAPI(ServiceAPI, DataframeAPI):
+class BloombergAPI(ServiceAPI):
 
     def __init__(self, *,
                  host: str = "localhost",

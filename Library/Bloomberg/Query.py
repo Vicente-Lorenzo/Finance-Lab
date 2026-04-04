@@ -1,18 +1,17 @@
 import blpapi
+from typing_extensions import Self
 
 from Library.Service import ServiceAPI
-from Library.Dataframe import pd, pl
-from Library.Bloomberg.Enums import ServiceURI, RequestType
-
 
 class QueryAPI(ServiceAPI):
 
-    _SERVICE_URI_ = ServiceURI.BQL
+    _SERVICE_URI_  = "//blp/bql"
+    _REQUEST_TYPE_ = "BqlRequest"
 
-    def execute(self, query: str) -> pd.DataFrame | pl.DataFrame:
-        def _do():
-            service = self._api_._service_(self._SERVICE_URI_.value)
-            request = service.createRequest(RequestType.BQL_DATA.value)
+    def execute(self, query: str) -> Self:
+        def _execute_():
+            service = self._api_._service_(self._SERVICE_URI_)
+            request = service.createRequest(self._REQUEST_TYPE_)
             request.set("query", query)
             self._api_._session_.sendRequest(request)
             while True:
@@ -20,7 +19,6 @@ class QueryAPI(ServiceAPI):
                 if event.eventType() == blpapi.Event.RESPONSE:
                     break
             raise NotImplementedError("QueryAPI.execute: BQL response parsing is not yet implemented.")
-
-        timer = self._execute_(_do)
+        timer = super()._execute_(callback=_execute_)
         self._log_.info(lambda: f"Execute Operation: Executed ({timer.result()})")
         return self

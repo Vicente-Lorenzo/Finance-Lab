@@ -2,21 +2,32 @@ import blpapi
 from typing import Callable
 
 from Library.Service import ServiceAPI
-from Library.Bloomberg.Enums import ServiceURI
-
 
 class StreamingAPI(ServiceAPI):
 
-    _SERVICE_URI_ = ServiceURI.MKTDATA
+    _SERVICE_URI_ = "//blp/mktdata"
 
-    def subscribe(self, tickers: list[str], fields: list[str], callback: Callable) -> None:
-        def _subscribe():
-            if not self._api_._session_.openService(self._SERVICE_URI_.value):
-                raise RuntimeError(f"Failed to open service {self._SERVICE_URI_.value}")
-            subscriptions = blpapi.SubscriptionList()
-            for ticker in tickers:
-                subscriptions.add(ticker, ",".join(fields), "", blpapi.CorrelationId(ticker))
-            self._api_._session_.subscribe(subscriptions)
-
-        timer = self._execute_(_subscribe)
-        self._log_.info(lambda: f"Subscribe Operation: Subscribed to {len(tickers)} tickers ({timer.result()})")
+    def subscribe(self, securities: str | list[str], fields: list[str], callback: Callable, frame: bool = True) -> None:
+        securities = self._api_.flatten(securities)
+        def _execute_():
+            if not self._api_._session_.openService(self._SERVICE_URI_):
+                raise RuntimeError(f"Failed to open service {self._SERVICE_URI_}")
+            subs = blpapi.SubscriptionList()
+            for s in securities:
+                subs.add(s, ",".join(fields), "", blpapi.CorrelationId(s))
+            self._api_._session_.subscribe(subs)
+            while True:
+                ev = self._api_._session_.nextEvent(100)
+                if ev.eventType() == blpapi.Event.SUBSCRIPTION_DATA:
+                    for msg in ev:
+                        row = {"Security": str(msg.correlationId().value())}
+                        for i in range(msg.numElements()):
+                            f = msg.getElement(i)
+                            if not f.isNull(): row[str(f.name())] = f.getValue()
+                        callback(self._api_.frame([row]) if frame else row)
+                elif ev.eventType() in (blpapi.Event.RESPONSE, blpapi.Event.PARTIAL_RESPONSE):
+                    pass
+                elif ev.eventType() == blpapi.Event.TIMEOUT:
+                    continue
+        timer = super()._execute_(callback=_execute_)
+        self._log_.info(lambda: f"Subscribe Operation: Subscribed to {len(securities)} securities ({timer.result()})")

@@ -1,13 +1,7 @@
 from Library.Bloomberg.Bloomberg import BloombergAPI
-from Library.Bloomberg.Enums import (
-    ServiceURI,
-    RequestType,
-    Periodicity,
-    EventType
-)
 from Library.Bloomberg.Reference import ReferenceAPI
 from Library.Bloomberg.Historical import HistoricalAPI
-from Library.Bloomberg.Intraday import IntradayAPI
+from Library.Bloomberg.Intraday import IntradayAPI, EventType
 from Library.Bloomberg.Streaming import StreamingAPI
 from Library.Bloomberg.Query import QueryAPI
 
@@ -18,8 +12,5 @@ __all__ = [
     "IntradayAPI",
     "StreamingAPI",
     "QueryAPI",
-    "ServiceURI",
-    "RequestType",
-    "Periodicity",
     "EventType",
 ]
