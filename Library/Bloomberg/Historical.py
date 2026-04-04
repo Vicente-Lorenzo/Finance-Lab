@@ -5,6 +5,7 @@ from Library.Service import ServiceAPI
 from Library.Dataframe import pd, pl
 
 class HistoricalAPI(ServiceAPI):
+    """Bloomberg Historical Data interface."""
 
     _SERVICE_URI_  = "//blp/refdata"
     _REQUEST_TYPE_ = "HistoricalDataRequest"
@@ -16,6 +17,15 @@ class HistoricalAPI(ServiceAPI):
               stop: str | date | datetime = None,
               timeframe: str = "DAILY",
               timeout: int = 0) -> pd.DataFrame | pl.DataFrame:
+        """
+        Fetches historical data for multiple securities and fields.
+        :param securities: Security ticker or list of tickers.
+        :param fields: Field mnemonic or list of fields.
+        :param start: Start date/datetime.
+        :param stop: End date/datetime.
+        :param timeframe: Periodicity (e.g., DAILY, WEEKLY, MONTHLY).
+        :param timeout: Wait time in milliseconds (0 for indefinite).
+        """
         securities = self._api_.flatten(securities)
         fields = self._api_.flatten(fields)
         if isinstance(start, (date, datetime)): start = start.strftime("%Y%m%d")

@@ -4,6 +4,7 @@ from Library.Service import ServiceAPI
 from Library.Dataframe import pd, pl
 
 class ReferenceAPI(ServiceAPI):
+    """Bloomberg Reference Data interface."""
 
     _SERVICE_URI_  = "//blp/refdata"
     _REQUEST_TYPE_ = "ReferenceDataRequest"
@@ -13,6 +14,13 @@ class ReferenceAPI(ServiceAPI):
               fields: str | list[str],
               overrides: dict[str, str] = None,
               timeout: int = 0) -> pd.DataFrame | pl.DataFrame:
+        """
+        Fetches reference data for multiple securities and fields.
+        :param securities: Security ticker or list of tickers.
+        :param fields: Field mnemonic or list of fields.
+        :param overrides: Dictionary of field overrides (e.g., {'VWAP_START_TIME': '09:30:00'}).
+        :param timeout: Wait time in milliseconds (0 for indefinite).
+        """
         securities = self._api_.flatten(securities)
         fields = self._api_.flatten(fields)
         def _fetch_():

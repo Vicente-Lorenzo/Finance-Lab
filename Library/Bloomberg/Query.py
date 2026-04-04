@@ -4,6 +4,7 @@ from typing_extensions import Self
 from Library.Service import ServiceAPI
 
 class QueryAPI(ServiceAPI):
+    """Bloomberg Query Language (BQL) interface."""
 
     _SERVICE_URI_  = "//blp/bql"
     _REQUEST_TYPE_ = "BqlRequest"
@@ -11,6 +12,11 @@ class QueryAPI(ServiceAPI):
     def execute(self,
                 query: str,
                 timeout: int = 0) -> Self:
+        """
+        Executes a BQL query.
+        :param query: BQL query string.
+        :param timeout: Wait time in milliseconds (0 for indefinite).
+        """
         def _execute_():
             service = self._api_._service_(self._SERVICE_URI_)
             request = service.createRequest(self._REQUEST_TYPE_)

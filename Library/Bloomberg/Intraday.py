@@ -5,6 +5,7 @@ from Library.Dataframe import pd, pl
 from Library.Service import ServiceAPI
 
 class IntradayAPI(ServiceAPI):
+    """Bloomberg Intraday Data interface."""
 
     def bars(self,
              security: str,
@@ -13,6 +14,15 @@ class IntradayAPI(ServiceAPI):
              interval: int = 1,
              event_type: str = "TRADE",
              timeout: int = 0) -> pd.DataFrame | pl.DataFrame:
+        """
+        Fetches intraday bar data for a security.
+        :param security: Security ticker.
+        :param start: Start datetime.
+        :param stop: End datetime (defaults to now).
+        :param interval: Bar interval in minutes.
+        :param event_type: Event type (TRADE, BID, ASK, etc.).
+        :param timeout: Wait time in milliseconds (0 for indefinite).
+        """
         stop = stop or datetime.now()
         def _fetch_():
             service = self._api_._service_("//blp/refdata")
@@ -62,12 +72,23 @@ class IntradayAPI(ServiceAPI):
               stop: datetime = None,
               event_types: str | list[str] = "TRADE",
               timeout: int = 0) -> pd.DataFrame | pl.DataFrame:
+        """
+        Fetches intraday tick data for a security.
+        :param security: Security ticker.
+        :param start: Start datetime.
+        :param stop: End datetime (defaults to now).
+        :param event_types: List of event types (TRADE, BID, ASK, etc.).
+        :param timeout: Wait time in milliseconds (0 for indefinite).
+        """
         stop = stop or datetime.now()
         def _fetch_():
             service = self._api_._service_("//blp/refdata")
             request = service.createRequest("IntradayTickRequest")
             request.set("security", security)
-            request.set("eventTypes", [event_types] if isinstance(event_types, str) else event_types)
+            types = [event_types] if isinstance(event_types, str) else event_types
+            et_element = request.getElement("eventTypes")
+            for et in types:
+                et_element.appendValue(et)
             request.set("startDateTime", start)
             if stop: request.set("endDateTime", stop)
             request.set("includeConditionCodes", True)

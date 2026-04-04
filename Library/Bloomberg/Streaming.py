@@ -4,6 +4,7 @@ from typing import Callable
 from Library.Service import ServiceAPI
 
 class StreamingAPI(ServiceAPI):
+    """Bloomberg Streaming Data interface."""
 
     def subscribe(self,
                   securities: str | list[str],
@@ -12,6 +13,15 @@ class StreamingAPI(ServiceAPI):
                   frame: bool = True,
                   limit: int = None,
                   timeout: int = 0) -> None:
+        """
+        Subscribes to real-time market data updates.
+        :param securities: Security ticker or list of tickers.
+        :param fields: Field mnemonic or list of fields.
+        :param callback: Function to handle incoming data.
+        :param frame: If True, callback receives a DataFrame; otherwise a dict.
+        :param limit: Number of updates to receive before returning.
+        :param timeout: Wait time in milliseconds (0 for indefinite).
+        """
         securities = [securities] if isinstance(securities, str) else securities
         fields = [fields] if isinstance(fields, str) else fields
         try:
