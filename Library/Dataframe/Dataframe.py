@@ -31,4 +31,5 @@ class DataframeAPI:
     def frame(self, data, schema: dict = None) -> pd.DataFrame | pl.DataFrame:
         data = self.flatten(data)
         df = pl.DataFrame(data=data, schema=schema, orient="row", strict=False)
+        if len(df) > 0: df = df.select([s.shrink_dtype() for s in df.get_columns()])
         return df.to_pandas() if self._legacy_ else df
