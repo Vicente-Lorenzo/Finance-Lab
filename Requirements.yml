@@ -25,6 +25,7 @@ dependencies:
     - seaborn
     - holoviews
     - matplotlib
+    - networkx
 
     - pillow
     - selenium
