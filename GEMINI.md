@@ -22,6 +22,9 @@
  6. **Architecture:** Order methods by category (Connection → Disconnection → Business) and then by complexity (simplest first). Use `@staticmethod` for stateless logic and `InitVar` for temporary inputs.
  7. **Dataframes:** Capitalize framework-level columns (e.g., "Date", "Security"). Prefer Polars (`pl`) for performance; use Pandas (`pd`) for compatibility.
 
+ ## ENVIRONMENT & EXECUTION
+ 1. **Conda Environment:** Use the `Quant` conda environment for all Python and shell scripts requiring library packages (`conda run -n Quant <command>`).
+ 
  ## CONTEXT AWARENESS PROTOCOL
  Before answering code-related questions, execute this check:
  
