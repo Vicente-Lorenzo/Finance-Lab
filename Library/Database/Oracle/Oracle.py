@@ -80,36 +80,11 @@ class OracleDatabaseAPI(DatabaseAPI):
         pl.Object: "VARCHAR2(4000)"
     }
 
-    _DESCRIPTION_DATATYPE_MAPPING_: dict = {
-        oracledb.DB_TYPE_BLOB: pl.Binary,
-        oracledb.DB_TYPE_RAW: pl.Binary,
-        oracledb.DB_TYPE_LONG_RAW: pl.Binary,
-        oracledb.DB_TYPE_BOOLEAN: pl.Boolean,
-
-        oracledb.DB_TYPE_NUMBER: pl.Decimal,
-        oracledb.DB_TYPE_BINARY_FLOAT: pl.Float32,
-        oracledb.DB_TYPE_BINARY_DOUBLE: pl.Float64,
-
-        oracledb.DB_TYPE_VARCHAR: pl.String,
-        oracledb.DB_TYPE_NVARCHAR: pl.String,
-        oracledb.DB_TYPE_CHAR: pl.String,
-        oracledb.DB_TYPE_NCHAR: pl.String,
-        oracledb.DB_TYPE_LONG: pl.String,
-        oracledb.DB_TYPE_CLOB: pl.String,
-        oracledb.DB_TYPE_NCLOB: pl.String,
-
-        oracledb.DB_TYPE_DATE: pl.Datetime,
-        oracledb.DB_TYPE_TIMESTAMP: pl.Datetime,
-        oracledb.DB_TYPE_TIMESTAMP_TZ: pl.Datetime,
-        oracledb.DB_TYPE_TIMESTAMP_LTZ: pl.Datetime,
-
-        oracledb.DB_TYPE_INTERVAL_DS: pl.Duration,
-        oracledb.DB_TYPE_INTERVAL_YM: pl.String,
-
-        oracledb.DB_TYPE_JSON: pl.String,
-        oracledb.DB_TYPE_ROWID: pl.String,
-        oracledb.DB_TYPE_UROWID: pl.String,
-    }
+    _DESCRIPTION_DATATYPE_MAPPING_: tuple = (
+        (oracledb.STRING, pl.String),
+        (oracledb.BINARY, pl.Binary),
+        (oracledb.DATETIME, pl.Datetime)
+    )
 
     def __init__(self, *,
                  host: str = "localhost",

@@ -80,43 +80,11 @@ class MicrosoftDatabaseAPI(DatabaseAPI):
         pl.Object: "NVARCHAR(MAX)"
     }
 
-    _DESCRIPTION_DATATYPE_MAPPING_: dict = {
-        165: pl.Binary,
-        173: pl.Binary,
-        104: pl.Boolean,
-
-        48: pl.UInt8,
-        52: pl.Int16,
-        56: pl.Int32,
-        127: pl.Int64,
-        3: pl.Int64,
-
-        59: pl.Float32,
-        62: pl.Float64,
-
-        60: pl.Decimal,
-        106: pl.Decimal,
-        108: pl.Decimal,
-        122: pl.Decimal,
-
-        1: pl.String,
-        20: pl.String,
-        35: pl.String,
-        99: pl.String,
-        167: pl.String,
-        175: pl.String,
-        231: pl.String,
-        239: pl.String,
-        241: pl.String,
-
-        40: pl.Date,
-        41: pl.Time,
-        2: pl.Datetime,
-        42: pl.Datetime,
-        43: pl.Datetime,
-        58: pl.Datetime,
-        0: pl.Duration
-    }
+    _DESCRIPTION_DATATYPE_MAPPING_: tuple = (
+        (pymssql.STRING, pl.String),
+        (pymssql.BINARY, pl.Binary),
+        (pymssql.DATETIME, pl.Datetime)
+    )
 
     def __init__(self, *,
                  host: str = "localhost",

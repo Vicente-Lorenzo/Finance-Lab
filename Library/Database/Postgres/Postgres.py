@@ -80,41 +80,11 @@ class PostgresDatabaseAPI(DatabaseAPI):
         pl.Object: "VARCHAR"
     }
 
-    _DESCRIPTION_DATATYPE_MAPPING_: dict = {
-        17: pl.Binary,
-        16: pl.Boolean,
-
-        21: pl.Int16,
-        23: pl.Int32,
-        20: pl.Int64,
-
-        26: pl.UInt32,
-
-        700: pl.Float32,
-        701: pl.Float64,
-        1700: pl.Decimal,
-
-        19: pl.String,
-        25: pl.String,
-        1042: pl.String,
-        1043: pl.String,
-        114: pl.String,
-        3802: pl.String,
-        2950: pl.String,
-        142: pl.String,
-        1560: pl.String,
-        1562: pl.String,
-        869: pl.String,
-        650: pl.String,
-        705: pl.String,
-
-        1082: pl.Date,
-        1083: pl.Time,
-        1266: pl.Time,
-        1114: pl.Datetime,
-        1184: pl.Datetime,
-        1186: pl.Duration
-    }
+    _DESCRIPTION_DATATYPE_MAPPING_: tuple = (
+        (psycopg.STRING, pl.String),
+        (psycopg.BINARY, pl.Binary),
+        (psycopg.DATETIME, pl.Datetime)
+    )
 
     def __init__(self, *,
                  host: str = "localhost",

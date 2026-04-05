@@ -225,8 +225,13 @@ class DatabaseAPI(ServiceAPI, ABC):
         elif isinstance(result, list): rows = result
         elif isinstance(result, tuple): rows = [result]
         else: rows = list(result)
-        schema = {desc[0]: self._DESCRIPTION_DATATYPE_MAPPING_.get(desc[1]) for desc in self._cursor_.description} if self._cursor_.description else {}
-        return self.frame(data=rows, schema=schema or self._STRUCTURE_)
+        schema = self._STRUCTURE_ or {}
+        for col_name, type_code, *_ in self._cursor_.description or []:
+            if self._STRUCTURE_ and col_name in self._STRUCTURE_:
+                schema[col_name] = self._STRUCTURE_[col_name]
+            elif self._DESCRIPTION_DATATYPE_MAPPING_:
+                schema[col_name] = next((p for d, p in self._DESCRIPTION_DATATYPE_MAPPING_ if type_code == d), None)
+        return self.frame(data=rows, schema=schema)
 
     def fetchone(self) -> pd.DataFrame | pl.DataFrame:
         timer, df = self._fetch_(callback=lambda: self._frame_(self._cursor_.fetchone()), abort=self.rollback)
