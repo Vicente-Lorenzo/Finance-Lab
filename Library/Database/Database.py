@@ -20,16 +20,17 @@ class DatabaseAPI(ServiceAPI, ABC):
         super().__init_subclass__(**kwargs)
         if DatabaseAPI not in cls.__bases__: return
         module: str = traceback_package(package=cls.__module__)
-        cls._CHECK_DATABASE_QUERY_ = QueryAPI(PathAPI(path="Check/Database.sql", module=module))
-        cls._CHECK_SCHEMA_QUERY_ = QueryAPI(PathAPI(path="Check/Schema.sql", module=module))
-        cls._CHECK_TABLE_QUERY_ = QueryAPI(PathAPI(path="Check/Table.sql", module=module))
-        cls._CHECK_STRUCTURE_QUERY_ = QueryAPI(PathAPI(path="Check/Structure.sql", module=module))
-        cls._CREATE_DATABASE_QUERY_ = QueryAPI(PathAPI(path="Create/Database.sql", module=module))
-        cls._CREATE_SCHEMA_QUERY_ = QueryAPI(PathAPI(path="Create/Schema.sql", module=module))
-        cls._CREATE_TABLE_QUERY_ = QueryAPI(PathAPI(path="Create/Table.sql", module=module))
-        cls._DELETE_DATABASE_QUERY_ = QueryAPI(PathAPI(path="Delete/Database.sql", module=module))
-        cls._DELETE_SCHEMA_QUERY_ = QueryAPI(PathAPI(path="Delete/Schema.sql", module=module))
-        cls._DELETE_TABLE_QUERY_ = QueryAPI(PathAPI(path="Delete/Table.sql", module=module))
+        cls._CHECK_DATABASE_QUERY_ = QueryAPI(PathAPI(path="Database/Check.sql", module=module))
+        cls._CREATE_DATABASE_QUERY_ = QueryAPI(PathAPI(path="Database/Create.sql", module=module))
+        cls._DELETE_DATABASE_QUERY_ = QueryAPI(PathAPI(path="Database/Delete.sql", module=module))
+        cls._CHECK_SCHEMA_QUERY_ = QueryAPI(PathAPI(path="Schema/Check.sql", module=module))
+        cls._CREATE_SCHEMA_QUERY_ = QueryAPI(PathAPI(path="Schema/Create.sql", module=module))
+        cls._DELETE_SCHEMA_QUERY_ = QueryAPI(PathAPI(path="Schema/Delete.sql", module=module))
+        cls._CHECK_TABLE_QUERY_ = QueryAPI(PathAPI(path="Table/Check.sql", module=module))
+        cls._CREATE_TABLE_QUERY_ = QueryAPI(PathAPI(path="Table/Create.sql", module=module))
+        cls._DELETE_TABLE_QUERY_ = QueryAPI(PathAPI(path="Table/Delete.sql", module=module))
+        cls._CHECK_STRUCTURE_QUERY_ = QueryAPI(PathAPI(path="Table/Structure.sql", module=module))
+        cls._LIST_CATALOG_QUERY_ = QueryAPI(PathAPI(path="Catalog/List.sql", module=module))
 
     def __init__(self, *,
                  host: str,
@@ -74,10 +75,10 @@ class DatabaseAPI(ServiceAPI, ABC):
         raise TypeError(f"Not a valid Structure dtype: {dtype}")
 
     @abstractmethod
-    def _check_(self): raise NotImplementedError
+    def _check_(self, structure: dict = None): raise NotImplementedError
 
     @abstractmethod
-    def _create_(self): raise NotImplementedError
+    def _create_(self, structure: dict = None): raise NotImplementedError
 
     @abstractmethod
     def _driver_(self, admin: bool): raise NotImplementedError
@@ -149,41 +150,114 @@ class DatabaseAPI(ServiceAPI, ABC):
         sql, configuration = query.compile(self._PARAMETER_TOKEN_, **kwargs)
         return sql, configuration, kwargs
 
-    def _database_(self):
-        self._log_.debug(lambda: f"Migration Operation: Checking {self.database} Database")
-        check = self.execute(self._CHECK_DATABASE_QUERY_).fetchall()
-        if not check.is_empty(): return
-        self._log_.warning(lambda: f"Migration Operation: Missing {self.database} Database")
-        self.execute(self._CREATE_DATABASE_QUERY_)
-        self.commit()
-        self._log_.alert(lambda: f"Migration Operation: Created {self.database} Database")
+    def list(self, database: str = None, schema: str = None, table: str = None, system: bool = False) -> pd.DataFrame | pl.DataFrame:
+        database = database or self.database or "%"
+        schema = schema or self.schema or "%"
+        table = table or self.table or "%"
+        system = 1 if system else 0
+        self._log_.debug(lambda: "List Operation: Fetching structural catalog")
+        return self.execute(self._LIST_CATALOG_QUERY_, database=database, schema=schema, table=table, system=system).fetchall()
 
-    def _schema_(self):
-        self._log_.debug(lambda: f"Migration Operation: Checking {self.schema} Schema")
-        check = self.execute(self._CHECK_SCHEMA_QUERY_).fetchall()
-        if not check.is_empty(): return
-        self._log_.warning(lambda: f"Migration Operation: Missing {self.schema} Schema")
-        self.execute(self._CREATE_SCHEMA_QUERY_)
-        self.commit()
-        self._log_.alert(lambda: f"Migration Operation: Created {self.schema} Schema")
+    def exists(self, database: str = None, schema: str = None, table: str = None) -> bool:
+        database = database or self.database
+        schema = schema or self.schema
+        table = table or self.table
+        if table is not None and (database is None or schema is None):
+            raise ValueError("Schema and Database must be provided to operate on a Table")
+        if schema is not None and database is None:
+            raise ValueError("Database must be provided to operate on a Schema")
+        if database is None and schema is None and table is None:
+            raise ValueError("At least one structure must be specified")
+        kwargs = {k: v for k, v in {"database": database, "schema": schema, "table": table}.items() if v is not None}
+        result = True
+        if database is not None:
+            self._log_.debug(lambda: f"Check Operation: Checking {database} Database")
+            if self.execute(self._CHECK_DATABASE_QUERY_, **kwargs).fetchall().is_empty():
+                result = False
+        if schema is not None:
+            self._log_.debug(lambda: f"Check Operation: Checking {schema} Schema")
+            if self.execute(self._CHECK_SCHEMA_QUERY_, **kwargs).fetchall().is_empty():
+                result = False
+        if table is not None:
+            self._log_.debug(lambda: f"Check Operation: Checking {table} Table")
+            if self.execute(self._CHECK_TABLE_QUERY_, **kwargs).fetchall().is_empty():
+                result = False
+        return result
 
-    def _table_(self):
-        self._log_.debug(lambda: f"Migration Operation: Checking {self.table} Table")
-        check = self.execute(self._CHECK_TABLE_QUERY_).fetchall()
-        if not check.is_empty():
-            self._log_.debug(lambda: f"Migration Operation: Checking {self.table} Structure")
-            definitions = self._check_()
-            diff = self.execute(self._CHECK_STRUCTURE_QUERY_, definitions=definitions).fetchall()
-            if diff.is_empty(): return
-            self._log_.warning(lambda: f"Migration Operation: Mismatched {self.table} Structure")
-            self.execute(self._DELETE_TABLE_QUERY_)
-            self.commit()
-            self._log_.alert(lambda: f"Migration Operation: Deleted {self.table} Table")
-        self._log_.warning(lambda: f"Migration Operation: Missing {self.table} Table")
-        definitions = self._create_()
-        self.execute(self._CREATE_TABLE_QUERY_, definitions=definitions)
-        self.commit()
-        self._log_.alert(lambda: f"Migration Operation: Created {self.table} Table")
+    def create(self, database: str = None, schema: str = None, table: str = None, structure: dict = None):
+        database = database or self.database
+        schema = schema or self.schema
+        table = table or self.table
+        if table is not None and (database is None or schema is None):
+            raise ValueError("Schema and Database must be provided to operate on a Table")
+        if schema is not None and database is None:
+            raise ValueError("Database must be provided to operate on a Schema")
+        if database is None and schema is None and table is None:
+            raise ValueError("At least one structure must be specified")
+        kwargs = {k: v for k, v in {"database": database, "schema": schema, "table": table}.items() if v is not None}
+        if database is not None:
+            if not self.exists(database=database):
+                self._log_.warning(lambda: f"Create Operation: Missing {database} Database")
+                self.execute(self._CREATE_DATABASE_QUERY_, **kwargs)
+                self.commit()
+                self._log_.alert(lambda: f"Create Operation: Created {database} Database")
+        if schema is not None:
+            if not self.exists(schema=schema):
+                self._log_.warning(lambda: f"Create Operation: Missing {schema} Schema")
+                self.execute(self._CREATE_SCHEMA_QUERY_, **kwargs)
+                self.commit()
+                self._log_.alert(lambda: f"Create Operation: Created {schema} Schema")
+        if table is not None:
+            active_structure = structure if structure is not None else self._STRUCTURE_
+            if active_structure is None:
+                raise ValueError("Structure must be provided to create a Table")
+            if not self.exists(table=table):
+                self._log_.warning(lambda: f"Create Operation: Missing {table} Table")
+                definitions = self._create_(structure=active_structure)
+                self.execute(self._CREATE_TABLE_QUERY_, definitions=definitions, **kwargs)
+                self.commit()
+                self._log_.alert(lambda: f"Create Operation: Created {table} Table")
+            else:
+                self._log_.debug(lambda: f"Create Operation: Checking {table} Structure")
+                definitions = self._check_(structure=active_structure)
+                diff = self.execute(self._CHECK_STRUCTURE_QUERY_, definitions=definitions, **kwargs).fetchall()
+                if not diff.is_empty():
+                    self._log_.warning(lambda: f"Create Operation: Mismatched {table} Structure")
+                    self.execute(self._DELETE_TABLE_QUERY_, **kwargs)
+                    self.commit()
+                    self._log_.alert(lambda: f"Create Operation: Deleted {table} Table")
+                    self._log_.warning(lambda: f"Create Operation: Missing {table} Table")
+                    definitions = self._create_(structure=active_structure)
+                    self.execute(self._CREATE_TABLE_QUERY_, definitions=definitions, **kwargs)
+                    self.commit()
+                    self._log_.alert(lambda: f"Create Operation: Created {table} Table")
+
+    def delete(self, database: str = None, schema: str = None, table: str = None):
+        database = database or self.database
+        schema = schema or self.schema
+        table = table or self.table
+        if table is not None and (database is None or schema is None):
+            raise ValueError("Schema and Database must be provided to operate on a Table")
+        if schema is not None and database is None:
+            raise ValueError("Database must be provided to operate on a Schema")
+        if database is None and schema is None and table is None:
+            raise ValueError("At least one structure must be specified")
+        kwargs = {k: v for k, v in {"database": database, "schema": schema, "table": table}.items() if v is not None}
+        if table is not None:
+            if self.exists(table=table):
+                self.execute(self._DELETE_TABLE_QUERY_, **kwargs)
+                self.commit()
+                self._log_.alert(lambda: f"Delete Operation: Deleted {table} Table")
+        if schema is not None:
+            if self.exists(schema=schema):
+                self.execute(self._DELETE_SCHEMA_QUERY_, **kwargs)
+                self.commit()
+                self._log_.alert(lambda: f"Delete Operation: Deleted {schema} Schema")
+        if database is not None:
+            if self.exists(database=database):
+                self.execute(self._DELETE_DATABASE_QUERY_, **kwargs)
+                self.commit()
+                self._log_.alert(lambda: f"Delete Operation: Deleted {database} Database")
 
     def migration(self):
         try:
@@ -194,7 +268,7 @@ class DatabaseAPI(ServiceAPI, ABC):
                 subtimer.start()
                 self.disconnect()
                 self.connect(admin=True)
-                self._database_()
+                self.create(database=self.database)
                 subtimer.stop()
                 self._log_.info(lambda: f"Migration Operation: Migrated Database ({subtimer.result()})")
             self.disconnect()
@@ -202,13 +276,13 @@ class DatabaseAPI(ServiceAPI, ABC):
             if self.schemed():
                 subtimer = Timer()
                 subtimer.start()
-                self._schema_()
+                self.create(schema=self.schema)
                 subtimer.stop()
                 self._log_.info(lambda: f"Migration Operation: Migrated Schema ({subtimer.result()})")
             if self.tabled() and self.structured():
                 subtimer = Timer()
                 subtimer.start()
-                self._table_()
+                self.create(table=self.table)
                 subtimer.stop()
                 self._log_.info(lambda: f"Migration Operation: Migrated Table ({subtimer.result()})")
             timer.stop()

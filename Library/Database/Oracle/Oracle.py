@@ -113,17 +113,19 @@ class OracleDatabaseAPI(DatabaseAPI):
             autocommit=autocommit
         )
 
-    def _check_(self):
+    def _check_(self, structure: dict = None):
+        structure = structure if structure is not None else self._STRUCTURE_
         parts = []
-        for name, dtype in self._STRUCTURE_.items():
+        for name, dtype in structure.items():
             t = self._CHECK_DATATYPE_MAPPING_[self._normalize_(dtype)]
             parts.append(f"SELECT '{name}' AS column_name, '{t}' AS data_type FROM dual")
         return "\nUNION ALL\n".join(parts)
 
-    def _create_(self):
+    def _create_(self, structure: dict = None):
+        structure = structure if structure is not None else self._STRUCTURE_
         return ",\n    ".join(
             f'"{name}" {self._CREATE_DATATYPE_MAPPING_[self._normalize_(dtype)]}'
-            for name, dtype in self._STRUCTURE_.items()
+            for name, dtype in structure.items()
         )
 
     def _driver_(self, admin: bool):

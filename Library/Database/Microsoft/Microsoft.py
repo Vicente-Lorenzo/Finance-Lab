@@ -113,16 +113,18 @@ class MicrosoftDatabaseAPI(DatabaseAPI):
             autocommit=autocommit
         )
 
-    def _check_(self):
+    def _check_(self, structure: dict = None):
+        structure = structure if structure is not None else self._STRUCTURE_
         return ",\n    ".join(
             f"('{name}', '{self._CHECK_DATATYPE_MAPPING_[self._normalize_(dtype)]}')"
-            for name, dtype in self._STRUCTURE_.items()
+            for name, dtype in structure.items()
         )
 
-    def _create_(self):
+    def _create_(self, structure: dict = None):
+        structure = structure if structure is not None else self._STRUCTURE_
         return ",\n    ".join(
             f'[{name}] {self._CREATE_DATATYPE_MAPPING_[self._normalize_(dtype)]}'
-            for name, dtype in self._STRUCTURE_.items()
+            for name, dtype in structure.items()
         )
 
     def _driver_(self, admin: bool):
