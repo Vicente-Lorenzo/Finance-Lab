@@ -202,24 +202,24 @@ class DatabaseAPI(ServiceAPI, ABC):
                 self.commit()
                 self._log_.alert(lambda: f"Create Operation: Created {database} Database")
         if schema is not None:
-            if not self.exists(schema=schema):
+            if not self.exists(database=database, schema=schema):
                 self._log_.warning(lambda: f"Create Operation: Missing {schema} Schema")
                 self.execute(self._CREATE_SCHEMA_QUERY_, **kwargs)
                 self.commit()
                 self._log_.alert(lambda: f"Create Operation: Created {schema} Schema")
         if table is not None:
-            active_structure = structure if structure is not None else self._STRUCTURE_
-            if active_structure is None:
+            structure = structure if structure is not None else self._STRUCTURE_
+            if structure is None:
                 raise ValueError("Structure must be provided to create a Table")
-            if not self.exists(table=table):
+            if not self.exists(database=database, schema=schema, table=table):
                 self._log_.warning(lambda: f"Create Operation: Missing {table} Table")
-                definitions = self._create_(structure=active_structure)
+                definitions = self._create_(structure=structure)
                 self.execute(self._CREATE_TABLE_QUERY_, definitions=definitions, **kwargs)
                 self.commit()
                 self._log_.alert(lambda: f"Create Operation: Created {table} Table")
             else:
                 self._log_.debug(lambda: f"Create Operation: Checking {table} Structure")
-                definitions = self._check_(structure=active_structure)
+                definitions = self._check_(structure=structure)
                 diff = self.execute(self._CHECK_STRUCTURE_QUERY_, definitions=definitions, **kwargs).fetchall()
                 if not diff.is_empty():
                     self._log_.warning(lambda: f"Create Operation: Mismatched {table} Structure")
@@ -227,7 +227,7 @@ class DatabaseAPI(ServiceAPI, ABC):
                     self.commit()
                     self._log_.alert(lambda: f"Create Operation: Deleted {table} Table")
                     self._log_.warning(lambda: f"Create Operation: Missing {table} Table")
-                    definitions = self._create_(structure=active_structure)
+                    definitions = self._create_(structure=structure)
                     self.execute(self._CREATE_TABLE_QUERY_, definitions=definitions, **kwargs)
                     self.commit()
                     self._log_.alert(lambda: f"Create Operation: Created {table} Table")
@@ -244,12 +244,12 @@ class DatabaseAPI(ServiceAPI, ABC):
             raise ValueError("At least one structure must be specified")
         kwargs = {k: v for k, v in {"database": database, "schema": schema, "table": table}.items() if v is not None}
         if table is not None:
-            if self.exists(table=table):
+            if self.exists(database=database, schema=schema, table=table):
                 self.execute(self._DELETE_TABLE_QUERY_, **kwargs)
                 self.commit()
                 self._log_.alert(lambda: f"Delete Operation: Deleted {table} Table")
         if schema is not None:
-            if self.exists(schema=schema):
+            if self.exists(database=database, schema=schema):
                 self.execute(self._DELETE_SCHEMA_QUERY_, **kwargs)
                 self.commit()
                 self._log_.alert(lambda: f"Delete Operation: Deleted {schema} Schema")
@@ -299,7 +299,7 @@ class DatabaseAPI(ServiceAPI, ABC):
         elif isinstance(result, list): rows = result
         elif isinstance(result, tuple): rows = [result]
         else: rows = list(result)
-        schema = self._STRUCTURE_ or {}
+        schema = self._STRUCTURE_.copy() if self._STRUCTURE_ else {}
         for col_name, type_code, *_ in self._cursor_.description or []:
             if self._STRUCTURE_ and col_name in self._STRUCTURE_:
                 schema[col_name] = self._STRUCTURE_[col_name]
