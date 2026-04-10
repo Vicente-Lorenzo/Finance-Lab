@@ -1,11 +1,12 @@
 import psycopg
 from typing import Callable
 
-from Library.Dataframe import pl
-from Library.Database import DatabaseAPI
+from Library.Dataframe.Dataframe import pl
+from Library.Database.Database import DatabaseAPI
 
 class PostgresDatabaseAPI(DatabaseAPI):
 
+    _ADMIN_: str = "postgres"
     _PARAMETER_TOKEN_: Callable[[int], str] = staticmethod(lambda i: "%s")
 
     _CHECK_DATATYPE_MAPPING_: dict = {
@@ -128,7 +129,7 @@ class PostgresDatabaseAPI(DatabaseAPI):
         )
 
     def _driver_(self, admin: bool):
-        database = "postgres" if admin else (self.database or None)
+        database = self._ADMIN_ if admin or not self.database else self.database
         connection = psycopg.connect(
             host=self._host_,
             port=self._port_,

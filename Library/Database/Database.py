@@ -1,15 +1,18 @@
 from typing import Callable
 from abc import ABC, abstractmethod
+import threading
 
-from Library.Statistics import Timer
-from Library.Dataframe import pd, pl
-from Library.Database import QueryAPI
-from Library.Service import ServiceAPI
-from Library.Logging import HandlerLoggingAPI
-from Library.Utility import PathAPI, traceback_package
+from Library.Statistics.Timer import Timer
+from Library.Dataframe.Dataframe import pd, pl
+from Library.Database.Query import QueryAPI
+from Library.Service.Service import ServiceAPI
+from Library.Logging.Handler import HandlerLoggingAPI
+from Library.Utility.Path import PathAPI, traceback_package
+from Library.Utility.Typing import MISSING
 
 class DatabaseAPI(ServiceAPI, ABC):
 
+    _ADMIN_: str = None
     _PARAMETER_TOKEN_: Callable[[int], str] = None
     _CHECK_DATATYPE_MAPPING_: dict = None
     _CREATE_DATATYPE_MAPPING_: dict = None
@@ -30,7 +33,9 @@ class DatabaseAPI(ServiceAPI, ABC):
         cls._CREATE_TABLE_QUERY_ = QueryAPI(PathAPI(path="Table/Create.sql", module=module))
         cls._DELETE_TABLE_QUERY_ = QueryAPI(PathAPI(path="Table/Delete.sql", module=module))
         cls._CHECK_STRUCTURE_QUERY_ = QueryAPI(PathAPI(path="Table/Structure.sql", module=module))
-        cls._LIST_CATALOG_QUERY_ = QueryAPI(PathAPI(path="Catalog/List.sql", module=module))
+        cls._LIST_CATALOG_QUERY_ = QueryAPI(PathAPI(path="System/List.sql", module=module))
+        cls._LIST_SESSIONS_QUERY_ = QueryAPI(PathAPI(path="System/Sessions.sql", module=module))
+        cls._KILL_SESSION_QUERY_ = QueryAPI(PathAPI(path="System/Kill.sql", module=module))
 
     def __init__(self, *,
                  host: str,
@@ -54,19 +59,77 @@ class DatabaseAPI(ServiceAPI, ABC):
         self._migrate_: bool = migrate
         self._autocommit_: bool = autocommit
 
-        self._defaults_: dict = {}
-        self.database: str = database
-        if self.databased(): self._defaults_["database"] = database
-        self.schema: str = schema
-        if self.schemed(): self._defaults_["schema"] = schema
-        self.table: str = table
-        if self.tabled(): self._defaults_["table"] = table
+        self._database_: str = database
+        self._schema_: str = schema
+        self._table_: str = table
 
         self._connection_ = None
         self._transaction_ = None
         self._cursor_ = None
+        self._pool_ = {}
+        self._lock_ = threading.RLock()
 
-        self._log_ = HandlerLoggingAPI(self.__class__.__name__, **self._defaults_)
+        defaults = {k: v for k, v in {"database": database, "schema": schema, "table": table}.items() if v is not None}
+        self._log_ = HandlerLoggingAPI(self.__class__.__name__, **defaults)
+
+    @property
+    def database(self) -> str | None:
+        if self._admin_ or not self._database_: return self._ADMIN_
+        return self._database_
+
+    @property
+    def schema(self) -> str | None:
+        return self._schema_
+
+    @property
+    def table(self) -> str | None:
+        return self._table_
+
+    @property
+    def _hash_(self) -> int:
+        params = (
+            ("admin", self._admin_),
+            ("autocommit", self._autocommit_),
+            ("database", self._database_),
+            ("host", self._host_),
+            ("legacy", self._legacy_),
+            ("migrate", self._migrate_),
+            ("password", self._password_),
+            ("port", self._port_),
+            ("schema", self._schema_),
+            ("table", self._table_),
+            ("user", self._user_)
+        )
+        return hash(params)
+
+    def clone(self, **kwargs):
+        params = {
+            "host": self._host_,
+            "port": self._port_,
+            "user": self._user_,
+            "password": self._password_,
+            "admin": self._admin_,
+            "database": self._database_,
+            "schema": self._schema_,
+            "table": self._table_,
+            "legacy": self._legacy_,
+            "migrate": self._migrate_,
+            "autocommit": self._autocommit_
+        }
+        for k, v in kwargs.items():
+            if v is not MISSING: params[k] = v
+        key = hash(tuple(sorted(params.items())))
+        if key == self._hash_:
+            self._log_.debug(lambda: "Clone Operation: Skipped (Parameters match self)")
+            return self
+        with self._lock_:
+            if key in self._pool_:
+                self._log_.debug(lambda: "Clone Operation: Skipped (Retrieved from pool)")
+                return self._pool_[key]
+            self._log_.debug(lambda: "Clone Operation: Created (Added to pool)")
+            clone = self.__class__(**params)
+            self._pool_[key] = clone
+            return clone
 
     @staticmethod
     def _normalize_(dtype):
@@ -132,6 +195,13 @@ class DatabaseAPI(ServiceAPI, ABC):
 
     def __enter__(self): return self.migration() if self._migrate_ else self.connect()
 
+    def disconnect(self) -> bool:
+        with self._lock_:
+            for db in self._pool_.values():
+                db.disconnect()
+            self._pool_.clear()
+        return super().disconnect()
+
     def _disconnect_(self):
         if self._cursor_ is not None:
             self._cursor_.close()
@@ -140,124 +210,237 @@ class DatabaseAPI(ServiceAPI, ABC):
             self._connection_.close()
             self._connection_ = None
 
+    def sessions(self, database: str | object = MISSING) -> pd.DataFrame | pl.DataFrame:
+        database = database if database is not MISSING else self.database
+        if isinstance(database, (list, tuple)):
+            frames = [self.sessions(database=d) for d in database]
+            return pl.concat(frames, how="vertical_relaxed") if frames and isinstance(frames[0], pl.DataFrame) else pd.concat(frames) if frames else self.frame(data=[], schema={})
+        database = database or "%"
+        self._log_.debug(lambda: "Sessions Operation: Fetching active sessions")
+        return self.execute(self._LIST_SESSIONS_QUERY_, database=database, admin=True).fetchall()
+
+    def kill(self, id: int | str | list | tuple | object = MISSING, database: str | object = MISSING):
+        database = database if database is not MISSING else self.database
+        if isinstance(database, (list, tuple)):
+            for d in database: self.kill(id=id, database=d)
+            return self
+        with self._lock_:
+            for key, clone_db in list(self._pool_.items()):
+                if clone_db._database_ == database:
+                    clone_db.disconnect()
+        if isinstance(id, (list, tuple)):
+            for i in id: self.kill(id=i, database=database)
+            return self
+        if id is MISSING:
+            self._log_.debug(lambda: "Kill Operation: Fetching all active sessions to terminate")
+            active_sessions = self.sessions(database=database)
+            if not active_sessions.is_empty():
+                ids = active_sessions["Id"].to_list()
+                self.kill(id=ids, database=database)
+            return self
+        self._log_.alert(lambda: f"Kill Operation: Terminating session {id}")
+        try: self.execute(self._KILL_SESSION_QUERY_, id=id, admin=True).commit()
+        except Exception: pass
+        return self
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type or exc_val or exc_tb: self.rollback()
         else: self.commit()
         return super().__exit__(exc_type, exc_val, exc_tb)
 
     def _query_(self, query: QueryAPI, **kwargs):
-        kwargs = {**self._defaults_, **kwargs}
+        defaults = {}
+        if self.database is not None: defaults["database"] = self.database
+        if self.schema is not None: defaults["schema"] = self.schema
+        if self.table is not None: defaults["table"] = self.table
+        kwargs = {**defaults, **kwargs}
         sql, configuration = query.compile(self._PARAMETER_TOKEN_, **kwargs)
         return sql, configuration, kwargs
 
-    def list(self, database: str = None, schema: str = None, table: str = None, system: bool = False) -> pd.DataFrame | pl.DataFrame:
-        database = database or self.database or "%"
-        schema = schema or self.schema or "%"
-        table = table or self.table or "%"
+    def list(self, database: str | object = MISSING, schema: str | object = MISSING, table: str | object = MISSING, system: bool = False) -> pd.DataFrame | pl.DataFrame:
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        if isinstance(database, (list, tuple)):
+            frames = [self.list(database=d, schema=schema, table=table, system=system) for d in database]
+            return pl.concat(frames, how="vertical_relaxed") if frames and isinstance(frames[0], pl.DataFrame) else pd.concat(frames) if frames else self.frame(data=[], schema={})
+        if isinstance(schema, (list, tuple)):
+            frames = [self.list(database=database, schema=s, table=table, system=system) for s in schema]
+            return pl.concat(frames, how="vertical_relaxed") if frames and isinstance(frames[0], pl.DataFrame) else pd.concat(frames) if frames else self.frame(data=[], schema={})
+        if isinstance(table, (list, tuple)):
+            frames = [self.list(database=database, schema=schema, table=t, system=system) for t in table]
+            return pl.concat(frames, how="vertical_relaxed") if frames and isinstance(frames[0], pl.DataFrame) else pd.concat(frames) if frames else self.frame(data=[], schema={})
+        database = database if database and database != "%" else "%"
+        schema = schema if schema and schema != "%" else "%"
+        table = table if table and table != "%" else "%"
         system = 1 if system else 0
         self._log_.debug(lambda: "List Operation: Fetching structural catalog")
-        return self.execute(self._LIST_CATALOG_QUERY_, database=database, schema=schema, table=table, system=system).fetchall()
+        df = self.execute(self._LIST_CATALOG_QUERY_, database=database, schema=schema, table=table, system=system, admin=True).fetchall()
+        if not df.is_empty():
+            databases = df["Database"].unique().to_list() if "Database" in df.columns else []
+            current_db = self.database
+            frames = []
+            expansion = False
+            if database == "%":
+                expansion = True
+            else:
+                for db_name in databases:
+                    if db_name != current_db:
+                        expansion = True
+                        break
+            if expansion:
+                for db_name in databases:
+                    db = self.execute(self._LIST_CATALOG_QUERY_, database=db_name, schema=schema, table=table, system=system, admin=False)
+                    db_df = db.fetchall()
+                    if not db_df.is_empty():
+                        frames.append(db_df)
+                    else:
+                        frames.append(df.filter(pl.col("Database") == db_name) if isinstance(df, pl.DataFrame) else df[df["Database"] == db_name])
+                if frames:
+                    return pl.concat(frames, how="vertical_relaxed") if isinstance(frames[0], pl.DataFrame) else pd.concat(frames)
+        return df
 
-    def exists(self, database: str = None, schema: str = None, table: str = None) -> bool:
-        database = database or self.database
-        schema = schema or self.schema
-        table = table or self.table
-        if table is not None and (database is None or schema is None):
+    def exists(self, database: str | object = MISSING, schema: str | object = MISSING, table: str | object = MISSING) -> bool:
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        if isinstance(database, (list, tuple)):
+            return all(self.exists(database=d, schema=schema, table=table) for d in database)
+        if isinstance(schema, (list, tuple)):
+            return all(self.exists(database=database, schema=s, table=table) for s in schema)
+        if isinstance(table, (list, tuple)):
+            return all(self.exists(database=database, schema=schema, table=t) for t in table)
+        if table and (not database or not schema):
             raise ValueError("Schema and Database must be provided to operate on a Table")
-        if schema is not None and database is None:
+        if schema and not database:
             raise ValueError("Database must be provided to operate on a Schema")
-        if database is None and schema is None and table is None:
+        if not database and not schema and not table:
             raise ValueError("At least one structure must be specified")
-        kwargs = {k: v for k, v in {"database": database, "schema": schema, "table": table}.items() if v is not None}
-        result = True
-        if database is not None:
+        kwargs = {k: v for k, v in {"database": database, "schema": schema, "table": table}.items() if v}
+        if database:
             self._log_.debug(lambda: f"Check Operation: Checking {database} Database")
-            if self.execute(self._CHECK_DATABASE_QUERY_, **kwargs).fetchall().is_empty():
-                result = False
-        if schema is not None:
+            db = self.execute(self._CHECK_DATABASE_QUERY_, **kwargs, admin=True)
+            empty = db.fetchall().is_empty()
+            if empty: return False
+        if schema:
             self._log_.debug(lambda: f"Check Operation: Checking {schema} Schema")
-            if self.execute(self._CHECK_SCHEMA_QUERY_, **kwargs).fetchall().is_empty():
-                result = False
-        if table is not None:
+            db = self.execute(self._CHECK_SCHEMA_QUERY_, **kwargs, admin=False)
+            empty = db.fetchall().is_empty()
+            if empty: return False
+        if table:
             self._log_.debug(lambda: f"Check Operation: Checking {table} Table")
-            if self.execute(self._CHECK_TABLE_QUERY_, **kwargs).fetchall().is_empty():
-                result = False
-        return result
+            db = self.execute(self._CHECK_TABLE_QUERY_, **kwargs, admin=False)
+            empty = db.fetchall().is_empty()
+            if empty: return False
+        return True
 
-    def create(self, database: str = None, schema: str = None, table: str = None, structure: dict = None):
-        database = database or self.database
-        schema = schema or self.schema
-        table = table or self.table
-        if table is not None and (database is None or schema is None):
+    def diff(self, database: str | object = MISSING, schema: str | object = MISSING, table: str | object = MISSING, structure: dict | object = MISSING) -> bool:
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        structure = structure if structure is not MISSING else self._STRUCTURE_
+        if not structure:
+            raise ValueError("Structure must be provided to diff a Table")
+        if table and (not database or not schema):
             raise ValueError("Schema and Database must be provided to operate on a Table")
-        if schema is not None and database is None:
+        if schema and not database:
             raise ValueError("Database must be provided to operate on a Schema")
-        if database is None and schema is None and table is None:
+        if not database and not schema and not table:
             raise ValueError("At least one structure must be specified")
-        kwargs = {k: v for k, v in {"database": database, "schema": schema, "table": table}.items() if v is not None}
-        if database is not None:
-            if not self.exists(database=database):
+        kwargs = {k: v for k, v in {"database": database, "schema": schema, "table": table}.items() if v}
+        definitions = self._check_(structure=structure)
+        self._log_.debug(lambda: f"Diff Operation: Checking {table} Structure")
+        db = self.execute(self._CHECK_STRUCTURE_QUERY_, definitions=definitions, **kwargs, admin=False)
+        diff_empty = db.fetchall().is_empty()
+        return not diff_empty
+
+    def create(self, database: str | object = MISSING, schema: str | object = MISSING, table: str | object = MISSING, structure: dict | object = MISSING):
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        if isinstance(database, (list, tuple)):
+            for d in database: self.create(database=d, schema=schema, table=table, structure=structure)
+            return self
+        if isinstance(schema, (list, tuple)):
+            for s in schema: self.create(database=database, schema=s, table=table, structure=structure)
+            return self
+        if isinstance(table, (list, tuple)):
+            for t in table: self.create(database=database, schema=schema, table=t, structure=structure)
+            return self
+        if table and (not database or not schema):
+            raise ValueError("Schema and Database must be provided to operate on a Table")
+        if schema and not database:
+            raise ValueError("Database must be provided to operate on a Schema")
+        if not database and not schema and not table:
+            raise ValueError("At least one structure must be specified")
+        kwargs = {k: v for k, v in {"database": database, "schema": schema, "table": table}.items() if v}
+        if database:
+            if not self.exists(database=database, schema=None, table=None):
                 self._log_.warning(lambda: f"Create Operation: Missing {database} Database")
-                self.execute(self._CREATE_DATABASE_QUERY_, **kwargs)
-                self.commit()
+                self.execute(self._CREATE_DATABASE_QUERY_, **kwargs, admin=True).commit()
                 self._log_.alert(lambda: f"Create Operation: Created {database} Database")
-        if schema is not None:
-            if not self.exists(database=database, schema=schema):
+        if schema:
+            if not self.exists(database=database, schema=schema, table=None):
                 self._log_.warning(lambda: f"Create Operation: Missing {schema} Schema")
-                self.execute(self._CREATE_SCHEMA_QUERY_, **kwargs)
-                self.commit()
+                db = self.execute(self._CREATE_SCHEMA_QUERY_, **kwargs, admin=False)
+                db.commit()
                 self._log_.alert(lambda: f"Create Operation: Created {schema} Schema")
-        if table is not None:
-            structure = structure if structure is not None else self._STRUCTURE_
-            if structure is None:
+        if table:
+            structure_val = structure if structure is not MISSING else self._STRUCTURE_
+            if structure_val is None:
                 raise ValueError("Structure must be provided to create a Table")
             if not self.exists(database=database, schema=schema, table=table):
                 self._log_.warning(lambda: f"Create Operation: Missing {table} Table")
-                definitions = self._create_(structure=structure)
-                self.execute(self._CREATE_TABLE_QUERY_, definitions=definitions, **kwargs)
-                self.commit()
+                definitions = self._create_(structure=structure_val)
+                db = self.execute(self._CREATE_TABLE_QUERY_, definitions=definitions, **kwargs, admin=False)
+                db.commit()
                 self._log_.alert(lambda: f"Create Operation: Created {table} Table")
             else:
-                self._log_.debug(lambda: f"Create Operation: Checking {table} Structure")
-                definitions = self._check_(structure=structure)
-                diff = self.execute(self._CHECK_STRUCTURE_QUERY_, definitions=definitions, **kwargs).fetchall()
-                if not diff.is_empty():
+                if self.diff(database=database, schema=schema, table=table, structure=structure_val):
                     self._log_.warning(lambda: f"Create Operation: Mismatched {table} Structure")
-                    self.execute(self._DELETE_TABLE_QUERY_, **kwargs)
-                    self.commit()
-                    self._log_.alert(lambda: f"Create Operation: Deleted {table} Table")
+                    db = self.execute(self._DELETE_TABLE_QUERY_, **kwargs, admin=False)
+                    db.commit()
                     self._log_.warning(lambda: f"Create Operation: Missing {table} Table")
-                    definitions = self._create_(structure=structure)
-                    self.execute(self._CREATE_TABLE_QUERY_, definitions=definitions, **kwargs)
-                    self.commit()
+                    definitions = self._create_(structure=structure_val)
+                    db = self.execute(self._CREATE_TABLE_QUERY_, definitions=definitions, **kwargs, admin=False)
+                    db.commit()
                     self._log_.alert(lambda: f"Create Operation: Created {table} Table")
+        return self
 
-    def delete(self, database: str = None, schema: str = None, table: str = None):
-        database = database or self.database
-        schema = schema or self.schema
-        table = table or self.table
-        if table is not None and (database is None or schema is None):
+    def delete(self, database: str | object = MISSING, schema: str | object = MISSING, table: str | object = MISSING):
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        if isinstance(database, (list, tuple)):
+            for d in database: self.delete(database=d, schema=schema, table=table)
+            return self
+        if isinstance(schema, (list, tuple)):
+            for s in schema: self.delete(database=database, schema=s, table=table)
+            return self
+        if isinstance(table, (list, tuple)):
+            for t in table: self.delete(database=database, schema=schema, table=t)
+            return self
+        if table and (not database or not schema):
             raise ValueError("Schema and Database must be provided to operate on a Table")
-        if schema is not None and database is None:
+        if schema and not database:
             raise ValueError("Database must be provided to operate on a Schema")
-        if database is None and schema is None and table is None:
+        if not database and not schema and not table:
             raise ValueError("At least one structure must be specified")
-        kwargs = {k: v for k, v in {"database": database, "schema": schema, "table": table}.items() if v is not None}
-        if table is not None:
+        kwargs = {k: v for k, v in {"database": database, "schema": schema, "table": table}.items() if v}
+        if table:
             if self.exists(database=database, schema=schema, table=table):
-                self.execute(self._DELETE_TABLE_QUERY_, **kwargs)
-                self.commit()
+                self.execute(self._DELETE_TABLE_QUERY_, **kwargs, admin=False).commit()
                 self._log_.alert(lambda: f"Delete Operation: Deleted {table} Table")
-        if schema is not None:
-            if self.exists(database=database, schema=schema):
-                self.execute(self._DELETE_SCHEMA_QUERY_, **kwargs)
-                self.commit()
+        if schema:
+            if self.exists(database=database, schema=schema, table=None):
+                self.execute(self._DELETE_SCHEMA_QUERY_, **kwargs, admin=False).commit()
                 self._log_.alert(lambda: f"Delete Operation: Deleted {schema} Schema")
-        if database is not None:
-            if self.exists(database=database):
-                self.execute(self._DELETE_DATABASE_QUERY_, **kwargs)
-                self.commit()
+        if database:
+            if self.exists(database=database, schema=None, table=None):
+                self.disconnect()
+                self.execute(self._DELETE_DATABASE_QUERY_, **kwargs, admin=True).commit()
                 self._log_.alert(lambda: f"Delete Operation: Deleted {database} Database")
+        return self
 
     def migration(self):
         try:
@@ -268,23 +451,17 @@ class DatabaseAPI(ServiceAPI, ABC):
                 subtimer.start()
                 self.disconnect()
                 self.connect(admin=True)
-                self.create(database=self.database)
+                self.create(database=self._database_, schema=None, table=None)
                 subtimer.stop()
                 self._log_.info(lambda: f"Migration Operation: Migrated Database ({subtimer.result()})")
             self.disconnect()
             self.connect()
-            if self.schemed():
+            if self.schemed() or self.tabled():
                 subtimer = Timer()
                 subtimer.start()
-                self.create(schema=self.schema)
+                self.create()
                 subtimer.stop()
-                self._log_.info(lambda: f"Migration Operation: Migrated Schema ({subtimer.result()})")
-            if self.tabled() and self.structured():
-                subtimer = Timer()
-                subtimer.start()
-                self.create(table=self.table)
-                subtimer.stop()
-                self._log_.info(lambda: f"Migration Operation: Migrated Table ({subtimer.result()})")
+                self._log_.info(lambda: f"Migration Operation: Migrated Schema and Table ({subtimer.result()})")
             timer.stop()
             self._log_.info(lambda: f"Migration Operation: Migrated ({timer.result()})")
             return self
@@ -299,12 +476,14 @@ class DatabaseAPI(ServiceAPI, ABC):
         elif isinstance(result, list): rows = result
         elif isinstance(result, tuple): rows = [result]
         else: rows = list(result)
-        schema = self._STRUCTURE_.copy() if self._STRUCTURE_ else {}
+        schema = {}
         for col_name, type_code, *_ in self._cursor_.description or []:
             if self._STRUCTURE_ and col_name in self._STRUCTURE_:
                 schema[col_name] = self._STRUCTURE_[col_name]
             elif self._DESCRIPTION_DATATYPE_MAPPING_:
                 schema[col_name] = next((p for d, p in self._DESCRIPTION_DATATYPE_MAPPING_ if type_code == d), None)
+            else:
+                schema[col_name] = None
         return self.frame(data=rows, schema=schema)
 
     def fetchone(self) -> pd.DataFrame | pl.DataFrame:
@@ -322,18 +501,59 @@ class DatabaseAPI(ServiceAPI, ABC):
         self._log_.info(lambda: f"Fetch All Operation: Fetched {len(df)} data points ({timer.result()})")
         return df
 
-    def execute(self, query: QueryAPI, *args, **kwargs):
+    def execute(self, query: QueryAPI, *args, database: str | object = MISSING, schema: str | object = MISSING, table: str | object = MISSING, admin: bool | object = MISSING, **kwargs):
+        if isinstance(database, (list, tuple)):
+            for d in database: self.execute(query, *args, database=d, schema=schema, table=table, admin=admin, **kwargs)
+            return self
+        if isinstance(schema, (list, tuple)):
+            for s in schema: self.execute(query, *args, database=database, schema=s, table=table, admin=admin, **kwargs)
+            return self
+        if isinstance(table, (list, tuple)):
+            for t in table: self.execute(query, *args, database=database, schema=schema, table=t, admin=admin, **kwargs)
+            return self
+        target_db = database if database is not MISSING else self._database_
+        target_schema = schema if schema is not MISSING else self._schema_
+        target_table = table if table is not MISSING else self._table_
+        target_admin = admin if admin is not MISSING else self._admin_
+        db = self.clone(database=target_db, schema=target_schema, table=target_table, admin=target_admin)
+        if db is not self:
+            db.connect()
+            return db.execute(query, *args, database=database, schema=schema, table=table, admin=admin, **kwargs)
+        if database is not MISSING: kwargs["database"] = database
+        if schema is not MISSING: kwargs["schema"] = schema
+        if table is not MISSING: kwargs["table"] = table
         sql, configuration, kwargs = self._query_(query, **kwargs)
         parameters = query.bind(configuration, *args, **kwargs) if configuration else None
         def _execute_():
+            print(f"[{self._database_}] SQL EXEC: {sql}")
             if parameters is not None: self._cursor_.execute(sql, parameters)
             else: self._cursor_.execute(sql)
             self._transaction_ = True
-        timer = super()._execute_(callback=_execute_, abort=self.rollback)
+        timer = self._execute_(callback=_execute_, abort=self.rollback)
         self._log_.info(lambda: f"Execute Operation: Executed ({timer.result()})")
         return self
 
-    def executemany(self, query: QueryAPI, *args, **kwargs):
+    def executemany(self, query: QueryAPI, *args, database: str | object = MISSING, schema: str | object = MISSING, table: str | object = MISSING, admin: bool | object = MISSING, **kwargs):
+        if isinstance(database, (list, tuple)):
+            for d in database: self.executemany(query, *args, database=d, schema=schema, table=table, admin=admin, **kwargs)
+            return self
+        if isinstance(schema, (list, tuple)):
+            for s in schema: self.executemany(query, *args, database=database, schema=s, table=table, admin=admin, **kwargs)
+            return self
+        if isinstance(table, (list, tuple)):
+            for t in table: self.executemany(query, *args, database=database, schema=schema, table=t, admin=admin, **kwargs)
+            return self
+        target_db = database if database is not MISSING else self._database_
+        target_schema = schema if schema is not MISSING else self._schema_
+        target_table = table if table is not MISSING else self._table_
+        target_admin = admin if admin is not MISSING else self._admin_
+        db = self.clone(database=target_db, schema=target_schema, table=target_table, admin=target_admin)
+        if db is not self:
+            db.connect()
+            return db.executemany(query, *args, database=database, schema=schema, table=table, admin=admin, **kwargs)
+        if database is not MISSING: kwargs["database"] = database
+        if schema is not MISSING: kwargs["schema"] = schema
+        if table is not MISSING: kwargs["table"] = table
         batch = self.flatten(args[0]) if len(args) == 1 else self.flatten(args)
         if not batch or not all(isinstance(row, (list, tuple, dict)) for row in batch):
             e = ValueError("Expecting batch as tuple/list of tuples/lists or tuple/list of dicts")
@@ -353,6 +573,6 @@ class DatabaseAPI(ServiceAPI, ABC):
         def _execute_():
             self._cursor_.executemany(sql, parameters)
             self._transaction_ = True
-        timer = super()._execute_(callback=_execute_, abort=self.rollback)
+        timer = self._execute_(callback=_execute_, abort=self.rollback)
         self._log_.info(lambda: f"Execute Many Operation: Executed ({timer.result()})")
         return self

@@ -1,0 +1,9 @@
+SELECT 
+    s.SID || ',' || s.SERIAL# AS "Id", 
+    SYS_CONTEXT('USERENV', 'CON_NAME') AS "Database", 
+    s.USERNAME AS "User", 
+    s.STATUS AS "State", 
+    q.SQL_TEXT AS "Query"
+FROM V$SESSION s
+LEFT JOIN V$SQL q ON s.SQL_ID = q.SQL_ID
+WHERE SYS_CONTEXT('USERENV', 'CON_NAME') LIKE :database: AND s.SID <> SYS_CONTEXT('USERENV', 'SID');

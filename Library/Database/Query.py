@@ -1,7 +1,8 @@
 import re
 from typing import Callable
 
-from Library.Utility import FileAPI, format
+from Library.Utility.File import FileAPI
+from Library.Utility.Typing import format
 
 class QueryAPI(FileAPI):
 

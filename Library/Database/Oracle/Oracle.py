@@ -1,11 +1,12 @@
 import oracledb
 from typing import Callable
 
-from Library.Dataframe import pl
-from Library.Database import DatabaseAPI
+from Library.Dataframe.Dataframe import pl
+from Library.Database.Database import DatabaseAPI
 
 class OracleDatabaseAPI(DatabaseAPI):
 
+    _ADMIN_: str = "ORCL"
     _PARAMETER_TOKEN_: Callable[[int], str] = staticmethod(lambda i: f":{i}")
 
     _CHECK_DATATYPE_MAPPING_: dict = {
@@ -129,7 +130,7 @@ class OracleDatabaseAPI(DatabaseAPI):
         )
 
     def _driver_(self, admin: bool):
-        database = "ORCL" if admin else (self.database or None)
+        database = self._ADMIN_ if admin or not self.database else self.database
         dsn = oracledb.makedsn(
             host=self._host_,
             port=self._port_,

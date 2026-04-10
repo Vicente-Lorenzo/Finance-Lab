@@ -16,8 +16,8 @@
  ## CODING STYLE & ORGANIZATION
  1. **General:** No docstrings or comments. Maintain tidy files (no trailing spaces). One blank line after `class` and between methods.
  2. **Naming:** `CamelCase` for public members; `_naming_` (snake_case with leading/trailing underscores) for private ones. Use lowercase for `__post_init__` arguments.
- 3. **Typing:** Use `Self` for instance returns. Use `from __future__ import annotations` as the first line only if required for forward references.
- 4. **Imports:** Organized in a sorted ladder-style block. Separate external and project (`Library.*`) imports with one blank line.
+ 3. **Typing:** Use `Self` for instance returns. Use `from __future__ import annotations` as the first line only if required for forward references. Avoid using `typing` classes where built-in types suffice.
+ 4. **Imports:** Organized in a sorted ladder-style block. Separate external and project (`Library.*`) imports with one blank line. Use **explicit imports** for internal library modules to avoid circular dependencies.
  5. **Density:** Keep method bodies dense without internal blank lines (except complex `__init__`). Maintain standard spacing in signatures and assignments.
  6. **Architecture:** Order methods by category (Connection → Disconnection → Business) and then by complexity (simplest first). Use `@staticmethod` for stateless logic and `InitVar` for temporary inputs.
  7. **Dataframes:** Capitalize framework-level columns (e.g., "Date", "Security"). Prefer Polars (`pl`) for performance; use Pandas (`pd`) for compatibility.
@@ -68,3 +68,5 @@
 
  ### Testing (`Tests/`)
  - **`Tests/`**: Unit and integration tests for Python library components.
+ - **Naming**: Test files should be named exactly after the subcomponent they test (e.g., `Query.py` instead of `test_Query.py`).
+ - **Style**: Apply the exact same coding rules and density as the main codebase. Do not use docstrings. Keep methods dense.

@@ -1,11 +1,12 @@
 import pymssql
 from typing import Callable
 
-from Library.Dataframe import pl
-from Library.Database import DatabaseAPI
+from Library.Dataframe.Dataframe import pl
+from Library.Database.Database import DatabaseAPI
 
 class MicrosoftDatabaseAPI(DatabaseAPI):
 
+    _ADMIN_: str = "master"
     _PARAMETER_TOKEN_: Callable[[int], str] = staticmethod(lambda i: "%s")
 
     _CHECK_DATATYPE_MAPPING_: dict = {
@@ -128,7 +129,7 @@ class MicrosoftDatabaseAPI(DatabaseAPI):
         )
 
     def _driver_(self, admin: bool):
-        database = "master" if admin else (self.database or None)
+        database = self._ADMIN_ if admin or not self.database else self.database
         connection = pymssql.connect(
             server=self._host_,
             port=str(self._port_),

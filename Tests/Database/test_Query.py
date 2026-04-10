@@ -13,8 +13,7 @@ def test_interpolation():
 
 def test_missing_interpolation():
     q = QueryAPI("SELECT * FROM ::schema::.t")
-    with pytest.raises(KeyError):
-        q(PostgresDatabaseAPI._PARAMETER_TOKEN_)
+    with pytest.raises(KeyError): q(PostgresDatabaseAPI._PARAMETER_TOKEN_)
 
 def test_interpolation_and_named_same_key():
     q = QueryAPI("SELECT * FROM ::x::.t WHERE x = :x:")
@@ -60,13 +59,11 @@ def test_interpolation_and_named():
 
 def test_missing_positional():
     q = QueryAPI("SELECT * FROM t WHERE a = :?: AND b = :?:")
-    with pytest.raises(ValueError):
-        q(PostgresDatabaseAPI._PARAMETER_TOKEN_, 10)
+    with pytest.raises(ValueError): q(PostgresDatabaseAPI._PARAMETER_TOKEN_, 10)
 
 def test_missing_named():
     q = QueryAPI("SELECT * FROM t WHERE id = :id:")
-    with pytest.raises(KeyError):
-        q(PostgresDatabaseAPI._PARAMETER_TOKEN_)
+    with pytest.raises(KeyError): q(PostgresDatabaseAPI._PARAMETER_TOKEN_)
 
 def test_numbered_placeholders():
     q = QueryAPI("SELECT * FROM t WHERE a = :?: AND b = :x: AND c = :?:")
