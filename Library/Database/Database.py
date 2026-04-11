@@ -16,7 +16,7 @@ class DatabaseAPI(ServiceAPI, ABC):
     _PARAMETER_TOKEN_: Callable[[int], str] = None
     _CHECK_DATATYPE_MAPPING_: dict = None
     _CREATE_DATATYPE_MAPPING_: dict = None
-    _DESCRIPTION_DATATYPE_MAPPING_: dict = None
+    _DESCRIPTION_DATATYPE_MAPPING_: tuple = None
     _STRUCTURE_: dict = None
 
     def __init_subclass__(cls, **kwargs) -> None:
@@ -137,6 +137,11 @@ class DatabaseAPI(ServiceAPI, ABC):
         if isinstance(dtype, pl.DataType): return dtype.__class__
         raise TypeError(f"Not a valid Structure dtype: {dtype}")
 
+    def _concat_(self, frames: list) -> pd.DataFrame | pl.DataFrame:
+        if not frames: return self.frame(data=[], schema={})
+        if isinstance(frames[0], pl.DataFrame): return pl.concat(frames, how="vertical_relaxed")
+        return pd.concat(frames)
+
     @abstractmethod
     def _check_(self, structure: dict = None): raise NotImplementedError
 
@@ -213,8 +218,7 @@ class DatabaseAPI(ServiceAPI, ABC):
     def sessions(self, database: str | object = MISSING) -> pd.DataFrame | pl.DataFrame:
         database = database if database is not MISSING else self.database
         if isinstance(database, (list, tuple)):
-            frames = [self.sessions(database=d) for d in database]
-            return pl.concat(frames, how="vertical_relaxed") if frames and isinstance(frames[0], pl.DataFrame) else pd.concat(frames) if frames else self.frame(data=[], schema={})
+            return self._concat_([self.sessions(database=d) for d in database])
         database = database or "%"
         self._log_.debug(lambda: "Sessions Operation: Fetching active sessions")
         return self.execute(self._LIST_SESSIONS_QUERY_, database=database, admin=True).fetchall()
@@ -239,8 +243,11 @@ class DatabaseAPI(ServiceAPI, ABC):
                 self.kill(id=ids, database=database)
             return self
         self._log_.alert(lambda: f"Kill Operation: Terminating session {id}")
-        try: self.execute(self._KILL_SESSION_QUERY_, id=id, admin=True).commit()
-        except Exception: pass
+        try:
+            self.execute(self._KILL_SESSION_QUERY_, id=id, admin=True).commit()
+        except Exception as e:
+            self._log_.error(lambda: f"Kill Operation: Failed to terminate session {id}")
+            self._log_.exception(lambda: str(e))
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -262,14 +269,11 @@ class DatabaseAPI(ServiceAPI, ABC):
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
         if isinstance(database, (list, tuple)):
-            frames = [self.list(database=d, schema=schema, table=table, system=system) for d in database]
-            return pl.concat(frames, how="vertical_relaxed") if frames and isinstance(frames[0], pl.DataFrame) else pd.concat(frames) if frames else self.frame(data=[], schema={})
+            return self._concat_([self.list(database=d, schema=schema, table=table, system=system) for d in database])
         if isinstance(schema, (list, tuple)):
-            frames = [self.list(database=database, schema=s, table=table, system=system) for s in schema]
-            return pl.concat(frames, how="vertical_relaxed") if frames and isinstance(frames[0], pl.DataFrame) else pd.concat(frames) if frames else self.frame(data=[], schema={})
+            return self._concat_([self.list(database=database, schema=s, table=table, system=system) for s in schema])
         if isinstance(table, (list, tuple)):
-            frames = [self.list(database=database, schema=schema, table=t, system=system) for t in table]
-            return pl.concat(frames, how="vertical_relaxed") if frames and isinstance(frames[0], pl.DataFrame) else pd.concat(frames) if frames else self.frame(data=[], schema={})
+            return self._concat_([self.list(database=database, schema=schema, table=t, system=system) for t in table])
         database = database if database and database != "%" else "%"
         schema = schema if schema and schema != "%" else "%"
         table = table if table and table != "%" else "%"
@@ -297,7 +301,7 @@ class DatabaseAPI(ServiceAPI, ABC):
                     else:
                         frames.append(df.filter(pl.col("Database") == db_name) if isinstance(df, pl.DataFrame) else df[df["Database"] == db_name])
                 if frames:
-                    return pl.concat(frames, how="vertical_relaxed") if isinstance(frames[0], pl.DataFrame) else pd.concat(frames)
+                    return self._concat_(frames)
         return df
 
     def exists(self, database: str | object = MISSING, schema: str | object = MISSING, table: str | object = MISSING) -> bool:
