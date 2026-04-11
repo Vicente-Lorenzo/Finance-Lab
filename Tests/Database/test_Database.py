@@ -123,6 +123,179 @@ def test_structure_mismatch(db):
     api.create(schema="test_schema", table="test_table", structure={"id": pl.Int64, "name": pl.String})
     df = api.execute(QueryAPI("SELECT * FROM test_schema.test_table LIMIT 0")).fetchall()
     assert "name" in df.columns
-    
+
     api.disconnect()
     admin.disconnect()
+
+def test_refactor_database(db):
+    api = db(admin=True)
+    api.create(database="test_database")
+    api.refactor(database="test_database", name="test_database_renamed")
+    assert api.exists(database="test_database") is False
+    assert api.exists(database="test_database_renamed") is True
+    api.disconnect()
+    cleaner = db(admin=True)
+    cleaner.delete(database="test_database_renamed")
+    cleaner.disconnect()
+
+def test_refactor_schema(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    api = db(database="test_database")
+    api.create(schema="old_schema")
+    api.refactor(schema="old_schema", name="new_schema")
+    assert api.exists(schema="new_schema") is True
+    assert api.exists(schema="old_schema") is False
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_refactor_table(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    setup = db(database="test_database")
+    setup.create(schema="test_schema")
+    setup.create(schema="test_schema", table="old_table", structure={"id": pl.Int64, "name": pl.String})
+    setup.execute(QueryAPI("INSERT INTO test_schema.old_table (id, name) VALUES (:id:, :name:)"), id=1, name="A")
+    setup.disconnect()
+    api = db(database="test_database", schema="test_schema")
+    api.refactor(table="old_table", name="new_table")
+    assert api.exists(table="new_table") is True
+    assert api.exists(table="old_table") is False
+    df = api.execute(QueryAPI("SELECT * FROM test_schema.new_table")).fetchall()
+    assert len(df) == 1
+    assert df["name"][0] == "A"
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_refactor_lowest_level_default(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    setup = db(database="test_database")
+    setup.create(schema="test_schema")
+    setup.create(schema="test_schema", table="t1", structure={"id": pl.Int64})
+    setup.disconnect()
+    api = db(database="test_database", schema="test_schema", table="t1")
+    api.refactor(name="t2")
+    assert api.exists(database="test_database", schema="test_schema", table="t2") is True
+    assert api.exists(database="test_database", schema="test_schema", table="t1") is False
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_refactor_iterable_databases(db):
+    api = db(admin=True)
+    api.create(database=("refactor_a", "refactor_b"))
+    api.refactor(database=("refactor_a", "refactor_b"), name=("refactor_x", "refactor_y"))
+    assert api.exists(database=("refactor_x", "refactor_y")) is True
+    assert api.exists(database="refactor_a") is False
+    assert api.exists(database="refactor_b") is False
+    api.disconnect()
+    cleaner = db(admin=True)
+    cleaner.delete(database=("refactor_x", "refactor_y"))
+    cleaner.disconnect()
+
+def test_refactor_iterable_tables(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    setup = db(database="test_database")
+    setup.create(schema="test_schema")
+    setup.create(schema="test_schema", table=("t1", "t2"), structure={"id": pl.Int64})
+    setup.disconnect()
+    api = db(database="test_database", schema="test_schema")
+    api.refactor(table=("t1", "t2"), name=("t1_new", "t2_new"))
+    assert api.exists(table=("t1_new", "t2_new")) is True
+    assert api.exists(table="t1") is False
+    assert api.exists(table="t2") is False
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_refactor_validation(db):
+    api = db(admin=True)
+    with pytest.raises(ValueError): api.refactor(database="x")
+    with pytest.raises(ValueError): api.refactor(name="x")
+    with pytest.raises(ValueError): api.refactor(schema="s", name="x")
+    with pytest.raises(ValueError): api.refactor(table="t", name="x")
+    with pytest.raises(ValueError): api.refactor(database="nonexistent_db", name="other")
+    with pytest.raises(ValueError): api.refactor(database=("a", "b"), name="single")
+    with pytest.raises(ValueError): api.refactor(database=("a", "b"), name=("only_one",))
+    api.disconnect()
+
+def test_rename_column(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    setup = db(database="test_database")
+    setup.create(schema="test_schema")
+    setup.create(schema="test_schema", table="test_table", structure={"old_id": pl.Int64, "old_name": pl.String, "value": pl.Float64})
+    setup.execute(QueryAPI("INSERT INTO test_schema.test_table (old_id, old_name, value) VALUES (:id:, :name:, :v:)"), id=1, name="A", v=1.5)
+    setup.disconnect()
+    api = db(database="test_database", schema="test_schema", table="test_table")
+    api.rename(column="old_id", name="new_id")
+    df = api.execute(QueryAPI("SELECT * FROM test_schema.test_table")).fetchall()
+    assert "new_id" in df.columns
+    assert "old_id" not in df.columns
+    assert df["new_id"][0] == 1
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_rename_iterable_columns(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    setup = db(database="test_database")
+    setup.create(schema="test_schema")
+    setup.create(schema="test_schema", table="test_table", structure={"a": pl.Int64, "b": pl.String, "c": pl.Float64})
+    setup.disconnect()
+    api = db(database="test_database", schema="test_schema", table="test_table")
+    api.rename(column=("a", "b", "c"), name=("alpha", "beta", "gamma"))
+    df = api.execute(QueryAPI("SELECT * FROM test_schema.test_table LIMIT 0")).fetchall()
+    assert "alpha" in df.columns
+    assert "beta" in df.columns
+    assert "gamma" in df.columns
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_rename_validation(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    setup = db(database="test_database")
+    setup.create(schema="test_schema")
+    setup.create(schema="test_schema", table="test_table", structure={"id": pl.Int64})
+    setup.disconnect()
+    api = db(database="test_database", schema="test_schema", table="test_table")
+    with pytest.raises(ValueError): api.rename(column="id")
+    with pytest.raises(ValueError): api.rename(name="id")
+    with pytest.raises(ValueError): api.rename(column=("a", "b"), name="single")
+    api2 = db(admin=True)
+    with pytest.raises(ValueError): api2.rename(column="a", name="b")
+    api3 = db(database="test_database", schema="test_schema", table="nonexistent_table")
+    with pytest.raises(ValueError): api3.rename(column="a", name="b")
+    api.disconnect()
+    api2.disconnect()
+    api3.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()

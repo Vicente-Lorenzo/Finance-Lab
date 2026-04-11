@@ -42,7 +42,7 @@ class QueryAPI(FileAPI):
         return query, configuration
 
     @staticmethod
-    def bind(configuration, *args, **kwargs) -> tuple:
+    def bind(configuration: list[int | str], *args, **kwargs) -> tuple:
         args = args or ()
         kwargs = kwargs or {}
         parameters = []

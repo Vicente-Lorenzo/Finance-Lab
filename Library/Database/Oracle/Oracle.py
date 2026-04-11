@@ -1,5 +1,5 @@
 import oracledb
-from typing import Callable
+from typing import Callable, Any
 
 from Library.Dataframe.Dataframe import pl
 from Library.Database.Database import DatabaseAPI
@@ -93,12 +93,12 @@ class OracleDatabaseAPI(DatabaseAPI):
                  user: str = "ORCL",
                  password: str = "ORCL",
                  admin: bool = False,
-                 database: str = None,
-                 schema: str = None,
-                 table: str = None,
+                 database: str | None = None,
+                 schema: str | None = None,
+                 table: str | None = None,
                  legacy: bool = False,
                  migrate: bool = False,
-                 autocommit: bool = True):
+                 autocommit: bool = True) -> None:
 
         super().__init__(
             host=host,
@@ -114,7 +114,7 @@ class OracleDatabaseAPI(DatabaseAPI):
             autocommit=autocommit
         )
 
-    def _check_(self, structure: dict = None):
+    def _check_(self, structure: dict | None = None) -> str:
         structure = structure if structure is not None else self._STRUCTURE_
         parts = []
         for name, dtype in structure.items():
@@ -122,14 +122,14 @@ class OracleDatabaseAPI(DatabaseAPI):
             parts.append(f"SELECT '{name}' AS column_name, '{t}' AS data_type FROM dual")
         return "\nUNION ALL\n".join(parts)
 
-    def _create_(self, structure: dict = None):
+    def _create_(self, structure: dict | None = None) -> str:
         structure = structure if structure is not None else self._STRUCTURE_
         return ",\n    ".join(
             f'"{name}" {self._CREATE_DATATYPE_MAPPING_[self._normalize_(dtype)]}'
             for name, dtype in structure.items()
         )
 
-    def _driver_(self, admin: bool):
+    def _driver_(self, admin: bool) -> Any:
         database = self._ADMIN_ if admin or not self.database else self.database
         dsn = oracledb.makedsn(
             host=self._host_,
