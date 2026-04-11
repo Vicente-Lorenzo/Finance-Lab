@@ -11,6 +11,8 @@ For all shell executions, use the following patterns:
 - **Environment:** Use the `Quant` conda environment for all Python scripts (`conda run -n Quant <command>`).
 - **Testing:** `conda run -n Quant python -m pytest Tests/`.
 - **C# Build:** `dotnet build Sources/`.
+- **Git Repository:** The project root (`cAlgo`) is a dedicated Git repository.
+- **File Staging:** Any tool-driven operation that creates a new file must be immediately followed by `git add <file_path>` to automate the staging process.
 
 ## CODING PHILOSOPHY
 1. **Precision & Accuracy:** Prioritize correct, working code over speed.
