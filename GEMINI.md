@@ -68,5 +68,5 @@
 
  ### Testing (`Tests/`)
  - **`Tests/`**: Unit and integration tests for Python library components.
- - **Naming**: Test files should be named exactly after the subcomponent they test (e.g., `Query.py` instead of `test_Query.py`).
+ - **Naming**: Test files should be named following the pytest convention (e.g., test_Query.py).
  - **Style**: Apply the exact same coding rules and density as the main codebase. Do not use docstrings. Keep methods dense.
