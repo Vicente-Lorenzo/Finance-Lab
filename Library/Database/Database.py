@@ -455,72 +455,72 @@ class DatabaseAPI(ServiceAPI, ABC):
         return self
 
     def refactor(self, database: str | Sequence | None | Missing = MISSING, schema: str | Sequence | None | Missing = MISSING, table: str | Sequence | None | Missing = MISSING, name: str | Sequence | None = None) -> Self:
-        if name is None:
-            raise ValueError("Name must be provided to refactor a structure")
-        explicit_database = database is not MISSING
-        explicit_schema = schema is not MISSING
-        explicit_table = table is not MISSING
-        database = database if explicit_database else self._database_
-        schema = schema if explicit_schema else self._schema_
-        table = table if explicit_table else self._table_
-        if explicit_table: target = "table"
-        elif explicit_schema: target = "schema"
-        elif explicit_database: target = "database"
-        elif table: target = "table"
-        elif schema: target = "schema"
-        elif database: target = "database"
-        else:
-            raise ValueError("At least one structure must be specified")
-        if target == "table" and (not database or not schema):
-            raise ValueError("Schema and Database must be provided to operate on a Table")
-        if target == "schema" and not database:
-            raise ValueError("Database must be provided to operate on a Schema")
-        target_value = {"database": database, "schema": schema, "table": table}[target]
-        if isinstance(target_value, (list, tuple)):
-            if not isinstance(name, (list, tuple)) or len(name) != len(target_value):
-                raise ValueError(f"Name must be a list/tuple of the same length as {target.capitalize()}")
-            for v, n in zip(target_value, name):
-                kwargs = {target: v, "name": n}
-                if target != "database": kwargs["database"] = database
-                if target == "table": kwargs["schema"] = schema
-                self.refactor(**kwargs)
-            return self
-        if target == "table":
-            if not self.exists(database=database, schema=schema, table=table):
-                raise ValueError(f"Table {table} does not exist in {database}.{schema}")
+        if name is None: raise ValueError("Name must be provided to refactor a structure")
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        if table:
+            if isinstance(database, (list, tuple)):
+                for d in database: self.refactor(database=d, schema=schema, table=table, name=name)
+                return self
+            if isinstance(schema, (list, tuple)):
+                for s in schema: self.refactor(database=database, schema=s, table=table, name=name)
+                return self
+            if not database or not schema: raise ValueError("Schema and Database must be provided to operate on a Table")
+            if isinstance(table, (list, tuple)):
+                if not isinstance(name, (list, tuple)) or len(name) != len(table): raise ValueError("Name must be a list/tuple of the same length as Table")
+                for t, n in zip(table, name): self.refactor(database=database, schema=schema, table=t, name=n)
+                return self
+            if not self.exists(database=database, schema=schema, table=table): raise ValueError(f"Table {table} does not exist in {database}.{schema}")
             self.execute(self._REFACTOR_TABLE_QUERY_, database=database, schema=schema, table=table, name=name, admin=False).commit()
             if self._table_ == table: self._table_ = name
             self._log_.alert(lambda: f"Refactor Operation: Refactored {table} Table to {name}")
-        elif target == "schema":
-            if not self.exists(database=database, schema=schema, table=None):
-                raise ValueError(f"Schema {schema} does not exist in {database}")
+        elif schema:
+            if isinstance(database, (list, tuple)):
+                for d in database: self.refactor(database=d, schema=schema, table=table, name=name)
+                return self
+            if not database: raise ValueError("Database must be provided to operate on a Schema")
+            if isinstance(schema, (list, tuple)):
+                if not isinstance(name, (list, tuple)) or len(name) != len(schema): raise ValueError("Name must be a list/tuple of the same length as Schema")
+                for s, n in zip(schema, name): self.refactor(database=database, schema=s, table=table, name=n)
+                return self
+            if not self.exists(database=database, schema=schema, table=None): raise ValueError(f"Schema {schema} does not exist in {database}")
             self.execute(self._REFACTOR_SCHEMA_QUERY_, database=database, schema=schema, name=name, admin=False).commit()
             if self._schema_ == schema: self._schema_ = name
             self._log_.alert(lambda: f"Refactor Operation: Refactored {schema} Schema to {name}")
-        elif target == "database":
-            if not self.exists(database=database, schema=None, table=None):
-                raise ValueError(f"Database {database} does not exist")
+        elif database:
+            if isinstance(database, (list, tuple)):
+                if not isinstance(name, (list, tuple)) or len(name) != len(database): raise ValueError("Name must be a list/tuple of the same length as Database")
+                for d, n in zip(database, name): self.refactor(database=d, schema=schema, table=table, name=n)
+                return self
+            if not self.exists(database=database, schema=None, table=None): raise ValueError(f"Database {database} does not exist")
             self.disconnect()
             self.execute(self._REFACTOR_DATABASE_QUERY_, database=database, name=name, admin=True).commit()
             if self._database_ == database: self._database_ = name
             self._log_.alert(lambda: f"Refactor Operation: Refactored {database} Database to {name}")
+        else: raise ValueError("At least one structure must be specified")
         return self
 
-    def rename(self, database: str | None | Missing = MISSING, schema: str | None | Missing = MISSING, table: str | None | Missing = MISSING, column: str | Sequence | None = None, name: str | Sequence | None = None) -> Self:
-        if column is None or name is None:
-            raise ValueError("Column and Name must be provided to rename a Column")
+    def rename(self, database: str | Sequence | None | Missing = MISSING, schema: str | Sequence | None | Missing = MISSING, table: str | Sequence | None | Missing = MISSING, column: str | Sequence | None = None, name: str | Sequence | None = None) -> Self:
+        if column is None or name is None: raise ValueError("Column and Name must be provided to rename a Column")
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
-        if not database or not schema or not table:
-            raise ValueError("Database, Schema and Table must be provided to rename a Column")
+        if isinstance(database, (list, tuple)):
+            for d in database: self.rename(database=d, schema=schema, table=table, column=column, name=name)
+            return self
+        if isinstance(schema, (list, tuple)):
+            for s in schema: self.rename(database=database, schema=s, table=table, column=column, name=name)
+            return self
+        if isinstance(table, (list, tuple)):
+            for t in table: self.rename(database=database, schema=schema, table=t, column=column, name=name)
+            return self
+        if not database or not schema or not table: raise ValueError("Database, Schema and Table must be provided to rename a Column")
         if isinstance(column, (list, tuple)):
-            if not isinstance(name, (list, tuple)) or len(name) != len(column):
-                raise ValueError("Name must be a list/tuple of the same length as Column")
+            if not isinstance(name, (list, tuple)) or len(name) != len(column): raise ValueError("Name must be a list/tuple of the same length as Column")
             for c, n in zip(column, name): self.rename(database=database, schema=schema, table=table, column=c, name=n)
             return self
-        if not self.exists(database=database, schema=schema, table=table):
-            raise ValueError(f"Table {table} does not exist in {database}.{schema}")
+        if not self.exists(database=database, schema=schema, table=table): raise ValueError(f"Table {table} does not exist in {database}.{schema}")
         self.execute(self._RENAME_COLUMN_QUERY_, database=database, schema=schema, table=table, column=column, name=name, admin=False).commit()
         self._log_.alert(lambda: f"Rename Operation: Renamed {column} Column to {name} in {table} Table")
         return self
