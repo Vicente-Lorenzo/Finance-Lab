@@ -1,4 +1,4 @@
 @echo off
 cd /d "C:\Users\Admin\OneDrive\Documents\cAlgo"
-claude
+claude --dangerously-skip-permissions
 cmd /k
