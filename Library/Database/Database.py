@@ -525,7 +525,6 @@ class DatabaseAPI(ServiceAPI, ABC):
         sql, configuration, kwargs = self._query_(query, **kwargs)
         parameters = query.bind(configuration, *args, **kwargs) if configuration else None
         def _execute_():
-            print(f"[{self._database_}] SQL EXEC: {sql}")
             if parameters is not None: self._cursor_.execute(sql, parameters)
             else: self._cursor_.execute(sql)
             self._transaction_ = True
