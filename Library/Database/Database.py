@@ -609,7 +609,7 @@ class DatabaseAPI(ServiceAPI, ABC):
             df = self.select(database=database, schema=schema, table=table, columns=columns, limit=1, legacy=False)
             if not isinstance(df, pl.DataFrame):
                 raise ValueError("Structure must be provided to reorder a Table without Polars DataFrames")
-            source = dict(df.schema)
+            source = {k: v for k, v in df.schema.items()}
             if any(v == pl.Null for v in source.values()):
                 raise ValueError("Cannot infer structure from empty table or null columns. Structure must be provided explicitly.")
         missing = [c for c in columns if c not in source]
@@ -816,7 +816,7 @@ class DatabaseAPI(ServiceAPI, ABC):
     def sessions(self, *,
                database: str | Sequence | None | Missing = MISSING,
                legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
-        database = database if database is not MISSING else self._database_
+        database = database if database is not MISSING else self.database
         if isinstance(database, (list, tuple)):
             return self.frame(self._concat_([self.sessions(database=d, legacy=False) for d in database]), legacy=legacy)
         self._log_.debug(lambda: "Sessions Operation: Fetching active sessions")
@@ -825,7 +825,7 @@ class DatabaseAPI(ServiceAPI, ABC):
     def kill(self, *,
                id: int | str | Sequence | None | Missing = MISSING,
                database: str | Sequence | None | Missing = MISSING) -> Self:
-        database = database if database is not MISSING else self._database_
+        database = database if database is not MISSING else self.database
         if isinstance(database, (list, tuple)):
             for d in database: self.kill(id=id, database=d)
             return self
