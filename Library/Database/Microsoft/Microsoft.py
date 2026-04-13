@@ -119,6 +119,10 @@ class MicrosoftDatabaseAPI(DatabaseAPI):
     @property
     def _quote_(self) -> tuple[str, str]:
         return "[", "]"
+
+    def _cast_(self, column: str) -> str:
+        return f"CAST({column} AS NVARCHAR(MAX))"
+
     def _upsert_(self, target: str, columns: Sequence[str], keys: Sequence[str]) -> str:
         ql, qr = self._quote_
         n = QueryAPI.Named

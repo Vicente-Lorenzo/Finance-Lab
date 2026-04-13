@@ -432,3 +432,182 @@ def test_select_columns(db):
     cleaner.kill(database="test_database")
     cleaner.delete(database="test_database")
     cleaner.disconnect()
+
+def test_migrate_add_column(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    api = db(database="test_database", schema="test_schema", table="test_table")
+    api.create(structure={"id": pl.Int64, "name": pl.String})
+    api.insert(data=[{"id": 1, "name": "A"}, {"id": 2, "name": "B"}])
+    api.migrate(structure={"id": pl.Int64, "name": pl.String, "value": pl.Float64})
+    df = api.select(order="id")
+    assert len(df) == 2
+    assert list(df.columns) == ["id", "name", "value"]
+    assert df["id"].to_list() == [1, 2]
+    assert df["name"].to_list() == ["A", "B"]
+    assert df["value"].to_list() == [None, None]
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_migrate_remove_column(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    api = db(database="test_database", schema="test_schema", table="test_table")
+    api.create(structure={"id": pl.Int64, "name": pl.String, "value": pl.Float64})
+    api.insert(data=[{"id": 1, "name": "A", "value": 10.0}, {"id": 2, "name": "B", "value": 20.0}])
+    api.migrate(structure={"id": pl.Int64, "name": pl.String})
+    df = api.select(order="id")
+    assert len(df) == 2
+    assert list(df.columns) == ["id", "name"]
+    assert "value" not in df.columns
+    assert df["name"].to_list() == ["A", "B"]
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_migrate_add_and_remove_column(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    api = db(database="test_database", schema="test_schema", table="test_table")
+    api.create(structure={"id": pl.Int64, "name": pl.String, "value": pl.Float64})
+    api.insert(data=[{"id": 1, "name": "A", "value": 10.0}, {"id": 2, "name": "B", "value": 20.0}])
+    api.migrate(structure={"id": pl.Int64, "score": pl.Float64})
+    df = api.select(order="id")
+    assert len(df) == 2
+    assert list(df.columns) == ["id", "score"]
+    assert df["id"].to_list() == [1, 2]
+    assert df["score"].to_list() == [None, None]
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_migrate_no_change(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    api = db(database="test_database", schema="test_schema", table="test_table")
+    api.create(structure={"id": pl.Int64, "name": pl.String})
+    api.insert(data=[{"id": 1, "name": "A"}])
+    api.migrate(structure={"id": pl.Int64, "name": pl.String})
+    df = api.select()
+    assert len(df) == 1
+    assert df["id"][0] == 1
+    assert df["name"][0] == "A"
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_migrate_no_common_columns(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    api = db(database="test_database", schema="test_schema", table="test_table")
+    api.create(structure={"id": pl.Int64, "name": pl.String})
+    api.insert(data=[{"id": 1, "name": "A"}])
+    api.migrate(structure={"code": pl.String, "value": pl.Float64})
+    df = api.select()
+    assert len(df) == 0
+    assert list(df.columns) == ["code", "value"]
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_migration_nondestructive(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    api = db(database="test_database", schema="test_schema", table="test_table", migrate=True)
+    api._STRUCTURE_ = {"id": pl.Int64, "name": pl.String}
+    with api:
+        api.insert(data=[{"id": 1, "name": "A"}, {"id": 2, "name": "B"}])
+    api.disconnect()
+    api2 = db(database="test_database", schema="test_schema", table="test_table", migrate=True)
+    api2._STRUCTURE_ = {"id": pl.Int64, "name": pl.String, "value": pl.Float64}
+    with api2:
+        df = api2.select(order="id")
+        assert len(df) == 2
+        assert "value" in df.columns
+        assert df["id"].to_list() == [1, 2]
+        assert df["name"].to_list() == ["A", "B"]
+    api2.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_search_by_column(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    api = db(database="test_database", schema="test_schema")
+    api.create(table="t1", structure={"id": pl.Int64, "name": pl.String})
+    api.create(table="t2", structure={"id": pl.Int64, "value": pl.Float64})
+    df = api.search(database="test_database", schema="test_schema", column="name")
+    assert len(df) == 1
+    assert df["Table"][0] == "t1"
+    assert df["Column"][0] == "name"
+    df = api.search(database="test_database", schema="test_schema", column="id")
+    assert len(df) == 2
+    tables = df["Table"].to_list()
+    assert "t1" in tables
+    assert "t2" in tables
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_search_by_row(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    api = db(database="test_database", schema="test_schema")
+    api.create(table="t1", structure={"id": pl.Int64, "name": pl.String})
+    api.create(table="t2", structure={"id": pl.Int64, "code": pl.String})
+    api.insert(database="test_database", schema="test_schema", table="t1", data=[{"id": 1, "name": "AAPL"}])
+    api.insert(database="test_database", schema="test_schema", table="t2", data=[{"id": 2, "code": "MSFT"}])
+    df = api.search(database="test_database", schema="test_schema", column="name", row="AAPL")
+    assert len(df) == 1
+    assert df["Table"][0] == "t1"
+    assert df["Column"][0] == "name"
+    df = api.search(database="test_database", schema="test_schema", row="MSFT")
+    assert len(df) == 1
+    assert df["Table"][0] == "t2"
+    assert df["Column"][0] == "code"
+    df = api.search(database="test_database", schema="test_schema", row="NONEXISTENT")
+    assert df.is_empty()
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_search_by_row_numeric(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    api = db(database="test_database", schema="test_schema")
+    api.create(table="t1", structure={"id": pl.Int64, "value": pl.Float64})
+    api.insert(database="test_database", schema="test_schema", table="t1", data=[{"id": 1, "value": 42.5}])
+    df = api.search(database="test_database", schema="test_schema", column="id", row=1)
+    assert len(df) == 1
+    assert df["Table"][0] == "t1"
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()

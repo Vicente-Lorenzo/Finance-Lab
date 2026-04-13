@@ -95,6 +95,7 @@ class DatabaseAPI(ServiceAPI, ABC):
         cls._RENAME_COLUMN_QUERY_ = QueryAPI(PathAPI(path="Table/Rename.sql", module=module))
         cls._CHECK_STRUCTURE_QUERY_ = QueryAPI(PathAPI(path="Table/Structure.sql", module=module))
         cls._LIST_CATALOG_QUERY_ = QueryAPI(PathAPI(path="System/List.sql", module=module))
+        cls._SEARCH_CATALOG_QUERY_ = QueryAPI(PathAPI(path="System/Search.sql", module=module))
         cls._LIST_SESSIONS_QUERY_ = QueryAPI(PathAPI(path="System/Sessions.sql", module=module))
         cls._KILL_SESSION_QUERY_ = QueryAPI(PathAPI(path="System/Kill.sql", module=module))
 
@@ -182,6 +183,9 @@ class DatabaseAPI(ServiceAPI, ABC):
     def _concat_(frames: Sequence) -> pl.DataFrame:
         if not frames: return pl.DataFrame()
         return pl.concat(frames, how="vertical_relaxed") if isinstance(frames[0], pl.DataFrame) else pd.concat(frames)
+
+    @abstractmethod
+    def _cast_(self, column: str) -> str: raise NotImplementedError
 
     @abstractmethod
     def _check_(self, structure: dict | None = None) -> str: raise NotImplementedError
@@ -302,6 +306,57 @@ class DatabaseAPI(ServiceAPI, ABC):
             db_df = self.executeone(self._LIST_CATALOG_QUERY_, database=db_name, schema=schema, table=table, system=system, admin=False).fetchall(legacy=False)
             frames.append(db_df if not db_df.is_empty() else df.filter(pl.col("Database") == db_name))
         return self.frame(self._concat_(frames) if frames else df, legacy=legacy)
+
+    def search(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING,
+               column: str | Sequence | None = None,
+               row: int | float | str | None = None,
+               legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
+        if column is None and row is None:
+            raise ValueError("Column or Row must be provided to search")
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        if isinstance(database, (list, tuple)):
+            return self.frame(self._concat_([self.search(database=d, schema=schema, table=table, column=column, row=row, legacy=False) for d in database]), legacy=legacy)
+        if isinstance(schema, (list, tuple)):
+            return self.frame(self._concat_([self.search(database=database, schema=s, table=table, column=column, row=row, legacy=False) for s in schema]), legacy=legacy)
+        if isinstance(table, (list, tuple)):
+            return self.frame(self._concat_([self.search(database=database, schema=schema, table=t, column=column, row=row, legacy=False) for t in table]), legacy=legacy)
+        if isinstance(column, (list, tuple)):
+            return self.frame(self._concat_([self.search(database=database, schema=schema, table=table, column=c, row=row, legacy=False) for c in column]), legacy=legacy)
+        database = database or "%"
+        schema = schema or "%"
+        table = table or "%"
+        column = column or "%"
+        self._log_.debug(lambda: "Search Operation: Searching catalog")
+        databases = self.executeone(self._LIST_CATALOG_QUERY_, database=database, schema="%", table="%", system=0, admin=True).fetchall(legacy=False)
+        if databases.is_empty() or "Database" not in databases.columns:
+            return self.frame(pl.DataFrame({"Database": [], "Schema": [], "Table": [], "Column": []}), legacy=legacy)
+        catalog_frames = []
+        for db_name in databases["Database"].unique().to_list():
+            df = self.executeone(self._SEARCH_CATALOG_QUERY_, database=db_name, schema=schema, table=table, column=column, admin=False).fetchall(legacy=False)
+            if not df.is_empty():
+                catalog_frames.append(df)
+        catalog = self._concat_(catalog_frames) if catalog_frames else pl.DataFrame({"Database": [], "Schema": [], "Table": [], "Column": []})
+        if catalog.is_empty() or row is None:
+            return self.frame(catalog, legacy=legacy)
+        ql, qr = self._quote_
+        value = str(row)
+        frames = []
+        for db_name, s_name, t_name, c_name in catalog.iter_rows():
+            target = self._target_(s_name, t_name)
+            condition = f"{self._cast_(f'{ql}{c_name}{qr}')} = {QueryAPI.Positional}"
+            sql = self._limit_(self._condition_(self._select_(target, "1"), condition), 1)
+            try:
+                df = self.executeone(QueryAPI(sql), value, database=db_name, schema=s_name, table=t_name, admin=False).fetchall(legacy=False)
+                if not df.is_empty():
+                    frames.append(pl.DataFrame({"Database": [db_name], "Schema": [s_name], "Table": [t_name], "Column": [c_name]}))
+            except Exception:
+                pass
+        return self.frame(self._concat_(frames) if frames else pl.DataFrame({"Database": [], "Schema": [], "Table": [], "Column": []}), legacy=legacy)
 
     def exists(self, *,
                database: str | Sequence | None | Missing = MISSING,
