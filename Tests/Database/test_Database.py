@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime
 
 from Library.Dataframe import pl
-from Library.Database import QueryAPI
+from Library.Database import QueryAPI, PrimaryKey, ForeignKey
 from Library.Database.Postgres import PostgresDatabaseAPI
 
 @pytest.fixture
@@ -605,6 +605,90 @@ def test_search_by_row_numeric(db):
     df = api.search(database="test_database", schema="test_schema", column="id", row=1)
     assert len(df) == 1
     assert df["Table"][0] == "t1"
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_primary_key_and_foreign_key(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    api = db(database="test_database", schema="test_schema")
+    api.create(table="users", structure={"id": PrimaryKey(pl.Int64), "name": pl.String})
+    api.create(table="orders", structure={"id": PrimaryKey(pl.Int64), "user_id": ForeignKey(pl.Int64, "test_schema.users(id)")})
+    api.insert(table="users", data=[{"id": 1, "name": "Alice"}])
+    api.insert(table="orders", data=[{"id": 100, "user_id": 1}])
+    with pytest.raises(Exception):
+        api.insert(table="users", data=[{"id": 1, "name": "Bob"}])
+    with pytest.raises(Exception):
+        api.insert(table="orders", data=[{"id": 101, "user_id": 999}])
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_composite_primary_key(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    api = db(database="test_database", schema="test_schema")
+    api.create(table="tenant_users", structure={"tenant_id": PrimaryKey(pl.Int64), "user_id": PrimaryKey(pl.Int64), "name": pl.String})
+    api.insert(table="tenant_users", data=[{"tenant_id": 1, "user_id": 1, "name": "Alice"}])
+    api.insert(table="tenant_users", data=[{"tenant_id": 1, "user_id": 2, "name": "Bob"}])
+    with pytest.raises(Exception):
+        api.insert(table="tenant_users", data=[{"tenant_id": 1, "user_id": 1, "name": "Alice 2"}])
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_upsert_implicit_key(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    api = db(database="test_database", schema="test_schema", table="test_table")
+    api._STRUCTURE_ = {"id": PrimaryKey(pl.Int64), "value": pl.Float64}
+    api.create()
+    api.insert(data=[{"id": 1, "value": 10.0}])
+    api.upsert(data=[{"id": 1, "value": 20.0}])
+    df = api.select()
+    assert len(df) == 1
+    assert df["value"][0] == 20.0
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_diff_primary_key(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    api = db(database="test_database", schema="test_schema", table="test_table")
+    api.create(structure={"id": pl.Int64, "value": pl.Float64})
+    assert api.diff(structure={"id": PrimaryKey(pl.Int64), "value": pl.Float64}) is True
+    api.disconnect()
+    admin.disconnect()
+    cleaner = db(admin=True)
+    cleaner.kill(database="test_database")
+    cleaner.delete(database="test_database")
+    cleaner.disconnect()
+
+def test_python_types_in_structure(db):
+    admin = db(admin=True)
+    admin.create(database="test_database")
+    api = db(database="test_database", schema="test_schema", table="test_table")
+    api.create(structure={"id": int, "name": str, "score": float})
+    assert api.exists(table="test_table") is True
+    api.insert(data=[{"id": 1, "name": "A", "score": 95.5}])
+    df = api.select()
+    assert len(df) == 1
+    assert df["name"][0] == "A"
+    assert isinstance(df["id"][0], int)
     api.disconnect()
     admin.disconnect()
     cleaner = db(admin=True)

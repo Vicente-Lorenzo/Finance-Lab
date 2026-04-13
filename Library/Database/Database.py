@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import datetime
 import threading
 from typing import Callable, Any
+from dataclasses import dataclass
 from typing_extensions import Self
 from collections.abc import Sequence
 from abc import ABC, abstractmethod
@@ -14,11 +16,34 @@ from Library.Logging.Handler import HandlerLoggingAPI
 from Library.Utility.Path import PathAPI, traceback_package
 from Library.Utility.Typing import MISSING, Missing
 
+@dataclass
+class PrimaryKey:
+    dtype: type | pl.DataType
+
+@dataclass
+class ForeignKey:
+    dtype: type | pl.DataType
+    reference: str
+
 class DatabaseAPI(ServiceAPI, ABC):
 
     _ALL_: str = "*"
     _ADMIN_: str | None = None
     _PARAMETER_TOKEN_: Callable[[int], str] | None = None
+
+    _PYTHON_DATATYPE_MAPPING_: dict = {
+        bytes: pl.Binary,
+        bool: pl.Boolean,
+
+        int: pl.Int64,
+        float: pl.Float64,
+
+        str: pl.String,
+
+        datetime.date: pl.Date,
+        datetime.datetime: pl.Datetime,
+    }
+
     _CHECK_DATATYPE_MAPPING_: dict | None = None
     _CREATE_DATATYPE_MAPPING_: dict | None = None
     _DESCRIPTION_DATATYPE_MAPPING_: tuple | None = None
@@ -173,8 +198,10 @@ class DatabaseAPI(ServiceAPI, ABC):
             self._pool_[key] = clone
             return clone
 
-    @staticmethod
-    def _normalize_(dtype) -> type:
+    @classmethod
+    def _normalize_(cls, dtype) -> type:
+        if isinstance(dtype, (PrimaryKey, ForeignKey)): dtype = dtype.dtype
+        dtype = cls._PYTHON_DATATYPE_MAPPING_.get(dtype, dtype)
         if isinstance(dtype, type) and issubclass(dtype, pl.DataType): return dtype
         if isinstance(dtype, pl.DataType): return dtype.__class__
         raise TypeError(f"Not a valid Structure dtype: {dtype}")
@@ -187,11 +214,32 @@ class DatabaseAPI(ServiceAPI, ABC):
     @abstractmethod
     def _cast_(self, column: str) -> str: raise NotImplementedError
 
-    @abstractmethod
-    def _check_(self, structure: dict | None = None) -> str: raise NotImplementedError
+    def _check_(self, structure: dict | None = None) -> str:
+        structure = structure if structure is not None else self._STRUCTURE_
+        values = []
+        for name, dtype in structure.items():
+            datatype = self._CHECK_DATATYPE_MAPPING_[self._normalize_(dtype)]
+            is_pk = int(isinstance(dtype, PrimaryKey))
+            is_fk = int(isinstance(dtype, ForeignKey))
+            values.append(f"('{name}', '{datatype}', {is_pk}, {is_fk})")
+        return ",\n    ".join(values)
 
-    @abstractmethod
-    def _create_(self, structure: dict | None = None) -> str: raise NotImplementedError
+    def _create_(self, structure: dict | None = None) -> str:
+        structure = structure if structure is not None else self._STRUCTURE_
+        ql, qr = self._quote_
+        defs = []
+        pks = []
+        for name, dtype in structure.items():
+            base = self._CREATE_DATATYPE_MAPPING_[self._normalize_(dtype)]
+            if isinstance(dtype, PrimaryKey):
+                pks.append(name)
+            elif isinstance(dtype, ForeignKey):
+                base += f" REFERENCES {dtype.reference}"
+            defs.append(f"{ql}{name}{qr} {base}")
+        if pks:
+            pk_cols = ", ".join(f"{ql}{c}{qr}" for c in pks)
+            defs.append(f"PRIMARY KEY ({pk_cols})")
+        return ",\n    ".join(defs)
 
     @abstractmethod
     def _driver_(self, admin: bool) -> Any: raise NotImplementedError
@@ -669,6 +717,10 @@ class DatabaseAPI(ServiceAPI, ABC):
         target = self._target_(schema, table)
         for name, dtype in structure.items():
             datatype = self._CREATE_DATATYPE_MAPPING_[self._normalize_(dtype)]
+            if isinstance(dtype, PrimaryKey):
+                datatype += " PRIMARY KEY"
+            elif isinstance(dtype, ForeignKey):
+                datatype += f" REFERENCES {dtype.reference}"
             sql = self._add_(target, self._quoted_(name), datatype)
             self.executeone(QueryAPI(sql), database=database, schema=schema, table=table, admin=False)
         self._log_.alert(lambda: f"Add Operation: Added Columns to {table} Table")
@@ -878,7 +930,11 @@ class DatabaseAPI(ServiceAPI, ABC):
                data: Any = None,
                key: str | Sequence[str] | None = None) -> Self:
         if data is None: raise ValueError("Data must be provided to upsert rows")
-        if not key: raise ValueError("Key must be provided to upsert rows")
+        if not key:
+            if self._STRUCTURE_:
+                key = [name for name, dtype in self._STRUCTURE_.items() if isinstance(dtype, PrimaryKey)]
+            if not key:
+                raise ValueError("Key must be provided to upsert rows")
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
@@ -1009,7 +1065,7 @@ class DatabaseAPI(ServiceAPI, ABC):
         schema = {}
         for col_name, type_code, *_ in self._cursor_.description or []:
             if self._STRUCTURE_ and col_name in self._STRUCTURE_:
-                schema[col_name] = self._STRUCTURE_[col_name]
+                schema[col_name] = self._normalize_(self._STRUCTURE_[col_name])
             elif self._DESCRIPTION_DATATYPE_MAPPING_:
                 schema[col_name] = next((p for d, p in self._DESCRIPTION_DATATYPE_MAPPING_ if type_code == d), None)
             else:

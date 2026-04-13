@@ -141,20 +141,6 @@ class MicrosoftDatabaseAPI(DatabaseAPI):
         import re
         return re.sub(r"(?i)^SELECT\s+", f"SELECT TOP {limit} ", sql.strip())
 
-    def _check_(self, structure: dict | None = None) -> str:
-        structure = structure if structure is not None else self._STRUCTURE_
-        return ",\n    ".join(
-            f"('{name}', '{self._CHECK_DATATYPE_MAPPING_[self._normalize_(dtype)]}')"
-            for name, dtype in structure.items()
-        )
-
-    def _create_(self, structure: dict | None = None) -> str:
-        structure = structure if structure is not None else self._STRUCTURE_
-        return ",\n    ".join(
-            f'[{name}] {self._CREATE_DATATYPE_MAPPING_[self._normalize_(dtype)]}'
-            for name, dtype in structure.items()
-        )
-
     def _driver_(self, admin: bool) -> Any:
         database = self._ADMIN_ if admin or not self.database else self.database
         connection = pymssql.connect(

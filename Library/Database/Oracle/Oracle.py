@@ -4,7 +4,7 @@ from collections.abc import Sequence
 
 from Library.Dataframe.Dataframe import pl
 from Library.Database.Query import QueryAPI
-from Library.Database.Database import DatabaseAPI
+from Library.Database.Database import DatabaseAPI, PrimaryKey, ForeignKey
 
 class OracleDatabaseAPI(DatabaseAPI):
 
@@ -142,18 +142,13 @@ class OracleDatabaseAPI(DatabaseAPI):
 
     def _check_(self, structure: dict | None = None) -> str:
         structure = structure if structure is not None else self._STRUCTURE_
-        parts = []
+        values = []
         for name, dtype in structure.items():
-            t = self._CHECK_DATATYPE_MAPPING_[self._normalize_(dtype)]
-            parts.append(f"SELECT '{name}' AS column_name, '{t}' AS data_type FROM dual")
-        return "\nUNION ALL\n".join(parts)
-
-    def _create_(self, structure: dict | None = None) -> str:
-        structure = structure if structure is not None else self._STRUCTURE_
-        return ",\n    ".join(
-            f'"{name}" {self._CREATE_DATATYPE_MAPPING_[self._normalize_(dtype)]}'
-            for name, dtype in structure.items()
-        )
+            datatype = self._CHECK_DATATYPE_MAPPING_[self._normalize_(dtype)]
+            is_pk = int(isinstance(dtype, PrimaryKey))
+            is_fk = int(isinstance(dtype, ForeignKey))
+            values.append(f"SELECT '{name}' AS column_name, '{datatype}' AS data_type, {is_pk} AS is_pk, {is_fk} AS is_fk FROM dual")
+        return "\nUNION ALL\n".join(values)
 
     def _driver_(self, admin: bool) -> Any:
         database = self._ADMIN_ if admin or not self.database else self.database
