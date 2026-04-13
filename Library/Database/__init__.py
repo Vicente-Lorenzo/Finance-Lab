@@ -1,5 +1,9 @@
 from Library.Database.Query import QueryAPI
-from Library.Database.Database import DatabaseAPI, PrimaryKey, ForeignKey
+from Library.Database.Database import (
+    DatabaseAPI,
+    PrimaryKey,
+    ForeignKey
+)
 
 from Library.Database import Oracle
 from Library.Database.Oracle import *
