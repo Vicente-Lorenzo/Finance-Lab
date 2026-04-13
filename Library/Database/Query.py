@@ -7,6 +7,9 @@ from Library.Utility.File import FileAPI
 from Library.Utility.Typing import format
 
 class QueryAPI(FileAPI):
+    """
+    Handles SQL query compilation, parameter binding, and execution.
+    """
 
     Interpolation: str = "::"
     Named: str = ":"
@@ -18,6 +21,12 @@ class QueryAPI(FileAPI):
     _PARAMETER_TOKEN_ = re.compile(rf"{_POSITIONAL_PARAMETER_TOKEN_.pattern}|{_NAMED_PARAMETER_TOKEN_.pattern}")
 
     def compile(self, token: Callable[[int], str], **kwargs) -> tuple[str, list[int | str]]:
+        """
+        Compiles the SQL query by replacing placeholders with appropriate tokens.
+        :param token: A callable that returns a parameter token based on index.
+        :param kwargs: Named parameters for interpolation.
+        :return: A tuple containing the compiled query string and a configuration list.
+        """
         query = str(self)
         interpolation = set(self._INTERPOLATION_PARAMETER_TOKEN_.findall(query))
         if interpolation:
@@ -49,6 +58,13 @@ class QueryAPI(FileAPI):
 
     @staticmethod
     def bind(configuration: list[int | str], *args, **kwargs) -> tuple:
+        """
+        Binds positional and named arguments to the query configuration.
+        :param configuration: A list of parameter specifications from compile.
+        :param args: Positional arguments to bind.
+        :param kwargs: Named arguments to bind.
+        :return: A tuple of parameters ready for database execution.
+        """
         args = args or ()
         kwargs = kwargs or {}
         parameters = []

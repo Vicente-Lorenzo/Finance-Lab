@@ -7,6 +7,9 @@ from Library.Database.Query import QueryAPI
 from Library.Database.Database import DatabaseAPI
 
 class PostgresDatabaseAPI(DatabaseAPI):
+    """
+    Postgres SQL database implementation.
+    """
 
     _ADMIN_: str = "postgres"
     _PARAMETER_TOKEN_: Callable[[int], str] = staticmethod(lambda i: "%s")
@@ -101,6 +104,20 @@ class PostgresDatabaseAPI(DatabaseAPI):
                  legacy: bool = False,
                  migrate: bool = False,
                  autocommit: bool = True) -> None:
+        """
+        Initializes the Postgres SQL database connection.
+        :param host: The database host address.
+        :param port: The database port number.
+        :param user: The database username.
+        :param password: The database password.
+        :param admin: If True, connects with administrative privileges.
+        :param database: The target database name.
+        :param schema: The target schema name.
+        :param table: The target table name.
+        :param legacy: If True, returns Pandas DataFrames instead of Polars.
+        :param migrate: If True, performs database migrations on connection.
+        :param autocommit: If True, enables autocommit mode.
+        """
 
         super().__init__(
             host=host,

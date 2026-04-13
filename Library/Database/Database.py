@@ -18,14 +18,23 @@ from Library.Utility.Typing import MISSING, Missing
 
 @dataclass
 class PrimaryKey:
+    """
+    Represents a primary key in the database structure.
+    """
     dtype: type | pl.DataType
 
 @dataclass
 class ForeignKey:
+    """
+    Represents a foreign key in the database structure.
+    """
     dtype: type | pl.DataType
     reference: str
 
 class DatabaseAPI(ServiceAPI, ABC):
+    """
+    Abstract base class for database integrations.
+    """
 
     _ALL_: str = "*"
     _ADMIN_: str | None = None
@@ -47,7 +56,7 @@ class DatabaseAPI(ServiceAPI, ABC):
     _CHECK_DATATYPE_MAPPING_: dict | None = None
     _CREATE_DATATYPE_MAPPING_: dict | None = None
     _DESCRIPTION_DATATYPE_MAPPING_: tuple | None = None
-    _STRUCTURE_: dict | None = None
+    _STRUCTURE_: dict[str, type | type[pl.DataType] | pl.DataType | PrimaryKey | ForeignKey] | None = None
 
     @property
     @abstractmethod
@@ -161,15 +170,18 @@ class DatabaseAPI(ServiceAPI, ABC):
 
     @property
     def database(self) -> str | None:
+        """Returns the current database name."""
         if self._admin_ or not self._database_: return self._ADMIN_
         return self._database_
 
     @property
     def schema(self) -> str | None:
+        """Returns the current schema name."""
         return self._schema_
 
     @property
     def table(self) -> str | None:
+        """Returns the current table name."""
         return self._table_
 
     @property
@@ -182,6 +194,11 @@ class DatabaseAPI(ServiceAPI, ABC):
         return hash(tuple(sorted(self._params_.items())))
 
     def clone(self, **kwargs) -> Self:
+        """
+        Creates and returns a clone of the database instance with updated parameters.
+        :param kwargs: Updated connection or structural parameters.
+        :return: A cloned instance of the DatabaseAPI.
+        """
         params = self._params_
         for k, v in kwargs.items():
             if v is not MISSING: params[k] = v
@@ -244,23 +261,43 @@ class DatabaseAPI(ServiceAPI, ABC):
     @abstractmethod
     def _driver_(self, admin: bool) -> Any: raise NotImplementedError
 
-    def connected(self) -> bool: return self._connection_ is not None and self._cursor_ is not None
+    def connected(self) -> bool:
+        """Checks if the database connection is active."""
+        return self._connection_ is not None and self._cursor_ is not None
 
-    def disconnected(self) -> bool: return self._connection_ is None and self._cursor_ is None
+    def disconnected(self) -> bool:
+        """Checks if the database connection is closed."""
+        return self._connection_ is None and self._cursor_ is None
 
-    def autocommited(self) -> bool: return self._autocommit_ is True
+    def autocommited(self) -> bool:
+        """Checks if autocommit mode is enabled."""
+        return self._autocommit_ is True
 
-    def transitioned(self) -> bool: return self._transaction_ is True
+    def transitioned(self) -> bool:
+        """Checks if a transaction is currently open."""
+        return self._transaction_ is True
 
-    def databased(self) -> bool: return self.database is not None
+    def databased(self) -> bool:
+        """Checks if a database is currently selected."""
+        return self.database is not None
 
-    def schemed(self) -> bool: return self.schema is not None
+    def schemed(self) -> bool:
+        """Checks if a schema is currently selected."""
+        return self.schema is not None
 
-    def tabled(self) -> bool: return self.table is not None
+    def tabled(self) -> bool:
+        """Checks if a table is currently selected."""
+        return self.table is not None
 
-    def structured(self) -> bool: return self._STRUCTURE_ is not None
+    def structured(self) -> bool:
+        """Checks if a table structure is defined."""
+        return self._STRUCTURE_ is not None
 
     def commit(self) -> Self:
+        """
+        Commits the current transaction.
+        :return: Self reference.
+        """
         if not self.connected(): self._log_.debug(lambda: "Commit Operation: Skipped (Not Connected)")
         elif self.autocommited(): self._log_.debug(lambda: "Commit Operation: Skipped (Autocommit Enabled)")
         elif not self.transitioned(): self._log_.debug(lambda: "Commit Operation: Skipped (No Open Transaction)")
@@ -274,6 +311,10 @@ class DatabaseAPI(ServiceAPI, ABC):
         return self
 
     def rollback(self) -> Self:
+        """
+        Rolls back the current transaction.
+        :return: Self reference.
+        """
         if not self.connected(): self._log_.debug(lambda: "Rollback Operation: Skipped (Not Connected)")
         elif self.autocommited(): self._log_.debug(lambda: "Rollback Operation: Skipped (Autocommit Enabled)")
         elif not self.transitioned(): self._log_.debug(lambda: "Rollback Operation: Skipped (No Open Transaction)")
@@ -294,6 +335,10 @@ class DatabaseAPI(ServiceAPI, ABC):
     def __enter__(self) -> Self: return self.migration() if self._migrate_ else self.connect()
 
     def disconnect(self) -> bool:
+        """
+        Closes the database connection and clears the connection pool.
+        :return: Boolean indicating successful disconnection.
+        """
         with self._lock_:
             for db in self._pool_.values():
                 db.disconnect()
@@ -328,6 +373,15 @@ class DatabaseAPI(ServiceAPI, ABC):
                table: str | Sequence | None | Missing = MISSING,
                system: bool = False,
                legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
+        """
+        Lists available databases, schemas, and tables.
+        :param database: Target database(s).
+        :param schema: Target schema(s).
+        :param table: Target table(s).
+        :param system: If True, includes system tables.
+        :param legacy: If True, returns Pandas DataFrames instead of Polars.
+        :return: A DataFrame containing the catalog structure.
+        """
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
@@ -362,6 +416,16 @@ class DatabaseAPI(ServiceAPI, ABC):
                column: str | Sequence | None = None,
                row: int | float | str | None = None,
                legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
+        """
+        Searches for specific values within the catalog.
+        :param database: Target database(s).
+        :param schema: Target schema(s).
+        :param table: Target table(s).
+        :param column: Target column(s) to search in.
+        :param row: The value to search for.
+        :param legacy: If True, returns Pandas DataFrames instead of Polars.
+        :return: A DataFrame containing the search results.
+        """
         if column is None and row is None:
             raise ValueError("Column or Row must be provided to search")
         database = database if database is not MISSING else self._database_
@@ -410,6 +474,13 @@ class DatabaseAPI(ServiceAPI, ABC):
                database: str | Sequence | None | Missing = MISSING,
                schema: str | Sequence | None | Missing = MISSING,
                table: str | Sequence | None | Missing = MISSING) -> bool:
+        """
+        Checks if a database, schema, or table exists.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :return: True if the structure exists, False otherwise.
+        """
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
@@ -448,6 +519,14 @@ class DatabaseAPI(ServiceAPI, ABC):
                schema: str | None | Missing = MISSING,
                table: str | None | Missing = MISSING,
                structure: dict | None | Missing = MISSING) -> bool:
+        """
+        Checks for differences between the expected structure and the actual table structure.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :param structure: The expected table structure.
+        :return: True if differences exist, False otherwise.
+        """
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
@@ -472,6 +551,14 @@ class DatabaseAPI(ServiceAPI, ABC):
                schema: str | Sequence | None | Missing = MISSING,
                table: str | Sequence | None | Missing = MISSING,
                structure: dict | None | Missing = MISSING) -> Self:
+        """
+        Creates a database, schema, or table if it does not exist.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :param structure: The table structure definition.
+        :return: Self reference.
+        """
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
@@ -529,6 +616,14 @@ class DatabaseAPI(ServiceAPI, ABC):
                schema: str | Sequence | None | Missing = MISSING,
                table: str | Sequence | None | Missing = MISSING,
                structure: dict | None | Missing = MISSING) -> Self:
+        """
+        Migrates the structure of a database, schema, or table.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :param structure: The updated table structure definition.
+        :return: Self reference.
+        """
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
@@ -600,6 +695,14 @@ class DatabaseAPI(ServiceAPI, ABC):
                schema: str | Sequence | None | Missing = MISSING,
                table: str | Sequence | None | Missing = MISSING,
                name: str | Sequence | None = None) -> Self:
+        """
+        Renames a database, schema, or table.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :param name: The new name for the structure.
+        :return: Self reference.
+        """
         if name is None:
             raise ValueError("Name must be provided to refactor a structure")
         database = database if database is not MISSING else self._database_
@@ -659,6 +762,13 @@ class DatabaseAPI(ServiceAPI, ABC):
                database: str | Sequence | None | Missing = MISSING,
                schema: str | Sequence | None | Missing = MISSING,
                table: str | Sequence | None | Missing = MISSING) -> Self:
+        """
+        Deletes a database, schema, or table.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :return: Self reference.
+        """
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
@@ -698,6 +808,14 @@ class DatabaseAPI(ServiceAPI, ABC):
                schema: str | Sequence | None | Missing = MISSING,
                table: str | Sequence | None | Missing = MISSING,
                structure: dict | None = None) -> Self:
+        """
+        Adds new columns to an existing table.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :param structure: A dictionary mapping column names to their data types.
+        :return: Self reference.
+        """
         if not structure:
             raise ValueError("Structure must be provided to add a Column")
         database = database if database is not MISSING else self._database_
@@ -732,6 +850,15 @@ class DatabaseAPI(ServiceAPI, ABC):
                table: str | Sequence | None | Missing = MISSING,
                column: str | Sequence | None = None,
                name: str | Sequence | None = None) -> Self:
+        """
+        Renames a column in an existing table.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :param column: The current column name.
+        :param name: The new column name.
+        :return: Self reference.
+        """
         if column is None or name is None:
             raise ValueError("Column and Name must be provided to rename a Column")
         database = database if database is not MISSING else self._database_
@@ -765,6 +892,15 @@ class DatabaseAPI(ServiceAPI, ABC):
                table: str | Sequence | None | Missing = MISSING,
                columns: Sequence[str] | None = None,
                structure: dict | None = None) -> Self:
+        """
+        Reorders the columns in an existing table.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :param columns: The new order of column names.
+        :param structure: The table structure definition.
+        :return: Self reference.
+        """
         if not columns:
             raise ValueError("Columns must be provided to reorder a Table")
         if isinstance(columns, str): columns = [columns]
@@ -803,6 +939,14 @@ class DatabaseAPI(ServiceAPI, ABC):
                schema: str | Sequence | None | Missing = MISSING,
                table: str | Sequence | None | Missing = MISSING,
                column: str | Sequence | None = None) -> Self:
+        """
+        Drops a column from an existing table.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :param column: The name of the column to drop.
+        :return: Self reference.
+        """
         if column is None:
             raise ValueError("Column must be provided to drop a Column")
         database = database if database is not MISSING else self._database_
@@ -838,6 +982,19 @@ class DatabaseAPI(ServiceAPI, ABC):
                limit: int | None = None,
                parameters: dict | None = None,
                legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
+        """
+        Selects data from a table.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :param columns: Columns to retrieve.
+        :param condition: The WHERE condition.
+        :param order: The ORDER BY clause.
+        :param limit: The maximum number of rows to retrieve.
+        :param parameters: Parameters for the query.
+        :param legacy: If True, returns Pandas DataFrames instead of Polars.
+        :return: A DataFrame containing the selected data.
+        """
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
@@ -863,6 +1020,14 @@ class DatabaseAPI(ServiceAPI, ABC):
                schema: str | Sequence | None | Missing = MISSING,
                table: str | Sequence | None | Missing = MISSING,
                data: Any = None) -> Self:
+        """
+        Inserts data into a table.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :param data: The data to insert.
+        :return: Self reference.
+        """
         if data is None: raise ValueError("Data must be provided to insert rows")
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
@@ -897,6 +1062,15 @@ class DatabaseAPI(ServiceAPI, ABC):
                table: str | Sequence | None | Missing = MISSING,
                data: Any = None,
                condition: str | None = None) -> Self:
+        """
+        Updates data in a table.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :param data: The data to update.
+        :param condition: The WHERE condition.
+        :return: Self reference.
+        """
         if data is None: raise ValueError("Data must be provided to update rows")
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
@@ -929,6 +1103,15 @@ class DatabaseAPI(ServiceAPI, ABC):
                table: str | Sequence | None | Missing = MISSING,
                data: Any = None,
                key: str | Sequence[str] | None = None) -> Self:
+        """
+        Upserts (inserts or updates) data in a table.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :param data: The data to upsert.
+        :param key: The primary key or constraint for conflict resolution.
+        :return: Self reference.
+        """
         if data is None: raise ValueError("Data must be provided to upsert rows")
         if not key:
             if self._STRUCTURE_:
@@ -964,6 +1147,15 @@ class DatabaseAPI(ServiceAPI, ABC):
                table: str | Sequence | None | Missing = MISSING,
                condition: str | None = None,
                parameters: dict | None = None) -> Self:
+        """
+        Removes rows from a table.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :param condition: The WHERE condition.
+        :param parameters: Parameters for the query.
+        :return: Self reference.
+        """
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
@@ -988,6 +1180,12 @@ class DatabaseAPI(ServiceAPI, ABC):
     def sessions(self, *,
                database: str | Sequence | None | Missing = MISSING,
                legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
+        """
+        Retrieves active database sessions.
+        :param database: Target database.
+        :param legacy: If True, returns Pandas DataFrames instead of Polars.
+        :return: A DataFrame containing the active sessions.
+        """
         database = database if database is not MISSING else self.database
         if isinstance(database, (list, tuple)):
             return self.frame(self._concat_([self.sessions(database=d, legacy=False) for d in database]), legacy=legacy)
@@ -997,6 +1195,12 @@ class DatabaseAPI(ServiceAPI, ABC):
     def kill(self, *,
                id: int | str | Sequence | None | Missing = MISSING,
                database: str | Sequence | None | Missing = MISSING) -> Self:
+        """
+        Terminates active database sessions.
+        :param id: The session ID(s) to kill.
+        :param database: Target database.
+        :return: Self reference.
+        """
         database = database if database is not MISSING else self.database
         if isinstance(database, (list, tuple)):
             for d in database: self.kill(id=id, database=d)
@@ -1023,6 +1227,10 @@ class DatabaseAPI(ServiceAPI, ABC):
         return self
 
     def migration(self) -> Self:
+        """
+        Performs a full migration of the database, schema, and table structures.
+        :return: Self reference.
+        """
         try:
             timer = Timer()
             timer.start()
@@ -1073,21 +1281,47 @@ class DatabaseAPI(ServiceAPI, ABC):
         return self.frame(data=rows, schema=schema, legacy=legacy)
 
     def fetchone(self, *, legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
+        """
+        Fetches the next row of a query result set.
+        :param legacy: If True, returns Pandas DataFrames instead of Polars.
+        :return: A DataFrame containing the fetched row.
+        """
         timer, df = self._fetch_(callback=lambda: self._frame_(self._cursor_.fetchone(), legacy=legacy), abort=self.rollback)
         self._log_.info(lambda: f"Fetch One Operation: Fetched {len(df)} data points ({timer.result()})")
         return df
 
     def fetchmany(self, *, n: int, legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
+        """
+        Fetches the next set of rows of a query result.
+        :param n: The number of rows to fetch.
+        :param legacy: If True, returns Pandas DataFrames instead of Polars.
+        :return: A DataFrame containing the fetched rows.
+        """
         timer, df = self._fetch_(callback=lambda: self._frame_(self._cursor_.fetchmany(n), legacy=legacy), abort=self.rollback)
         self._log_.info(lambda: f"Fetch Many Operation: Fetched {len(df)} data points ({timer.result()})")
         return df
 
     def fetchall(self, *, legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
+        """
+        Fetches all remaining rows of a query result.
+        :param legacy: If True, returns Pandas DataFrames instead of Polars.
+        :return: A DataFrame containing the fetched rows.
+        """
         timer, df = self._fetch_(callback=lambda: self._frame_(self._cursor_.fetchall(), legacy=legacy), abort=self.rollback)
         self._log_.info(lambda: f"Fetch All Operation: Fetched {len(df)} data points ({timer.result()})")
         return df
 
     def execute(self, query: QueryAPI, *args, database: str | Sequence | None | Missing = MISSING, schema: str | Sequence | None | Missing = MISSING, table: str | Sequence | None | Missing = MISSING, admin: bool | Missing = MISSING, **kwargs) -> Self:
+        """
+        Executes a query, handling either single or multiple parameter sets automatically.
+        :param query: The QueryAPI instance to execute.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :param admin: If True, executes with administrative privileges.
+        :param kwargs: Additional query parameters.
+        :return: Self reference.
+        """
         if not args:
             return self.executeone(query, database=database, schema=schema, table=table, admin=admin, **kwargs)
         data = args[0] if len(args) == 1 else args
@@ -1102,6 +1336,16 @@ class DatabaseAPI(ServiceAPI, ABC):
         return self
 
     def executeone(self, query: QueryAPI, *args, database: str | Sequence | None | Missing = MISSING, schema: str | Sequence | None | Missing = MISSING, table: str | Sequence | None | Missing = MISSING, admin: bool | Missing = MISSING, **kwargs) -> Self:
+        """
+        Executes a query with a single set of parameters.
+        :param query: The QueryAPI instance to execute.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :param admin: If True, executes with administrative privileges.
+        :param kwargs: Additional query parameters.
+        :return: Self reference.
+        """
         if isinstance(database, (list, tuple)):
             for d in database: self.executeone(query, *args, database=d, schema=schema, table=table, admin=admin, **kwargs)
             return self
@@ -1133,6 +1377,16 @@ class DatabaseAPI(ServiceAPI, ABC):
         return self
 
     def executemany(self, query: QueryAPI, *args, database: str | Sequence | None | Missing = MISSING, schema: str | Sequence | None | Missing = MISSING, table: str | Sequence | None | Missing = MISSING, admin: bool | Missing = MISSING, **kwargs) -> Self:
+        """
+        Executes a query repeatedly with a batch of parameters.
+        :param query: The QueryAPI instance to execute.
+        :param database: Target database.
+        :param schema: Target schema.
+        :param table: Target table.
+        :param admin: If True, executes with administrative privileges.
+        :param kwargs: Additional query parameters.
+        :return: Self reference.
+        """
         if isinstance(database, (list, tuple)):
             for d in database: self.executemany(query, *args, database=d, schema=schema, table=table, admin=admin, **kwargs)
             return self
