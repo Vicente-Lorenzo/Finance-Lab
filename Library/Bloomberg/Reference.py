@@ -1,7 +1,8 @@
 import blpapi
 
-from Library.Service import ServiceAPI
 from Library.Dataframe import pd, pl
+from Library.Service import ServiceAPI
+from Library.Utility.Typing import MISSING, Missing
 
 class ReferenceAPI(ServiceAPI):
     """Bloomberg Reference Data interface."""
@@ -13,13 +14,15 @@ class ReferenceAPI(ServiceAPI):
               securities: str | list[str],
               fields: str | list[str],
               overrides: dict[str, str] = None,
-              timeout: int = 0) -> pd.DataFrame | pl.DataFrame:
+              timeout: int = 0,
+              legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
         """
         Fetches reference data for multiple securities and fields.
         :param securities: Security ticker or list of tickers.
         :param fields: Field mnemonic or list of fields.
         :param overrides: Dictionary of field overrides (e.g., {'VWAP_START_TIME': '09:30:00'}).
         :param timeout: Wait time in milliseconds (0 for indefinite).
+        :param legacy: If True, returns Pandas DataFrame; if False, Polars. Defaults to the API setting.
         """
         securities = self._api_.flatten(securities)
         fields = self._api_.flatten(fields)
@@ -59,7 +62,7 @@ class ReferenceAPI(ServiceAPI):
                 if event.eventType() == blpapi.Event.TIMEOUT:
                     self._log_.warning(lambda: "Fetch Operation: Timeout reached while waiting for response")
                     break
-            return self._api_.frame(data)
+            return self._api_.frame(data, legacy=legacy)
         timer, df = super()._fetch_(callback=_fetch_)
         self._log_.info(lambda: f"Fetch Operation: Fetched {len(df)} reference data points ({timer.result()})")
         return df

@@ -3,6 +3,7 @@ from datetime import datetime
 
 from Library.Dataframe import pd, pl
 from Library.Service import ServiceAPI
+from Library.Utility.Typing import MISSING, Missing
 
 class IntradayAPI(ServiceAPI):
     """Bloomberg Intraday Data interface."""
@@ -13,7 +14,8 @@ class IntradayAPI(ServiceAPI):
              stop: datetime = None,
              interval: int = 1,
              event_type: str = "TRADE",
-             timeout: int = 0) -> pd.DataFrame | pl.DataFrame:
+             timeout: int = 0,
+             legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
         """
         Fetches intraday bar data for a security.
         :param security: Security ticker.
@@ -22,6 +24,7 @@ class IntradayAPI(ServiceAPI):
         :param interval: Bar interval in minutes.
         :param event_type: Event type (TRADE, BID, ASK, etc.).
         :param timeout: Wait time in milliseconds (0 for indefinite).
+        :param legacy: If True, returns Pandas DataFrame; if False, Polars. Defaults to the API setting.
         """
         stop = stop or datetime.now()
         def _fetch_():
@@ -59,9 +62,9 @@ class IntradayAPI(ServiceAPI):
                 elif event.eventType() == blpapi.Event.TIMEOUT:
                     self._log_.warning(lambda: "Bars Operation: Timeout reached while waiting for response")
                     break
-            _df_ = self.frame(data)
+            _df_ = self._api_.frame(data, legacy=False)
             if not _df_.is_empty() and "Time" in _df_.columns: _df_ = _df_.drop_nulls(subset=["Time"])
-            return self._api_.frame(_df_)
+            return self._api_.frame(_df_, legacy=legacy)
         timer, result_df = super()._fetch_(callback=_fetch_)
         self._log_.info(lambda: f"Bars Operation: Fetched {len(result_df)} bars ({timer.result()})")
         return result_df
@@ -71,7 +74,8 @@ class IntradayAPI(ServiceAPI):
               start: datetime,
               stop: datetime = None,
               event_types: str | list[str] = "TRADE",
-              timeout: int = 0) -> pd.DataFrame | pl.DataFrame:
+              timeout: int = 0,
+              legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
         """
         Fetches intraday tick data for a security.
         :param security: Security ticker.
@@ -79,6 +83,7 @@ class IntradayAPI(ServiceAPI):
         :param stop: End datetime (defaults to now).
         :param event_types: List of event types (TRADE, BID, ASK, etc.).
         :param timeout: Wait time in milliseconds (0 for indefinite).
+        :param legacy: If True, returns Pandas DataFrame; if False, Polars. Defaults to the API setting.
         """
         stop = stop or datetime.now()
         def _fetch_():
@@ -119,9 +124,9 @@ class IntradayAPI(ServiceAPI):
                 elif event.eventType() == blpapi.Event.TIMEOUT:
                     self._log_.warning(lambda: "Ticks Operation: Timeout reached while waiting for response")
                     break
-            _df_ = self.frame(data)
+            _df_ = self._api_.frame(data, legacy=False)
             if not _df_.is_empty() and "Time" in _df_.columns: _df_ = _df_.drop_nulls(subset=["Time"])
-            return self._api_.frame(_df_)
+            return self._api_.frame(_df_, legacy=legacy)
         timer, result_df = super()._fetch_(callback=_fetch_)
         self._log_.info(lambda: f"Ticks Operation: Fetched {len(result_df)} ticks ({timer.result()})")
         return result_df

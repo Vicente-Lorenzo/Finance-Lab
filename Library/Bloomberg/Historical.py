@@ -1,8 +1,9 @@
 import blpapi
 from datetime import date, datetime
 
-from Library.Service import ServiceAPI
 from Library.Dataframe import pd, pl
+from Library.Service import ServiceAPI
+from Library.Utility.Typing import MISSING, Missing
 
 class HistoricalAPI(ServiceAPI):
     """Bloomberg Historical Data interface."""
@@ -16,7 +17,8 @@ class HistoricalAPI(ServiceAPI):
               start: str | date | datetime,
               stop: str | date | datetime = None,
               timeframe: str = "DAILY",
-              timeout: int = 0) -> pd.DataFrame | pl.DataFrame:
+              timeout: int = 0,
+              legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
         """
         Fetches historical data for multiple securities and fields.
         :param securities: Security ticker or list of tickers.
@@ -25,6 +27,7 @@ class HistoricalAPI(ServiceAPI):
         :param stop: End date/datetime.
         :param timeframe: Periodicity (e.g., DAILY, WEEKLY, MONTHLY).
         :param timeout: Wait time in milliseconds (0 for indefinite).
+        :param legacy: If True, returns Pandas DataFrame; if False, Polars. Defaults to the API setting.
         """
         securities = self._api_.flatten(securities)
         fields = self._api_.flatten(fields)
@@ -61,7 +64,7 @@ class HistoricalAPI(ServiceAPI):
                 if event.eventType() == blpapi.Event.TIMEOUT:
                     self._log_.warning(lambda: "Fetch Operation: Timeout reached while waiting for response")
                     break
-            return self._api_.frame(data)
+            return self._api_.frame(data, legacy=legacy)
         timer, df = super()._fetch_(callback=_fetch_)
         self._log_.info(lambda: f"Fetch Operation: Fetched {len(df)} historical data points ({timer.result()})")
         return df
