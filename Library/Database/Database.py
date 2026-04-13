@@ -285,35 +285,23 @@ class DatabaseAPI(ServiceAPI, ABC):
             return self.frame(self._concat_([self.list(database=database, schema=s, table=table, system=system, legacy=False) for s in schema]), legacy=legacy)
         if isinstance(table, (list, tuple)):
             return self.frame(self._concat_([self.list(database=database, schema=schema, table=t, system=system, legacy=False) for t in table]), legacy=legacy)
-        database = database if database and database != "%" else "%"
-        schema = schema if schema and schema != "%" else "%"
-        table = table if table and table != "%" else "%"
+        database = database or "%"
+        schema = schema or "%"
+        table = table or "%"
         system = 1 if system else 0
         self._log_.debug(lambda: "List Operation: Fetching structural catalog")
-        df = self.executeone(self._LIST_CATALOG_QUERY_, database=database, schema=schema, table=table, system=system, admin=True).fetchall(legacy=legacy)
-        if not df.is_empty():
-            databases = df["Database"].unique().to_list() if "Database" in df.columns else []
-            current = self.database
-            frames = []
-            expansion = False
-            if database == "%":
-                expansion = True
-            else:
-                for db_name in databases:
-                    if db_name != current:
-                        expansion = True
-                        break
-            if expansion:
-                for db_name in databases:
-                    db = self.executeone(self._LIST_CATALOG_QUERY_, database=db_name, schema=schema, table=table, system=system, admin=False)
-                    db_df = db.fetchall(legacy=legacy)
-                    if not db_df.is_empty():
-                        frames.append(db_df)
-                    else:
-                        frames.append(df.filter(pl.col("Database") == db_name) if isinstance(df, pl.DataFrame) else df[df["Database"] == db_name])
-                if frames:
-                    return self.frame(self._concat_(frames), legacy=legacy)
-        return df
+        df = self.executeone(self._LIST_CATALOG_QUERY_, database=database, schema=schema, table=table, system=system, admin=True).fetchall(legacy=False)
+        if df.is_empty() or "Database" not in df.columns:
+            return self.frame(df, legacy=legacy)
+        databases = df["Database"].unique().to_list()
+        expansion = database == "%" or any(d != self.database for d in databases)
+        if not expansion:
+            return self.frame(df, legacy=legacy)
+        frames = []
+        for db_name in databases:
+            db_df = self.executeone(self._LIST_CATALOG_QUERY_, database=db_name, schema=schema, table=table, system=system, admin=False).fetchall(legacy=False)
+            frames.append(db_df if not db_df.is_empty() else df.filter(pl.col("Database") == db_name))
+        return self.frame(self._concat_(frames) if frames else df, legacy=legacy)
 
     def exists(self, *,
                database: str | Sequence | None | Missing = MISSING,
@@ -616,21 +604,18 @@ class DatabaseAPI(ServiceAPI, ABC):
             return self
         if not database or not schema or not table:
             raise ValueError("Database, Schema and Table must be provided to reorder a Table")
-        if structure is None and self._STRUCTURE_ is None:
+        source = structure or self._STRUCTURE_
+        if source is None:
             df = self.select(database=database, schema=schema, table=table, columns=columns, limit=1, legacy=False)
-            if isinstance(df, pl.DataFrame): 
-                schema_attr: Any = getattr(df, "schema", {})
-                new_structure = dict(schema_attr)
-                if any(v == pl.Null for v in new_structure.values()):
-                    raise ValueError("Cannot infer structure from empty table or null columns. Structure must be provided explicitly.")
-            else:
+            if not isinstance(df, pl.DataFrame):
                 raise ValueError("Structure must be provided to reorder a Table without Polars DataFrames")
-        else:
-            structure_val = structure if structure is not None else self._STRUCTURE_
-            missing = [c for c in columns if c not in structure_val]
-            if missing:
-                raise ValueError(f"Columns {missing} not found in Structure")
-            new_structure = {c: structure_val[c] for c in columns}
+            source = dict(df.schema)
+            if any(v == pl.Null for v in source.values()):
+                raise ValueError("Cannot infer structure from empty table or null columns. Structure must be provided explicitly.")
+        missing = [c for c in columns if c not in source]
+        if missing:
+            raise ValueError(f"Columns {missing} not found in Structure")
+        new_structure = {c: source[c] for c in columns}
         import uuid
         temp_table = f"{table}_{uuid.uuid4().hex[:8]}"
         original_table = self._table_
@@ -640,8 +625,7 @@ class DatabaseAPI(ServiceAPI, ABC):
         target = self._target_(schema, table)
         target_temp = self._target_(schema, temp_table)
         cols_str = self._quoted_(*columns)
-        sql = f"INSERT INTO {target} ({cols_str}) SELECT {cols_str} FROM {target_temp}"
-        self.executeone(QueryAPI(sql), database=database, schema=schema, table=table, admin=False)
+        self.executeone(QueryAPI(f"INSERT INTO {target} ({cols_str}) SELECT {cols_str} FROM {target_temp}"), database=database, schema=schema, table=table, admin=False)
         self.delete(database=database, schema=schema, table=temp_table)
         self._log_.alert(lambda: f"Reorder Operation: Reordered Columns in {table} Table")
         return self
@@ -725,13 +709,12 @@ class DatabaseAPI(ServiceAPI, ABC):
             for t in table: self.insert(database=database, schema=schema, table=t, data=data)
             return self
         if not database or not schema or not table: raise ValueError("Database, Schema and Table must be provided to insert rows")
-        cols, records, is_many = self.parse(data)
+        columns, records, multiple = self.parse(data)
         if not records: return self
         target = self._target_(schema, table)
-        n = QueryAPI.Named
-        if cols:
-            cols_str = self._quoted_(*cols)
-            vals_str = ", ".join(f"{n}{c}{n}" for c in cols)
+        if columns:
+            cols_str = self._quoted_(*columns)
+            vals_str = ", ".join(f"{QueryAPI.Named}{c}{QueryAPI.Named}" for c in columns)
             sql = self._insert_(target, cols_str, vals_str)
         else:
             vals_str = ", ".join(QueryAPI.Positional for _ in records[0])
@@ -760,12 +743,12 @@ class DatabaseAPI(ServiceAPI, ABC):
             for t in table: self.update(database=database, schema=schema, table=t, data=data, condition=condition)
             return self
         if not database or not schema or not table: raise ValueError("Database, Schema and Table must be provided to update rows")
-        cols, records, is_many = self.parse(data)
+        columns, records, multiple = self.parse(data)
         if not records: return self
-        if not cols: raise ValueError("Dictionary or DataFrame structure required for updates to identify columns")
+        if not columns: raise ValueError("Dictionary or DataFrame structure required for updates to identify columns")
         target = self._target_(schema, table)
         n = QueryAPI.Named
-        set_str = ", ".join(f"{self._quoted_(c)} = {n}{c}{n}" for c in cols)
+        set_str = ", ".join(f"{self._quoted_(c)} = {n}{c}{n}" for c in columns)
         sql = self._update_(target, set_str)
         sql = self._condition_(sql, condition)
         self.execute(QueryAPI(sql), records, database=database, schema=schema, table=table, admin=False)
@@ -793,12 +776,12 @@ class DatabaseAPI(ServiceAPI, ABC):
             for t in table: self.upsert(database=database, schema=schema, table=t, data=data, key=key)
             return self
         if not database or not schema or not table: raise ValueError("Database, Schema and Table must be provided to upsert rows")
-        cols, records, is_many = self.parse(data)
+        columns, records, multiple = self.parse(data)
         if not records: return self
-        if not cols: raise ValueError("Dictionary or DataFrame structure required for upserts to identify columns")
+        if not columns: raise ValueError("Dictionary or DataFrame structure required for upserts to identify columns")
         target = self._target_(schema, table)
         keys = [key] if isinstance(key, str) else list(key)
-        sql = self._upsert_(target, cols, keys)
+        sql = self._upsert_(target, columns, keys)
         self.execute(QueryAPI(sql), records, database=database, schema=schema, table=table, admin=False)
         self._log_.alert(lambda: f"Upsert Operation: Processed {len(records)} rows in {table} Table")
         return self
@@ -833,22 +816,21 @@ class DatabaseAPI(ServiceAPI, ABC):
     def sessions(self, *,
                database: str | Sequence | None | Missing = MISSING,
                legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
-        database = database if database is not MISSING else self.database
+        database = database if database is not MISSING else self._database_
         if isinstance(database, (list, tuple)):
             return self.frame(self._concat_([self.sessions(database=d, legacy=False) for d in database]), legacy=legacy)
-        database = database or "%"
         self._log_.debug(lambda: "Sessions Operation: Fetching active sessions")
-        return self.executeone(self._LIST_SESSIONS_QUERY_, database=database, admin=True).fetchall(legacy=legacy)
+        return self.executeone(self._LIST_SESSIONS_QUERY_, database=database or "%", admin=True).fetchall(legacy=legacy)
 
     def kill(self, *,
                id: int | str | Sequence | None | Missing = MISSING,
                database: str | Sequence | None | Missing = MISSING) -> Self:
-        database = database if database is not MISSING else self.database
+        database = database if database is not MISSING else self._database_
         if isinstance(database, (list, tuple)):
             for d in database: self.kill(id=id, database=d)
             return self
         with self._lock_:
-            for key, clone_db in list(self._pool_.items()):
+            for clone_db in list(self._pool_.values()):
                 if clone_db._database_ == database:
                     clone_db.disconnect()
         if isinstance(id, (list, tuple)):
@@ -856,10 +838,9 @@ class DatabaseAPI(ServiceAPI, ABC):
             return self
         if id is MISSING:
             self._log_.debug(lambda: "Kill Operation: Fetching all active sessions to terminate")
-            active_sessions = self.sessions(database=database, legacy=False)
-            if not active_sessions.is_empty():
-                ids = active_sessions["Id"].to_list()
-                self.kill(id=ids, database=database)
+            df = self.sessions(database=database, legacy=False)
+            if not df.is_empty():
+                self.kill(id=df["Id"].to_list(), database=database)
             return self
         self._log_.alert(lambda: f"Kill Operation: Terminating session {id}")
         try:
@@ -932,11 +913,11 @@ class DatabaseAPI(ServiceAPI, ABC):
         if not args:
             return self.executeone(query, database=database, schema=schema, table=table, admin=admin, **kwargs)
         data = args[0] if len(args) == 1 else args
-        cols, records, is_many = self.parse(data)
+        columns, records, multiple = self.parse(data)
         if not records: return self
-        if is_many:
+        if multiple:
             self.executemany(query, records, database=database, schema=schema, table=table, admin=admin, **kwargs)
-        elif cols:
+        elif columns:
             self.executeone(query, database=database, schema=schema, table=table, admin=admin, **{**kwargs, **records[0]})
         else:
             self.executeone(query, *records[0], database=database, schema=schema, table=table, admin=admin, **kwargs)

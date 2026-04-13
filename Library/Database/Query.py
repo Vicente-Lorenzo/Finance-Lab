@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 from typing import Callable
 
@@ -61,6 +63,14 @@ class QueryAPI(FileAPI):
                         raise KeyError(f"Missing named parameter '{k}' for :{k}: placeholder")
                     parameters.append(kwargs[k])
         return tuple(parameters)
+
+    def __add__(self, other: str | QueryAPI) -> QueryAPI:
+        left = str(self).rstrip().rstrip(";").rstrip()
+        right = str(other).lstrip().lstrip(";").lstrip()
+        return QueryAPI(f"{left}; {right}")
+
+    def __iadd__(self, other: str | QueryAPI) -> QueryAPI:
+        return self.__add__(other)
 
     def __call__(self, token: Callable[[int], str], *args, **kwargs) -> tuple[str, list[int | str], tuple | None]:
         query, configuration = self.compile(token, **kwargs)
