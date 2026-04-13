@@ -421,6 +421,77 @@ class DatabaseAPI(ServiceAPI, ABC):
                     self._log_.alert(lambda: f"Create Operation: Created {table} Table")
         return self
 
+    def migrate(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING,
+               structure: dict | None | Missing = MISSING) -> Self:
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        if isinstance(database, (list, tuple)):
+            for d in database: self.migrate(database=d, schema=schema, table=table, structure=structure)
+            return self
+        if isinstance(schema, (list, tuple)):
+            for s in schema: self.migrate(database=database, schema=s, table=table, structure=structure)
+            return self
+        if isinstance(table, (list, tuple)):
+            for t in table: self.migrate(database=database, schema=schema, table=t, structure=structure)
+            return self
+        if table and (not database or not schema):
+            raise ValueError("Schema and Database must be provided to operate on a Table")
+        if schema and not database:
+            raise ValueError("Database must be provided to operate on a Schema")
+        if not database and not schema and not table:
+            raise ValueError("At least one structure must be specified")
+        kwargs = {k: v for k, v in {"database": database, "schema": schema, "table": table}.items() if v}
+        if database:
+            if not self.exists(database=database, schema=None, table=None):
+                self._log_.warning(lambda: f"Migrate Operation: Missing {database} Database")
+                self.executeone(self._CREATE_DATABASE_QUERY_, **kwargs, admin=True).commit()
+                self._log_.alert(lambda: f"Migrate Operation: Created {database} Database")
+        if schema:
+            if not self.exists(database=database, schema=schema, table=None):
+                self._log_.warning(lambda: f"Migrate Operation: Missing {schema} Schema")
+                self.executeone(self._CREATE_SCHEMA_QUERY_, **kwargs, admin=False).commit()
+                self._log_.alert(lambda: f"Migrate Operation: Created {schema} Schema")
+        if table:
+            structure_val = structure if structure is not MISSING else self._STRUCTURE_
+            if structure_val is None:
+                raise ValueError("Structure must be provided to migrate a Table")
+            if not self.exists(database=database, schema=schema, table=table):
+                self._log_.warning(lambda: f"Migrate Operation: Missing {table} Table")
+                definitions = self._create_(structure=structure_val)
+                self.executeone(self._CREATE_TABLE_QUERY_, definitions=definitions, **kwargs, admin=False).commit()
+                self._log_.alert(lambda: f"Migrate Operation: Created {table} Table")
+            elif self.diff(database=database, schema=schema, table=table, structure=structure_val):
+                self._log_.warning(lambda: f"Migrate Operation: Structure mismatch for {table} Table")
+                definitions = self._check_(structure=structure_val)
+                diff_df = self.executeone(self._CHECK_STRUCTURE_QUERY_, definitions=definitions, **kwargs, admin=False).fetchall(legacy=False)
+                new_only = set(diff_df["expected_column_name"].drop_nulls().to_list())
+                actual = set(diff_df["actual_column_name"].drop_nulls().to_list())
+                new_only -= actual
+                common = [c for c in structure_val if c not in new_only]
+                if not common:
+                    self.executeone(self._DELETE_TABLE_QUERY_, **kwargs, admin=False).commit()
+                    definitions = self._create_(structure=structure_val)
+                    self.executeone(self._CREATE_TABLE_QUERY_, definitions=definitions, **kwargs, admin=False).commit()
+                    self._log_.alert(lambda: f"Migrate Operation: Recreated {table} Table")
+                else:
+                    import uuid
+                    temp_table = f"{table}_{uuid.uuid4().hex[:8]}"
+                    original_table = self._table_
+                    self.refactor(database=database, schema=schema, table=table, name=temp_table)
+                    if original_table == table: self._table_ = original_table
+                    self.create(database=database, schema=schema, table=table, structure=structure_val)
+                    target = self._target_(schema, table)
+                    target_temp = self._target_(schema, temp_table)
+                    cols_str = self._quoted_(*common)
+                    self.executeone(QueryAPI(f"INSERT INTO {target} ({cols_str}) SELECT {cols_str} FROM {target_temp}"), database=database, schema=schema, table=table, admin=False)
+                    self.delete(database=database, schema=schema, table=temp_table)
+                    self._log_.alert(lambda: f"Migrate Operation: Migrated {table} Table")
+        return self
+
     def refactor(self, *,
                database: str | Sequence | None | Missing = MISSING,
                schema: str | Sequence | None | Missing = MISSING,
@@ -616,17 +687,7 @@ class DatabaseAPI(ServiceAPI, ABC):
         if missing:
             raise ValueError(f"Columns {missing} not found in Structure")
         new_structure = {c: source[c] for c in columns}
-        import uuid
-        temp_table = f"{table}_{uuid.uuid4().hex[:8]}"
-        original_table = self._table_
-        self.refactor(database=database, schema=schema, table=table, name=temp_table)
-        if original_table == table: self._table_ = original_table
-        self.create(database=database, schema=schema, table=table, structure=new_structure)
-        target = self._target_(schema, table)
-        target_temp = self._target_(schema, temp_table)
-        cols_str = self._quoted_(*columns)
-        self.executeone(QueryAPI(f"INSERT INTO {target} ({cols_str}) SELECT {cols_str} FROM {target_temp}"), database=database, schema=schema, table=table, admin=False)
-        self.delete(database=database, schema=schema, table=temp_table)
+        self.migrate(database=database, schema=schema, table=table, structure=new_structure)
         self._log_.alert(lambda: f"Reorder Operation: Reordered Columns in {table} Table")
         return self
 
@@ -864,12 +925,18 @@ class DatabaseAPI(ServiceAPI, ABC):
                 self._log_.info(lambda: f"Migration Operation: Migrated Database ({subtimer.result()})")
             self.disconnect()
             self.connect()
-            if self.schemed() or self.tabled():
+            if self.schemed():
                 subtimer = Timer()
                 subtimer.start()
-                self.create()
+                self.create(database=self._database_, schema=self._schema_, table=None)
                 subtimer.stop()
-                self._log_.info(lambda: f"Migration Operation: Migrated Schema and Table ({subtimer.result()})")
+                self._log_.info(lambda: f"Migration Operation: Migrated Schema ({subtimer.result()})")
+            if self.tabled():
+                subtimer = Timer()
+                subtimer.start()
+                self.migrate()
+                subtimer.stop()
+                self._log_.info(lambda: f"Migration Operation: Migrated Table ({subtimer.result()})")
             timer.stop()
             self._log_.info(lambda: f"Migration Operation: Migrated ({timer.result()})")
             return self
