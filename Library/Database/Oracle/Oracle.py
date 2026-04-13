@@ -1,7 +1,9 @@
 import oracledb
 from typing import Callable, Any
+from collections.abc import Sequence
 
 from Library.Dataframe.Dataframe import pl
+from Library.Database.Query import QueryAPI
 from Library.Database.Database import DatabaseAPI
 
 class OracleDatabaseAPI(DatabaseAPI):
@@ -113,6 +115,26 @@ class OracleDatabaseAPI(DatabaseAPI):
             migrate=migrate,
             autocommit=autocommit
         )
+
+    @property
+    def _quote_(self) -> tuple[str, str]:
+        return '"', '"'
+    def _upsert_(self, target: str, columns: Sequence[str], keys: Sequence[str]) -> str:
+        ql, qr = self._quote_
+        n = QueryAPI.Named
+        source_cols = ", ".join(f"{n}{c}{n} AS {ql}{c}{qr}" for c in columns)
+        on_cond = " AND ".join(f"target.{ql}{k}{qr} = source.{ql}{k}{qr}" for k in keys)
+        updates = ", ".join(f"target.{ql}{c}{qr} = source.{ql}{c}{qr}" for c in columns if c not in keys)
+        insert_cols = self._quoted_(*columns)
+        insert_vals = ", ".join(f"source.{ql}{c}{qr}" for c in columns)
+        sql = f"MERGE INTO {target} target USING (SELECT {source_cols} FROM dual) source ON ({on_cond})"
+        if updates:
+            sql += f" WHEN MATCHED THEN UPDATE SET {updates}"
+        sql += f" WHEN NOT MATCHED THEN INSERT ({insert_cols}) VALUES ({insert_vals})"
+        return sql
+
+    def _limit_(self, sql: str, limit: int) -> str:
+        return f"{sql} FETCH FIRST {limit} ROWS ONLY"
 
     def _check_(self, structure: dict | None = None) -> str:
         structure = structure if structure is not None else self._STRUCTURE_

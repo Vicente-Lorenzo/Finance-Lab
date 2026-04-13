@@ -16,12 +16,65 @@ from Library.Utility.Typing import MISSING, Missing
 
 class DatabaseAPI(ServiceAPI, ABC):
 
+    _ALL_: str = "*"
     _ADMIN_: str | None = None
     _PARAMETER_TOKEN_: Callable[[int], str] | None = None
     _CHECK_DATATYPE_MAPPING_: dict | None = None
     _CREATE_DATATYPE_MAPPING_: dict | None = None
     _DESCRIPTION_DATATYPE_MAPPING_: tuple | None = None
     _STRUCTURE_: dict | None = None
+
+    @property
+    @abstractmethod
+    def _quote_(self) -> tuple[str, str]: raise NotImplementedError
+
+    @abstractmethod
+    def _limit_(self, sql: str, limit: int) -> str: raise NotImplementedError
+
+    @staticmethod
+    def _select_(target: str, columns: str) -> str:
+        return f"SELECT {columns} FROM {target}"
+
+    @staticmethod
+    def _condition_(sql: str, condition: str | None) -> str:
+        return f"{sql} WHERE {condition}" if condition else sql
+
+    @staticmethod
+    def _order_(sql: str, order: str | None) -> str:
+        return f"{sql} ORDER BY {order}" if order else sql
+
+    @staticmethod
+    def _insert_(target: str, columns: str, values: str) -> str:
+        return f"INSERT INTO {target} ({columns}) VALUES ({values})" if columns else f"INSERT INTO {target} VALUES ({values})"
+
+    @staticmethod
+    def _update_(target: str, set_string: str) -> str:
+        # noinspection SqlWithoutWhere
+        return f"UPDATE {target} SET {set_string}"
+
+    @abstractmethod
+    def _upsert_(self, target: str, columns: Sequence[str], keys: Sequence[str]) -> str: raise NotImplementedError
+
+    @staticmethod
+    def _delete_(target: str) -> str:
+        # noinspection SqlWithoutWhere
+        return f"DELETE FROM {target}"
+
+    @staticmethod
+    def _add_(target: str, column: str, datatype: str) -> str:
+        return f"ALTER TABLE {target} ADD {column} {datatype}"
+
+    @staticmethod
+    def _drop_(target: str, column: str) -> str:
+        return f"ALTER TABLE {target} DROP COLUMN {column}"
+
+    def _target_(self, schema: str, table: str) -> str:
+        ql, qr = self._quote_
+        return f"{ql}{schema}{qr}.{ql}{table}{qr}"
+
+    def _quoted_(self, *columns: str) -> str:
+        ql, qr = self._quote_
+        return ", ".join(f"{ql}{c}{qr}" for c in columns)
 
     def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
@@ -94,36 +147,16 @@ class DatabaseAPI(ServiceAPI, ABC):
         return self._table_
 
     @property
+    def _params_(self) -> dict:
+        keys = ["_host_", "_port_", "_user_", "_password_", "_admin_", "_database_", "_schema_", "_table_", "_legacy_", "_migrate_", "_autocommit_"]
+        return {k.strip("_"): v for k, v in self.__dict__.items() if k in keys}
+
+    @property
     def _hash_(self) -> int:
-        params = (
-            ("admin", self._admin_),
-            ("autocommit", self._autocommit_),
-            ("database", self._database_),
-            ("host", self._host_),
-            ("legacy", self._legacy_),
-            ("migrate", self._migrate_),
-            ("password", self._password_),
-            ("port", self._port_),
-            ("schema", self._schema_),
-            ("table", self._table_),
-            ("user", self._user_)
-        )
-        return hash(params)
+        return hash(tuple(sorted(self._params_.items())))
 
     def clone(self, **kwargs) -> Self:
-        params = {
-            "host": self._host_,
-            "port": self._port_,
-            "user": self._user_,
-            "password": self._password_,
-            "admin": self._admin_,
-            "database": self._database_,
-            "schema": self._schema_,
-            "table": self._table_,
-            "legacy": self._legacy_,
-            "migrate": self._migrate_,
-            "autocommit": self._autocommit_
-        }
+        params = self._params_
         for k, v in kwargs.items():
             if v is not MISSING: params[k] = v
         key = hash(tuple(sorted(params.items())))
@@ -145,10 +178,10 @@ class DatabaseAPI(ServiceAPI, ABC):
         if isinstance(dtype, pl.DataType): return dtype.__class__
         raise TypeError(f"Not a valid Structure dtype: {dtype}")
 
-    def _concat_(self, frames: Sequence) -> pd.DataFrame | pl.DataFrame:
-        if not frames: return self.frame(data=[], schema={})
-        if isinstance(frames[0], pl.DataFrame): return pl.concat(frames, how="vertical_relaxed")
-        return pd.concat(frames)
+    @staticmethod
+    def _concat_(frames: Sequence) -> pl.DataFrame:
+        if not frames: return pl.DataFrame()
+        return pl.concat(frames, how="vertical_relaxed") if isinstance(frames[0], pl.DataFrame) else pd.concat(frames)
 
     @abstractmethod
     def _check_(self, structure: dict | None = None) -> str: raise NotImplementedError
@@ -223,41 +256,6 @@ class DatabaseAPI(ServiceAPI, ABC):
             self._connection_.close()
             self._connection_ = None
 
-    def sessions(self, database: str | Sequence | None | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
-        database = database if database is not MISSING else self.database
-        if isinstance(database, (list, tuple)):
-            return self._concat_([self.sessions(database=d) for d in database])
-        database = database or "%"
-        self._log_.debug(lambda: "Sessions Operation: Fetching active sessions")
-        return self.execute(self._LIST_SESSIONS_QUERY_, database=database, admin=True).fetchall()
-
-    def kill(self, id: int | str | Sequence | None | Missing = MISSING, database: str | Sequence | None | Missing = MISSING) -> Self:
-        database = database if database is not MISSING else self.database
-        if isinstance(database, (list, tuple)):
-            for d in database: self.kill(id=id, database=d)
-            return self
-        with self._lock_:
-            for key, clone_db in list(self._pool_.items()):
-                if clone_db._database_ == database:
-                    clone_db.disconnect()
-        if isinstance(id, (list, tuple)):
-            for i in id: self.kill(id=i, database=database)
-            return self
-        if id is MISSING:
-            self._log_.debug(lambda: "Kill Operation: Fetching all active sessions to terminate")
-            active_sessions = self.sessions(database=database)
-            if not active_sessions.is_empty():
-                ids = active_sessions["Id"].to_list()
-                self.kill(id=ids, database=database)
-            return self
-        self._log_.alert(lambda: f"Kill Operation: Terminating session {id}")
-        try:
-            self.execute(self._KILL_SESSION_QUERY_, id=id, admin=True).commit()
-        except Exception as e:
-            self._log_.error(lambda: f"Kill Operation: Failed to terminate session {id}")
-            self._log_.exception(lambda: str(e))
-        return self
-
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         if exc_type or exc_val or exc_tb: self.rollback()
         else: self.commit()
@@ -272,47 +270,55 @@ class DatabaseAPI(ServiceAPI, ABC):
         sql, configuration = query.compile(self._PARAMETER_TOKEN_, **kwargs)
         return sql, configuration, kwargs
 
-    def list(self, database: str | Sequence | None | Missing = MISSING, schema: str | Sequence | None | Missing = MISSING, table: str | Sequence | None | Missing = MISSING, system: bool = False) -> pd.DataFrame | pl.DataFrame:
+    def list(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING,
+               system: bool = False,
+               legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
         if isinstance(database, (list, tuple)):
-            return self._concat_([self.list(database=d, schema=schema, table=table, system=system) for d in database])
+            return self.frame(self._concat_([self.list(database=d, schema=schema, table=table, system=system, legacy=False) for d in database]), legacy=legacy)
         if isinstance(schema, (list, tuple)):
-            return self._concat_([self.list(database=database, schema=s, table=table, system=system) for s in schema])
+            return self.frame(self._concat_([self.list(database=database, schema=s, table=table, system=system, legacy=False) for s in schema]), legacy=legacy)
         if isinstance(table, (list, tuple)):
-            return self._concat_([self.list(database=database, schema=schema, table=t, system=system) for t in table])
+            return self.frame(self._concat_([self.list(database=database, schema=schema, table=t, system=system, legacy=False) for t in table]), legacy=legacy)
         database = database if database and database != "%" else "%"
         schema = schema if schema and schema != "%" else "%"
         table = table if table and table != "%" else "%"
         system = 1 if system else 0
         self._log_.debug(lambda: "List Operation: Fetching structural catalog")
-        df = self.execute(self._LIST_CATALOG_QUERY_, database=database, schema=schema, table=table, system=system, admin=True).fetchall()
+        df = self.executeone(self._LIST_CATALOG_QUERY_, database=database, schema=schema, table=table, system=system, admin=True).fetchall(legacy=legacy)
         if not df.is_empty():
             databases = df["Database"].unique().to_list() if "Database" in df.columns else []
-            current_db = self.database
+            current = self.database
             frames = []
             expansion = False
             if database == "%":
                 expansion = True
             else:
                 for db_name in databases:
-                    if db_name != current_db:
+                    if db_name != current:
                         expansion = True
                         break
             if expansion:
                 for db_name in databases:
-                    db = self.execute(self._LIST_CATALOG_QUERY_, database=db_name, schema=schema, table=table, system=system, admin=False)
-                    db_df = db.fetchall()
+                    db = self.executeone(self._LIST_CATALOG_QUERY_, database=db_name, schema=schema, table=table, system=system, admin=False)
+                    db_df = db.fetchall(legacy=legacy)
                     if not db_df.is_empty():
                         frames.append(db_df)
                     else:
                         frames.append(df.filter(pl.col("Database") == db_name) if isinstance(df, pl.DataFrame) else df[df["Database"] == db_name])
                 if frames:
-                    return self._concat_(frames)
+                    return self.frame(self._concat_(frames), legacy=legacy)
         return df
 
-    def exists(self, database: str | Sequence | None | Missing = MISSING, schema: str | Sequence | None | Missing = MISSING, table: str | Sequence | None | Missing = MISSING) -> bool:
+    def exists(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING) -> bool:
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
@@ -331,22 +337,26 @@ class DatabaseAPI(ServiceAPI, ABC):
         kwargs = {k: v for k, v in {"database": database, "schema": schema, "table": table}.items() if v}
         if database:
             self._log_.debug(lambda: f"Check Operation: Checking {database} Database")
-            db = self.execute(self._CHECK_DATABASE_QUERY_, **kwargs, admin=True)
-            empty = db.fetchall().is_empty()
+            db = self.executeone(self._CHECK_DATABASE_QUERY_, **kwargs, admin=True)
+            empty = db.fetchall(legacy=False).is_empty()
             if empty: return False
         if schema:
             self._log_.debug(lambda: f"Check Operation: Checking {schema} Schema")
-            db = self.execute(self._CHECK_SCHEMA_QUERY_, **kwargs, admin=False)
-            empty = db.fetchall().is_empty()
+            db = self.executeone(self._CHECK_SCHEMA_QUERY_, **kwargs, admin=False)
+            empty = db.fetchall(legacy=False).is_empty()
             if empty: return False
         if table:
             self._log_.debug(lambda: f"Check Operation: Checking {table} Table")
-            db = self.execute(self._CHECK_TABLE_QUERY_, **kwargs, admin=False)
-            empty = db.fetchall().is_empty()
+            db = self.executeone(self._CHECK_TABLE_QUERY_, **kwargs, admin=False)
+            empty = db.fetchall(legacy=False).is_empty()
             if empty: return False
         return True
 
-    def diff(self, database: str | None | Missing = MISSING, schema: str | None | Missing = MISSING, table: str | None | Missing = MISSING, structure: dict | None | Missing = MISSING) -> bool:
+    def diff(self, *,
+               database: str | None | Missing = MISSING,
+               schema: str | None | Missing = MISSING,
+               table: str | None | Missing = MISSING,
+               structure: dict | None | Missing = MISSING) -> bool:
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
@@ -362,11 +372,15 @@ class DatabaseAPI(ServiceAPI, ABC):
         kwargs = {k: v for k, v in {"database": database, "schema": schema, "table": table}.items() if v}
         definitions = self._check_(structure=structure)
         self._log_.debug(lambda: f"Diff Operation: Checking {table} Structure")
-        db = self.execute(self._CHECK_STRUCTURE_QUERY_, definitions=definitions, **kwargs, admin=False)
-        diff_empty = db.fetchall().is_empty()
-        return not diff_empty
+        db = self.executeone(self._CHECK_STRUCTURE_QUERY_, definitions=definitions, **kwargs, admin=False)
+        empty = db.fetchall(legacy=False).is_empty()
+        return not empty
 
-    def create(self, database: str | Sequence | None | Missing = MISSING, schema: str | Sequence | None | Missing = MISSING, table: str | Sequence | None | Missing = MISSING, structure: dict | None | Missing = MISSING) -> Self:
+    def create(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING,
+               structure: dict | None | Missing = MISSING) -> Self:
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
@@ -389,12 +403,12 @@ class DatabaseAPI(ServiceAPI, ABC):
         if database:
             if not self.exists(database=database, schema=None, table=None):
                 self._log_.warning(lambda: f"Create Operation: Missing {database} Database")
-                self.execute(self._CREATE_DATABASE_QUERY_, **kwargs, admin=True).commit()
+                self.executeone(self._CREATE_DATABASE_QUERY_, **kwargs, admin=True).commit()
                 self._log_.alert(lambda: f"Create Operation: Created {database} Database")
         if schema:
             if not self.exists(database=database, schema=schema, table=None):
                 self._log_.warning(lambda: f"Create Operation: Missing {schema} Schema")
-                db = self.execute(self._CREATE_SCHEMA_QUERY_, **kwargs, admin=False)
+                db = self.executeone(self._CREATE_SCHEMA_QUERY_, **kwargs, admin=False)
                 db.commit()
                 self._log_.alert(lambda: f"Create Operation: Created {schema} Schema")
         if table:
@@ -404,22 +418,85 @@ class DatabaseAPI(ServiceAPI, ABC):
             if not self.exists(database=database, schema=schema, table=table):
                 self._log_.warning(lambda: f"Create Operation: Missing {table} Table")
                 definitions = self._create_(structure=structure_val)
-                db = self.execute(self._CREATE_TABLE_QUERY_, definitions=definitions, **kwargs, admin=False)
+                db = self.executeone(self._CREATE_TABLE_QUERY_, definitions=definitions, **kwargs, admin=False)
                 db.commit()
                 self._log_.alert(lambda: f"Create Operation: Created {table} Table")
             else:
                 if self.diff(database=database, schema=schema, table=table, structure=structure_val):
                     self._log_.warning(lambda: f"Create Operation: Mismatched {table} Structure")
-                    db = self.execute(self._DELETE_TABLE_QUERY_, **kwargs, admin=False)
+                    db = self.executeone(self._DELETE_TABLE_QUERY_, **kwargs, admin=False)
                     db.commit()
                     self._log_.warning(lambda: f"Create Operation: Missing {table} Table")
                     definitions = self._create_(structure=structure_val)
-                    db = self.execute(self._CREATE_TABLE_QUERY_, definitions=definitions, **kwargs, admin=False)
+                    db = self.executeone(self._CREATE_TABLE_QUERY_, definitions=definitions, **kwargs, admin=False)
                     db.commit()
                     self._log_.alert(lambda: f"Create Operation: Created {table} Table")
         return self
 
-    def delete(self, database: str | Sequence | None | Missing = MISSING, schema: str | Sequence | None | Missing = MISSING, table: str | Sequence | None | Missing = MISSING) -> Self:
+    def refactor(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING,
+               name: str | Sequence | None = None) -> Self:
+        if name is None:
+            raise ValueError("Name must be provided to refactor a structure")
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        if table:
+            if isinstance(database, (list, tuple)):
+                for d in database: self.refactor(database=d, schema=schema, table=table, name=name)
+                return self
+            if isinstance(schema, (list, tuple)):
+                for s in schema: self.refactor(database=database, schema=s, table=table, name=name)
+                return self
+            if not database or not schema:
+                raise ValueError("Schema and Database must be provided to operate on a Table")
+            if isinstance(table, (list, tuple)):
+                if not isinstance(name, (list, tuple)) or len(name) != len(table):
+                    raise ValueError("Name must be a list/tuple of the same length as Table")
+                for t, n in zip(table, name): self.refactor(database=database, schema=schema, table=t, name=n)
+                return self
+            if not self.exists(database=database, schema=schema, table=table):
+                raise ValueError(f"Table {table} does not exist in {database}.{schema}")
+            self.executeone(self._REFACTOR_TABLE_QUERY_, database=database, schema=schema, table=table, name=name, admin=False).commit()
+            if self._table_ == table: self._table_ = name
+            self._log_.alert(lambda: f"Refactor Operation: Refactored {table} Table to {name}")
+        elif schema:
+            if isinstance(database, (list, tuple)):
+                for d in database: self.refactor(database=d, schema=schema, table=table, name=name)
+                return self
+            if not database:
+                raise ValueError("Database must be provided to operate on a Schema")
+            if isinstance(schema, (list, tuple)):
+                if not isinstance(name, (list, tuple)) or len(name) != len(schema):
+                    raise ValueError("Name must be a list/tuple of the same length as Schema")
+                for s, n in zip(schema, name): self.refactor(database=database, schema=s, table=table, name=n)
+                return self
+            if not self.exists(database=database, schema=schema, table=None):
+                raise ValueError(f"Schema {schema} does not exist in {database}")
+            self.executeone(self._REFACTOR_SCHEMA_QUERY_, database=database, schema=schema, name=name, admin=False).commit()
+            if self._schema_ == schema: self._schema_ = name
+            self._log_.alert(lambda: f"Refactor Operation: Refactored {schema} Schema to {name}")
+        elif database:
+            if isinstance(database, (list, tuple)):
+                if not isinstance(name, (list, tuple)) or len(name) != len(database):
+                    raise ValueError("Name must be a list/tuple of the same length as Database")
+                for d, n in zip(database, name): self.refactor(database=d, schema=schema, table=table, name=n)
+                return self
+            if not self.exists(database=database, schema=None, table=None):
+                raise ValueError(f"Database {database} does not exist")
+            self.disconnect()
+            self.executeone(self._REFACTOR_DATABASE_QUERY_, database=database, name=name, admin=True).commit()
+            if self._database_ == database: self._database_ = name
+            self._log_.alert(lambda: f"Refactor Operation: Refactored {database} Database to {name}")
+        else: raise ValueError("At least one structure must be specified")
+        return self
+
+    def delete(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING) -> Self:
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
@@ -441,68 +518,56 @@ class DatabaseAPI(ServiceAPI, ABC):
         kwargs = {k: v for k, v in {"database": database, "schema": schema, "table": table}.items() if v}
         if table:
             if self.exists(database=database, schema=schema, table=table):
-                self.execute(self._DELETE_TABLE_QUERY_, **kwargs, admin=False).commit()
+                self.executeone(self._DELETE_TABLE_QUERY_, **kwargs, admin=False).commit()
                 self._log_.alert(lambda: f"Delete Operation: Deleted {table} Table")
-        if schema:
+        elif schema:
             if self.exists(database=database, schema=schema, table=None):
-                self.execute(self._DELETE_SCHEMA_QUERY_, **kwargs, admin=False).commit()
+                self.executeone(self._DELETE_SCHEMA_QUERY_, **kwargs, admin=False).commit()
                 self._log_.alert(lambda: f"Delete Operation: Deleted {schema} Schema")
-        if database:
+        elif database:
             if self.exists(database=database, schema=None, table=None):
                 self.disconnect()
-                self.execute(self._DELETE_DATABASE_QUERY_, **kwargs, admin=True).commit()
+                self.executeone(self._DELETE_DATABASE_QUERY_, **kwargs, admin=True).commit()
                 self._log_.alert(lambda: f"Delete Operation: Deleted {database} Database")
         return self
 
-    def refactor(self, database: str | Sequence | None | Missing = MISSING, schema: str | Sequence | None | Missing = MISSING, table: str | Sequence | None | Missing = MISSING, name: str | Sequence | None = None) -> Self:
-        if name is None: raise ValueError("Name must be provided to refactor a structure")
+    def add(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING,
+               structure: dict | None = None) -> Self:
+        if not structure:
+            raise ValueError("Structure must be provided to add a Column")
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
-        if table:
-            if isinstance(database, (list, tuple)):
-                for d in database: self.refactor(database=d, schema=schema, table=table, name=name)
-                return self
-            if isinstance(schema, (list, tuple)):
-                for s in schema: self.refactor(database=database, schema=s, table=table, name=name)
-                return self
-            if not database or not schema: raise ValueError("Schema and Database must be provided to operate on a Table")
-            if isinstance(table, (list, tuple)):
-                if not isinstance(name, (list, tuple)) or len(name) != len(table): raise ValueError("Name must be a list/tuple of the same length as Table")
-                for t, n in zip(table, name): self.refactor(database=database, schema=schema, table=t, name=n)
-                return self
-            if not self.exists(database=database, schema=schema, table=table): raise ValueError(f"Table {table} does not exist in {database}.{schema}")
-            self.execute(self._REFACTOR_TABLE_QUERY_, database=database, schema=schema, table=table, name=name, admin=False).commit()
-            if self._table_ == table: self._table_ = name
-            self._log_.alert(lambda: f"Refactor Operation: Refactored {table} Table to {name}")
-        elif schema:
-            if isinstance(database, (list, tuple)):
-                for d in database: self.refactor(database=d, schema=schema, table=table, name=name)
-                return self
-            if not database: raise ValueError("Database must be provided to operate on a Schema")
-            if isinstance(schema, (list, tuple)):
-                if not isinstance(name, (list, tuple)) or len(name) != len(schema): raise ValueError("Name must be a list/tuple of the same length as Schema")
-                for s, n in zip(schema, name): self.refactor(database=database, schema=s, table=table, name=n)
-                return self
-            if not self.exists(database=database, schema=schema, table=None): raise ValueError(f"Schema {schema} does not exist in {database}")
-            self.execute(self._REFACTOR_SCHEMA_QUERY_, database=database, schema=schema, name=name, admin=False).commit()
-            if self._schema_ == schema: self._schema_ = name
-            self._log_.alert(lambda: f"Refactor Operation: Refactored {schema} Schema to {name}")
-        elif database:
-            if isinstance(database, (list, tuple)):
-                if not isinstance(name, (list, tuple)) or len(name) != len(database): raise ValueError("Name must be a list/tuple of the same length as Database")
-                for d, n in zip(database, name): self.refactor(database=d, schema=schema, table=table, name=n)
-                return self
-            if not self.exists(database=database, schema=None, table=None): raise ValueError(f"Database {database} does not exist")
-            self.disconnect()
-            self.execute(self._REFACTOR_DATABASE_QUERY_, database=database, name=name, admin=True).commit()
-            if self._database_ == database: self._database_ = name
-            self._log_.alert(lambda: f"Refactor Operation: Refactored {database} Database to {name}")
-        else: raise ValueError("At least one structure must be specified")
+        if isinstance(database, (list, tuple)):
+            for d in database: self.add(database=d, schema=schema, table=table, structure=structure)
+            return self
+        if isinstance(schema, (list, tuple)):
+            for s in schema: self.add(database=database, schema=s, table=table, structure=structure)
+            return self
+        if isinstance(table, (list, tuple)):
+            for t in table: self.add(database=database, schema=schema, table=t, structure=structure)
+            return self
+        if not database or not schema or not table:
+            raise ValueError("Database, Schema and Table must be provided to add a Column")
+        target = self._target_(schema, table)
+        for name, dtype in structure.items():
+            datatype = self._CREATE_DATATYPE_MAPPING_[self._normalize_(dtype)]
+            sql = self._add_(target, self._quoted_(name), datatype)
+            self.executeone(QueryAPI(sql), database=database, schema=schema, table=table, admin=False)
+        self._log_.alert(lambda: f"Add Operation: Added Columns to {table} Table")
         return self
 
-    def rename(self, database: str | Sequence | None | Missing = MISSING, schema: str | Sequence | None | Missing = MISSING, table: str | Sequence | None | Missing = MISSING, column: str | Sequence | None = None, name: str | Sequence | None = None) -> Self:
-        if column is None or name is None: raise ValueError("Column and Name must be provided to rename a Column")
+    def rename(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING,
+               column: str | Sequence | None = None,
+               name: str | Sequence | None = None) -> Self:
+        if column is None or name is None:
+            raise ValueError("Column and Name must be provided to rename a Column")
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
@@ -515,14 +580,293 @@ class DatabaseAPI(ServiceAPI, ABC):
         if isinstance(table, (list, tuple)):
             for t in table: self.rename(database=database, schema=schema, table=t, column=column, name=name)
             return self
-        if not database or not schema or not table: raise ValueError("Database, Schema and Table must be provided to rename a Column")
+        if not database or not schema or not table:
+            raise ValueError("Database, Schema and Table must be provided to rename a Column")
         if isinstance(column, (list, tuple)):
-            if not isinstance(name, (list, tuple)) or len(name) != len(column): raise ValueError("Name must be a list/tuple of the same length as Column")
+            if not isinstance(name, (list, tuple)) or len(name) != len(column):
+                raise ValueError("Name must be a list/tuple of the same length as Column")
             for c, n in zip(column, name): self.rename(database=database, schema=schema, table=table, column=c, name=n)
             return self
-        if not self.exists(database=database, schema=schema, table=table): raise ValueError(f"Table {table} does not exist in {database}.{schema}")
-        self.execute(self._RENAME_COLUMN_QUERY_, database=database, schema=schema, table=table, column=column, name=name, admin=False).commit()
+        if not self.exists(database=database, schema=schema, table=table):
+            raise ValueError(f"Table {table} does not exist in {database}.{schema}")
+        self.executeone(self._RENAME_COLUMN_QUERY_, database=database, schema=schema, table=table, column=column, name=name, admin=False).commit()
         self._log_.alert(lambda: f"Rename Operation: Renamed {column} Column to {name} in {table} Table")
+        return self
+
+    def reorder(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING,
+               columns: Sequence[str] | None = None,
+               structure: dict | None = None) -> Self:
+        if not columns:
+            raise ValueError("Columns must be provided to reorder a Table")
+        if isinstance(columns, str): columns = [columns]
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        if isinstance(database, (list, tuple)):
+            for d in database: self.reorder(database=d, schema=schema, table=table, columns=columns, structure=structure)
+            return self
+        if isinstance(schema, (list, tuple)):
+            for s in schema: self.reorder(database=database, schema=s, table=table, columns=columns, structure=structure)
+            return self
+        if isinstance(table, (list, tuple)):
+            for t in table: self.reorder(database=database, schema=schema, table=t, columns=columns, structure=structure)
+            return self
+        if not database or not schema or not table:
+            raise ValueError("Database, Schema and Table must be provided to reorder a Table")
+        if structure is None and self._STRUCTURE_ is None:
+            df = self.select(database=database, schema=schema, table=table, columns=columns, limit=1, legacy=False)
+            if isinstance(df, pl.DataFrame): 
+                schema_attr: Any = getattr(df, "schema", {})
+                new_structure = dict(schema_attr)
+                if any(v == pl.Null for v in new_structure.values()):
+                    raise ValueError("Cannot infer structure from empty table or null columns. Structure must be provided explicitly.")
+            else:
+                raise ValueError("Structure must be provided to reorder a Table without Polars DataFrames")
+        else:
+            structure_val = structure if structure is not None else self._STRUCTURE_
+            missing = [c for c in columns if c not in structure_val]
+            if missing:
+                raise ValueError(f"Columns {missing} not found in Structure")
+            new_structure = {c: structure_val[c] for c in columns}
+        import uuid
+        temp_table = f"{table}_{uuid.uuid4().hex[:8]}"
+        original_table = self._table_
+        self.refactor(database=database, schema=schema, table=table, name=temp_table)
+        if original_table == table: self._table_ = original_table
+        self.create(database=database, schema=schema, table=table, structure=new_structure)
+        target = self._target_(schema, table)
+        target_temp = self._target_(schema, temp_table)
+        cols_str = self._quoted_(*columns)
+        sql = f"INSERT INTO {target} ({cols_str}) SELECT {cols_str} FROM {target_temp}"
+        self.executeone(QueryAPI(sql), database=database, schema=schema, table=table, admin=False)
+        self.delete(database=database, schema=schema, table=temp_table)
+        self._log_.alert(lambda: f"Reorder Operation: Reordered Columns in {table} Table")
+        return self
+
+    def drop(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING,
+               column: str | Sequence | None = None) -> Self:
+        if column is None:
+            raise ValueError("Column must be provided to drop a Column")
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        if isinstance(database, (list, tuple)):
+            for d in database: self.drop(database=d, schema=schema, table=table, column=column)
+            return self
+        if isinstance(schema, (list, tuple)):
+            for s in schema: self.drop(database=database, schema=s, table=table, column=column)
+            return self
+        if isinstance(table, (list, tuple)):
+            for t in table: self.drop(database=database, schema=schema, table=t, column=column)
+            return self
+        if not database or not schema or not table:
+            raise ValueError("Database, Schema and Table must be provided to drop a Column")
+        if isinstance(column, (list, tuple)):
+            for c in column: self.drop(database=database, schema=schema, table=table, column=c)
+            return self
+        target = self._target_(schema, table)
+        sql = self._drop_(target, self._quoted_(column))
+        self.executeone(QueryAPI(sql), database=database, schema=schema, table=table, admin=False)
+        self._log_.alert(lambda: f"Drop Operation: Dropped {column} Column from {table} Table")
+        return self
+
+    def select(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING,
+               columns: str | Sequence | None = None,
+               condition: str | None = None,
+               order: str | None = None,
+               limit: int | None = None,
+               parameters: dict | None = None,
+               legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        if isinstance(database, (list, tuple)):
+            return self.frame(self._concat_([self.select(database=d, schema=schema, table=table, columns=columns, condition=condition, order=order, limit=limit, parameters=parameters, legacy=False) for d in database]), legacy=legacy)
+        if isinstance(schema, (list, tuple)):
+            return self.frame(self._concat_([self.select(database=database, schema=s, table=table, columns=columns, condition=condition, order=order, limit=limit, parameters=parameters, legacy=False) for s in schema]), legacy=legacy)
+        if isinstance(table, (list, tuple)):
+            return self.frame(self._concat_([self.select(database=database, schema=schema, table=t, columns=columns, condition=condition, order=order, limit=limit, parameters=parameters, legacy=False) for t in table]), legacy=legacy)
+        if not database or not schema or not table:
+            raise ValueError("Database, Schema and Table must be provided to select rows")
+        target = self._target_(schema, table)
+        cols_str = self._ALL_ if columns is None else self._quoted_(*columns) if isinstance(columns, (list, tuple)) else columns
+        sql = self._select_(target, cols_str)
+        sql = self._condition_(sql, condition)
+        sql = self._order_(sql, order)
+        if limit is not None: sql = self._limit_(sql, limit)
+        db = self.executeone(QueryAPI(sql), database=database, schema=schema, table=table, admin=False, **(parameters or {}))
+        return db.fetchall(legacy=legacy)
+
+    def insert(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING,
+               data: Any = None) -> Self:
+        if data is None: raise ValueError("Data must be provided to insert rows")
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        if isinstance(database, (list, tuple)):
+            for d in database: self.insert(database=d, schema=schema, table=table, data=data)
+            return self
+        if isinstance(schema, (list, tuple)):
+            for s in schema: self.insert(database=database, schema=s, table=table, data=data)
+            return self
+        if isinstance(table, (list, tuple)):
+            for t in table: self.insert(database=database, schema=schema, table=t, data=data)
+            return self
+        if not database or not schema or not table: raise ValueError("Database, Schema and Table must be provided to insert rows")
+        cols, records, is_many = self.parse(data)
+        if not records: return self
+        target = self._target_(schema, table)
+        n = QueryAPI.Named
+        if cols:
+            cols_str = self._quoted_(*cols)
+            vals_str = ", ".join(f"{n}{c}{n}" for c in cols)
+            sql = self._insert_(target, cols_str, vals_str)
+        else:
+            vals_str = ", ".join(QueryAPI.Positional for _ in records[0])
+            sql = self._insert_(target, "", vals_str)
+        self.execute(QueryAPI(sql), records, database=database, schema=schema, table=table, admin=False)
+        self._log_.alert(lambda: f"Insert Operation: Processed {len(records)} rows in {table} Table")
+        return self
+
+    def update(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING,
+               data: Any = None,
+               condition: str | None = None) -> Self:
+        if data is None: raise ValueError("Data must be provided to update rows")
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        if isinstance(database, (list, tuple)):
+            for d in database: self.update(database=d, schema=schema, table=table, data=data, condition=condition)
+            return self
+        if isinstance(schema, (list, tuple)):
+            for s in schema: self.update(database=database, schema=s, table=table, data=data, condition=condition)
+            return self
+        if isinstance(table, (list, tuple)):
+            for t in table: self.update(database=database, schema=schema, table=t, data=data, condition=condition)
+            return self
+        if not database or not schema or not table: raise ValueError("Database, Schema and Table must be provided to update rows")
+        cols, records, is_many = self.parse(data)
+        if not records: return self
+        if not cols: raise ValueError("Dictionary or DataFrame structure required for updates to identify columns")
+        target = self._target_(schema, table)
+        n = QueryAPI.Named
+        set_str = ", ".join(f"{self._quoted_(c)} = {n}{c}{n}" for c in cols)
+        sql = self._update_(target, set_str)
+        sql = self._condition_(sql, condition)
+        self.execute(QueryAPI(sql), records, database=database, schema=schema, table=table, admin=False)
+        self._log_.alert(lambda: f"Update Operation: Processed {len(records)} rows in {table} Table")
+        return self
+
+    def upsert(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING,
+               data: Any = None,
+               key: str | Sequence[str] | None = None) -> Self:
+        if data is None: raise ValueError("Data must be provided to upsert rows")
+        if not key: raise ValueError("Key must be provided to upsert rows")
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        if isinstance(database, (list, tuple)):
+            for d in database: self.upsert(database=d, schema=schema, table=table, data=data, key=key)
+            return self
+        if isinstance(schema, (list, tuple)):
+            for s in schema: self.upsert(database=database, schema=s, table=table, data=data, key=key)
+            return self
+        if isinstance(table, (list, tuple)):
+            for t in table: self.upsert(database=database, schema=schema, table=t, data=data, key=key)
+            return self
+        if not database or not schema or not table: raise ValueError("Database, Schema and Table must be provided to upsert rows")
+        cols, records, is_many = self.parse(data)
+        if not records: return self
+        if not cols: raise ValueError("Dictionary or DataFrame structure required for upserts to identify columns")
+        target = self._target_(schema, table)
+        keys = [key] if isinstance(key, str) else list(key)
+        sql = self._upsert_(target, cols, keys)
+        self.execute(QueryAPI(sql), records, database=database, schema=schema, table=table, admin=False)
+        self._log_.alert(lambda: f"Upsert Operation: Processed {len(records)} rows in {table} Table")
+        return self
+
+    def remove(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING,
+               condition: str | None = None,
+               parameters: dict | None = None) -> Self:
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        if isinstance(database, (list, tuple)):
+            for d in database: self.remove(database=d, schema=schema, table=table, condition=condition, parameters=parameters)
+            return self
+        if isinstance(schema, (list, tuple)):
+            for s in schema: self.remove(database=database, schema=s, table=table, condition=condition, parameters=parameters)
+            return self
+        if isinstance(table, (list, tuple)):
+            for t in table: self.remove(database=database, schema=schema, table=t, condition=condition, parameters=parameters)
+            return self
+        if not database or not schema or not table:
+            raise ValueError("Database, Schema and Table must be provided to remove rows")
+        target = self._target_(schema, table)
+        sql = self._delete_(target)
+        sql = self._condition_(sql, condition)
+        self.executeone(QueryAPI(sql), database=database, schema=schema, table=table, admin=False, **(parameters or {}))
+        self._log_.alert(lambda: f"Remove Operation: Removed rows from {table} Table")
+        return self
+
+    def sessions(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
+        database = database if database is not MISSING else self.database
+        if isinstance(database, (list, tuple)):
+            return self.frame(self._concat_([self.sessions(database=d, legacy=False) for d in database]), legacy=legacy)
+        database = database or "%"
+        self._log_.debug(lambda: "Sessions Operation: Fetching active sessions")
+        return self.executeone(self._LIST_SESSIONS_QUERY_, database=database, admin=True).fetchall(legacy=legacy)
+
+    def kill(self, *,
+               id: int | str | Sequence | None | Missing = MISSING,
+               database: str | Sequence | None | Missing = MISSING) -> Self:
+        database = database if database is not MISSING else self.database
+        if isinstance(database, (list, tuple)):
+            for d in database: self.kill(id=id, database=d)
+            return self
+        with self._lock_:
+            for key, clone_db in list(self._pool_.items()):
+                if clone_db._database_ == database:
+                    clone_db.disconnect()
+        if isinstance(id, (list, tuple)):
+            for i in id: self.kill(id=i, database=database)
+            return self
+        if id is MISSING:
+            self._log_.debug(lambda: "Kill Operation: Fetching all active sessions to terminate")
+            active_sessions = self.sessions(database=database, legacy=False)
+            if not active_sessions.is_empty():
+                ids = active_sessions["Id"].to_list()
+                self.kill(id=ids, database=database)
+            return self
+        self._log_.alert(lambda: f"Kill Operation: Terminating session {id}")
+        try:
+            self.executeone(self._KILL_SESSION_QUERY_, id=id, admin=True).commit()
+        except Exception as e:
+            self._log_.error(lambda: f"Kill Operation: Failed to terminate session {id}")
+            self._log_.exception(lambda: str(e))
         return self
 
     def migration(self) -> Self:
@@ -554,7 +898,7 @@ class DatabaseAPI(ServiceAPI, ABC):
             self._log_.exception(lambda: str(e))
             raise
 
-    def _frame_(self, result) -> pd.DataFrame | pl.DataFrame:
+    def _frame_(self, result, legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
         if result is None: rows = []
         elif isinstance(result, list): rows = result
         elif isinstance(result, tuple): rows = [result]
@@ -567,32 +911,46 @@ class DatabaseAPI(ServiceAPI, ABC):
                 schema[col_name] = next((p for d, p in self._DESCRIPTION_DATATYPE_MAPPING_ if type_code == d), None)
             else:
                 schema[col_name] = None
-        return self.frame(data=rows, schema=schema)
+        return self.frame(data=rows, schema=schema, legacy=legacy)
 
-    def fetchone(self) -> pd.DataFrame | pl.DataFrame:
-        timer, df = self._fetch_(callback=lambda: self._frame_(self._cursor_.fetchone()), abort=self.rollback)
+    def fetchone(self, *, legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
+        timer, df = self._fetch_(callback=lambda: self._frame_(self._cursor_.fetchone(), legacy=legacy), abort=self.rollback)
         self._log_.info(lambda: f"Fetch One Operation: Fetched {len(df)} data points ({timer.result()})")
         return df
 
-    def fetchmany(self, n: int) -> pd.DataFrame | pl.DataFrame:
-        timer, df = self._fetch_(callback=lambda: self._frame_(self._cursor_.fetchmany(n)), abort=self.rollback)
+    def fetchmany(self, *, n: int, legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
+        timer, df = self._fetch_(callback=lambda: self._frame_(self._cursor_.fetchmany(n), legacy=legacy), abort=self.rollback)
         self._log_.info(lambda: f"Fetch Many Operation: Fetched {len(df)} data points ({timer.result()})")
         return df
 
-    def fetchall(self) -> pd.DataFrame | pl.DataFrame:
-        timer, df = self._fetch_(callback=lambda: self._frame_(self._cursor_.fetchall()), abort=self.rollback)
+    def fetchall(self, *, legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
+        timer, df = self._fetch_(callback=lambda: self._frame_(self._cursor_.fetchall(), legacy=legacy), abort=self.rollback)
         self._log_.info(lambda: f"Fetch All Operation: Fetched {len(df)} data points ({timer.result()})")
         return df
 
     def execute(self, query: QueryAPI, *args, database: str | Sequence | None | Missing = MISSING, schema: str | Sequence | None | Missing = MISSING, table: str | Sequence | None | Missing = MISSING, admin: bool | Missing = MISSING, **kwargs) -> Self:
+        if not args:
+            return self.executeone(query, database=database, schema=schema, table=table, admin=admin, **kwargs)
+        data = args[0] if len(args) == 1 else args
+        cols, records, is_many = self.parse(data)
+        if not records: return self
+        if is_many:
+            self.executemany(query, records, database=database, schema=schema, table=table, admin=admin, **kwargs)
+        elif cols:
+            self.executeone(query, database=database, schema=schema, table=table, admin=admin, **{**kwargs, **records[0]})
+        else:
+            self.executeone(query, *records[0], database=database, schema=schema, table=table, admin=admin, **kwargs)
+        return self
+
+    def executeone(self, query: QueryAPI, *args, database: str | Sequence | None | Missing = MISSING, schema: str | Sequence | None | Missing = MISSING, table: str | Sequence | None | Missing = MISSING, admin: bool | Missing = MISSING, **kwargs) -> Self:
         if isinstance(database, (list, tuple)):
-            for d in database: self.execute(query, *args, database=d, schema=schema, table=table, admin=admin, **kwargs)
+            for d in database: self.executeone(query, *args, database=d, schema=schema, table=table, admin=admin, **kwargs)
             return self
         if isinstance(schema, (list, tuple)):
-            for s in schema: self.execute(query, *args, database=database, schema=s, table=table, admin=admin, **kwargs)
+            for s in schema: self.executeone(query, *args, database=database, schema=s, table=table, admin=admin, **kwargs)
             return self
         if isinstance(table, (list, tuple)):
-            for t in table: self.execute(query, *args, database=database, schema=schema, table=t, admin=admin, **kwargs)
+            for t in table: self.executeone(query, *args, database=database, schema=schema, table=t, admin=admin, **kwargs)
             return self
         target_db = database if database is not MISSING else self._database_
         target_schema = schema if schema is not MISSING else self._schema_
@@ -601,7 +959,7 @@ class DatabaseAPI(ServiceAPI, ABC):
         db = self.clone(database=target_db, schema=target_schema, table=target_table, admin=target_admin)
         if db is not self:
             db.connect()
-            return db.execute(query, *args, database=database, schema=schema, table=table, admin=admin, **kwargs)
+            return db.executeone(query, *args, database=database, schema=schema, table=table, admin=admin, **kwargs)
         if database is not MISSING: kwargs["database"] = database
         if schema is not MISSING: kwargs["schema"] = schema
         if table is not MISSING: kwargs["table"] = table
@@ -612,7 +970,7 @@ class DatabaseAPI(ServiceAPI, ABC):
             else: self._cursor_.execute(sql)
             self._transaction_ = True
         timer = self._execute_(callback=_execute_, abort=self.rollback)
-        self._log_.info(lambda: f"Execute Operation: Executed ({timer.result()})")
+        self._log_.info(lambda: f"Execute One Operation: Executed ({timer.result()})")
         return self
 
     def executemany(self, query: QueryAPI, *args, database: str | Sequence | None | Missing = MISSING, schema: str | Sequence | None | Missing = MISSING, table: str | Sequence | None | Missing = MISSING, admin: bool | Missing = MISSING, **kwargs) -> Self:

@@ -1,7 +1,9 @@
 import psycopg
 from typing import Callable, Any
+from collections.abc import Sequence
 
 from Library.Dataframe.Dataframe import pl
+from Library.Database.Query import QueryAPI
 from Library.Database.Database import DatabaseAPI
 
 class PostgresDatabaseAPI(DatabaseAPI):
@@ -113,6 +115,26 @@ class PostgresDatabaseAPI(DatabaseAPI):
             migrate=migrate,
             autocommit=autocommit
         )
+
+    @property
+    def _quote_(self) -> tuple[str, str]:
+        return '"', '"'
+    def _upsert_(self, target: str, columns: Sequence[str], keys: Sequence[str]) -> str:
+        ql, qr = self._quote_
+        n = QueryAPI.Named
+        cols_str = self._quoted_(*columns)
+        vals_str = ", ".join(f"{n}{c}{n}" for c in columns)
+        key_str = self._quoted_(*keys)
+        updates = ", ".join(f"{ql}{c}{qr} = EXCLUDED.{ql}{c}{qr}" for c in columns if c not in keys)
+        sql = f"INSERT INTO {target} ({cols_str}) VALUES ({vals_str}) ON CONFLICT ({key_str})"
+        if updates:
+            sql += f" DO UPDATE SET {updates}"
+        else:
+            sql += " DO NOTHING"
+        return sql
+
+    def _limit_(self, sql: str, limit: int) -> str:
+        return f"{sql} LIMIT {limit}"
 
     def _check_(self, structure: dict | None = None) -> str:
         structure = structure if structure is not None else self._STRUCTURE_

@@ -6,6 +6,10 @@ from Library.Utility.Typing import format
 
 class QueryAPI(FileAPI):
 
+    Interpolation: str = "::"
+    Named: str = ":"
+    Positional: str = ":?:"
+
     _INTERPOLATION_PARAMETER_TOKEN_ = re.compile(r"::([A-Za-z_]\w*)::")
     _NAMED_PARAMETER_TOKEN_ = re.compile(r":([A-Za-z_]\w*):")
     _POSITIONAL_PARAMETER_TOKEN_ = re.compile(r":\?:")
