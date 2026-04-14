@@ -7,28 +7,31 @@ This document tracks the phased implementation to modernize the Quant Trading Fr
 
 ## Architectural Flattening & Renaming
 
-Keep `Library/System/` (singular) as the home for all execution drivers. The abstract base stays `SystemAPI`; each concrete driver is a sibling file with a `*API` class. Doing the flatten + `TradingAPI` first gives a concrete view of what the `Security` layer must expose before we refactor it.
+Keep `Library/System/` (singular) as the home for all execution drivers. The abstract base stays `SystemAPI`; concrete drivers use the `*SystemAPI` suffix (mirrors `Library/Database/*DatabaseAPI`).
 
-- [ ] **Promote `Library/System/`**
-  - [ ] Move `Library/Robots/System/System.py`       -> `Library/System/System.py` (abstract `SystemAPI` unchanged).
-  - [ ] Move `Library/Robots/System/Backtesting.py` -> `Library/System/Backtesting.py`; class -> `BacktestingAPI`.
-  - [ ] Move `Library/Robots/System/Optimisation.py` -> `Library/System/Optimization.py`; class -> `OptimizationAPI` (US spelling).
-  - [ ] Move `Library/Robots/System/Learning.py`    -> `Library/System/Learning.py`; class -> `LearningAPI`.
-  - [ ] Move `Library/Robots/System/Native.py`      -> `Library/System/Trading.py`; class -> `TradingAPI` (absorb `NativeSystemAPI`).
-- [ ] **Flatten core domains**
-  - [ ] `Library/Robots/Strategy/` -> `Library/Strategy/`.
-  - [ ] `Library/Robots/Engine/`   -> `Library/Engine/`.
-  - [ ] `Library/Robots/Analyst/`  -> `Library/Analyst/`.
-  - [ ] `Library/Robots/Manager/`  -> `Library/Manager/`.
-  - [ ] `Library/Robots/Protocol/` -> `Library/Protocol/`.
-- [ ] **Cleanup**
-  - [ ] Move `Library/Robots/NativeBot.py` -> `Library/System/TradingBot.py` (example cTrader entrypoint).
-  - [ ] Delete the empty `Library/Robots/`.
-- [ ] **Global import rewrite**
-  - [ ] `Library.Robots.` -> `Library.` across repo.
-  - [ ] Fix renames (`Optimisation` -> `Optimization`, `NativeSystemAPI` -> `TradingAPI`).
-- [ ] **Verify**
-  - [ ] `conda run -n Quant python -m pytest Tests/` passes with no `ImportError`.
+- [x] **Promote `Library/System/`**
+  - [x] Move `Library/Robots/System/System.py`        -> `Library/System/System.py` (abstract `SystemAPI`).
+  - [x] Move `Library/Robots/System/Backtesting.py`  -> `Library/System/Backtesting.py` (`BacktestingSystemAPI`).
+  - [x] Move `Library/Robots/System/Optimisation.py` -> `Library/System/Optimization.py` (`OptimizationSystemAPI`, US spelling).
+  - [x] Move `Library/Robots/System/Learning.py`     -> `Library/System/Learning.py` (`LearningSystemAPI`).
+  - [x] Move `Library/Robots/System/Native.py`       -> `Library/System/Trading.py` (`TradingSystemAPI`).
+- [x] **Flatten core domains**
+  - [x] `Library/Robots/Strategy/` -> `Library/Strategy/`.
+  - [x] `Library/Robots/Engine/`   -> `Library/Engine/`.
+  - [x] `Library/Robots/Analyst/`  -> `Library/Analyst/`.
+  - [x] `Library/Robots/Manager/`  -> `Library/Manager/`.
+  - [x] `Library/Robots/Protocol/` -> `Library/Protocol/`.
+- [x] **Cleanup**
+  - [x] Move `Library/Robots/NativeBot.py` -> `Library/System/TradingBot.py` (example cTrader entrypoint, class renamed `NativeBot` -> `TradingBot`).
+  - [x] Move `Library/Robots/Main.py`      -> `Library/System/Main.py` (CLI; deeper rework in later phase).
+  - [x] Delete the empty `Library/Robots/`.
+- [x] **Global rename**
+  - [x] `Library.Robots.X` -> `Library.X` across repo (every Python file).
+  - [x] Class renames: `NativeSystemAPI` -> `TradingSystemAPI`, `OptimisationSystemAPI` -> `OptimizationSystemAPI`.
+  - [x] Internal US-spelling pass in `Optimization.py` (methods `run_optimisation_stage` -> `run_optimization_stage`, constants `WFOPT*`, log strings, etc.).
+  - [x] Renamed every `Library/Parameters/**/Optimisation.yml` -> `Optimization.yml` (125 files).
+- [x] **Verify**
+  - [x] `pytest Tests/` -> 71 passed (pre-existing `Library.Classes` imports in `Main.py`/some older files remain broken but untouched by this phase — tracked separately).
 
 ---
 
