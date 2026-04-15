@@ -12,6 +12,7 @@ dependencies:
     - tqdm
     - wheel
     - pytest
+    - pythonnet
     - setuptools
 
     - pyarrow
@@ -37,7 +38,6 @@ dependencies:
     - pymssql
     - oracledb
     - psycopg
-    - pythonnet
 
     - ta-lib
     - blpapi
