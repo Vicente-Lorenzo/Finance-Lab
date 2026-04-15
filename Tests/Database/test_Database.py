@@ -1,26 +1,42 @@
 import pytest
 from datetime import datetime
 
-from Library.Dataframe import pl
+from Library.Utility.Dataframe import pl
 from Library.Database import QueryAPI, PrimaryKey, ForeignKey
 from Library.Database.Postgres import PostgresDatabaseAPI
 
+_DATABASES_ = (
+    "test_database",
+    "test_database_renamed",
+    "test_db_1",
+    "test_db_2",
+    "refactor_a",
+    "refactor_b",
+    "refactor_x",
+    "refactor_y"
+)
+
 @pytest.fixture
 def db():
-    admin = PostgresDatabaseAPI(admin=True)
-    try:
-        admin.connect()
-        admin.kill(database="test_database")
-        admin.delete(database="test_database")
-    except Exception: pass
-    finally: admin.disconnect()
+    def _drop_(names):
+        admin = PostgresDatabaseAPI(admin=True)
+        try:
+            admin.connect()
+            for name in names:
+                try: admin.kill(database=name); admin.delete(database=name)
+                except Exception: pass
+        finally: admin.disconnect()
+    def _snapshot_():
+        admin = PostgresDatabaseAPI(admin=True)
+        try:
+            admin.connect()
+            df = admin.list()
+            return set(df["Database"].to_list()) if "Database" in df.columns else set()
+        finally: admin.disconnect()
+    _drop_(_DATABASES_)
+    baseline = _snapshot_()
     yield PostgresDatabaseAPI
-    try:
-        admin.connect()
-        admin.kill(database="test_database")
-        admin.delete(database="test_database")
-    except Exception: pass
-    finally: admin.disconnect()
+    _drop_(_snapshot_() - baseline)
 
 def test_exists_only(db):
     api = db(admin=True)
@@ -63,8 +79,6 @@ def test_iterable_structures(db):
     assert "schema_1" in schemas
     assert "schema_2" in schemas
     api.disconnect()
-    api.delete(database=("test_db_1", "test_db_2"))
-    assert api.exists(database=("test_db_1", "test_db_2")) is False
 
 def test_migration(db):
     api = db(database="test_database", schema="test_schema", table="test_table", migrate=True)
@@ -98,10 +112,6 @@ def test_mixed_operations(db):
     assert len(df_many) == 2
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    assert cleaner.exists(database="test_database") is False
 
 def test_structure_mismatch(db):
     admin = db(admin=True)
@@ -122,9 +132,6 @@ def test_refactor_database(db):
     assert api.exists(database="test_database") is False
     assert api.exists(database="test_database_renamed") is True
     api.disconnect()
-    cleaner = db(admin=True)
-    cleaner.delete(database="test_database_renamed")
-    cleaner.disconnect()
 
 def test_refactor_schema(db):
     admin = db(admin=True)
@@ -136,10 +143,6 @@ def test_refactor_schema(db):
     assert api.exists(schema="old_schema") is False
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_refactor_table(db):
     admin = db(admin=True)
@@ -158,10 +161,6 @@ def test_refactor_table(db):
     assert df["name"][0] == "A"
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_refactor_lowest_level_default(db):
     admin = db(admin=True)
@@ -176,10 +175,6 @@ def test_refactor_lowest_level_default(db):
     assert api.exists(database="test_database", schema="test_schema", table="t1") is False
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_refactor_iterable_databases(db):
     api = db(admin=True)
@@ -189,9 +184,6 @@ def test_refactor_iterable_databases(db):
     assert api.exists(database="refactor_a") is False
     assert api.exists(database="refactor_b") is False
     api.disconnect()
-    cleaner = db(admin=True)
-    cleaner.delete(database=("refactor_x", "refactor_y"))
-    cleaner.disconnect()
 
 def test_refactor_iterable_tables(db):
     admin = db(admin=True)
@@ -207,10 +199,6 @@ def test_refactor_iterable_tables(db):
     assert api.exists(table="t2") is False
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_refactor_validation(db):
     api = db(admin=True)
@@ -239,10 +227,6 @@ def test_rename_column(db):
     assert df["new_id"][0] == 1
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_rename_iterable_columns(db):
     admin = db(admin=True)
@@ -259,10 +243,6 @@ def test_rename_iterable_columns(db):
     assert "gamma" in df.columns
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_rename_validation(db):
     admin = db(admin=True)
@@ -283,10 +263,6 @@ def test_rename_validation(db):
     api2.disconnect()
     api3.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_crud_operations(db):
     admin = db(admin=True)
@@ -310,10 +286,6 @@ def test_crud_operations(db):
     assert df["id"][0] == 2
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_schema_operations(db):
     admin = db(admin=True)
@@ -338,10 +310,6 @@ def test_schema_operations(db):
     assert df["value"][0] == 20.0
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_crud_positional_operations(db):
     admin = db(admin=True)
@@ -364,10 +332,6 @@ def test_crud_positional_operations(db):
     assert df["value"][0] == 25.0
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_upsert_operations(db):
     admin = db(admin=True)
@@ -389,10 +353,6 @@ def test_upsert_operations(db):
     assert df["name"].to_list() == ["A", "B", "C", "D"]
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_dataframe_input(db):
     admin = db(admin=True)
@@ -410,10 +370,6 @@ def test_dataframe_input(db):
     assert df["value"][0] == 15.0
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_select_columns(db):
     admin = db(admin=True)
@@ -428,10 +384,6 @@ def test_select_columns(db):
     assert len(df) == 1
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_migrate_add_column(db):
     admin = db(admin=True)
@@ -448,10 +400,6 @@ def test_migrate_add_column(db):
     assert df["value"].to_list() == [None, None]
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_migrate_remove_column(db):
     admin = db(admin=True)
@@ -467,10 +415,6 @@ def test_migrate_remove_column(db):
     assert df["name"].to_list() == ["A", "B"]
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_migrate_add_and_remove_column(db):
     admin = db(admin=True)
@@ -486,10 +430,6 @@ def test_migrate_add_and_remove_column(db):
     assert df["score"].to_list() == [None, None]
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_migrate_no_change(db):
     admin = db(admin=True)
@@ -504,10 +444,6 @@ def test_migrate_no_change(db):
     assert df["name"][0] == "A"
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_migrate_no_common_columns(db):
     admin = db(admin=True)
@@ -521,10 +457,6 @@ def test_migrate_no_common_columns(db):
     assert list(df.columns) == ["code", "value"]
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_migration_nondestructive(db):
     admin = db(admin=True)
@@ -544,10 +476,6 @@ def test_migration_nondestructive(db):
         assert df["name"].to_list() == ["A", "B"]
     api2.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_search_by_column(db):
     admin = db(admin=True)
@@ -566,10 +494,6 @@ def test_search_by_column(db):
     assert "t2" in tables
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_search_by_row(db):
     admin = db(admin=True)
@@ -591,10 +515,6 @@ def test_search_by_row(db):
     assert df.is_empty()
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_search_by_row_numeric(db):
     admin = db(admin=True)
@@ -607,10 +527,6 @@ def test_search_by_row_numeric(db):
     assert df["Table"][0] == "t1"
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_primary_key_and_foreign_key(db):
     admin = db(admin=True)
@@ -626,10 +542,6 @@ def test_primary_key_and_foreign_key(db):
         api.insert(table="orders", data=[{"id": 101, "user_id": 999}])
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_composite_primary_key(db):
     admin = db(admin=True)
@@ -642,10 +554,6 @@ def test_composite_primary_key(db):
         api.insert(table="tenant_users", data=[{"tenant_id": 1, "user_id": 1, "name": "Alice 2"}])
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_upsert_implicit_key(db):
     admin = db(admin=True)
@@ -660,10 +568,6 @@ def test_upsert_implicit_key(db):
     assert df["value"][0] == 20.0
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_diff_primary_key(db):
     admin = db(admin=True)
@@ -673,10 +577,6 @@ def test_diff_primary_key(db):
     assert api.diff(structure={"id": PrimaryKey(pl.Int64), "value": pl.Float64}) is True
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
 
 def test_python_types_in_structure(db):
     admin = db(admin=True)
@@ -691,7 +591,3 @@ def test_python_types_in_structure(db):
     assert isinstance(df["id"][0], int)
     api.disconnect()
     admin.disconnect()
-    cleaner = db(admin=True)
-    cleaner.kill(database="test_database")
-    cleaner.delete(database="test_database")
-    cleaner.disconnect()
