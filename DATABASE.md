@@ -5,15 +5,15 @@
 ## 1. Schema Architecture
 The **Quant** database is organized into seven functional schemas. CamelCase naming is used throughout to align with application-layer code.
 
-| Schema | Purpose | Data Category |
-| :--- | :--- | :--- |
-| `Universe` | Static Reference Data | Relational |
-| `Market` | Price Action (Ticks/Bars) | Time-Series (Hypertable) |
+| Schema        | Purpose                             | Data Category            |
+|:--------------|:------------------------------------|:-------------------------|
+| `Universe`    | Static Reference Data               | Relational               |
+| `Market`      | Price Action (Ticks/Bars)           | Time-Series (Hypertable) |
 | `Alternative` | Non-Price Data (Economic/Sentiment) | Time-Series (Hypertable) |
-| `Indicator` | Derived Signals (e.g., SMA, RSI) | Time-Series (Hypertable) |
-| `Portfolio` | Live Positions and Trade History | Hybrid |
-| `Schedule` | Orchestration and Workflow Metadata | Relational |
-| `Logging` | Application and Operational Logs | Time-Series |
+| `Indicator`   | Derived Signals (e.g., SMA, RSI)    | Time-Series (Hypertable) |
+| `Portfolio`   | Live Positions and Trade History    | Hybrid                   |
+| `Schedule`    | Orchestration and Workflow Metadata | Relational               |
+| `Logging`     | Application and Operational Logs    | Time-Series              |
 
 ---
 
