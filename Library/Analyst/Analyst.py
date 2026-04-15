@@ -1,8 +1,8 @@
 import math
 
-from Library.Dataframe import pl
+from Library.Utility.Dataframe import pl
 from Library.Database import DatabaseAPI
-from Library.Dataclass import BarAPI
+from Library.Utility import BarAPI
 from Library.Parameters import Parameters
 
 from Library.Analyst import MARGIN, MarketAPI, IndicatorAPI

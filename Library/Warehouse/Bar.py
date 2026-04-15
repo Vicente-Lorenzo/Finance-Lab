@@ -1,5 +1,5 @@
-from Library.Dataframe import pl
-from Library.Dataclass import *
+from Library.Utility.Dataframe import pl
+from Library.Utility import *
 from Library.Database import PostgresDatabaseAPI
 
 class BarDatabaseAPI(PostgresDatabaseAPI):

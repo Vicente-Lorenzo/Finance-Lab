@@ -1,6 +1,6 @@
 from Library.Logging import HandlerAPI
 
-from Library.Protocol import *
+from Library.Utility import *
 from Library.Engine import StateAPI, TransitionAPI
 
 class MachineAPI:

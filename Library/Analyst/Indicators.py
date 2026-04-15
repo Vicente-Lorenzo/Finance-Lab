@@ -1,7 +1,7 @@
 import math
 import talib
 
-from Library.Dataclass import IndicatorType, IndicatorConfigurationAPI
+from Library.Utility import IndicatorType, IndicatorConfigurationAPI
 
 class IndicatorsAPI:
 

@@ -7,6 +7,7 @@ from Library.Logging.Bucket import BucketLoggingAPI
 from Library.Logging.Web import WebLoggingAPI
 from Library.Logging.Email import EmailLoggingAPI
 from Library.Logging.Handler import HandlerLoggingAPI
+from Library.Logging.TelegramConfiguration import TelegramConfigurationAPI
 
 __all__ = [
     "VerboseLevel",
@@ -18,5 +19,6 @@ __all__ = [
     "BucketLoggingAPI",
     "WebLoggingAPI",
     "EmailLoggingAPI",
-    "HandlerLoggingAPI"
+    "HandlerLoggingAPI",
+    "TelegramConfigurationAPI"
 ]

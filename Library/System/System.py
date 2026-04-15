@@ -2,12 +2,12 @@ from typing import Type
 from abc import ABC, abstractmethod
 from threading import Thread
 
-from Library.Dataframe import pl
+from Library.Utility.Dataframe import pl
 from Library.Logging import HandlerAPI
 from Library.Classes import Account, Symbol, Position, Trade, Bar, Tick
 from Library.Parameters import Parameters
 
-from Library.Protocol import *
+from Library.Utility import *
 from Library.Analyst import AnalystAPI
 from Library.Manager import ManagerAPI
 from Library.Engine import MachineAPI, EngineAPI

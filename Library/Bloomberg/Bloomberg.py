@@ -1,5 +1,5 @@
 import blpapi
-from Library.Service import ServiceAPI
+from Library.Utility.Service import ServiceAPI
 from Library.Bloomberg.Query import QueryAPI
 from Library.Bloomberg.Intraday import IntradayAPI
 from Library.Bloomberg.Streaming import StreamingAPI

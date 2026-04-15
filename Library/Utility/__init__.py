@@ -113,6 +113,13 @@ from Library.Utility.IO import (
     copy,
     smartlink
 )
+from Library.Utility.Dataclass import (
+    overridefield,
+    DatametaAPI,
+    DataclassAPI
+)
+from Library.Utility.Dataframe import DataframeAPI
+from Library.Utility.Service import ServiceAPI
 
 __all__ = [
     "gantt",
@@ -139,5 +146,8 @@ __all__ = [
     "FileAPI",
     "is_readable", "is_writable",
     "mkdir", "remove", "read_text", "write_text", "read_json", "write_json",
-    "symlink", "hardlink", "copy", "smartlink"
+    "symlink", "hardlink", "copy", "smartlink",
+    "overridefield", "DatametaAPI", "DataclassAPI",
+    "DataframeAPI",
+    "ServiceAPI"
 ]

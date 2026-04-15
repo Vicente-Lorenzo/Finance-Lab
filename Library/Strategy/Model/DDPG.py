@@ -2,7 +2,7 @@ from Library.Parameters import Parameters
 
 from Library.Engine import MachineAPI
 from Library.Strategy import StrategyAPI
-from Library.Models.DDPG import DDPGAgentAPI
+from Library.Model.DDPG import DDPGAgentAPI
 
 class DDPGStrategyAPI(StrategyAPI):
 

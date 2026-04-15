@@ -9,9 +9,9 @@ from collections.abc import Sequence
 from abc import ABC, abstractmethod
 
 from Library.Statistics.Timer import Timer
-from Library.Dataframe.Dataframe import pd, pl
+from Library.Utility.Dataframe import pd, pl
 from Library.Database.Query import QueryAPI
-from Library.Service.Service import ServiceAPI
+from Library.Utility.Service import ServiceAPI
 from Library.Logging.Handler import HandlerLoggingAPI
 from Library.Utility.Path import PathAPI, traceback_package
 from Library.Utility.Typing import MISSING, Missing

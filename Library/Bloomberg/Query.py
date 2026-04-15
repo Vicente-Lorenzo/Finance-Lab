@@ -1,7 +1,7 @@
 import blpapi
 from typing_extensions import Self
 
-from Library.Service import ServiceAPI
+from Library.Utility.Service import ServiceAPI
 
 class QueryAPI(ServiceAPI):
     """Bloomberg Query Language (BQL) interface."""

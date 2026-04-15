@@ -1,5 +1,4 @@
-from Library.Protocol.Actions import (
-    Action,
+from Library.Protocol.Action import (
     ActionID,
     CompleteAction,
     OpenBuyAction,
@@ -15,10 +14,11 @@ from Library.Protocol.Actions import (
     AskAboveTargetAction,
     AskBelowTargetAction,
     BidAboveTargetAction,
-    BidBelowTargetAction
+    BidBelowTargetAction,
+    Action
 )
-from Library.Protocol.Updates import (
-    Update,
+
+from Library.Protocol.Update import (
     UpdateID,
     CompleteUpdate,
     AccountUpdate,
@@ -27,11 +27,11 @@ from Library.Protocol.Updates import (
     TradeUpdate,
     PositionTradeUpdate,
     BarUpdate,
-    TickUpdate
+    TickUpdate,
+    Update
 )
 
 __all__ = [
-    "Action",
     "ActionID",
     "CompleteAction",
     "OpenBuyAction",
@@ -48,7 +48,7 @@ __all__ = [
     "AskBelowTargetAction",
     "BidAboveTargetAction",
     "BidBelowTargetAction",
-    "Update",
+    "Action",
     "UpdateID",
     "CompleteUpdate",
     "AccountUpdate",
@@ -57,5 +57,6 @@ __all__ = [
     "TradeUpdate",
     "PositionTradeUpdate",
     "BarUpdate",
-    "TickUpdate"
+    "TickUpdate",
+    "Update"
 ]

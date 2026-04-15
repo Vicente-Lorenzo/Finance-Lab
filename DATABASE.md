@@ -1,7 +1,9 @@
 # Quantitative Trading Framework Database Design (PostgreSQL + TimescaleDB)
 
+---
+
 ## 1. Schema Architecture
-The **Quant** database is organized into six functional schemas. CamelCase naming is used throughout to align with application-layer code.
+The **Quant** database is organized into seven functional schemas. CamelCase naming is used throughout to align with application-layer code.
 
 | Schema | Purpose | Data Category |
 | :--- | :--- | :--- |
@@ -11,6 +13,7 @@ The **Quant** database is organized into six functional schemas. CamelCase namin
 | `Indicator` | Derived Signals (e.g., SMA, RSI) | Time-Series (Hypertable) |
 | `Portfolio` | Live Positions and Trade History | Hybrid |
 | `Schedule` | Orchestration and Workflow Metadata | Relational |
+| `Logging` | Application and Operational Logs | Time-Series |
 
 ---
 
@@ -70,19 +73,8 @@ Orchestration metadata for the custom workflow engine (Prefect-style).
 
 ---
 
-## 8. Database Configuration & Optimization
+## 8. Schema: `Logging`
+Centralized operational and application audit trails.
 
-### Case Sensitivity
-PostgreSQL identifiers are case-insensitive by default. To maintain **CamelCase**, all SQL queries must use double quotes:
-`SELECT * FROM "Market"."Bar" WHERE "SecurityID" = 101;`
-
-### TimescaleDB Policies
-1. **Compression**: Enable on `Market`, `Alternative`, `Indicator`, and `Portfolio.Trade`.
-    * Segment by `"SecurityID"` to group data for specific assets together on disk.
-2. **Retention**:
-    * `"Market"."Tick"`: Delete after 30 days (keep bars for long-term history).
-    * `"Schedule"."Run"`: Delete after 90 days.
-    * `"Market"."Bar"`: Indefinite retention.
-
-### Indexing Strategy
-Every Hypertable should have a composite index on `(SecurityID, Time DESC)` to support fast lookups for the most recent data during live trading.
+* **`Event`**: (Time, ComponentID, Level, Message, Metadata [JSONB]).
+* **`Error`**: (Time, ComponentID, ExceptionType, Traceback, StackTrace).

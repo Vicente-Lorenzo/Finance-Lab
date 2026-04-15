@@ -1,7 +1,7 @@
 import blpapi
 
-from Library.Dataframe import pd, pl
-from Library.Service import ServiceAPI
+from Library.Utility.Dataframe import pd, pl
+from Library.Utility.Service import ServiceAPI
 from Library.Utility.Typing import MISSING, Missing
 
 class ReferenceAPI(ServiceAPI):

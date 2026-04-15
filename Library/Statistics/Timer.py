@@ -3,7 +3,7 @@ from functools import wraps
 from time import perf_counter
 from dataclasses import dataclass, field
 
-from Library.Dataclass import DataclassAPI
+from Library.Utility import DataclassAPI
 from Library.Utility import seconds_to_string
 
 @dataclass(kw_only=True)

@@ -1,6 +1,6 @@
 from typing import Self, Callable
 
-from Library.Protocol import *
+from Library.Utility import *
 
 class StateAPI:
 

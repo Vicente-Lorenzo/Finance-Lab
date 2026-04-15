@@ -1,7 +1,7 @@
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 
-from Library.Dataframe import pl
+from Library.Utility.Dataframe import pl
 
 def image(df: pl.DataFrame) -> BytesIO:
     df_str = str(df)

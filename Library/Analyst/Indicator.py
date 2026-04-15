@@ -1,5 +1,5 @@
-from Library.Dataframe import pl
-from Library.Dataclass import IndicatorConfigurationAPI
+from Library.Utility.Dataframe import pl
+from Library.Utility import IndicatorConfigurationAPI
 from Library.Analyst import SeriesAPI, MarketAPI, IndicatorsAPI
 
 class IndicatorAPI:

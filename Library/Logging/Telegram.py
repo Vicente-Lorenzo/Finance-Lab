@@ -4,7 +4,7 @@ from io import BytesIO
 from typing import Callable
 
 from Library.Logging import VerboseType, LoggingAPI
-from Library.Dataclass import TelegramConfigurationAPI
+from Library.Utility import TelegramConfigurationAPI
 
 class TelegramAPI(LoggingAPI):
 

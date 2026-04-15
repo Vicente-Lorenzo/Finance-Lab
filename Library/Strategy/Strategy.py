@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from Library.Logging import HandlerAPI
 from Library.Parameters import Parameters
 
-from Library.Protocol import *
+from Library.Utility import *
 from Library.Engine import MachineAPI
 
 class StrategyAPI(ABC):

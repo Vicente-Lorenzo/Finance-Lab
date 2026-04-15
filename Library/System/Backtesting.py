@@ -6,13 +6,13 @@ from itertools import count
 from queue import Queue
 from typing import Type, Iterator, Callable
 
-from Library.Dataframe import pl
+from Library.Utility.Dataframe import pl
 from Library.Classes import *
 from Library.Database import DatabaseAPI
 from Library.Parameters import ParametersAPI, Parameters
 from Library.Utils import timer, equals, datetime_to_string, string_to_datetime
 
-from Library.Protocol import *
+from Library.Utility import *
 from Library.Analyst import AnalystAPI
 from Library.Manager import ManagerAPI
 from Library.Engine import MachineAPI

@@ -1,6 +1,6 @@
 from typing import Callable
 
-from Library.Protocol import *
+from Library.Utility import *
 from Library.Engine import MachineAPI
 
 class EngineAPI:

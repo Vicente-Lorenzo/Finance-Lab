@@ -1,7 +1,7 @@
 import blpapi
 from typing import Callable
 
-from Library.Service import ServiceAPI
+from Library.Utility.Service import ServiceAPI
 
 class StreamingAPI(ServiceAPI):
     """Bloomberg Streaming Data interface."""

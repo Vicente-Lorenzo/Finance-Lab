@@ -7,7 +7,7 @@ from dataclasses import dataclass, field, InitVar
 
 from Library.Utility.Typing import contains
 from Library.Utility.Runtime import is_notebook, find_notebook
-from Library.Dataclass.Dataclass import DataclassAPI
+from Library.Utility.Dataclass import DataclassAPI
 
 def inspect_separator(*, builder: type[PurePath] = Path) -> str:
     return builder(".")._flavour.sep

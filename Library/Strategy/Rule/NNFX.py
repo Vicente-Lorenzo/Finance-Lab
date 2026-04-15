@@ -1,7 +1,7 @@
 from Library.Classes import PositionType, TradeType, TechnicalMode
 from Library.Parameters import Parameters
 
-from Library.Protocol import *
+from Library.Utility import *
 from Library.Engine import MachineAPI
 from Library.Strategy import StrategyAPI
 
