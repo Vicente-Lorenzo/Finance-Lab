@@ -37,6 +37,7 @@ dependencies:
     - pymssql
     - oracledb
     - psycopg
+    - pythonnet
 
     - ta-lib
     - blpapi
