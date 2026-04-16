@@ -1,5 +1,10 @@
 from Library.Utility.Chart import gantt
 from Library.Utility.Image import image
+from Library.Utility.Statistic import (
+    Timer,
+    timer,
+    profiler
+)
 from Library.Utility.HTML import (
     Component,
     formatize,
@@ -124,6 +129,7 @@ from Library.Utility.Service import ServiceAPI
 __all__ = [
     "gantt",
     "image",
+    "Timer", "timer", "profiler",
     "Component", "formatize", "stylize", "htmlize", "HtmlAPI",
     "MISSING",
     "isclass", "iscallable", "ismethod", "isproperty", "getclass", "getmro", "getslots", "getclasses",
