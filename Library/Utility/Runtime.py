@@ -1,11 +1,9 @@
 import os
 import sys
-import socket
-import getpass
-from IPython import get_ipython
 from functools import lru_cache
 
 def find_user():
+    import getpass
     try:
         return getpass.getuser()
     except (OSError, KeyError, ImportError):
@@ -31,6 +29,7 @@ def is_service():
 
 @lru_cache(maxsize=1)
 def find_ipython():
+    from IPython import get_ipython
     ipython = get_ipython()
     return ipython
 
@@ -93,6 +92,7 @@ def match_env_vars(*, keyword: str, case_sensitive: bool = True) -> dict[str, st
     return matches
 
 def find_host_port(*, host: str = "localhost", port_min: int = 1024, port_max: int = 65535) -> int | tuple[str, int]:
+    import socket
     if not (0 <= port_min <= 65535):
         raise ValueError(f"Invalid min port range: [0, 65535]")
     if not (0 <= port_max <= 65535):

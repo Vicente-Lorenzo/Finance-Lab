@@ -1,9 +1,7 @@
 from typing import Any
 
-import pandas as pd
-import polars as pl
-from Library.Utility.Dataclass import DataclassAPI
 from Library.Utility.Typing import MISSING, Missing
+from Library.Utility.Dataclass import DataclassAPI
 
 class DataframeAPI:
 
@@ -13,6 +11,8 @@ class DataframeAPI:
 
     @staticmethod
     def flatten(data: Any) -> list:
+        import pandas as pd
+        import polars as pl
         if isinstance(data, pd.DataFrame):
             return data.to_dict(orient="records")
         if isinstance(data, pd.Series):
@@ -34,6 +34,8 @@ class DataframeAPI:
 
     @staticmethod
     def parse(data: Any) -> tuple[list[str] | None, list[Any], bool]:
+        import pandas as pd
+        import polars as pl
         if isinstance(data, pl.DataFrame):
             if data.is_empty(): return [], [], True
             return list(data.columns), data.to_dicts(), True
@@ -51,7 +53,8 @@ class DataframeAPI:
             return None, [data], False
         raise TypeError(f"Unsupported data type: {type(data)}")
 
-    def frame(self, data: Any, schema: dict = None, legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
+    def frame(self, data: Any, schema: dict = None, legacy: bool | Missing = MISSING) -> Any:
+        import polars as pl
         data = self.flatten(data)
         df = pl.DataFrame(data=data, schema=schema, orient="row", strict=False)
         if len(df) > 0: df = df.select([s.shrink_dtype() for s in df.get_columns()])

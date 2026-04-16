@@ -5,8 +5,10 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from threading import RLock
 
-from Library.Utility import *
-from Library.Statistics import Timer
+from Library.Utility.Path import traceback_origin_file_path
+from Library.Utility.Runtime import is_local, is_python, find_user
+from Library.Utility.Statistic import Timer
+
 
 class VerboseLevel(Enum):
     Silent = 0
@@ -16,6 +18,7 @@ class VerboseLevel(Enum):
     Alert = 4
     Info = 5
     Debug = 6
+
 
 class LoggingAPI(ABC):
 

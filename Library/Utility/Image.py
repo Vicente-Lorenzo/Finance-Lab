@@ -1,9 +1,7 @@
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont
 
-from Library.Utility.Dataframe import pl
-
-def image(df: pl.DataFrame) -> BytesIO:
+def image(df) -> BytesIO:
+    from PIL import Image, ImageDraw, ImageFont
     df_str = str(df)
     lines = df_str.splitlines()
 

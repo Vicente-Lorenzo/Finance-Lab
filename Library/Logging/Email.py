@@ -2,8 +2,10 @@
 # from mailer.report import Report
 from dash import html
 
-from Library.Utility import htmlize
-from Library.Logging import VerboseLevel, ReportLoggingAPI, WebLoggingAPI
+from Library.Utility.HTML import htmlize
+from Library.Logging.Logging import VerboseLevel
+from Library.Logging.Report import ReportLoggingAPI
+from Library.Logging.Web import WebLoggingAPI
 
 class EmailLoggingAPI(WebLoggingAPI, ReportLoggingAPI):
 

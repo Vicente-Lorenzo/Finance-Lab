@@ -3,8 +3,8 @@ import requests
 from io import BytesIO
 from typing import Callable
 
-from Library.Logging import VerboseType, LoggingAPI
-from Library.Utility import TelegramConfigurationAPI
+from Library.Logging import VerboseLevel, LoggingAPI, TelegramConfigurationAPI
+from Library.Utility.Dataframe import pl
 
 class TelegramAPI(LoggingAPI):
 
@@ -41,7 +41,7 @@ class TelegramAPI(LoggingAPI):
     _GROUP_DOCUMENT_URL: str | None = None
 
     @classmethod
-    def setup(cls, verbose: VerboseType, uid: str, **kwargs) -> None:
+    def setup(cls, verbose: VerboseLevel, uid: str, **kwargs) -> None:
         super().setup(verbose, **kwargs)
         group = TelegramAPI._GROUP[uid]
         cls._GROUP_MESSAGE_URL = TelegramAPI._MESSAGE_URL.format(group.Token, group.ChatID)
@@ -52,7 +52,7 @@ class TelegramAPI(LoggingAPI):
         static += f"<code>{tag.center(27)}</code>\n"
         return static
 
-    def _format_level(self, level: VerboseType, level_icon: str) -> str:
+    def _format_level(self, level: VerboseLevel, level_icon: str) -> str:
         level_name = f" {level.name} "
         top_hline = f"{level_icon} {level_name.center(22, "-")} {level_icon}"
         middle_line = "-" * 28
@@ -76,12 +76,12 @@ class TelegramAPI(LoggingAPI):
         return static
 
     def _format(self) -> None:
-        self._static_log_debug: str = self._format_level(VerboseType.Debug, TelegramAPI._DEBUG_ICON)
-        self._static_log_info: str = self._format_level(VerboseType.Info, TelegramAPI._INFO_ICON)
-        self._static_log_alert: str = self._format_level(VerboseType.Alert, TelegramAPI._ALERT_ICON)
-        self._static_log_warning: str = self._format_level(VerboseType.Warning, TelegramAPI._WARNING_ICON)
-        self._static_log_error: str = self._format_level(VerboseType.Error, TelegramAPI._ERROR_ICON)
-        self._static_log_exception: str = self._format_level(VerboseType.Exception, TelegramAPI._EXCEPTION_ICON)
+        self._static_log_debug: str = self._format_level(VerboseLevel.Debug, TelegramAPI._DEBUG_ICON)
+        self._static_log_info: str = self._format_level(VerboseLevel.Info, TelegramAPI._INFO_ICON)
+        self._static_log_alert: str = self._format_level(VerboseLevel.Alert, TelegramAPI._ALERT_ICON)
+        self._static_log_warning: str = self._format_level(VerboseLevel.Warning, TelegramAPI._WARNING_ICON)
+        self._static_log_error: str = self._format_level(VerboseLevel.Error, TelegramAPI._ERROR_ICON)
+        self._static_log_exception: str = self._format_level(VerboseLevel.Exception, TelegramAPI._EXCEPTION_ICON)
 
     @staticmethod
     def _build_log(message_url: str, document_url: str, static_log: str, content_func: Callable[[], str | BytesIO]):

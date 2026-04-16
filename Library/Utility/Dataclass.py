@@ -63,6 +63,10 @@ class DataclassAPI:
         super(DataclassAPI, cls).__init_subclass__(**kwargs)
         cls.ID = DatametaAPI(cls)
 
+    @classproperty
+    def Structure(cls) -> dict:
+        return {}
+
     def parse(self, name):
         f = getattr(self, name)
         if isinstance(f, Enum): return f.name

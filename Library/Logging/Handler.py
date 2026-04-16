@@ -3,7 +3,11 @@ from io import BytesIO
 from typing import Callable
 from functools import wraps
 
-from Library.Logging import VerboseLevel, ConsoleLoggingAPI, FileLoggingAPI, WebLoggingAPI, EmailLoggingAPI
+from Library.Logging.Logging import VerboseLevel
+from Library.Logging.Console import ConsoleLoggingAPI
+from Library.Logging.File import FileLoggingAPI
+from Library.Logging.Web import WebLoggingAPI
+from Library.Logging.Email import EmailLoggingAPI
 
 class HandlerLoggingAPI:
 

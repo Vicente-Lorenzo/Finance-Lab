@@ -1,9 +1,8 @@
 from pathlib import Path
-from dash.development.base_component import Component
 
-from Library.Utility.Path import PathAPI
-from Library.Utility.File import FileAPI
 from Library.Utility.Typing import format
+from Library.Utility.File import FileAPI
+from Library.Utility.Path import PathAPI
 
 def formatize(name: str, value: object) -> str:
     import html
@@ -28,7 +27,7 @@ def formatize(name: str, value: object) -> str:
     escaped = html.escape(str(value), quote=True)
     return f'{name}="{escaped}"'
 
-def stylize(component: Component) -> str:
+def stylize(component) -> str:
     parts: list[str] = []
     for prop in component._prop_names:
         if prop == "children": continue
@@ -39,7 +38,8 @@ def stylize(component: Component) -> str:
         if attr_str: parts.append(attr_str)
     return "" if not parts else " " + " ".join(parts)
 
-def htmlize(node: str | int | float | list | tuple | Component) -> str:
+def htmlize(node) -> str:
+    from dash.development.base_component import Component
     if node is None:
         return ""
     if isinstance(node, (str, int, float)):

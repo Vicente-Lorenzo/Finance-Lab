@@ -12,7 +12,6 @@ from fastapi.middleware.wsgi import WSGIMiddleware
 
 from Library.App import *
 from Library.Logging import *
-from Library.Utility.HTML import *
 from Library.Utility.Path import *
 from Library.Utility.Typing import *
 from Library.Utility.Runtime import *

@@ -1,8 +1,9 @@
 from typing import TextIO
 # import credentials_wrapper as cw
 
-from Library.Logging import VerboseLevel, FileLoggingAPI
-from Library.Utility import inspect_path
+from Library.Logging.Logging import VerboseLevel
+from Library.Logging.File import FileLoggingAPI
+from Library.Utility.Path import inspect_path
 
 class BucketLoggingAPI(FileLoggingAPI):
 

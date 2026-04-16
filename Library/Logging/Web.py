@@ -1,6 +1,7 @@
 from dash import html
 
-from Library.Logging import VerboseLevel, BufferLoggingAPI
+from Library.Logging.Logging import VerboseLevel
+from Library.Logging.Buffer import BufferLoggingAPI
 
 class WebLoggingAPI(BufferLoggingAPI):
 

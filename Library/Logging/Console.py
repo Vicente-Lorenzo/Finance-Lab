@@ -1,4 +1,4 @@
-from Library.Logging import VerboseLevel, LoggingAPI
+from Library.Logging.Logging import VerboseLevel, LoggingAPI
 
 class ConsoleLoggingAPI(LoggingAPI):
 

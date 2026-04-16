@@ -1,8 +1,9 @@
 from pathlib import Path
 from typing import TextIO
 
-from Library.Logging import VerboseLevel, BufferLoggingAPI
-from Library.Utility import inspect_file
+from Library.Logging.Logging import VerboseLevel
+from Library.Logging.Buffer import BufferLoggingAPI
+from Library.Utility.Path import inspect_file
 
 class FileLoggingAPI(BufferLoggingAPI):
 

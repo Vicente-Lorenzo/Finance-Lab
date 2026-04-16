@@ -1,7 +1,7 @@
 from io import BytesIO
-from matplotlib import pyplot as plt
 
 def gantt(ranges, opt_color="#1f77b4", val_color="#2ca02c", test_color="#ff7f0e"):
+    from matplotlib import pyplot as plt
     plt.style.use("dark_background")
     fig, ax = plt.subplots(figsize=(12, 4))
 

@@ -5,8 +5,8 @@ from abc import ABC
 from typing import Callable
 
 from Library.Utility.Statistic import Timer
-from Library.Logging import HandlerLoggingAPI
 from Library.Utility.Dataframe import DataframeAPI
+
 
 class ServiceAPI(DataframeAPI, ABC):
 
@@ -18,6 +18,7 @@ class ServiceAPI(DataframeAPI, ABC):
         self._api_ = api or self
         self._guard_ = None
 
+        from Library.Logging.Handler import HandlerLoggingAPI
         self._log_: HandlerLoggingAPI = HandlerLoggingAPI(self.__class__.__name__)
 
     @property
