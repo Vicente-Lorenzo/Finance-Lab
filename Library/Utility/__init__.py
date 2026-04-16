@@ -6,7 +6,6 @@ from Library.Utility.Statistic import (
     profiler
 )
 from Library.Utility.HTML import (
-    Component,
     formatize,
     stylize,
     htmlize,
@@ -130,7 +129,7 @@ __all__ = [
     "gantt",
     "image",
     "Timer", "timer", "profiler",
-    "Component", "formatize", "stylize", "htmlize", "HtmlAPI",
+    "formatize", "stylize", "htmlize", "HtmlAPI",
     "MISSING",
     "isclass", "iscallable", "ismethod", "isproperty", "getclass", "getmro", "getslots", "getclasses",
     "hasmember", "getmember", "hasattribute", "getattribute", "hasmethod", "getmethod", "hasproperty", "getproperty",
