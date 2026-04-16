@@ -87,9 +87,9 @@ class MicrosoftDatabaseAPI(DatabaseAPI):
     }
 
     _DESCRIPTION_DATATYPE_MAPPING_: tuple = (
+        (pymssql.DATETIME, pl.Datetime),
         (pymssql.STRING, pl.String),
-        (pymssql.BINARY, pl.Binary),
-        (pymssql.DATETIME, pl.Datetime)
+        (pymssql.BINARY, pl.Binary)
     )
 
     def __init__(self, *,

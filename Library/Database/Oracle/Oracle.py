@@ -87,9 +87,9 @@ class OracleDatabaseAPI(DatabaseAPI):
     }
 
     _DESCRIPTION_DATATYPE_MAPPING_: tuple = (
+        (oracledb.DATETIME, pl.Datetime),
         (oracledb.STRING, pl.String),
-        (oracledb.BINARY, pl.Binary),
-        (oracledb.DATETIME, pl.Datetime)
+        (oracledb.BINARY, pl.Binary)
     )
 
     def __init__(self, *,
@@ -162,7 +162,7 @@ class OracleDatabaseAPI(DatabaseAPI):
         values = []
         for name, dtype in structure.items():
             datatype = self._CHECK_DATATYPE_MAPPING_[self._normalize_(dtype)]
-            is_pk = int(isinstance(dtype, PrimaryKey))
+            is_pk = int(isinstance(dtype, PrimaryKey) or (isinstance(dtype, ForeignKey) and dtype.primary))
             is_fk = int(isinstance(dtype, ForeignKey))
             values.append(f"SELECT '{name}' AS column_name, '{datatype}' AS data_type, {is_pk} AS is_pk, {is_fk} AS is_fk FROM dual")
         return "\nUNION ALL\n".join(values)

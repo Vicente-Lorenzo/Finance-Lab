@@ -8,7 +8,7 @@ from typing_extensions import Self
 from collections.abc import Sequence
 from abc import ABC, abstractmethod
 
-from Library.Statistics.Timer import Timer
+from Library.Utility.Statistic import Timer
 from Library.Utility.Dataframe import pd, pl
 from Library.Database.Query import QueryAPI
 from Library.Utility.Service import ServiceAPI
@@ -30,6 +30,7 @@ class ForeignKey:
     """
     dtype: type | pl.DataType
     reference: str
+    primary: bool = False
 
 class DatabaseAPI(ServiceAPI, ABC):
     """
@@ -236,7 +237,7 @@ class DatabaseAPI(ServiceAPI, ABC):
         values = []
         for name, dtype in structure.items():
             datatype = self._CHECK_DATATYPE_MAPPING_[self._normalize_(dtype)]
-            is_pk = int(isinstance(dtype, PrimaryKey))
+            is_pk = int(isinstance(dtype, PrimaryKey) or (isinstance(dtype, ForeignKey) and dtype.primary))
             is_fk = int(isinstance(dtype, ForeignKey))
             values.append(f"('{name}', '{datatype}', {is_pk}, {is_fk})")
         return ",\n    ".join(values)
@@ -251,6 +252,7 @@ class DatabaseAPI(ServiceAPI, ABC):
             if isinstance(dtype, PrimaryKey):
                 pks.append(name)
             elif isinstance(dtype, ForeignKey):
+                if dtype.primary: pks.append(name)
                 base += f" REFERENCES {dtype.reference}"
             defs.append(f"{ql}{name}{qr} {base}")
         if pks:

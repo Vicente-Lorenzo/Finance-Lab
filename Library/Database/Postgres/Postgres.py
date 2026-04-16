@@ -87,9 +87,9 @@ class PostgresDatabaseAPI(DatabaseAPI):
     }
 
     _DESCRIPTION_DATATYPE_MAPPING_: tuple = (
+        (psycopg.DATETIME, pl.Datetime),
         (psycopg.STRING, pl.String),
-        (psycopg.BINARY, pl.Binary),
-        (psycopg.DATETIME, pl.Datetime)
+        (psycopg.BINARY, pl.Binary)
     )
 
     def __init__(self, *,
