@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from abc import ABC, abstractmethod
 
 from Library.Utility.Statistic import Timer
-from Library.Utility.Dataframe import pd, pl
+from Library.Database.Dataframe import pd, pl
 from Library.Database.Query import QueryAPI
 from Library.Utility.Service import ServiceAPI
 from Library.Logging.Handler import HandlerLoggingAPI

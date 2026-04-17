@@ -4,7 +4,7 @@ import pandas as pd
 import polars as pl
 
 from Library.Utility.Typing import MISSING, Missing
-from Library.Utility.Dataclass import DataclassAPI
+from Library.Database.Dataclass import DataclassAPI
 
 class DataframeAPI:
 
@@ -15,13 +15,13 @@ class DataframeAPI:
     @staticmethod
     def flatten(data: Any) -> list:
         if isinstance(data, pd.DataFrame):
-            return data.to_dict(orient="records")
+            return data.to_dict(orient="records")  # type: ignore
         if isinstance(data, pd.Series):
-            return data.to_list()
+            return data.to_list()  # type: ignore
         if isinstance(data, pl.DataFrame):
-            return data.to_dicts()
+            return data.to_dicts()  # type: ignore
         if isinstance(data, pl.Series):
-            return data.to_list()
+            return data.to_list()  # type: ignore
         if isinstance(data, DataclassAPI):
             return [data.dict()]
         if not isinstance(data, (tuple, list, set)):
@@ -36,11 +36,11 @@ class DataframeAPI:
     @staticmethod
     def parse(data: Any) -> tuple[list[str] | None, list[Any], bool]:
         if isinstance(data, pl.DataFrame):
-            if data.is_empty(): return [], [], True
-            return list(data.columns), data.to_dicts(), True
+            if data.is_empty(): return [], [], True  # type: ignore
+            return list(data.columns), data.to_dicts(), True  # type: ignore
         if isinstance(data, pd.DataFrame):
-            if data.empty: return [], [], True
-            return list(data.columns), data.to_dict(orient="records"), True
+            if data.empty: return [], [], True  # type: ignore
+            return list(data.columns), data.to_dict(orient="records"), True  # type: ignore
         if isinstance(data, dict):
             return list(data.keys()), [data], False
         if isinstance(data, (list, tuple)):

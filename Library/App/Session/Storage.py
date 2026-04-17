@@ -1,7 +1,7 @@
 from typing_extensions import Self
 from dataclasses import dataclass, field
 
-from Library.Utility.Dataclass import DataclassAPI
+from Library.Database.Dataclass import DataclassAPI
 
 @dataclass(kw_only=True)
 class StorageAPI(DataclassAPI):

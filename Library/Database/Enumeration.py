@@ -3,6 +3,12 @@ from __future__ import annotations
 from enum import Enum
 from difflib import SequenceMatcher
 
+def as_enum(cls_: type, value):
+    if value is None: return None
+    if isinstance(value, cls_): return value
+    try: return cls_.__members__[value] if isinstance(value, str) else cls_(value)
+    except (KeyError, ValueError): return None
+
 class Enumeration(Enum):
     @classmethod
     def _missing_(cls, value: object) -> Enumeration | None:
