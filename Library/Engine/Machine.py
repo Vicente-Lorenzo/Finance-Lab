@@ -31,8 +31,8 @@ class MachineAPI:
     def perform_update_account(self, args: AccountUpdate) -> list[Action]:
         return self._process_update(self.at.account_transition, args)
 
-    def perform_update_symbol(self, args: SymbolUpdate) -> list[Action]:
-        return self._process_update(self.at.symbol_transition, args)
+    def perform_update_security(self, args: SecurityUpdate) -> list[Action]:
+        return self._process_update(self.at.security_transition, args)
 
     def perform_update_opened_buy(self, args: PositionUpdate) -> list[Action]:
         return self._process_update(self.at.opened_buy_transition, args)

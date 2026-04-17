@@ -80,7 +80,7 @@ class StrategyAPI(ABC):
             update.Manager.update_account(update.Account)
 
         def init_symbol(update: SymbolUpdate):
-            update.Manager.init_symbol(update.Symbol)
+            update.Manager.init_symbol(update.Security)
 
         def update_bar(update: BarUpdate):
             update.Manager.update_symbol(update.Bar)

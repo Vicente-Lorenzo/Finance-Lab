@@ -140,13 +140,13 @@ class PostgresDatabaseAPI(DatabaseAPI):
     def _cast_(self, column: str) -> str:
         return f"{column}::TEXT"
 
-    def _upsert_(self, target: str, columns: Sequence[str], keys: Sequence[str]) -> str:
+    def _upsert_(self, target: str, columns: Sequence[str], keys: Sequence[str], exclude: Sequence[str] = ()) -> str:
         ql, qr = self._quote_
         n = QueryAPI.Named
         cols_str = self._quoted_(*columns)
         vals_str = ", ".join(f"{n}{c}{n}" for c in columns)
         key_str = self._quoted_(*keys)
-        updates = ", ".join(f"{ql}{c}{qr} = EXCLUDED.{ql}{c}{qr}" for c in columns if c not in keys)
+        updates = ", ".join(f"{ql}{c}{qr} = EXCLUDED.{ql}{c}{qr}" for c in columns if c not in keys and c not in exclude)
         sql = f"INSERT INTO {target} ({cols_str}) VALUES ({vals_str}) ON CONFLICT ({key_str})"
         if updates:
             sql += f" DO UPDATE SET {updates}"

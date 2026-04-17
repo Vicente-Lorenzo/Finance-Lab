@@ -21,7 +21,7 @@ class PositionAPI:
         new_position.DrawdownPnL = old_position.DrawdownPnL
         new_position.BaseBalance = old_position.BaseBalance
         new_position.EntryBalance = old_position.EntryBalance
-        
+
     @staticmethod
     def _modify_position(positions: dict[int, Position], new_position: Position) -> None:
         old_position = positions[new_position.PositionID]
@@ -82,16 +82,16 @@ class PositionAPI:
 
     def close_position_sell(self, trade: Trade) -> None:
         return self._close_position(self.Sells, trade)
-    
-    def update_position(self, symbol: Symbol, bar: Bar) -> None:
+
+    def update_position(self, security: Security, bar: Bar) -> None:
         for position in self.Buys.values():
             drawdown = (bar.LowPrice.Price - position.EntryPrice.Price)
-            position.DrawdownPoints = min(position.DrawdownPoints, drawdown / symbol.PointSize)
-            position.DrawdownPips = min(position.DrawdownPips, drawdown / symbol.PipSize)
+            position.DrawdownPoints = min(position.DrawdownPoints, drawdown / security.PointSize)
+            position.DrawdownPips = min(position.DrawdownPips, drawdown / security.PipSize)
         for position in self.Sells.values():
             drawdown = (position.EntryPrice.Price - bar.HighPrice.Price)
-            position.DrawdownPoints = min(position.DrawdownPoints, drawdown / symbol.PointSize)
-            position.DrawdownPips = min(position.DrawdownPips, drawdown / symbol.PipSize)
+            position.DrawdownPoints = min(position.DrawdownPoints, drawdown / security.PointSize)
+            position.DrawdownPips = min(position.DrawdownPips, drawdown / security.PipSize)
 
     def data(self):
         return self.Buys, self.Sells

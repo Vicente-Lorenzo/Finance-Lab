@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Callable
 from dataclasses import dataclass, field
 
-from Library.Utility.Dataclass import DataclassAPI
+from Library.Database.Dataclass import DataclassAPI
 
 class IndicatorType(Enum):
     Baseline = 0

@@ -10,7 +10,7 @@ class StateAPI:
 
         self.complete_transition: TransitionAPI | None = None
         self.account_transition: TransitionAPI | None = None
-        self.symbol_transition: TransitionAPI | None = None
+        self.security_transition: TransitionAPI | None = None
         self.opened_buy_transition: TransitionAPI | None = None
         self.opened_sell_transition: TransitionAPI | None = None
         self.modified_volume_buy_transition: TransitionAPI | None = None
@@ -34,8 +34,8 @@ class StateAPI:
     def on_account(self, to: Self, action: Callable[[AccountUpdate], list[Action] | None] | None, reason: str | None) -> None:
         self.account_transition = TransitionAPI(to, action, reason)
 
-    def on_symbol(self, to: Self, action: Callable[[SymbolUpdate], list[Action] | None] | None, reason: str | None) -> None:
-        self.symbol_transition = TransitionAPI(to, action, reason)
+    def on_security(self, to: Self, action: Callable[[SecurityUpdate], list[Action] | None] | None, reason: str | None) -> None:
+        self.security_transition = TransitionAPI(to, action, reason)
 
     def on_opened_buy(self, to: Self, action: Callable[[PositionUpdate], list[Action] | None] | None, reason: str | None) -> None:
         self.opened_buy_transition = TransitionAPI(to, action, reason)

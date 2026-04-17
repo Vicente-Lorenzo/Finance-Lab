@@ -51,8 +51,8 @@ class EngineAPI:
     def perform_update_account(self, args: AccountUpdate) -> list[Action]:
         return self._perform_update(self._system_engine.perform_update_account, self._strategy_engine.perform_update_account, self._signal_engine.perform_update_account, self._risk_engine.perform_update_account, args)
 
-    def perform_update_symbol(self, args: SymbolUpdate) -> list[Action]:
-        return self._perform_update(self._system_engine.perform_update_symbol, self._strategy_engine.perform_update_symbol, self._signal_engine.perform_update_symbol, self._risk_engine.perform_update_symbol, args)
+    def perform_update_security(self, args: SecurityUpdate) -> list[Action]:
+        return self._perform_update(self._system_engine.perform_update_security, self._strategy_engine.perform_update_security, self._signal_engine.perform_update_security, self._risk_engine.perform_update_security, args)
 
     def perform_update_opened_buy(self, args: PositionUpdate) -> list[Action]:
         return self._perform_update(self._system_engine.perform_update_opened_buy, self._strategy_engine.perform_update_opened_buy, self._signal_engine.perform_update_opened_buy, self._risk_engine.perform_update_opened_buy, args)

@@ -15,7 +15,7 @@ from Library.Strategy import StrategyAPI
 from Library.System import SystemAPI
 
 from Library.Portfolio.Account import AccountAPI, AccountType, AssetType, MarginMode
-from Library.Universe.Symbol import SymbolAPI, CommissionMode, SwapMode, DayOfWeek
+from Library.Universe.Contract import ContractAPI, CommissionMode, SwapMode, DayOfWeek
 from Library.Portfolio.Position import PositionAPI, PositionType, TradeType
 from Library.Portfolio.Trade import TradeAPI
 from Library.Market.Bar import BarAPI
@@ -235,8 +235,8 @@ class TradingSystemAPI(SystemAPI):
             MarginMode=MarginMode(acc.TotalMarginCalculationType)
         )
 
-    def _convert_symbol(self, sym) -> SymbolAPI:
-        return SymbolAPI(
+    def _convert_symbol(self, sym) -> ContractAPI:
+        return ContractAPI(
             BaseAssetType=AssetType[sym.BaseAsset.Name],
             QuoteAssetType=AssetType[sym.QuoteAsset.Name],
             Digits=sym.Digits,
@@ -251,7 +251,7 @@ class TradingSystemAPI(SystemAPI):
             SwapLong=sym.SwapLong,
             SwapShort=sym.SwapShort,
             SwapMode=SwapMode(sym.SwapCalculationType),
-            SwapExtraDay=DayOfWeek((sym.Swap3DaysRollover - 1) % 7 if sym.Swap3DaysRollover is not None else 2)
+            SwapExtraDay=Day((sym.Swap3DaysRollover - 1) % 7 if sym.Swap3DaysRollover is not None else 2)
         )
 
     def _convert_position(self, pos) -> PositionAPI:
@@ -275,7 +275,7 @@ class TradingSystemAPI(SystemAPI):
             SwapPnL=pos.Swap,
             NetPnL=pos.NetProfit,
             UsedMargin=pos.Margin,
-            symbol=self.manager.Symbol,
+            contract=self.manager.Symbol,
             entry_balance=self.manager.Account.Balance if self.manager.Account else 0.0
         )
 
@@ -299,7 +299,7 @@ class TradingSystemAPI(SystemAPI):
             CommissionPnL=trd.Commissions,
             SwapPnL=trd.Swap,
             NetPnL=trd.NetProfit,
-            symbol=self.manager.Symbol,
+            contract=self.manager.Symbol,
             entry_balance=self.manager.Account.Balance if self.manager.Account else 0.0
         )
 
@@ -332,7 +332,7 @@ class TradingSystemAPI(SystemAPI):
     def receive_update_account(self) -> AccountAPI:
         return self.queue.get()
 
-    def receive_update_symbol(self) -> SymbolAPI:
+    def receive_update_symbol(self) -> ContractAPI:
         return self.queue.get()
 
     def receive_update_position(self) -> PositionAPI:
@@ -605,3 +605,4 @@ class TradingSystemAPI(SystemAPI):
         self.queue.put(self._convert_symbol(self.api.Symbol))
         self.queue.put(UpdateID.Complete)
         self.deploy(strategy=self.strategy, analyst=self.analyst, manager=self.manager)
+self.analyst, manager=self.manager)

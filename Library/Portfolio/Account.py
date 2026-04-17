@@ -1,34 +1,23 @@
 from __future__ import annotations
 
-from enum import Enum
 from dataclasses import dataclass, field
 
-from Library.Utility.Dataclass import DataclassAPI
+from Library.Database.Dataclass import DataclassAPI
+from Library.Database.Enumeration import Enumeration
 
-class AccountType(Enum):
+class AccountType(Enumeration):
     Hedged = 0
     Netted = 1
 
-class AssetType(Enum):
-    USD = 0
-    EUR = 1
-    GBP = 2
-    CAD = 3
-    JPY = 4
-    AUD = 5
-    NZD = 6
-    CHF = 7
-    Other = 8
-
-class MarginMode(Enum):
+class MarginMode(Enumeration):
     Sum = 0
     Max = 1
     Net = 2
 
 @dataclass(slots=True, kw_only=True)
 class AccountAPI(DataclassAPI):
-    AccountType: AccountType = field(init=True, repr=True)
-    AssetType: AssetType = field(init=True, repr=True)
+    AccountType: AccountType | str = field(init=True, repr=True)
+    Asset: str = field(init=True, repr=True)
     Balance: float = field(init=True, repr=True)
     Equity: float = field(init=True, repr=True)
     Credit: float = field(init=True, repr=True)
@@ -37,9 +26,15 @@ class AccountAPI(DataclassAPI):
     MarginFree: float = field(init=True, repr=True)
     MarginLevel: float | None = field(init=True, repr=True)
     MarginStopLevel: float = field(init=True, repr=True)
-    MarginMode: MarginMode = field(init=True, repr=True)
+    MarginMode: MarginMode | str = field(init=True, repr=True)
+
+    @staticmethod
+    def _as_enum_(cls_: type, value):
+        if value is None: return None
+        if isinstance(value, cls_): return value
+        try: return cls_[value] if isinstance(value, str) else cls_(value)
+        except (KeyError, ValueError): return None
 
     def __post_init__(self):
-        self.AccountType = AccountType(self.AccountType)
-        self.AssetType = AssetType(self.AssetType)
-        self.MarginMode = MarginMode(self.MarginMode)
+        self.AccountType = self._as_enum_(AccountType, self.AccountType)
+        self.MarginMode = self._as_enum_(MarginMode, self.MarginMode)

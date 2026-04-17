@@ -4,11 +4,12 @@ from enum import Enum
 from datetime import datetime
 from dataclasses import dataclass, field, InitVar
 
-from Library.Utility.Dataclass import overridefield, DataclassAPI
+from Library.Database.Dataclass import overridefield, DataclassAPI
 from Library.Market.Timestamp import TimestampAPI
 from Library.Market.Price import PriceAPI
 from Library.Portfolio.PnL import PnLAPI
-from Library.Universe.Symbol import SymbolAPI
+from typing import TYPE_CHECKING
+if TYPE_CHECKING: from Library.Universe.Contract import ContractAPI
 
 class PositionType(Enum):
     Normal = 0
@@ -48,7 +49,7 @@ class PositionAPI(DataclassAPI):
     EntryBalance: InitVar[float] = field(default=None, init=True, repr=False)
     MidBalance: float = field(default=None, init=True, repr=True)
 
-    Symbol: InitVar[SymbolAPI] = field(default=None, init=True, repr=False)
+    Contract: InitVar[ContractAPI] = field(default=None, init=True, repr=False)
 
     _entry_timestamp_: TimestampAPI = field(default=None, init=False, repr=False)
 
@@ -70,7 +71,7 @@ class PositionAPI(DataclassAPI):
 
     _entry_balance_: float = field(default=None, init=False, repr=False)
 
-    _symbol_: SymbolAPI = field(default=None, init=False, repr=False)
+    _contract_: ContractAPI = field(default=None, init=False, repr=False)
 
     def __post_init__(self,
                       entry_timestamp: datetime,
@@ -89,22 +90,22 @@ class PositionAPI(DataclassAPI):
                       swap_pnl: float,
                       net_pnl: float,
                       entry_balance: float,
-                      symbol: SymbolAPI):
+                      contract: ContractAPI):
 
         self.PositionType = PositionType(self.PositionType)
         self.TradeType = TradeType(self.TradeType)
 
-        self._symbol_ = symbol
+        self._contract_ = contract
         self._entry_balance_ = entry_balance
 
         self._entry_timestamp_ = TimestampAPI(DateTime=entry_timestamp)
 
-        self._entry_price_ = PriceAPI(Price=entry_price, Reference=entry_price, Symbol=self._symbol_)
-        self._stop_loss_price_ = PriceAPI(Price=stop_loss_price, Reference=entry_price, Symbol=self._symbol_)
-        self._take_profit_price_ = PriceAPI(Price=take_profit_price, Reference=entry_price, Symbol=self._symbol_)
-        self._max_run_up_price_ = PriceAPI(Price=max_runup_price, Reference=entry_price, Symbol=self._symbol_)
-        self._max_draw_down_price_ = PriceAPI(Price=max_drawdown_price, Reference=entry_price, Symbol=self._symbol_)
-        self._exit_price_ = PriceAPI(Price=exit_price, Reference=entry_price, Symbol=self._symbol_)
+        self._entry_price_ = PriceAPI(Price=entry_price, Reference=entry_price, Contract=self._contract_)
+        self._stop_loss_price_ = PriceAPI(Price=stop_loss_price, Reference=entry_price, Contract=self._contract_)
+        self._take_profit_price_ = PriceAPI(Price=take_profit_price, Reference=entry_price, Contract=self._contract_)
+        self._max_run_up_price_ = PriceAPI(Price=max_runup_price, Reference=entry_price, Contract=self._contract_)
+        self._max_draw_down_price_ = PriceAPI(Price=max_drawdown_price, Reference=entry_price, Contract=self._contract_)
+        self._exit_price_ = PriceAPI(Price=exit_price, Reference=entry_price, Contract=self._contract_)
 
         self._stop_loss_pn_l_ = PnLAPI(PnL=stop_loss_pnl, Reference=self._entry_balance_)
         self._take_profit_pn_l_ = PnLAPI(PnL=take_profit_pnl, Reference=self._entry_balance_)
@@ -248,14 +249,14 @@ class PositionAPI(DataclassAPI):
 
     @property
     @overridefield
-    def Symbol(self) -> SymbolAPI:
-        return self._symbol_
-    @Symbol.setter
-    def Symbol(self, symbol: SymbolAPI) -> None:
-        self._symbol_ = symbol
-        self._entry_price_.Symbol = self._symbol_
-        self._stop_loss_price_.Symbol = self._symbol_
-        self._take_profit_price_.Symbol = self._symbol_
-        self._max_run_up_price_.Symbol = self._symbol_
-        self._max_draw_down_price_.Symbol = self._symbol_
-        self._exit_price_.Symbol = self._symbol_
+    def Contract(self) -> ContractAPI:
+        return self._contract_
+    @Contract.setter
+    def Contract(self, contract: ContractAPI) -> None:
+        self._contract_ = contract
+        self._entry_price_.Contract = self._contract_
+        self._stop_loss_price_.Contract = self._contract_
+        self._take_profit_price_.Contract = self._contract_
+        self._max_run_up_price_.Contract = self._contract_
+        self._max_draw_down_price_.Contract = self._contract_
+        self._exit_price_.Contract = self._contract_

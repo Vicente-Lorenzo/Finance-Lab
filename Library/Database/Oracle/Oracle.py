@@ -140,12 +140,12 @@ class OracleDatabaseAPI(DatabaseAPI):
     def _cast_(self, column: str) -> str:
         return f"TO_CHAR({column})"
 
-    def _upsert_(self, target: str, columns: Sequence[str], keys: Sequence[str]) -> str:
+    def _upsert_(self, target: str, columns: Sequence[str], keys: Sequence[str], exclude: Sequence[str] = ()) -> str:
         ql, qr = self._quote_
         n = QueryAPI.Named
         source_cols = ", ".join(f"{n}{c}{n} AS {ql}{c}{qr}" for c in columns)
         on_cond = " AND ".join(f"target.{ql}{k}{qr} = source.{ql}{k}{qr}" for k in keys)
-        updates = ", ".join(f"target.{ql}{c}{qr} = source.{ql}{c}{qr}" for c in columns if c not in keys)
+        updates = ", ".join(f"target.{ql}{c}{qr} = source.{ql}{c}{qr}" for c in columns if c not in keys and c not in exclude)
         insert_cols = self._quoted_(*columns)
         insert_vals = ", ".join(f"source.{ql}{c}{qr}" for c in columns)
         sql = f"MERGE INTO {target} target USING (SELECT {source_cols} FROM dual) source ON ({on_cond})"

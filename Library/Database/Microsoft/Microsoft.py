@@ -140,13 +140,13 @@ class MicrosoftDatabaseAPI(DatabaseAPI):
     def _cast_(self, column: str) -> str:
         return f"CAST({column} AS NVARCHAR(MAX))"
 
-    def _upsert_(self, target: str, columns: Sequence[str], keys: Sequence[str]) -> str:
+    def _upsert_(self, target: str, columns: Sequence[str], keys: Sequence[str], exclude: Sequence[str] = ()) -> str:
         ql, qr = self._quote_
         n = QueryAPI.Named
         source_cols = self._quoted_(*columns)
         source_vals = ", ".join(f"{n}{c}{n}" for c in columns)
         on_cond = " AND ".join(f"target.{ql}{k}{qr} = source.{ql}{k}{qr}" for k in keys)
-        updates = ", ".join(f"target.{ql}{c}{qr} = source.{ql}{c}{qr}" for c in columns if c not in keys)
+        updates = ", ".join(f"target.{ql}{c}{qr} = source.{ql}{c}{qr}" for c in columns if c not in keys and c not in exclude)
         sql = f"MERGE INTO {target} AS target USING (VALUES ({source_vals})) AS source({source_cols}) ON {on_cond}"
         if updates:
             sql += f" WHEN MATCHED THEN UPDATE SET {updates}"

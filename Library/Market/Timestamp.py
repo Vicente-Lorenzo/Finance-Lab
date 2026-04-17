@@ -4,7 +4,7 @@ import math
 from datetime import datetime
 from dataclasses import dataclass, field
 
-from Library.Utility.Dataclass import DataclassAPI
+from Library.Database.Dataclass import DataclassAPI
 
 @dataclass(slots=True, kw_only=True)
 class CycleAPI(DataclassAPI):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import ClassVar, TYPE_CHECKING
+from typing import ClassVar, Sequence, TYPE_CHECKING
 from dataclasses import dataclass, field
 
 from Library.Database.Dataframe import pl
@@ -12,7 +12,7 @@ if TYPE_CHECKING: from Library.Database import DatabaseAPI
 _UNIT_MAP_ = {"S": "Second", "M": "Minute", "H": "Hour", "D": "Day", "W": "Week", "MN": "Month", "Y": "Year"}
 _MINUTES_MAP_ = {"S": 1 / 60, "M": 1, "H": 60, "D": 1440, "W": 10080, "MN": 43200, "Y": 525600}
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(kw_only=True)
 class TimeframeAPI(DatapointAPI):
 
     Table: ClassVar[str] = "Timeframe"
@@ -45,7 +45,6 @@ class TimeframeAPI(DatapointAPI):
         if uid in ["MINUTELY", "M", "MINUTE", "1M"]: return "M1"
         if uid in ["SECONDLY", "S", "SECOND", "1S"]: return "S1"
         if uid in ["YEARLY", "Y", "YEAR", "1Y"]: return "Y1"
-        
         match = re.match(r"^(\d*)([A-Z]+)(\d*)$", uid)
         if match:
             prefix, unit, suffix = match.groups()
@@ -78,31 +77,29 @@ class TimeframeAPI(DatapointAPI):
         name = _UNIT_MAP_.get(unit, "Minute")
         self.Name = name if v == 1 else f"{name}{v}"
 
-    def pull(self) -> None:
+    def pull(self, condition: str | None = None) -> None:
+        if condition:
+            row = super().pull(condition=condition)
+            if row:
+                if not self.UID: self.UID = row.get("UID")
+                if self.Name is None: self.Name = row.get("Name")
+                if self.Unit is None: self.Unit = row.get("Unit")
+                if self.Value is None: self.Value = row.get("Value")
+            return
         if not self.UID: return
         escaped = self.UID.replace("'", "''")
-        df = self._db_.select(schema=DatapointAPI.Schema, table=self.Table, condition=f"\"UID\" = '{escaped}'", limit=1, legacy=False)
-        if df.is_empty():
-            df = self._db_.select(schema=DatapointAPI.Schema, table=self.Table, condition=f"\"Name\" = '{escaped}'", limit=1, legacy=False)
-
-        if df.is_empty():
-            if self.Unit is None and not re.match(r"^([A-Z]+)(\d*)$", self.UID):
-                raise ValueError(f"Timeframe '{self.UID}' not found in database and lacks correct format for creation.")
+        row = super().pull(condition=f"\"UID\" = '{escaped}'")
+        if not row: row = super().pull(condition=f"\"Name\" = '{escaped}'")
+        if not row:
+            if self.Unit is None and not re.match(r"^([A-Z]+)(\d*)$", self.UID): raise ValueError(f"Timeframe '{self.UID}' not found in database and lacks correct format for creation.")
             return
-            
-        row = df.row(0, named=True)
         if not self.UID: self.UID = row.get("UID")
         if self.Name is None: self.Name = row.get("Name")
         if self.Unit is None: self.Unit = row.get("Unit")
         if self.Value is None: self.Value = row.get("Value")
-        self._pull_audit_(row)
 
-    def push(self, by: str = "SystemUser") -> None:
-        self._audit_(by)
-        data = self.dict(include_fields=True, include_properties=False, include_override_fields=False)
-        valid_keys = self.Structure().keys()
-        clean_data = {k: v for k, v in data.items() if k in valid_keys}
-        self._db_.upsert(schema=DatapointAPI.Schema, table=self.Table, data=clean_data, key=self.ID.UID)
+    def push(self, by: str, key: str | Sequence[str] | None = None) -> None:
+        super().push(by=by, key=key or self.ID.UID)
 
     @property
     def Minutes(self) -> float | None:

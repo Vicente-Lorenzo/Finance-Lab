@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING
 from enum import Enum
 from dataclasses import dataclass
 
-from Library.Utility.Dataclass import DataclassAPI
+from Library.Database.Dataclass import DataclassAPI
 from Library.Portfolio.Account import AccountAPI
-from Library.Universe.Symbol import SymbolAPI
+from Library.Universe.Security import SecurityAPI
 from Library.Portfolio.Position import PositionAPI
 from Library.Portfolio.Trade import TradeAPI
 from Library.Market.Bar import BarAPI
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class UpdateID(Enum):
     Complete = 0
     Account = 1
-    Symbol = 2
+    Security = 2
     OpenedBuy = 3
     OpenedSell = 4
     ModifiedBuyVolume = 5
@@ -49,10 +49,10 @@ class AccountUpdate(DataclassAPI):
     Account: AccountAPI
 
 @dataclass(slots=True)
-class SymbolUpdate(DataclassAPI):
+class SecurityUpdate(DataclassAPI):
     Analyst: AnalystAPI
     Manager: ManagerAPI
-    Symbol: SymbolAPI
+    Security: SecurityAPI
 
 @dataclass(slots=True)
 class PositionUpdate(DataclassAPI):
@@ -91,4 +91,4 @@ class TickUpdate(DataclassAPI):
     Manager: ManagerAPI
     Tick: TickAPI
 
-Update = CompleteUpdate | AccountUpdate | SymbolUpdate | PositionUpdate | TradeUpdate | PositionTradeUpdate | BarUpdate | TickUpdate
+Update = CompleteUpdate | AccountUpdate | SecurityUpdate | PositionUpdate | TradeUpdate | PositionTradeUpdate | BarUpdate | TickUpdate

@@ -84,15 +84,13 @@ class DatabaseAPI(ServiceAPI, ABC):
 
     @staticmethod
     def _update_(target: str, set_string: str) -> str:
-        # noinspection SqlWithoutWhere
         return f"UPDATE {target} SET {set_string}"
 
     @abstractmethod
-    def _upsert_(self, target: str, columns: Sequence[str], keys: Sequence[str]) -> str: raise NotImplementedError
+    def _upsert_(self, target: str, columns: Sequence[str], keys: Sequence[str], exclude: Sequence[str] = ()) -> str: raise NotImplementedError
 
     @staticmethod
     def _delete_(target: str) -> str:
-        # noinspection SqlWithoutWhere
         return f"DELETE FROM {target}"
 
     @staticmethod
@@ -1104,7 +1102,8 @@ class DatabaseAPI(ServiceAPI, ABC):
                schema: str | Sequence | None | Missing = MISSING,
                table: str | Sequence | None | Missing = MISSING,
                data: Any = None,
-               key: str | Sequence[str] | None = None) -> Self:
+               key: str | Sequence[str] | None = None,
+               exclude: Sequence[str] | None = None) -> Self:
         """
         Upserts (inserts or updates) data in a table.
         :param database: Target database.
@@ -1114,23 +1113,22 @@ class DatabaseAPI(ServiceAPI, ABC):
         :param key: The primary key or constraint for conflict resolution.
         :return: Self reference.
         """
-        if data is None: raise ValueError("Data must be provided to upsert rows")
         if not key:
             if self._STRUCTURE_:
-                key = [name for name, dtype in self._STRUCTURE_.items() if isinstance(dtype, PrimaryKey)]
+                key = [name for name, dtype in self._STRUCTURE_.items() if isinstance(dtype, PrimaryKey) or (isinstance(dtype, ForeignKey) and dtype.primary)]
             if not key:
                 raise ValueError("Key must be provided to upsert rows")
         database = database if database is not MISSING else self._database_
         schema = schema if schema is not MISSING else self._schema_
         table = table if table is not MISSING else self._table_
         if isinstance(database, (list, tuple)):
-            for d in database: self.upsert(database=d, schema=schema, table=table, data=data, key=key)
+            for d in database: self.upsert(database=d, schema=schema, table=table, data=data, key=key, exclude=exclude)
             return self
         if isinstance(schema, (list, tuple)):
-            for s in schema: self.upsert(database=database, schema=s, table=table, data=data, key=key)
+            for s in schema: self.upsert(database=database, schema=s, table=table, data=data, key=key, exclude=exclude)
             return self
         if isinstance(table, (list, tuple)):
-            for t in table: self.upsert(database=database, schema=schema, table=t, data=data, key=key)
+            for t in table: self.upsert(database=database, schema=schema, table=t, data=data, key=key, exclude=exclude)
             return self
         if not database or not schema or not table: raise ValueError("Database, Schema and Table must be provided to upsert rows")
         columns, records, multiple = self.parse(data)
@@ -1138,7 +1136,7 @@ class DatabaseAPI(ServiceAPI, ABC):
         if not columns: raise ValueError("Dictionary or DataFrame structure required for upserts to identify columns")
         target = self._target_(schema, table)
         keys = [key] if isinstance(key, str) else list(key)
-        sql = self._upsert_(target, columns, keys)
+        sql = self._upsert_(target, columns, keys, exclude or ())
         self.execute(QueryAPI(sql), records, database=database, schema=schema, table=table, admin=False)
         self._log_.alert(lambda: f"Upsert Operation: Processed {len(records)} rows in {table} Table")
         return self

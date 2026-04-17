@@ -6,7 +6,7 @@ from itertools import count
 from queue import Queue
 from typing import Type, Iterator, Callable
 
-from Library.Utility.Dataframe import pl
+from Library.Database.Dataframe import pl
 from Library.Classes import *
 from Library.Database import DatabaseAPI
 from Library.Parameters import ParametersAPI, Parameters
@@ -346,7 +346,7 @@ class BacktestingSystemAPI(SystemAPI):
                     match rollover_timestamp.weekday():
                         case self.symbol_data.SwapExtraDay.value:
                             mul = 3
-                        case DayOfWeek.Saturday.value | DayOfWeek.Sunday.value:
+                        case Day.Saturday.value | Day.Sunday.value:
                             mul = 0
                         case _:
                             mul = 1

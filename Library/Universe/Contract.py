@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import ClassVar, TYPE_CHECKING
+from typing import ClassVar, Sequence, TYPE_CHECKING
 from dataclasses import dataclass, field
 
 from Library.Database.Dataframe import pl
@@ -43,7 +43,7 @@ class SwapMode(Enumeration):
     Pips = 0
     Percentage = 1
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(kw_only=True)
 class ContractAPI(DatapointAPI):
 
     Table: ClassVar[str] = "Contract"
@@ -101,43 +101,54 @@ class ContractAPI(DatapointAPI):
         self.CommissionMode = as_enum(CommissionMode, self.CommissionMode)
         self.SwapMode = as_enum(SwapMode, self.SwapMode)
         self.SwapExtraDay = as_enum(Day, self.SwapExtraDay)
-        
         self._db_ = self._connect_(db)
         self._db_.migrate(schema=DatapointAPI.Schema, table=self.Table, structure=self.Structure())
         self.pull()
 
-    def pull(self) -> None:
+    def pull(self, condition: str | None = None) -> None:
+        if condition:
+            row = super().pull(condition=condition)
+            if row:
+                if self.Digits is None: self.Digits = row.get("Digits")
+                if self.PointSize is None: self.PointSize = row.get("PointSize")
+                if self.PipSize is None: self.PipSize = row.get("PipSize")
+                if self.LotSize is None: self.LotSize = row.get("LotSize")
+                if self.VolumeMin is None: self.VolumeMin = row.get("VolumeMin")
+                if self.VolumeMax is None: self.VolumeMax = row.get("VolumeMax")
+                if self.VolumeStep is None: self.VolumeStep = row.get("VolumeStep")
+                if self.Commission is None: self.Commission = row.get("Commission")
+                if self.CommissionMode is None: self.CommissionMode = as_enum(CommissionMode, row.get("CommissionMode"))
+                if self.SwapLong is None: self.SwapLong = row.get("SwapLong")
+                if self.SwapShort is None: self.SwapShort = row.get("SwapShort")
+                if self.SwapMode is None: self.SwapMode = as_enum(SwapMode, row.get("SwapMode"))
+                if self.SwapExtraDay is None: self.SwapExtraDay = as_enum(Day, row.get("SwapExtraDay"))
+                if self.SwapSummerTime is None: self.SwapSummerTime = row.get("SwapSummerTime")
+                if self.SwapWinterTime is None: self.SwapWinterTime = row.get("SwapWinterTime")
+                if self.SwapPeriod is None: self.SwapPeriod = row.get("SwapPeriod")
+            return
         t = self.TickerUID.replace("'", "''")
         p = self.ProviderUID.replace("'", "''")
-        df = self._db_.select(schema=DatapointAPI.Schema, table=self.Table, condition=f"\"TickerUID\" = '{t}' AND \"ProviderUID\" = '{p}'", limit=1, legacy=False)
-        if df.is_empty():
-            return
-            
-        row = df.row(0, named=True)
-        if self.Digits is None and row.get("Digits") is not None: self.Digits = row.get("Digits")
-        if self.PointSize is None and row.get("PointSize") is not None: self.PointSize = row.get("PointSize")
-        if self.PipSize is None and row.get("PipSize") is not None: self.PipSize = row.get("PipSize")
-        if self.LotSize is None and row.get("LotSize") is not None: self.LotSize = row.get("LotSize")
-        if self.VolumeMin is None and row.get("VolumeMin") is not None: self.VolumeMin = row.get("VolumeMin")
-        if self.VolumeMax is None and row.get("VolumeMax") is not None: self.VolumeMax = row.get("VolumeMax")
-        if self.VolumeStep is None and row.get("VolumeStep") is not None: self.VolumeStep = row.get("VolumeStep")
-        if self.Commission is None and row.get("Commission") is not None: self.Commission = row.get("Commission")
+        row = super().pull(condition=f"\"TickerUID\" = '{t}' AND \"ProviderUID\" = '{p}'")
+        if not row: return
+        if self.Digits is None: self.Digits = row.get("Digits")
+        if self.PointSize is None: self.PointSize = row.get("PointSize")
+        if self.PipSize is None: self.PipSize = row.get("PipSize")
+        if self.LotSize is None: self.LotSize = row.get("LotSize")
+        if self.VolumeMin is None: self.VolumeMin = row.get("VolumeMin")
+        if self.VolumeMax is None: self.VolumeMax = row.get("VolumeMax")
+        if self.VolumeStep is None: self.VolumeStep = row.get("VolumeStep")
+        if self.Commission is None: self.Commission = row.get("Commission")
         if self.CommissionMode is None: self.CommissionMode = as_enum(CommissionMode, row.get("CommissionMode"))
-        if self.SwapLong is None and row.get("SwapLong") is not None: self.SwapLong = row.get("SwapLong")
-        if self.SwapShort is None and row.get("SwapShort") is not None: self.SwapShort = row.get("SwapShort")
+        if self.SwapLong is None: self.SwapLong = row.get("SwapLong")
+        if self.SwapShort is None: self.SwapShort = row.get("SwapShort")
         if self.SwapMode is None: self.SwapMode = as_enum(SwapMode, row.get("SwapMode"))
         if self.SwapExtraDay is None: self.SwapExtraDay = as_enum(Day, row.get("SwapExtraDay"))
-        if self.SwapSummerTime is None and row.get("SwapSummerTime") is not None: self.SwapSummerTime = row.get("SwapSummerTime")
-        if self.SwapWinterTime is None and row.get("SwapWinterTime") is not None: self.SwapWinterTime = row.get("SwapWinterTime")
-        if self.SwapPeriod is None and row.get("SwapPeriod") is not None: self.SwapPeriod = row.get("SwapPeriod")
-        self._pull_audit_(row)
+        if self.SwapSummerTime is None: self.SwapSummerTime = row.get("SwapSummerTime")
+        if self.SwapWinterTime is None: self.SwapWinterTime = row.get("SwapWinterTime")
+        if self.SwapPeriod is None: self.SwapPeriod = row.get("SwapPeriod")
 
-    def push(self, by: str = "SystemUser") -> None:
-        self._audit_(by)
-        data = self.dict(include_fields=True, include_properties=False, include_override_fields=False)
-        valid_keys = self.Structure().keys()
-        clean_data = {k: v for k, v in data.items() if k in valid_keys}
-        self._db_.upsert(schema=DatapointAPI.Schema, table=self.Table, data=clean_data, key=[self.ID.TickerUID, self.ID.ProviderUID])
+    def push(self, by: str, key: str | Sequence[str] | None = None) -> None:
+        super().push(by=by, key=key or [self.ID.TickerUID, self.ID.ProviderUID])
 
     def __str__(self) -> str:
         return f"{self.TickerUID}@{self.ProviderUID}"

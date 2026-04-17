@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
-from Library.Utility.Dataclass import DataclassAPI
+from Library.Database.Dataclass import DataclassAPI
 
 @dataclass(slots=True, kw_only=True)
 class PnLAPI(DataclassAPI):

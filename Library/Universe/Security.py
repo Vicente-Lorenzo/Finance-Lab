@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import ClassVar, TYPE_CHECKING
+from typing import ClassVar, Sequence, TYPE_CHECKING
 from dataclasses import dataclass, field
 
 from Library.Database.Dataframe import pl
@@ -12,7 +12,7 @@ from Library.Universe.Contract import ContractAPI
 from Library.Database.Datapoint import DatapointAPI
 if TYPE_CHECKING: from Library.Database import DatabaseAPI
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(kw_only=True)
 class SecurityAPI(DatapointAPI):
 
     Table: ClassVar[str] = "Security"
@@ -36,42 +36,34 @@ class SecurityAPI(DatapointAPI):
         self.TickerUID = TickerAPI.normalize(self.TickerUID)
         self.ProviderUID = ProviderAPI.normalize(self.ProviderUID)
         self._db_ = self._connect_(db)
-        
         if not self.CategoryUID:
             t = TickerAPI(UID=self.TickerUID, db=self._db_)
             self.CategoryUID = t.Category or ""
-            
         self._db_.migrate(schema=DatapointAPI.Schema, table=self.Table, structure=self.Structure())
         self.pull()
 
-    def pull(self) -> None:
-        p = self.ProviderUID.replace("'", "''")
-        c = self.CategoryUID.replace("'", "''")
-        t = self.TickerUID.replace("'", "''")
-        df = self._db_.select(schema=DatapointAPI.Schema, table=self.Table, condition=f"\"ProviderUID\" = '{p}' AND \"CategoryUID\" = '{c}' AND \"TickerUID\" = '{t}'", limit=1, legacy=False)
-        if df.is_empty():
-            df = self._db_.select(schema=DatapointAPI.Schema, table=self.Table, condition=f"\"ProviderUID\" = '{p}' AND \"TickerUID\" = '{t}'", limit=1, legacy=False)
-            
-        if df.is_empty():
-            if not self.CategoryUID:
-                raise ValueError(f"Security '{self.TickerUID}@{self.ProviderUID}' not found in database.")
+    def pull(self, condition: str | None = None) -> None:
+        if condition:
+            row = super().pull(condition=condition)
+            if row:
+                if not self.CategoryUID: self.CategoryUID = row.get("CategoryUID")
             return
-            
-        row = df.row(0, named=True)
+        p = self.ProviderUID.replace("'", "''")
+        c = (self.CategoryUID or "").replace("'", "''")
+        t = self.TickerUID.replace("'", "''")
+        row = super().pull(condition=f"\"ProviderUID\" = '{p}' AND \"CategoryUID\" = '{c}' AND \"TickerUID\" = '{t}'")
+        if not row: row = super().pull(condition=f"\"ProviderUID\" = '{p}' AND \"TickerUID\" = '{t}'")
+        if not row:
+            if not self.CategoryUID: raise ValueError(f"Security '{self.TickerUID}@{self.ProviderUID}' not found in database.")
+            return
         if not self.CategoryUID: self.CategoryUID = row.get("CategoryUID")
-        self._pull_audit_(row)
 
-    def push(self, by: str = "SystemUser") -> None:
-        self._audit_(by)
+    def push(self, by: str, key: str | Sequence[str] | None = None) -> None:
         self.Ticker.push(by=by)
         self.Provider.push(by=by)
-        if self.CategoryUID:
-            self.Category.push(by=by)
+        if self.CategoryUID: self.Category.push(by=by)
         self.Contract.push(by=by)
-        data = self.dict(include_fields=True, include_properties=False, include_override_fields=False)
-        valid_keys = self.Structure().keys()
-        clean_data = {k: v for k, v in data.items() if k in valid_keys}
-        self._db_.upsert(schema=DatapointAPI.Schema, table=self.Table, data=clean_data, key=[self.ID.ProviderUID, self.ID.CategoryUID, self.ID.TickerUID])
+        super().push(by=by, key=key or [self.ID.ProviderUID, self.ID.CategoryUID, self.ID.TickerUID])
 
     @property
     def Ticker(self) -> TickerAPI:

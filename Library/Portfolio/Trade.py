@@ -3,10 +3,12 @@ from __future__ import annotations
 from datetime import datetime
 from dataclasses import dataclass, field, InitVar
 
-from Library.Utility.Dataclass import overridefield
-from Library.Universe.Symbol import SymbolAPI
+from typing import TYPE_CHECKING
+
+from Library.Database.Dataclass import overridefield
 from Library.Portfolio.Position import PositionAPI
 from Library.Market.Timestamp import TimestampAPI
+if TYPE_CHECKING: from Library.Universe.Contract import ContractAPI
 
 @dataclass(slots=True, kw_only=True)
 class TradeAPI(PositionAPI):
@@ -34,7 +36,7 @@ class TradeAPI(PositionAPI):
                       swap_pnl: float,
                       net_pnl: float,
                       entry_balance: float,
-                      symbol: SymbolAPI,
+                      contract: ContractAPI,
                       exit_timestamp: datetime):
 
         PositionAPI.__post_init__(self,
@@ -54,7 +56,7 @@ class TradeAPI(PositionAPI):
             swap_pnl=swap_pnl,
             net_pnl=net_pnl,
             entry_balance=entry_balance,
-            symbol=symbol
+            contract=contract
         )
 
         self._exit_timestamp_ = TimestampAPI(DateTime=exit_timestamp)

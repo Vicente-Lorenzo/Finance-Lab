@@ -4,24 +4,24 @@ import math
 from typing import TYPE_CHECKING
 from dataclasses import dataclass, field
 
-from Library.Utility.Dataclass import DataclassAPI
-if TYPE_CHECKING: from Library.Universe.Symbol import SymbolAPI
+from Library.Database.Dataclass import DataclassAPI
+if TYPE_CHECKING: from Library.Universe.Contract import ContractAPI
 
 @dataclass(slots=True, kw_only=True)
 class PriceAPI(DataclassAPI):
     Price: float = field(init=True, repr=True)
     Reference: float = field(default=None, init=True, repr=True)
-    Symbol: SymbolAPI = field(default=None, init=True, repr=True)
+    Contract: ContractAPI = field(default=None, init=True, repr=True)
 
     @property
     def Distance(self) -> float:
         return self.Price - self.Reference
     @property
     def Points(self) -> float:
-        return self.Distance / self.Symbol.PointSize
+        return self.Distance / self.Contract.PointSize
     @property
     def Pips(self) -> float:
-        return self.Distance / self.Symbol.PipSize
+        return self.Distance / self.Contract.PipSize
     @property
     def Percentage(self):
         return (self.Price / self.Reference) - 1.0

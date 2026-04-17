@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from enum import Enum
 from datetime import datetime
+from typing import TYPE_CHECKING
 from dataclasses import dataclass, field, InitVar
 
-from Library.Utility.Dataclass import overridefield, DataclassAPI
+from Library.Database.Dataclass import overridefield, DataclassAPI
 from Library.Market.Timestamp import TimestampAPI
 from Library.Market.Price import PriceAPI
-from Library.Universe.Symbol import SymbolAPI
+if TYPE_CHECKING: from Library.Universe.Contract import ContractAPI
 
 class TickMode(Enum):
     Accurate = 0
@@ -23,21 +24,21 @@ class TickAPI(DataclassAPI):
     AskQuoteConversion: float = field(default=None, init=True, repr=True)
     BidQuoteConversion: float = field(default=None, init=True, repr=True)
 
-    Symbol: InitVar[SymbolAPI] = field(default=None, init=True, repr=False)
+    Contract: InitVar[ContractAPI] = field(default=None, init=True, repr=False)
 
     _timestamp_: TimestampAPI = field(default=None, init=False, repr=False)
     _ask_: PriceAPI = field(default=None, init=False, repr=False)
     _bid_: PriceAPI = field(default=None, init=False, repr=False)
 
-    _symbol_: SymbolAPI = field(default=None, init=False, repr=False)
+    _contract_: ContractAPI = field(default=None, init=False, repr=False)
 
     def __post_init__(self,
                       timestamp: datetime,
                       ask: float | PriceAPI,
                       bid: float | PriceAPI,
-                      symbol: SymbolAPI) -> None:
+                      contract: ContractAPI) -> None:
 
-        self._symbol_ = symbol
+        self._contract_ = contract
         self._timestamp_ = TimestampAPI(DateTime=timestamp)
 
         if isinstance(ask, PriceAPI) or isinstance(bid, PriceAPI):
@@ -46,8 +47,8 @@ class TickAPI(DataclassAPI):
         else:
             ask_price = ask
             bid_price = bid
-            self._ask_ = PriceAPI(Price=ask_price, Reference=bid_price, Symbol=self._symbol_)
-            self._bid_ = PriceAPI(Price=bid_price, Reference=ask_price, Symbol=self._symbol_)
+            self._ask_ = PriceAPI(Price=ask_price, Reference=bid_price, Contract=self._contract_)
+            self._bid_ = PriceAPI(Price=bid_price, Reference=ask_price, Contract=self._contract_)
 
     @property
     @overridefield
@@ -68,14 +69,14 @@ class TickAPI(DataclassAPI):
 
     @property
     def Spread(self) -> PriceAPI:
-        return PriceAPI(Price=self._ask_.Price - self._bid_.Price, Reference=self._ask_.Price, Symbol=self._symbol_)
+        return PriceAPI(Price=self._ask_.Price - self._bid_.Price, Reference=self._ask_.Price, Contract=self._contract_)
 
     @property
     @overridefield
-    def Symbol(self) -> SymbolAPI:
-        return self._symbol_
-    @Symbol.setter
-    def Symbol(self, symbol) -> None:
-        self._symbol_ = symbol
-        self._ask_.Symbol = self._symbol_
-        self._bid_.Symbol = self._symbol_
+    def Contract(self) -> ContractAPI:
+        return self._contract_
+    @Contract.setter
+    def Contract(self, contract) -> None:
+        self._contract_ = contract
+        self._ask_.Contract = self._contract_
+        self._bid_.Contract = self._contract_

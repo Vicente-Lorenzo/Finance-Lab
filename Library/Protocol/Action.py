@@ -1,7 +1,7 @@
 from enum import Enum
 from dataclasses import dataclass, field
 
-from Library.Utility.Dataclass import DataclassAPI
+from Library.Database.Dataclass import DataclassAPI
 from Library.Portfolio.Position import PositionType
 from Library.Utility.Typing import cast
 

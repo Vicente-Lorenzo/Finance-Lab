@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 from dataclasses import dataclass, field, InitVar
 
-from Library.Utility.Dataclass import overridefield, DataclassAPI
+from Library.Database.Dataclass import overridefield, DataclassAPI
 from Library.Market.Timestamp import TimestampAPI
 from Library.Market.Price import PriceAPI
-from Library.Universe.Symbol import SymbolAPI
 from Library.Market.Tick import TickAPI
+if TYPE_CHECKING: from Library.Universe.Contract import ContractAPI
 
 @dataclass(slots=True)
 class BarAPI(DataclassAPI):
@@ -55,7 +56,7 @@ class BarAPI(DataclassAPI):
 
     TickVolume: float = field(default=None, init=True, repr=True)
 
-    Symbol: InitVar[SymbolAPI] = field(default=None, init=True, repr=False)
+    Contract: InitVar[ContractAPI] = field(default=None, init=True, repr=False)
 
     _timestamp_: TimestampAPI = field(default=None, init=False, repr=False)
     _gap_tick_: TickAPI = field(default=None, init=False, repr=False)
@@ -64,7 +65,7 @@ class BarAPI(DataclassAPI):
     _low_tick_: TickAPI = field(default=None, init=False, repr=False)
     _close_tick_: TickAPI = field(default=None, init=False, repr=False)
 
-    _symbol_: SymbolAPI = field(default=None, init=False, repr=False)
+    _contract_: ContractAPI = field(default=None, init=False, repr=False)
 
     def __post_init__(self,
                       timestamp: datetime,
@@ -103,15 +104,15 @@ class BarAPI(DataclassAPI):
                       close_bid_base_conversion: float,
                       close_ask_quote_conversion: float,
                       close_bid_quote_conversion: float,
-                      symbol: SymbolAPI) -> None:
+                      contract: ContractAPI) -> None:
 
-        self._symbol_ = symbol
+        self._contract_ = contract
         self._timestamp_ = TimestampAPI(DateTime=timestamp)
 
         self._gap_tick_ = TickAPI(
             Timestamp=gap_timestamp,
-            Ask=PriceAPI(Price=gap_ask, Reference=gap_ask, Symbol=self._symbol_),
-            Bid=PriceAPI(Price=gap_bid, Reference=gap_bid, Symbol=self._symbol_),
+            Ask=PriceAPI(Price=gap_ask, Reference=gap_ask, Contract=self._contract_),
+            Bid=PriceAPI(Price=gap_bid, Reference=gap_bid, Contract=self._contract_),
             AskBaseConversion=gap_ask_base_conversion,
             BidBaseConversion=gap_bid_base_conversion,
             AskQuoteConversion=gap_ask_quote_conversion,
@@ -119,8 +120,8 @@ class BarAPI(DataclassAPI):
         )
         self._open_tick_ = TickAPI(
             Timestamp=open_timestamp,
-            Ask=PriceAPI(Price=open_ask, Reference=gap_ask, Symbol=self._symbol_),
-            Bid=PriceAPI(Price=open_bid, Reference=gap_bid, Symbol=self._symbol_),
+            Ask=PriceAPI(Price=open_ask, Reference=gap_ask, Contract=self._contract_),
+            Bid=PriceAPI(Price=open_bid, Reference=gap_bid, Contract=self._contract_),
             AskBaseConversion=open_ask_base_conversion,
             BidBaseConversion=open_bid_base_conversion,
             AskQuoteConversion=open_ask_quote_conversion,
@@ -128,8 +129,8 @@ class BarAPI(DataclassAPI):
         )
         self._high_tick_ = TickAPI(
             Timestamp=high_timestamp,
-            Ask=PriceAPI(Price=high_ask, Reference=open_ask, Symbol=self._symbol_),
-            Bid=PriceAPI(Price=high_bid, Reference=open_bid, Symbol=self._symbol_),
+            Ask=PriceAPI(Price=high_ask, Reference=open_ask, Contract=self._contract_),
+            Bid=PriceAPI(Price=high_bid, Reference=open_bid, Contract=self._contract_),
             AskBaseConversion=high_ask_base_conversion,
             BidBaseConversion=high_bid_base_conversion,
             AskQuoteConversion=high_ask_quote_conversion,
@@ -137,8 +138,8 @@ class BarAPI(DataclassAPI):
         )
         self._low_tick_ = TickAPI(
             Timestamp=low_timestamp,
-            Ask=PriceAPI(Price=low_ask, Reference=open_ask, Symbol=self._symbol_),
-            Bid=PriceAPI(Price=low_bid, Reference=open_bid, Symbol=self._symbol_),
+            Ask=PriceAPI(Price=low_ask, Reference=open_ask, Contract=self._contract_),
+            Bid=PriceAPI(Price=low_bid, Reference=open_bid, Contract=self._contract_),
             AskBaseConversion=low_ask_base_conversion,
             BidBaseConversion=low_bid_base_conversion,
             AskQuoteConversion=low_ask_quote_conversion,
@@ -146,8 +147,8 @@ class BarAPI(DataclassAPI):
         )
         self._close_tick_ = TickAPI(
             Timestamp=close_timestamp,
-            Ask=PriceAPI(Price=close_ask, Reference=open_ask, Symbol=self._symbol_),
-            Bid=PriceAPI(Price=close_bid, Reference=open_bid, Symbol=self._symbol_),
+            Ask=PriceAPI(Price=close_ask, Reference=open_ask, Contract=self._contract_),
+            Bid=PriceAPI(Price=close_bid, Reference=open_bid, Contract=self._contract_),
             AskBaseConversion=close_ask_base_conversion,
             BidBaseConversion=close_bid_base_conversion,
             AskQuoteConversion=close_ask_quote_conversion,
@@ -183,8 +184,8 @@ class BarAPI(DataclassAPI):
     def RangeTick(self) -> TickAPI:
         return TickAPI(
             Timestamp=self._open_tick_.Timestamp.DateTime,
-            Ask=PriceAPI(self._high_tick_.Ask.Price - self._low_tick_.Ask.Price, Reference=self._open_tick_.Ask.Price, Symbol=self._symbol_),
-            Bid=PriceAPI(self._high_tick_.Bid.Price - self._low_tick_.Bid.Price, Reference=self._open_tick_.Bid.Price, Symbol=self._symbol_),
+            Ask=PriceAPI(self._high_tick_.Ask.Price - self._low_tick_.Ask.Price, Reference=self._open_tick_.Ask.Price, Contract=self._contract_),
+            Bid=PriceAPI(self._high_tick_.Bid.Price - self._low_tick_.Bid.Price, Reference=self._open_tick_.Bid.Price, Contract=self._contract_),
             AskBaseConversion=self._open_tick_.AskBaseConversion,
             BidBaseConversion=self._open_tick_.BidBaseConversion,
             AskQuoteConversion=self._open_tick_.AskQuoteConversion,
@@ -193,13 +194,13 @@ class BarAPI(DataclassAPI):
 
     @property
     @overridefield
-    def Symbol(self) -> SymbolAPI:
-        return self._symbol_
-    @Symbol.setter
-    def Symbol(self, symbol) -> None:
-        self._symbol_ = symbol
-        self._gap_tick_.Symbol = self._symbol_
-        self._open_tick_.Symbol = self._symbol_
-        self._high_tick_.Symbol = self._symbol_
-        self._low_tick_.Symbol = self._symbol_
-        self._close_tick_.Symbol = self._symbol_
+    def Contract(self) -> ContractAPI:
+        return self._contract_
+    @Contract.setter
+    def Contract(self, contract) -> None:
+        self._contract_ = contract
+        self._gap_tick_.Contract = self._contract_
+        self._open_tick_.Contract = self._contract_
+        self._high_tick_.Contract = self._contract_
+        self._low_tick_.Contract = self._contract_
+        self._close_tick_.Contract = self._contract_

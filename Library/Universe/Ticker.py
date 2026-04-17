@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import ClassVar, TYPE_CHECKING
+from typing import ClassVar, Sequence, TYPE_CHECKING
 from dataclasses import dataclass, field
 
 from Library.Database.Dataframe import pl
@@ -9,7 +9,7 @@ from Library.Universe.Category import CategoryAPI
 from Library.Database.Datapoint import DatapointAPI
 if TYPE_CHECKING: from Library.Database import DatabaseAPI
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(kw_only=True)
 class TickerAPI(DatapointAPI):
 
     Table: ClassVar[str] = "Ticker"
@@ -61,19 +61,25 @@ class TickerAPI(DatapointAPI):
         self._db_.migrate(schema=DatapointAPI.Schema, table=self.Table, structure=self.Structure())
         self.pull()
 
-    def pull(self) -> None:
+    def pull(self, condition: str | None = None) -> None:
+        if condition:
+            row = super().pull(condition=condition)
+            if row:
+                if not self.UID: self.UID = row.get("UID")
+                if self.Category is None: self.Category = row.get("Category")
+                if self.BaseAsset is None: self.BaseAsset = row.get("BaseAsset")
+                if self.BaseName is None: self.BaseName = row.get("BaseName")
+                if self.QuoteAsset is None: self.QuoteAsset = row.get("QuoteAsset")
+                if self.QuoteName is None: self.QuoteName = row.get("QuoteName")
+                if self.Description is None: self.Description = row.get("Description")
+            return
         if not self.UID: return
         escaped = self.UID.replace("'", "''")
-        df = self._db_.select(schema=DatapointAPI.Schema, table=self.Table, condition=f"\"UID\" = '{escaped}'", limit=1, legacy=False)
-        if df.is_empty():
-            df = self._db_.select(schema=DatapointAPI.Schema, table=self.Table, condition=f"\"Description\" = '{escaped}'", limit=1, legacy=False)
-            
-        if df.is_empty():
-            if self.BaseAsset is None and self.QuoteAsset is None:
-                raise ValueError(f"Ticker '{self.UID}' not found in database and lacks required fields for creation.")
+        row = super().pull(condition=f"\"UID\" = '{escaped}'")
+        if not row: row = super().pull(condition=f"\"Description\" = '{escaped}'")
+        if not row:
+            if self.BaseAsset is None and self.QuoteAsset is None: raise ValueError(f"Ticker '{self.UID}' not found in database and lacks required fields for creation.")
             return
-            
-        row = df.row(0, named=True)
         if not self.UID: self.UID = row.get("UID")
         if self.Category is None: self.Category = row.get("Category")
         if self.BaseAsset is None: self.BaseAsset = row.get("BaseAsset")
@@ -81,14 +87,9 @@ class TickerAPI(DatapointAPI):
         if self.QuoteAsset is None: self.QuoteAsset = row.get("QuoteAsset")
         if self.QuoteName is None: self.QuoteName = row.get("QuoteName")
         if self.Description is None: self.Description = row.get("Description")
-        self._pull_audit_(row)
 
-    def push(self, by: str = "SystemUser") -> None:
-        self._audit_(by)
-        data = self.dict(include_fields=True, include_properties=False, include_override_fields=False)
-        valid_keys = self.Structure().keys()
-        clean_data = {k: v for k, v in data.items() if k in valid_keys}
-        self._db_.upsert(schema=DatapointAPI.Schema, table=self.Table, data=clean_data, key=self.ID.UID)
+    def push(self, by: str, key: str | Sequence[str] | None = None) -> None:
+        super().push(by=by, key=key or self.ID.UID)
 
     @property
     def Upper(self) -> str:
