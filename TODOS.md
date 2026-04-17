@@ -5,98 +5,70 @@ This document tracks the phased implementation to modernize the Quant Trading Fr
 
 ---
 
-## Architectural Flattening & Renaming
+## Database Setup (`Quant` on PostgreSQL + TimescaleDB)
 
-Keep `Library/System/` (singular) as the home for all execution drivers. The abstract base stays `SystemAPI`; concrete drivers use the `*SystemAPI` suffix (mirrors `Library/Database/*DatabaseAPI`).
+Stand up the full seven-schema database described in `DATABASE.md`. Each table has a companion class inheriting `PostgresDatabaseAPI` with a typed `_STRUCTURE_` so the framework can `migrate()` / `create()` / `upsert()` it directly. Work schema-by-schema; do not skip ahead until the previous schema migrates cleanly.
 
-- [x] **Promote `Library/System/`**
-  - [x] Move `Library/Robots/System/System.py`        -> `Library/System/System.py` (abstract `SystemAPI`).
-  - [x] Move `Library/Robots/System/Backtesting.py`  -> `Library/System/Backtesting.py` (`BacktestingSystemAPI`).
-  - [x] Move `Library/Robots/System/Optimisation.py` -> `Library/System/Optimization.py` (`OptimizationSystemAPI`, US spelling).
-  - [x] Move `Library/Robots/System/Learning.py`     -> `Library/System/Learning.py` (`LearningSystemAPI`).
-  - [x] Move `Library/Robots/System/Native.py`       -> `Library/System/Trading.py` (`TradingSystemAPI`).
-- [x] **Flatten core domains**
-  - [x] `Library/Robots/Strategy/` -> `Library/Strategy/`.
-  - [x] `Library/Robots/Engine/`   -> `Library/Engine/`.
-  - [x] `Library/Robots/Analyst/`  -> `Library/Analyst/`.
-  - [x] `Library/Robots/Manager/`  -> `Library/Manager/`.
-  - [x] `Library/Robots/Protocol/` -> `Library/Protocol/`.
-- [x] **Cleanup**
-  - [x] Move `Library/Robots/NativeBot.py` -> `Library/System/TradingBot.py` (example cTrader entrypoint, class renamed `NativeBot` -> `TradingBot`).
-  - [x] Move `Library/Robots/Main.py`      -> `Library/System/Main.py` (CLI; deeper rework in later phase).
-  - [x] Delete the empty `Library/Robots/`.
-- [x] **Global rename**
-  - [x] `Library.Robots.X` -> `Library.X` across repo (every Python file).
-  - [x] Class renames: `NativeSystemAPI` -> `TradingSystemAPI`, `OptimisationSystemAPI` -> `OptimizationSystemAPI`.
-  - [x] Internal US-spelling pass in `Optimization.py` (methods `run_optimisation_stage` -> `run_optimization_stage`, constants `WFOPT*`, log strings, etc.).
-  - [x] Renamed every `Library/Parameters/**/Optimisation.yml` -> `Optimization.yml` (125 files).
-- [x] **Verify**
-  - [x] `pytest Tests/` -> 71 passed (pre-existing `Library.Classes` imports in `Main.py`/some older files remain broken but untouched by this phase — tracked separately).
-
----
-
-## Adopt the `Security` Domain Model
-
-`Library/Security/` already defines `ProviderAPI`, `CategoryAPI`, `TickerAPI`, `TimeframeAPI`. Once `TradingAPI` exposes the real shape of runtime data from cTrader, collapse the loose `broker`/`group`/`symbol`/`timeframe` strings into a single `SecurityAPI`.
-
-- [ ] **Refactor `SystemAPI` signature**
-  - [ ] Replace `broker`/`group`/`symbol`/`timeframe` strings with a single `security: SecurityAPI` argument.
-  - [ ] Propagate through `TradingAPI`, `BacktestingAPI`, `OptimizationAPI`, `LearningAPI`.
-- [ ] **Update `TradingBot.py`**
-  - [ ] Build the `SecurityAPI` from `self.Account.BrokerName` / `self.Symbol.Name` / `self.TimeFrame.Name`.
-- [ ] **Update parameters lookup**
-  - [ ] `ParametersAPI` should key on `SecurityAPI` (or its tuple), not nested dict strings.
+- [ ] **Schema: `Universe`** (static reference data)
+  - [ ] `CategoryDatabaseAPI` — asset classes (Equity, FX, Crypto, Futures, ...). Replaces the previously separate `AssetClass` table.
+  - [ ] `ProviderDatabaseAPI` — data/broker providers (Bloomberg, YahooFinance, cTrader_ICMarkets, ...).
+  - [ ] `TickerDatabaseAPI` — canonical tickers (EURUSD, AAPL, ...).
+  - [ ] `TimeframeDatabaseAPI` — supported timeframes (M1, M5, H1, D1, ...).
+  - [ ] `SecurityDatabaseAPI` — composite (Ticker + Provider + Category) with provider-specific symbol mapping.
+  - [ ] `SymbolDatabaseAPI` — broker-specific tick/lot/swap/commission metadata (already exists in `Warehouse/Symbol.py`; wire into `Universe` schema).
+- [ ] **Schema: `Market`** (hypertables)
+  - [ ] `TickDatabaseAPI`, `BarDatabaseAPI` moved under `Market` schema; configure 1-minute base bar + continuous aggregates for H1/D1/W1/MN1.
+- [ ] **Schema: `Alternative`** (hypertables)
+  - [ ] `EconomicDatabaseAPI`, `SentimentDatabaseAPI`.
+- [ ] **Schema: `Indicator`** (hypertables, one per indicator)
+  - [ ] `SMADatabaseAPI`, `RSIDatabaseAPI`, `BollingerBandsDatabaseAPI`, ... driven off `Library/Indicator/`.
+- [ ] **Schema: `Portfolio`**
+  - [ ] `PositionDatabaseAPI` (open exposure) and `TradeDatabaseAPI` (closed history hypertable).
+- [ ] **Schema: `Schedule`**
+  - [ ] `WorkflowDatabaseAPI`, `TaskDatabaseAPI`, `RunDatabaseAPI` for the Prefect-style orchestrator.
+- [ ] **Schema: `Logging`**
+  - [ ] `EventDatabaseAPI`, `ErrorDatabaseAPI` for centralized audit/error streams.
+- [ ] **Parameter storage (folded in once Universe is live)**
+  - [ ] Add `Configurations` table keyed on `(Provider, Category, Ticker, Timeframe, Mode, Strategy)` with JSONB payload; `mode` values: `Backtesting` / `Optimization` / `Learning` / `Trading`.
+  - [ ] DSL resolver `Library/Parameters/Resolver.py` expands stage ranges (`1-4`), `Result=N` references, and choice lists; Pydantic v2 models validate after resolution.
+  - [ ] YAML migration script (`Library/Parameters/migrate_yaml.py`) is idempotent (upsert).
+  - [ ] Dash editor at `Library/Workflow/Frontend/Configurations.py` with server-side validation.
+- [ ] **Verification**
+  - [ ] `Tests/test_Universe.py` — round-trip create / upsert / select for each Universe table.
+  - [ ] End-to-end migration smoke test: empty DB → `migration()` → all seven schemas populated with expected tables.
 
 ---
 
-## Configuration Storage & DSL Resolver
+## `TradingSystemAPI` Consolidation & Hardening
 
-The YAMLs embed a mini-language (`1-4:` stage ranges, `Result=1` cross-references, choice lists). Storage is secondary — the resolver is the real work.
+`Trading.py` is now the consolidated implementation. `BacktestingSystemAPI`, `OptimizationSystemAPI`, `LearningSystemAPI` continue to be driven from `Library/System/Main.py` as a CLI. `TradingSystemAPI` is driven exclusively through cTrader Desktop via the `Connector` cBot — no external Python launch path.
 
-- [ ] **Formalize the config DSL**
-  - [ ] Document the grammar: stage ranges (`1-4`, `3-4`), result references (`Result=N`), choice lists (`[ WMA, HMA, ... ]`).
-  - [ ] Write `Library/Parameters/Resolver.py`: expands ranges, resolves `Result=N` against prior stages, validates references.
-  - [ ] Unit tests in `Tests/test_Resolver.py` covering each construct on the existing NNFX YAML.
-- [ ] **Pydantic schema layer**
-  - [ ] Define Pydantic v2 models for `MoneyManagement`, `RiskManagement`, `SignalManagement`, `AnalystManagement`, `ManagerManagement`.
-  - [ ] Validation runs *after* the resolver expands the DSL.
-- [ ] **Postgres JSONB schema**
-  - [ ] Table `Configurations(id SERIAL PK, provider TEXT, category TEXT, ticker TEXT, timeframe TEXT, mode TEXT, strategy TEXT, parameters JSONB, updated_at TIMESTAMPTZ)`.
-  - [ ] Unique index on `(provider, category, ticker, timeframe, mode, strategy)`.
-  - [ ] `mode` values: `Backtesting` / `Optimization` / `Learning` / `Trading`.
-- [ ] **YAML -> database migration**
-  - [ ] One-off script `Library/Parameters/migrate_yaml.py` walks `Library/Parameters/<Provider>/<Category>/<Ticker>/<Timeframe>/*.yml` and inserts raw payloads.
-  - [ ] Migration must be idempotent (upsert on the unique key).
-- [ ] **Update systems**
-  - [ ] `BacktestingAPI`, `OptimizationAPI`, `LearningAPI`, `TradingAPI` fetch payload by `SecurityAPI` + mode, run it through Resolver + Pydantic, then use it.
-- [ ] **Dash editor**
-  - [ ] Page `Library/Workflow/Frontend/Configurations.py` lists configs filterable by provider/category/ticker/timeframe.
-  - [ ] JSON editor component (e.g. `dash-ace` or `dash-jsoneditor`) with server-side Pydantic validation on save.
-  - [ ] Save returns resolver errors inline.
-
----
-
-## `TradingAPI` Consolidation & Hardening
-
-`Native.py` is a *first draft* of `TradingAPI`. Finalize it by folding in everything still scattered across the archived pipe implementation and hardening the `clr` boundary.
-
-- [ ] **Absorb archived logic into `TradingAPI`**
-  - [ ] Port missing conversion / event handling from `Archive/Sources/Robots/SystemAPI.cs` (asset-type mapping, sentinel handling, instance-id routing) into `Library/System/Trading.py`.
-  - [ ] Port any `Archive/Sources/Indicators/SystemAPI.cs` logic that belongs on the Python side (e.g. bar-series bootstrap).
-  - [ ] Port remaining behaviors from `Archive/Library/System/Realtime.py` not yet in `Trading.py` (sync buffer init, start/stop timestamp capture, database push-on-shutdown paths).
+- [x] **Absorb archived logic into `TradingSystemAPI`**
+  - [x] Port conversion / event handling from `Archive/Sources/Robots/RobotAPI.cs` (asset-type mapping, sentinel handling, instance-id routing, per-ask/bid bar accumulation).
+  - [x] Port `LastPositionData` tracking for volume vs stop-loss vs take-profit modification detection.
+  - [x] Port position ownership by `pos.Label == api.InstanceId`.
+  - [x] Port `FindConversions` raising on not-found (no silent fallback).
+  - [x] Port target-trigger independence (multiple targets can fire on one tick; suppress `TickClosed` when any fires).
+  - [x] Port sync buffer init, start/stop timestamp capture, database push-on-shutdown from `Archive/Library/System/Realtime.py`.
+  - [x] Fix queue protocol to FIFO data items so composite updates (bar+account+position+trade) deserialize in `SystemAPI.deploy`.
+- [x] **Exception containment**
+  - [x] Every `on_*` handler (`on_tick`, `on_bar_closed`, `_on_position_*`) wrapped in try/except; unhandled exceptions call `api.Stop()`.
+  - [x] Every `send_action_*` checks `result.IsSuccessful` and calls `api.Stop()` on failure.
+- [x] **Consolidate C# cBots into `Connector`**
+  - [x] Single `Sources/Robots/Connector/Connector.cs` replacing `Strategy Download/NNFX/DDPG`.
+  - [x] `Strategy`, `Group`, `Console/Telegram/File` verbose exposed as `[Parameter]`.
+  - [x] Embeds Python via `pythonnet`; `Py.GIL()` guards every callback.
+  - [x] All logic lives in Python (`Library/System/TradingBot.py` + `TradingSystemAPI`); C# side is purely a thin event forwarder.
+- [ ] **Deployment docs**
+  - [ ] Document `PythonHome` / `ProjectRoot` parameters and the `Quant` conda env requirement for `pythonnet`.
+  - [ ] Document how cTrader Desktop discovers the `Connector` assembly after `dotnet build Sources/`.
 - [ ] **Tick-thread safety audit**
-  - [ ] Confirm `TradingAPI.on_tick` does no blocking work beyond `queue.put`; cTrader's tick thread must return fast.
+  - [ ] Confirm `TradingSystemAPI.on_tick` does no blocking work beyond `queue.put` + target check; cTrader's tick thread must return fast.
   - [ ] Benchmark worst-case FX tick rate vs worker-thread drain rate.
-- [ ] **Exception containment**
-  - [ ] Wrap every `on_*` handler in `TradingBot.py` and `TradingAPI` with try/except routed to `HandlerAPI` — the `clr` boundary swallows raw Python exceptions.
 - [ ] **Supervisor / watchdog**
   - [ ] On unhandled worker-thread exception: flush state, halt new orders, alert via Telegram log handler. Never leave positions unmanaged.
-- [ ] **Deployment docs**
-  - [ ] Document the `Quant` conda env path cTrader expects and how to configure `PYTHONNET_PYDLL` / cTrader's Python interpreter setting.
-- [ ] **C# template cleanup**
-  - [ ] Strip any remaining named-pipe code from `Sources/Robots/Strategy NNFX/.../Strategy NNFX.cs` and align the shape with `TradingBot.py`.
 - [ ] **Live integration test**
-  - [ ] Attach NNFX bot to a demo EURUSD chart; verify `on_start` -> `on_bar_closed` -> order execution -> `on_stop` round-trip with no pipe dependency.
+  - [ ] Attach `Connector` to a demo EURUSD chart with `Strategy=NNFX`; verify `on_start` -> `on_bar_closed` -> order execution -> `on_stop` round-trip with no pipe dependency.
 
 ---
 
