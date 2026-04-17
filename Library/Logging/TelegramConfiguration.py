@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from Library.Utility.Dataclass import DataclassAPI
+from Library.Database.Dataclass import DataclassAPI
 
 @dataclass(slots=True, kw_only=True)
 class TelegramConfigurationAPI(DataclassAPI):
