@@ -6,7 +6,7 @@ from re import Pattern, compile, search
 from dataclasses import dataclass, field, InitVar
 
 from Library.Utility.Typing import contains
-from Library.Utility.Dataclass import DataclassAPI
+from Library.Database.Dataclass import DataclassAPI
 from Library.Utility.Runtime import is_notebook, find_notebook
 
 def inspect_separator(*, builder: type[PurePath] = Path) -> str:

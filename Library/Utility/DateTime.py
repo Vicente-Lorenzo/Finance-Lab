@@ -1,7 +1,7 @@
 from datetime import datetime, date, time
 from dateutil.relativedelta import relativedelta, weekday
 
-from Library.Utility.Enumeration import Enumeration
+from Library.Database.Enumeration import Enumeration
 
 class Day(Enumeration):
     Monday = 0

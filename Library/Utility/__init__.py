@@ -117,12 +117,12 @@ from Library.Utility.IO import (
     copy,
     smartlink
 )
-from Library.Utility.Dataclass import (
+from Library.Database.Dataclass import (
     overridefield,
     DatametaAPI,
     DataclassAPI
 )
-from Library.Utility.Dataframe import DataframeAPI
+from Library.Database.Dataframe import DataframeAPI
 from Library.Utility.Service import ServiceAPI
 
 __all__ = [
