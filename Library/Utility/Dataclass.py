@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from enum import Enum
 from typing import Type, Any
 from dataclasses import dataclass, InitVar
 
@@ -63,12 +62,9 @@ class DataclassAPI:
         super(DataclassAPI, cls).__init_subclass__(**kwargs)
         cls.ID = DatametaAPI(cls)
 
-    @classproperty
-    def Structure(cls) -> dict:
-        return {}
-
     def parse(self, name):
         f = getattr(self, name)
+        from enum import Enum
         if isinstance(f, Enum): return f.name
         from Library.Market.Timestamp import TimestampAPI
         if isinstance(f, TimestampAPI): return f.DateTime
