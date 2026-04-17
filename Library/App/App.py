@@ -462,7 +462,7 @@ class AppAPI:
 
     def __init_notification_layout__(self) -> Component:
         return html.Div(
-            id=self.GLOBAL_NOTIFICATION_ID, 
+            id=self.GLOBAL_NOTIFICATION_ID,
             className="notifications"
         )
 

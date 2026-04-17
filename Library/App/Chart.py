@@ -109,7 +109,7 @@ class HoloviewsAPI(ComponentAPI):
 
     figure: Any = field(default=None)
     config: dict = field(default=None)
-    
+
     def build(self) -> list[Component]:
         if self.figure is None: return super().build()
         import holoviews as hv
@@ -124,7 +124,7 @@ class ChartAPI(ComponentAPI):
 
     figure: Any = field(default=None)
     config: dict = field(default=None)
-    
+
     def build(self) -> list[Component]:
         fig = self.figure
         fig_module = type(fig).__module__ if fig is not None else ""
