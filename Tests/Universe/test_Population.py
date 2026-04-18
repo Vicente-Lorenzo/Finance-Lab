@@ -1519,15 +1519,20 @@ def test_populate_universe(db):
         ("U11.SG", "Stock (SG)", "U11", "United Overseas Bank Ltd", "SGD", "Singapore Dollar", "UOB vs Singapore Dollar"),
         ("Z74.SG", "Stock (SG)", "Z74", "Singapore Telecommunications Ltd", "SGD", "Singapore Dollar", "Singtel vs Singapore Dollar")
     ]
-    provider_uid = f"Spotware ({Platform.cTrader.name})"
+    providers = [
+        f"Spotware ({Platform.cTrader.name})",
+        f"Pepperstone ({Platform.cTrader.name})",
+        f"ICMarkets ({Platform.cTrader.name})"
+    ]
     for uid, cat, base_asset, base_name, quote_asset, quote_name, desc in forex_data + index_data + crypto_data + metal_data + energy_data + stock_data + etf_data + stock_au_data + etf_au_data + stock_gb_data + stock_de_data + stock_hk_data + stock_ch_data + stock_dk_data + stock_no_data + stock_se_data + stock_fi_data + stock_ie_data + stock_be_data + stock_fr_data + stock_pt_data + stock_es_data + stock_at_data + stock_jp_data + stock_nl_data + stock_it_data + stock_ca_data + stock_in_data + stock_sg_data:
         ticker = TickerAPI(UID=uid, Category=cat, BaseAsset=base_asset, BaseName=base_name, QuoteAsset=quote_asset, QuoteName=quote_name, Description=desc, db=db)
         ticker.push(by=by)
         inst = TickerAPI.detect(uid)
-        contract = ContractAPI(TickerUID=uid, ProviderUID=provider_uid, UID=inst, db=db)
-        contract.push(by=by)
-        sec = SecurityAPI(ProviderUID=provider_uid, CategoryUID=cat, TickerUID=uid, ContractUID=inst, db=db)
-        sec.push(by=by)
+        for provider_uid in providers:
+            contract = ContractAPI(TickerUID=uid, ProviderUID=provider_uid, UID=inst, db=db)
+            contract.push(by=by)
+            sec = SecurityAPI(ProviderUID=provider_uid, CategoryUID=cat, TickerUID=uid, ContractUID=inst, db=db)
+            sec.push(by=by)
     timeframes = [
         "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M15", "M20", "M30", "M45",
         "H1", "H2", "H3", "H4", "H6", "H8", "H12",
