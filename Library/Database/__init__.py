@@ -1,6 +1,7 @@
 from Library.Database.Query import QueryAPI
 from Library.Database.Database import (
     DatabaseAPI,
+    IdentityKey,
     PrimaryKey,
     ForeignKey
 )
@@ -17,6 +18,7 @@ from Library.Database.Microsoft import *
 __all__ = [
     "QueryAPI",
     "DatabaseAPI",
+    "IdentityKey",
     "PrimaryKey",
     "ForeignKey",
     *Oracle.__all__,

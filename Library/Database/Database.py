@@ -12,9 +12,18 @@ from Library.Utility.Statistic import Timer
 from Library.Database.Dataframe import pd, pl
 from Library.Database.Query import QueryAPI
 from Library.Utility.Service import ServiceAPI
+from Library.Utility.Memory import memory_to_string
 from Library.Logging.Handler import HandlerLoggingAPI
 from Library.Utility.Path import PathAPI, traceback_package
 from Library.Utility.Typing import MISSING, Missing
+
+@dataclass
+class IdentityKey:
+    """
+    Represents an auto-generated identity column (surrogate key).
+    """
+    dtype: type | pl.DataType
+    primary: bool = False
 
 @dataclass
 class PrimaryKey:
@@ -57,7 +66,7 @@ class DatabaseAPI(ServiceAPI, ABC):
     _CHECK_DATATYPE_MAPPING_: dict | None = None
     _CREATE_DATATYPE_MAPPING_: dict | None = None
     _DESCRIPTION_DATATYPE_MAPPING_: tuple | None = None
-    _STRUCTURE_: dict[str, type | type[pl.DataType] | pl.DataType | PrimaryKey | ForeignKey] | None = None
+    _STRUCTURE_: dict[str, type | type[pl.DataType] | pl.DataType | IdentityKey | PrimaryKey | ForeignKey] | None = None
 
     @property
     @abstractmethod
@@ -217,7 +226,7 @@ class DatabaseAPI(ServiceAPI, ABC):
 
     @classmethod
     def _normalize_(cls, dtype) -> type:
-        if isinstance(dtype, (PrimaryKey, ForeignKey)): dtype = dtype.dtype
+        if isinstance(dtype, (IdentityKey, PrimaryKey, ForeignKey)): dtype = dtype.dtype
         dtype = cls._PYTHON_DATATYPE_MAPPING_.get(dtype, dtype)
         if isinstance(dtype, type) and issubclass(dtype, pl.DataType): return dtype
         if isinstance(dtype, pl.DataType): return dtype.__class__
@@ -236,7 +245,7 @@ class DatabaseAPI(ServiceAPI, ABC):
         values = []
         for name, dtype in structure.items():
             datatype = self._CHECK_DATATYPE_MAPPING_[self._normalize_(dtype)]
-            is_pk = int(isinstance(dtype, PrimaryKey) or (isinstance(dtype, ForeignKey) and dtype.primary))
+            is_pk = int(isinstance(dtype, PrimaryKey) or (isinstance(dtype, (IdentityKey, ForeignKey)) and dtype.primary))
             is_fk = int(isinstance(dtype, ForeignKey))
             values.append(f"('{name}', '{datatype}', {is_pk}, {is_fk})")
         return ",\n    ".join(values)
@@ -248,7 +257,11 @@ class DatabaseAPI(ServiceAPI, ABC):
         pks = []
         for name, dtype in structure.items():
             base = self._CREATE_DATATYPE_MAPPING_[self._normalize_(dtype)]
-            if isinstance(dtype, PrimaryKey):
+            if isinstance(dtype, IdentityKey):
+                if dtype.primary: pks.append(name)
+                else: base += " UNIQUE"
+                base += " GENERATED ALWAYS AS IDENTITY"
+            elif isinstance(dtype, PrimaryKey):
                 pks.append(name)
             elif isinstance(dtype, ForeignKey):
                 if dtype.primary: pks.append(name)
@@ -836,7 +849,11 @@ class DatabaseAPI(ServiceAPI, ABC):
         target = self._target_(schema, table)
         for name, dtype in structure.items():
             datatype = self._CREATE_DATATYPE_MAPPING_[self._normalize_(dtype)]
-            if isinstance(dtype, PrimaryKey):
+            if isinstance(dtype, IdentityKey):
+                if dtype.primary: datatype += " PRIMARY KEY"
+                else: datatype += " UNIQUE"
+                datatype += " GENERATED ALWAYS AS IDENTITY"
+            elif isinstance(dtype, PrimaryKey):
                 datatype += " PRIMARY KEY"
             elif isinstance(dtype, ForeignKey):
                 datatype += f" REFERENCES {dtype.reference}"
@@ -1112,11 +1129,12 @@ class DatabaseAPI(ServiceAPI, ABC):
         :param table: Target table.
         :param data: The data to upsert.
         :param key: The primary key or constraint for conflict resolution.
+        :param exclude: Columns to exclude from the update on conflict.
         :return: Self reference.
         """
         if not key:
             if self._STRUCTURE_:
-                key = [name for name, dtype in self._STRUCTURE_.items() if isinstance(dtype, PrimaryKey) or (isinstance(dtype, ForeignKey) and dtype.primary)]
+                key = [name for name, dtype in self._STRUCTURE_.items() if isinstance(dtype, PrimaryKey) or (isinstance(dtype, (IdentityKey, ForeignKey)) and dtype.primary)]
             if not key:
                 raise ValueError("Key must be provided to upsert rows")
         database = database if database is not MISSING else self._database_
@@ -1258,13 +1276,15 @@ class DatabaseAPI(ServiceAPI, ABC):
             return self.frame(df, legacy=legacy)
         databases = df["Database"].unique().to_list()
         expansion = database == "%" or any(d != self.database for d in databases)
-        if not expansion:
-            return self.frame(df, legacy=legacy)
-        frames = []
-        for db_name in databases:
-            db_df = self.executeone(self._SIZE_CATALOG_QUERY_, database=db_name, schema=schema, table=table, admin=False).fetchall(legacy=False)
-            frames.append(db_df if not db_df.is_empty() else df.filter(pl.col("Database") == db_name))
-        return self.frame(self._concat_(frames) if frames else df, legacy=legacy)
+        if expansion:
+            frames = []
+            for db_name in databases:
+                db_df = self.executeone(self._SIZE_CATALOG_QUERY_, database=db_name, schema=schema, table=table, admin=False).fetchall(legacy=False)
+                frames.append(db_df if not db_df.is_empty() else df.filter(pl.col("Database") == db_name))
+            df = self._concat_(frames) if frames else df
+        if not df.is_empty() and "Size" in df.columns:
+            df = df.with_columns(pl.col("Size").map_elements(memory_to_string, return_dtype=pl.String).alias("Formatted"))
+        return self.frame(df, legacy=legacy)
 
     def migration(self) -> Self:
         """

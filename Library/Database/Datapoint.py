@@ -6,6 +6,7 @@ from datetime import datetime
 
 from Library.Database.Dataframe import pl
 from Library.Database.Dataclass import DataclassAPI
+from Library.Database.Database import IdentityKey
 if TYPE_CHECKING: from Library.Database.Database import DatabaseAPI
 
 @dataclass(kw_only=True)
@@ -58,8 +59,9 @@ class DatapointAPI(DataclassAPI):
     def push(self, by: str, key: str | Sequence[str] | None = None) -> None:
         self._audit_(by)
         data = self.dict(include_fields=True, include_properties=False, include_override_fields=False)
-        valid_keys = self.Structure().keys()
-        clean_data = {k: v for k, v in data.items() if k in valid_keys}
+        structure = self.Structure()
+        identity = {k for k, dtype in structure.items() if isinstance(dtype, IdentityKey)}
+        clean_data = {k: v for k, v in data.items() if k in structure and k not in identity}
         self._db_.upsert(schema=self.Schema, table=self.Table, data=clean_data, key=key, exclude=["CreatedAt", "CreatedBy"])
 
     def pull(self, condition: str | None = None, parameters: dict | None = None) -> dict | None:

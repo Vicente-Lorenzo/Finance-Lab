@@ -4,7 +4,7 @@ from collections.abc import Sequence
 
 from Library.Database.Dataframe import pl
 from Library.Database.Query import QueryAPI
-from Library.Database.Database import DatabaseAPI, PrimaryKey, ForeignKey
+from Library.Database.Database import DatabaseAPI, IdentityKey, PrimaryKey, ForeignKey
 
 class OracleDatabaseAPI(DatabaseAPI):
     """
@@ -162,7 +162,7 @@ class OracleDatabaseAPI(DatabaseAPI):
         values = []
         for name, dtype in structure.items():
             datatype = self._CHECK_DATATYPE_MAPPING_[self._normalize_(dtype)]
-            is_pk = int(isinstance(dtype, PrimaryKey) or (isinstance(dtype, ForeignKey) and dtype.primary))
+            is_pk = int(isinstance(dtype, PrimaryKey) or (isinstance(dtype, (IdentityKey, ForeignKey)) and dtype.primary))
             is_fk = int(isinstance(dtype, ForeignKey))
             values.append(f"SELECT '{name}' AS column_name, '{datatype}' AS data_type, {is_pk} AS is_pk, {is_fk} AS is_fk FROM dual")
         return "\nUNION ALL\n".join(values)
