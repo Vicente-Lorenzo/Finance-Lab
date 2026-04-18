@@ -1,4 +1,3 @@
-import pytest
 from Library.Universe.Ticker import TickerAPI
 from Library.Universe.Contract import ContractAPI
 from Library.Universe.Security import SecurityAPI
