@@ -43,6 +43,7 @@ dependencies:
     - blpapi
     - xlwings
     - yfinance
+    - ctrader-open-api
 
     - dash
     - dash-extensions
