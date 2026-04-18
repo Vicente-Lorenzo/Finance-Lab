@@ -7,7 +7,7 @@ from datetime import datetime
 from Library.Database.Dataframe import pl
 from Library.Database.Enumeration import Enumeration, as_enum
 from Library.Database import PrimaryKey, ForeignKey
-from Library.Universe.Ticker import TickerAPI, Instrument
+from Library.Universe.Ticker import TickerAPI, Contract
 from Library.Universe.Provider import ProviderAPI
 from Library.Utility.DateTime import Day
 from Library.Database.Datapoint import DatapointAPI
@@ -49,7 +49,7 @@ class ContractAPI(DatapointAPI):
 
     TickerUID: str
     ProviderUID: str
-    Instrument: Instrument | str | None = None
+    UID: Contract | str | None = None
 
     Digits: int | None = None
     PointSize: float | None = None
@@ -74,7 +74,7 @@ class ContractAPI(DatapointAPI):
         return {
             cls.ID.TickerUID: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{TickerAPI.Table}"("{TickerAPI.ID.UID}")', primary=True),
             cls.ID.ProviderUID: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{ProviderAPI.Table}"("{ProviderAPI.ID.UID}")', primary=True),
-            cls.ID.Instrument: PrimaryKey(pl.Enum([i.name for i in Instrument])),
+            cls.ID.UID: PrimaryKey(pl.Enum([i.name for i in Contract])),
             cls.ID.Digits: pl.Int32(),
             cls.ID.PointSize: pl.Float64(),
             cls.ID.PipSize: pl.Float64(),
@@ -98,8 +98,8 @@ class ContractAPI(DatapointAPI):
     def __post_init__(self, db: DatabaseAPI | None) -> None:
         self.TickerUID = TickerAPI.normalize(self.TickerUID)
         self.ProviderUID = ProviderAPI.normalize(self.ProviderUID)
-        self.Instrument = as_enum(Instrument, self.Instrument)
-        if self.Instrument is None: raise ValueError(f"Contract '{self.TickerUID}@{self.ProviderUID}' requires a valid Instrument")
+        self.UID = as_enum(Contract, self.UID)
+        if self.UID is None: raise ValueError(f"Contract '{self.TickerUID}@{self.ProviderUID}' requires a valid UID (Contract)")
         self.CommissionMode = as_enum(CommissionMode, self.CommissionMode)
         self.SwapMode = as_enum(SwapMode, self.SwapMode)
         self.SwapExtraDay = as_enum(Day, self.SwapExtraDay)
@@ -132,14 +132,14 @@ class ContractAPI(DatapointAPI):
             if row: self._apply_(row)
             return
         row = super().pull(
-            condition='"TickerUID" = :ticker: AND "ProviderUID" = :provider: AND "Instrument" = :instrument:',
-            parameters={"ticker": self.TickerUID, "provider": self.ProviderUID, "instrument": self.Instrument.name}
+            condition='"TickerUID" = :ticker: AND "ProviderUID" = :provider: AND "UID" = :uid:',
+            parameters={"ticker": self.TickerUID, "provider": self.ProviderUID, "uid": self.UID.name}
         )
         if not row: return
         self._apply_(row)
 
     def push(self, by: str, key: str | Sequence[str] | None = None) -> None:
-        super().push(by=by, key=key or [self.ID.TickerUID, self.ID.ProviderUID, self.ID.Instrument])
+        super().push(by=by, key=key or [self.ID.TickerUID, self.ID.ProviderUID, self.ID.UID])
 
     def __str__(self) -> str:
-        return f"{self.TickerUID}@{self.ProviderUID} ({self.Instrument.name if isinstance(self.Instrument, Instrument) else self.Instrument})"
+        return f"{self.TickerUID}@{self.ProviderUID} ({self.UID.name if isinstance(self.UID, Contract) else self.UID})"

@@ -25,7 +25,7 @@ _SUFFIX_LIST_ = sorted(
     key=len, reverse=True
 )
 
-class Instrument(Enumeration):
+class Contract(Enumeration):
     Spot = 0
     Future = 1
     Swap = 2
@@ -37,6 +37,7 @@ class TickerAPI(DatapointAPI):
     Table: ClassVar[str] = "Ticker"
 
     UID: str | None = None
+
     Category: str | None = None
     BaseAsset: str | None = None
     BaseName: str | None = None
@@ -71,10 +72,10 @@ class TickerAPI(DatapointAPI):
         return uid.upper()
 
     @staticmethod
-    def detect(uid: str) -> Instrument:
+    def detect(uid: str) -> Contract:
         for pattern in _FUTURES_PATTERNS_:
-            if pattern.search(uid): return Instrument.Future
-        return Instrument.Spot
+            if pattern.search(uid): return Contract.Future
+        return Contract.Spot
 
     def __post_init__(self, db: DatabaseAPI | None) -> None:
         if self.UID: self.UID = self.normalize(self.UID)

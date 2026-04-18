@@ -7,7 +7,7 @@ from functools import cached_property
 from Library.Database.Dataframe import pl
 from Library.Database.Enumeration import as_enum
 from Library.Database.Database import PrimaryKey, ForeignKey
-from Library.Universe.Ticker import TickerAPI, Instrument
+from Library.Universe.Ticker import TickerAPI, Contract
 from Library.Universe.Provider import ProviderAPI
 from Library.Universe.Category import CategoryAPI
 from Library.Universe.Contract import ContractAPI
@@ -22,7 +22,7 @@ class SecurityAPI(DatapointAPI):
     ProviderUID: str
     CategoryUID: str | None = None
     TickerUID: str
-    Instrument: Instrument | str | None = None
+    ContractUID: Contract | str | None = None
 
     @classmethod
     def Structure(cls) -> dict:
@@ -30,13 +30,13 @@ class SecurityAPI(DatapointAPI):
             cls.ID.ProviderUID: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{ProviderAPI.Table}"("{ProviderAPI.ID.UID}")', primary=True),
             cls.ID.CategoryUID: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{CategoryAPI.Table}"("{CategoryAPI.ID.UID}")', primary=True),
             cls.ID.TickerUID: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{TickerAPI.Table}"("{TickerAPI.ID.UID}")', primary=True),
-            cls.ID.Instrument: PrimaryKey(pl.Enum([i.name for i in Instrument])),
+            cls.ID.ContractUID: PrimaryKey(pl.Enum([i.name for i in Contract])),
             **DatapointAPI.Structure()
         }
 
     def __post_init__(self, db: DatabaseAPI | None) -> None:
-        if not self.Instrument: self.Instrument = TickerAPI.detect(self.TickerUID)
-        self.Instrument = as_enum(Instrument, self.Instrument)
+        if not self.ContractUID: self.ContractUID = TickerAPI.detect(self.TickerUID)
+        self.ContractUID = as_enum(Contract, self.ContractUID)
         self.TickerUID = TickerAPI.normalize(self.TickerUID)
         self.ProviderUID = ProviderAPI.normalize(self.ProviderUID)
         self._db_ = self._connect_(db)
@@ -48,16 +48,16 @@ class SecurityAPI(DatapointAPI):
 
     def _apply_(self, row: dict) -> None:
         if not self.CategoryUID: self.CategoryUID = row.get("CategoryUID")
-        if not self.Instrument: self.Instrument = as_enum(Instrument, row.get("Instrument"))
+        if not self.ContractUID: self.ContractUID = as_enum(Contract, row.get("ContractUID"))
 
     def pull(self, condition: str | None = None, parameters: dict | None = None) -> None:
         if condition:
             row = super().pull(condition=condition, parameters=parameters)
             if row: self._apply_(row)
             return
-        inst = self.Instrument.name if isinstance(self.Instrument, Instrument) else self.Instrument
-        params = {"provider": self.ProviderUID, "ticker": self.TickerUID, "instrument": inst}
-        clauses = ['"ProviderUID" = :provider:', '"TickerUID" = :ticker:', '"Instrument" = :instrument:']
+        inst = self.ContractUID.name if isinstance(self.ContractUID, Contract) else self.ContractUID
+        params = {"provider": self.ProviderUID, "ticker": self.TickerUID, "uid": inst}
+        clauses = ['"ProviderUID" = :provider:', '"TickerUID" = :ticker:', '"ContractUID" = :uid:']
         if self.CategoryUID:
             clauses.insert(1, '"CategoryUID" = :category:')
             params["category"] = self.CategoryUID
@@ -72,7 +72,7 @@ class SecurityAPI(DatapointAPI):
         self.Provider.push(by=by)
         if self.CategoryUID: self.Category.push(by=by)
         self.Contract.push(by=by)
-        super().push(by=by, key=key or [self.ID.ProviderUID, self.ID.CategoryUID, self.ID.TickerUID, self.ID.Instrument])
+        super().push(by=by, key=key or [self.ID.ProviderUID, self.ID.CategoryUID, self.ID.TickerUID, self.ID.ContractUID])
 
     @cached_property
     def Ticker(self) -> TickerAPI:
@@ -84,7 +84,7 @@ class SecurityAPI(DatapointAPI):
 
     @cached_property
     def Contract(self) -> ContractAPI:
-        return ContractAPI(TickerUID=self.TickerUID, ProviderUID=self.ProviderUID, Instrument=self.Instrument, db=self._db_)
+        return ContractAPI(TickerUID=self.TickerUID, ProviderUID=self.ProviderUID, UID=self.ContractUID, db=self._db_)
 
     @cached_property
     def Category(self) -> CategoryAPI:

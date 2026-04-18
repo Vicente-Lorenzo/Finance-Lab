@@ -1,3 +1,4 @@
+import pytest
 from Library.Universe.Ticker import TickerAPI
 from Library.Universe.Contract import ContractAPI
 from Library.Universe.Security import SecurityAPI
@@ -38,7 +39,17 @@ def test_populate_universe(db):
         ("Stock (SE)", "Stock", "Sweden", "Equity"),
         ("Stock (FI)", "Stock", "Finland", "Equity"),
         ("Stock (IE)", "Stock", "Ireland", "Equity"),
-        ("Stock (BE)", "Stock", "Belgium", "Equity")
+        ("Stock (BE)", "Stock", "Belgium", "Equity"),
+        ("Stock (FR)", "Stock", "France", "Equity"),
+        ("Stock (PT)", "Stock", "Portugal", "Equity"),
+        ("Stock (ES)", "Stock", "Spain", "Equity"),
+        ("Stock (AT)", "Stock", "Austria", "Equity"),
+        ("Stock (JP)", "Stock", "Japan", "Equity"),
+        ("Stock (NL)", "Stock", "Netherlands", "Equity"),
+        ("Stock (IT)", "Stock", "Italy", "Equity"),
+        ("Stock (CA)", "Stock", "Canada", "Equity"),
+        ("Stock (IN)", "Stock", "India", "Equity"),
+        ("Stock (SG)", "Stock", "Singapore", "Equity")
     ]
     for uid, primary, secondary, alt in categories:
         cat = CategoryAPI(UID=uid, Primary=primary, Secondary=secondary, Alternative=alt, db=db)
@@ -402,7 +413,7 @@ def test_populate_universe(db):
         ("DOV.US", "Stock (US)", "DOV", "Dover Corp", "USD", "US Dollar", "Dover Corp vs US Dollar"),
         ("DPZ.US", "Stock (US)", "DPZ", "Domino's Pizza Inc", "USD", "US Dollar", "Domino's Pizza Inc vs US Dollar"),
         ("DRI.US", "Stock (US)", "DRI", "Darden Restaurants Inc", "USD", "US Dollar", "Darden Restaurants Inc vs US Dollar"),
-        ("DTE.US", "Stock (US)", "DTE", "DTE Energy Co", "USD", "US Dollar", "DTE Energy Co vs US Dollar"),
+        ("DTE.US", "Stock (US)", "DTE", "Deutsche Telekom AG", "USD", "US Dollar", "DTE Energy Co vs US Dollar"),
         ("DUK.US", "Stock (US)", "DUK", "Duke Energy Corp", "USD", "US Dollar", "Duke Energy Corp vs US Dollar"),
         ("DVA.US", "Stock (US)", "DVA", "DaVita Inc", "USD", "US Dollar", "DaVita Inc vs US Dollar"),
         ("DVN.US", "Stock (US)", "DVN", "Devon Energy Corp", "USD", "US Dollar", "Devon Energy Corp vs US Dollar"),
@@ -841,7 +852,6 @@ def test_populate_universe(db):
     ]
     stock_au_data = [
         ("A2M.AU", "Stock (AU)", "A2M", "The a2 Milk Company Limited", "AUD", "Australian Dollar", "The a2 Milk Company Limited vs Australian Dollar"),
-        ("AFI.AU", "ETF (AU)", "AFI", "Australian Foundation Investment Company Limited", "AUD", "Australian Dollar", "Australian Foundation Investment Co vs Australian Dollar"),
         ("AG.AU", "Stock (AU)", "AG", "First Majestic Silver Corp", "AUD", "Australian Dollar", "First Majestic Silver Corp vs Australian Dollar"),
         ("AGI.AU", "Stock (AU)", "AGI", "Alamos Gold Inc", "AUD", "Australian Dollar", "Alamos Gold Inc vs Australian Dollar"),
         ("AGL.AU", "Stock (AU)", "AGL", "AGL Energy Limited", "AUD", "Australian Dollar", "AGL Energy Limited vs Australian Dollar"),
@@ -857,7 +867,6 @@ def test_populate_universe(db):
         ("APA.AU", "Stock (AU)", "APA", "APA Group", "AUD", "Australian Dollar", "APA Group vs Australian Dollar"),
         ("APE.AU", "Stock (AU)", "APE", "Eagers Automotive Limited", "AUD", "Australian Dollar", "Eagers Automotive Limited vs Australian Dollar"),
         ("ARB.AU", "Stock (AU)", "ARB", "ARB Corporation Limited", "AUD", "Australian Dollar", "ARB Corporation Limited vs Australian Dollar"),
-        ("ARG.AU", "ETF (AU)", "ARG", "Argo Investments Limited", "AUD", "Australian Dollar", "Argo Investments Limited vs Australian Dollar"),
         ("ASX.AU", "Stock (AU)", "ASX", "ASX Limited", "AUD", "Australian Dollar", "ASX Limited vs Australian Dollar"),
         ("AUB.AU", "Stock (AU)", "AUB", "AUB Group Limited", "AUD", "Australian Dollar", "AUB Group Limited vs Australian Dollar"),
         ("AZJ.AU", "Stock (AU)", "AZJ", "Aurizon Holdings Limited", "AUD", "Australian Dollar", "Aurizon Holdings Limited vs Australian Dollar"),
@@ -885,7 +894,6 @@ def test_populate_universe(db):
         ("CPU.AU", "Stock (AU)", "CPU", "Computershare Limited", "AUD", "Australian Dollar", "Computershare Limited vs Australian Dollar"),
         ("CQR.AU", "Stock (AU)", "CQR", "Charter Hall Retail REIT", "AUD", "Australian Dollar", "Charter Hall Retail REIT vs Australian Dollar"),
         ("CRN.AU", "Stock (AU)", "CRN", "Coronado Global Resources Inc", "AUD", "Australian Dollar", "Coronado Global Resources vs Australian Dollar"),
-        ("CRYP.AU", "ETF (AU)", "CRYP", "BetaShares Crypto Innovators ETF", "AUD", "Australian Dollar", "BetaShares Crypto Innovators ETF vs Australian Dollar"),
         ("CSL.AU", "Stock (AU)", "CSL", "CSL Limited", "AUD", "Australian Dollar", "CSL Limited vs Australian Dollar"),
         ("CTD.AU", "Stock (AU)", "CTD", "Corporate Travel Management Limited", "AUD", "Australian Dollar", "Corporate Travel Management vs Australian Dollar"),
         ("CWY.AU", "Stock (AU)", "CWY", "Cleanaway Waste Management Limited", "AUD", "Australian Dollar", "Cleanaway Waste Management vs Australian Dollar"),
@@ -925,7 +933,6 @@ def test_populate_universe(db):
         ("JBH.AU", "Stock (AU)", "JBH", "JB Hi-Fi Limited", "AUD", "Australian Dollar", "JB Hi-Fi Limited vs Australian Dollar"),
         ("JHX.AU", "Stock (AU)", "JHX", "James Hardie Industries plc", "AUD", "Australian Dollar", "James Hardie Industries vs Australian Dollar"),
         ("KGN.AU", "Stock (AU)", "KGN", "Kogan.com Ltd", "AUD", "Australian Dollar", "Kogan.com Ltd vs Australian Dollar"),
-        ("L1G.AU", "ETF (AU)", "L1G", "L1 Long Short Fund Limited", "AUD", "Australian Dollar", "L1 Long Short Fund Limited vs Australian Dollar"),
         ("LLC.AU", "Stock (AU)", "LLC", "Lendlease Group", "AUD", "Australian Dollar", "Lendlease Group vs Australian Dollar"),
         ("LNW.AU", "Stock (AU)", "LNW", "Light & Wonder Inc", "AUD", "Australian Dollar", "Light & Wonder Inc vs Australian Dollar"),
         ("LOV.AU", "Stock (AU)", "LOV", "Lovisa Holdings Limited", "AUD", "Australian Dollar", "Lovisa Holdings Limited vs Australian Dollar"),
@@ -1314,7 +1321,7 @@ def test_populate_universe(db):
         ("SREN.CH", "Stock (CH)", "SREN", "Swiss Re AG", "CHF", "Swiss Franc", "Swiss Re AG vs Swiss Franc"),
         ("GIVN.CH", "Stock (CH)", "GIVN", "Givaudan SA", "CHF", "Swiss Franc", "Givaudan SA vs Swiss Franc"),
         ("PGHN.CH", "Stock (CH)", "PGHN", "Partners Group Holding AG", "CHF", "Swiss Franc", "Partners Group Holding vs Swiss Franc"),
-        ("SLHN.CH", "Stock (CH)", "SLHN", "Swiss Life Holding AG", "CHF", "Swiss Franc", "Swiss Life Holding AG vs Swiss Franc"),
+        ("SLHN.CH", "Stock (CH)", "SLHN", "Swiss Life Holding AG", "CHF", "Swiss Franc", "Swiss Life Holding vs Swiss Franc"),
         ("GEBN.CH", "Stock (CH)", "GEBN", "Geberit AG", "CHF", "Swiss Franc", "Geberit AG vs Swiss Franc"),
         ("SOON.CH", "Stock (CH)", "SOON", "Sonova Holding AG", "CHF", "Swiss Franc", "Sonova Holding AG vs Swiss Franc"),
         ("LOGN.CH", "Stock (CH)", "LOGN", "Logitech International SA", "CHF", "Swiss Franc", "Logitech International vs Swiss Franc")
@@ -1380,14 +1387,146 @@ def test_populate_universe(db):
         ("AGS.BE", "Stock (BE)", "AGS", "Ageas SA/NV", "EUR", "Euro", "Ageas SA/NV vs Euro"),
         ("UMI.BE", "Stock (BE)", "UMI", "Umicore SA", "EUR", "Euro", "Umicore SA vs Euro")
     ]
+    stock_fr_data = [
+        ("OR.FR", "Stock (FR)", "OR", "L'Oreal SA", "EUR", "Euro", "L'Oreal SA vs Euro"),
+        ("DG.FR", "Stock (FR)", "DG", "VINCI SA", "EUR", "Euro", "VINCI SA vs Euro"),
+        ("STLAP.FR", "Stock (FR)", "STLAP", "Stellantis NV", "EUR", "Euro", "Stellantis NV vs Euro"),
+        ("TTE.FR", "Stock (FR)", "TTE", "TotalEnergies SE", "EUR", "Euro", "TotalEnergies SE vs Euro"),
+        ("AI.FR", "Stock (FR)", "AI", "Air Liquide SA", "EUR", "Euro", "Air Liquide SA vs Euro"),
+        ("DSY.FR", "Stock (FR)", "DSY", "Dassault Systemes SE", "EUR", "Euro", "Dassault Systemes SE vs Euro"),
+        ("CS.FR", "Stock (FR)", "CS", "AXA SA", "EUR", "Euro", "AXA SA vs Euro"),
+        ("ERF.FR", "Stock (FR)", "ERF", "Eurofins Scientific SE", "EUR", "Euro", "Eurofins Scientific SE vs Euro"),
+        ("BNP.FR", "Stock (FR)", "BNP", "BNP Paribas SA", "EUR", "Euro", "BNP Paribas SA vs Euro"),
+        ("BN.FR", "Stock (FR)", "BN", "Danone SA", "EUR", "Euro", "Danone SA vs Euro"),
+        ("CAP.FR", "Stock (FR)", "CAP", "Capgemini SE", "EUR", "Euro", "Capgemini SE vs Euro"),
+        ("CA.FR", "Stock (FR)", "CA", "Carrefour SA", "EUR", "Euro", "Carrefour SA vs Euro"),
+        ("SGO.FR", "Stock (FR)", "SGO", "Compagnie de Saint-Gobain", "EUR", "Euro", "Saint-Gobain vs Euro"),
+        ("EL.FR", "Stock (FR)", "EL", "EssilorLuxottica SA", "EUR", "Euro", "EssilorLuxottica SA vs Euro"),
+        ("MC.FR", "Stock (FR)", "MC", "LVMH Moet Hennessy Louis Vuitton SE", "EUR", "Euro", "LVMH vs Euro"),
+        ("ML.FR", "Stock (FR)", "ML", "Compagnie Generale des Etablissements Michelin SCA", "EUR", "Euro", "Michelin vs Euro"),
+        ("EDEN.FR", "Stock (FR)", "EDEN", "Edenred SE", "EUR", "Euro", "Edenred vs Euro"),
+        ("KER.FR", "Stock (FR)", "KER", "Kering SA", "EUR", "Euro", "Kering SA vs Euro"),
+        ("PUB.FR", "Stock (FR)", "PUB", "Publicis Groupe SA", "EUR", "Euro", "Publicis Groupe vs Euro"),
+        ("RNO.FR", "Stock (FR)", "RNO", "Renault SA", "EUR", "Euro", "Renault SA vs Euro"),
+        ("SAF.FR", "Stock (FR)", "SAF", "Safran SA", "EUR", "Euro", "Safran SA vs Euro"),
+        ("HO.FR", "Stock (FR)", "HO", "Thales SA", "EUR", "Euro", "Thales SA vs Euro"),
+        ("RMS.FR", "Stock (FR)", "RMS", "Hermes International SCA", "EUR", "Euro", "Hermes International vs Euro"),
+        ("ENGI.FR", "Stock (FR)", "ENGI", "Engie SA", "EUR", "Euro", "Engie SA vs Euro"),
+        ("ORA.FR", "Stock (FR)", "ORA", "Orange SA", "EUR", "Euro", "Orange SA vs Euro"),
+        ("EN.FR", "Stock (FR)", "EN", "Bouygues SA", "EUR", "Euro", "Bouygues SA vs Euro"),
+        ("ALO.FR", "Stock (FR)", "ALO", "Alstom SA", "EUR", "Euro", "Alstom SA vs Euro"),
+        ("VIE.FR", "Stock (FR)", "VIE", "Veolia Environnement SA", "EUR", "Euro", "Veolia vs Euro"),
+        ("SAN.FR", "Stock (FR)", "SAN", "Sanofi SA", "EUR", "Euro", "Sanofi vs Euro"),
+        ("GLE.FR", "Stock (FR)", "GLE", "Societe Generale SA", "EUR", "Euro", "Societe Generale vs Euro"),
+        ("SU.FR", "Stock (FR)", "SU", "Schneider Electric SE", "EUR", "Euro", "Schneider Electric vs Euro"),
+        ("AIR.FR", "Stock (FR)", "AIR", "Airbus SE", "EUR", "Euro", "Airbus SE vs Euro"),
+        ("LR.FR", "Stock (FR)", "LR", "Legrand SA", "EUR", "Euro", "Legrand SA vs Euro"),
+        ("ACA.FR", "Stock (FR)", "ACA", "Credit Agricole SA", "EUR", "Euro", "Credit Agricole vs Euro"),
+        ("RI.FR", "Stock (FR)", "RI", "Pernod Ricard SA", "EUR", "Euro", "Pernod Ricard vs Euro"),
+        ("STMPA.FR", "Stock (FR)", "STMPA", "STMicroelectronics NV", "EUR", "Euro", "STMicroelectronics vs Euro"),
+        ("AF.FR", "Stock (FR)", "AF", "Air France-KLM", "EUR", "Euro", "Air France-KLM vs Euro"),
+        ("CDI.FR", "Stock (FR)", "CDI", "Christian Dior SE", "EUR", "Euro", "Christian Dior vs Euro"),
+        ("RCO.FR", "Stock (FR)", "RCO", "Remy Cointreau SA", "EUR", "Euro", "Remy Cointreau vs Euro"),
+        ("UBI.FR", "Stock (FR)", "UBI", "Ubisoft Entertainment SA", "EUR", "Euro", "Ubisoft vs Euro"),
+        ("DEC.FR", "Stock (FR)", "DEC", "JCDecaux SE", "EUR", "Euro", "JCDecaux SE vs Euro")
+    ]
+    stock_pt_data = [
+        ("EDP.PT", "Stock (PT)", "EDP", "Energias de Portugal SA", "EUR", "Euro", "Energias de Portugal vs Euro"),
+        ("JMT.PT", "Stock (PT)", "JMT", "Jeronimo Martins SGPS SA", "EUR", "Euro", "Jeronimo Martins vs Euro"),
+        ("GALP.PT", "Stock (PT)", "GALP", "Galp Energia SGPS SA", "EUR", "Euro", "Galp Energia vs Euro"),
+        ("BCP.PT", "Stock (PT)", "BCP", "Banco Comercial Portugues SA", "EUR", "Euro", "Banco Comercial Portugues vs Euro"),
+        ("NVG.PT", "Stock (PT)", "NVG", "The Navigator Company SA", "EUR", "Euro", "The Navigator Company vs Euro"),
+        ("SON.PT", "Stock (PT)", "SON", "Sonae SGPS SA", "EUR", "Euro", "Sonae vs Euro"),
+        ("NOS.PT", "Stock (PT)", "NOS", "NOS SGPS SA", "EUR", "Euro", "NOS vs Euro")
+    ]
+    stock_es_data = [
+        ("ITX.ES", "Stock (ES)", "ITX", "Industria de Diseno Textil SA", "EUR", "Euro", "Inditex vs Euro"),
+        ("IBE.ES", "Stock (ES)", "IBE", "Iberdrola SA", "EUR", "Euro", "Iberdrola SA vs Euro"),
+        ("SAN.ES", "Stock (ES)", "SAN", "Banco Santander SA", "EUR", "Euro", "Banco Santander SA vs Euro"),
+        ("BBVA.ES", "Stock (ES)", "BBVA", "Banco Bilbao Vizcaya Argentaria SA", "EUR", "Euro", "BBVA vs Euro"),
+        ("AMS.ES", "Stock (ES)", "AMS", "Amadeus IT Group SA", "EUR", "Euro", "Amadeus IT Group SA vs Euro"),
+        ("CABK.ES", "Stock (ES)", "CABK", "CaixaBank SA", "EUR", "Euro", "CaixaBank SA vs Euro"),
+        ("NTGY.ES", "Stock (ES)", "NTGY", "Naturgy Energy Group SA", "EUR", "Euro", "Naturgy Energy Group vs Euro"),
+        ("CLNX.ES", "Stock (ES)", "CLNX", "Cellnex Telecom SA", "EUR", "Euro", "Cellnex Telecom SA vs Euro"),
+        ("AENA.ES", "Stock (ES)", "AENA", "Aena SME SA", "EUR", "Euro", "Aena SME SA vs Euro"),
+        ("TEF.ES", "Stock (ES)", "TEF", "Telefonica SA", "EUR", "Euro", "Telefonica SA vs Euro"),
+        ("MTS.ES", "Stock (ES)", "MTS", "ArcelorMittal SA", "EUR", "Euro", "ArcelorMittal SA vs Euro"),
+        ("FER.ES", "Stock (ES)", "FER", "Ferrovial SE", "EUR", "Euro", "Ferrovial SE vs Euro"),
+        ("ELE.ES", "Stock (ES)", "ELE", "Endesa SA", "EUR", "Euro", "Endesa SA vs Euro"),
+        ("REP.ES", "Stock (ES)", "REP", "Repsol SA", "EUR", "Euro", "Repsol SA vs Euro")
+    ]
+    stock_at_data = [
+        ("EBS.AT", "Stock (AT)", "EBS", "Erste Group Bank AG", "EUR", "Euro", "Erste Group Bank AG vs Euro"),
+        ("OMV.AT", "Stock (AT)", "OMV", "OMV AG", "EUR", "Euro", "OMV AG vs Euro"),
+        ("VER.AT", "Stock (AT)", "VER", "Verbund AG", "EUR", "Euro", "Verbund AG vs Euro")
+    ]
+    stock_jp_data = [
+        ("7203.JP", "Stock (JP)", "7203", "Toyota Motor Corp", "JPY", "Japanese Yen", "Toyota vs Japanese Yen"),
+        ("6758.JP", "Stock (JP)", "6758", "Sony Group Corp", "JPY", "Japanese Yen", "Sony vs Japanese Yen"),
+        ("9984.JP", "Stock (JP)", "9984", "SoftBank Group Corp", "JPY", "Japanese Yen", "SoftBank vs Japanese Yen"),
+        ("6098.JP", "Stock (JP)", "6098", "Recruit Holdings Co Ltd", "JPY", "Japanese Yen", "Recruit vs Japanese Yen"),
+        ("8035.JP", "Stock (JP)", "8035", "Tokyo Electron Ltd", "JPY", "Japanese Yen", "Tokyo Electron vs Japanese Yen"),
+        ("9432.JP", "Stock (JP)", "9432", "Nippon Telegraph & Telephone", "JPY", "Japanese Yen", "NTT vs Japanese Yen"),
+        ("4502.JP", "Stock (JP)", "4502", "Takeda Pharmaceutical Co Ltd", "JPY", "Japanese Yen", "Takeda Pharmaceutical vs Japanese Yen"),
+        ("8306.JP", "Stock (JP)", "8306", "Mitsubishi UFJ Financial Group", "JPY", "Japanese Yen", "Mitsubishi UFJ vs Japanese Yen"),
+        ("6861.JP", "Stock (JP)", "6861", "Keyence Corp", "JPY", "Japanese Yen", "Keyence vs Japanese Yen"),
+        ("7974.JP", "Stock (JP)", "7974", "Nintendo Co Ltd", "JPY", "Japanese Yen", "Nintendo vs Japanese Yen")
+    ]
+    stock_nl_data = [
+        ("ASML.NL", "Stock (NL)", "ASML", "ASML Holding NV", "EUR", "Euro", "ASML vs Euro"),
+        ("PRX.NL", "Stock (NL)", "PRX", "Prosus NV", "EUR", "Euro", "Prosus vs Euro"),
+        ("ADYEN.NL", "Stock (NL)", "ADYEN", "Adyen NV", "EUR", "Euro", "Adyen vs Euro"),
+        ("INGA.NL", "Stock (NL)", "INGA", "ING Groep NV", "EUR", "Euro", "ING vs Euro"),
+        ("SHELL.NL", "Stock (NL)", "SHELL", "Shell plc", "EUR", "Euro", "Shell vs Euro"),
+        ("HEIA.NL", "Stock (NL)", "HEIA", "Heineken NV", "EUR", "Euro", "Heineken vs Euro"),
+        ("AD.NL", "Stock (NL)", "AD", "Koninklijke Ahold Delhaize NV", "EUR", "Euro", "Ahold Delhaize vs Euro"),
+        ("ASRNL.NL", "Stock (NL)", "ASRNL", "ASR Nederland NV", "EUR", "Euro", "ASR Nederland vs Euro"),
+        ("NN.NL", "Stock (NL)", "NN", "NN Group NV", "EUR", "Euro", "NN Group vs Euro")
+    ]
+    stock_it_data = [
+        ("ENEL.IT", "Stock (IT)", "ENEL", "Enel SpA", "EUR", "Euro", "Enel vs Euro"),
+        ("ENI.IT", "Stock (IT)", "ENI", "Eni SpA", "EUR", "Euro", "Eni vs Euro"),
+        ("ISP.IT", "Stock (IT)", "ISP", "Intesa Sanpaolo SpA", "EUR", "Euro", "Intesa Sanpaolo vs Euro"),
+        ("UCG.IT", "Stock (IT)", "UCG", "UniCredit SpA", "EUR", "Euro", "UniCredit vs Euro"),
+        ("RACE.IT", "Stock (IT)", "RACE", "Ferrari NV", "EUR", "Euro", "Ferrari vs Euro"),
+        ("STLAM.IT", "Stock (IT)", "STLAM", "Stellantis NV", "EUR", "Euro", "Stellantis vs Euro"),
+        ("PRY.IT", "Stock (IT)", "PRY", "Prysmian SpA", "EUR", "Euro", "Prysmian vs Euro"),
+        ("G.IT", "Stock (IT)", "G", "Assicurazioni Generali SpA", "EUR", "Euro", "Generali vs Euro"),
+        ("MONC.IT", "Stock (IT)", "MONC", "Moncler SpA", "EUR", "Euro", "Moncler vs Euro")
+    ]
+    stock_ca_data = [
+        ("RY.CA", "Stock (CA)", "RY", "Royal Bank of Canada", "CAD", "Canadian Dollar", "Royal Bank of Canada vs Canadian Dollar"),
+        ("TD.CA", "Stock (CA)", "TD", "Toronto-Dominion Bank", "CAD", "Canadian Dollar", "Toronto-Dominion Bank vs Canadian Dollar"),
+        ("SHOP.CA", "Stock (CA)", "SHOP", "Shopify Inc", "CAD", "Canadian Dollar", "Shopify vs Canadian Dollar"),
+        ("CNR.CA", "Stock (CA)", "CNR", "Canadian National Railway Co", "CAD", "Canadian Dollar", "CNR vs Canadian Dollar"),
+        ("CP.CA", "Stock (CA)", "CP", "Canadian Pacific Kansas City Ltd", "CAD", "Canadian Dollar", "CPKC vs Canadian Dollar"),
+        ("ENB.CA", "Stock (CA)", "ENB", "Enbridge Inc", "CAD", "Canadian Dollar", "Enbridge vs Canadian Dollar"),
+        ("BMO.CA", "Stock (CA)", "BMO", "Bank of Montreal", "CAD", "Canadian Dollar", "Bank of Montreal vs Canadian Dollar"),
+        ("BNS.CA", "Stock (CA)", "BNS", "Bank of Nova Scotia", "CAD", "Canadian Dollar", "Bank of Nova Scotia vs Canadian Dollar"),
+        ("CNQ.CA", "Stock (CA)", "CNQ", "Canadian Natural Resources Ltd", "CAD", "Canadian Dollar", "Canadian Natural Resources vs Canadian Dollar"),
+        ("TRI.CA", "Stock (CA)", "TRI", "Thomson Reuters Corp", "CAD", "Canadian Dollar", "Thomson Reuters vs Canadian Dollar")
+    ]
+    stock_in_data = [
+        ("RELIANCE.IN", "Stock (IN)", "RELIANCE", "Reliance Industries Ltd", "INR", "Indian Rupee", "Reliance Industries vs Indian Rupee"),
+        ("TCS.IN", "Stock (IN)", "TCS", "Tata Consultancy Services Ltd", "INR", "Indian Rupee", "TCS vs Indian Rupee"),
+        ("HDFCBANK.IN", "Stock (IN)", "HDFCBANK", "HDFC Bank Ltd", "INR", "Indian Rupee", "HDFC Bank vs Indian Rupee"),
+        ("ICICIBANK.IN", "Stock (IN)", "ICICIBANK", "ICICI Bank Ltd", "INR", "Indian Rupee", "ICICI Bank vs Indian Rupee"),
+        ("INFY.IN", "Stock (IN)", "INFY", "Infosys Ltd", "INR", "Indian Rupee", "Infosys vs Indian Rupee")
+    ]
+    stock_sg_data = [
+        ("D05.SG", "Stock (SG)", "D05", "DBS Group Holdings Ltd", "SGD", "Singapore Dollar", "DBS Group vs Singapore Dollar"),
+        ("O39.SG", "Stock (SG)", "O39", "Oversea-Chinese Banking Corp Ltd", "SGD", "Singapore Dollar", "OCBC vs Singapore Dollar"),
+        ("U11.SG", "Stock (SG)", "U11", "United Overseas Bank Ltd", "SGD", "Singapore Dollar", "UOB vs Singapore Dollar"),
+        ("Z74.SG", "Stock (SG)", "Z74", "Singapore Telecommunications Ltd", "SGD", "Singapore Dollar", "Singtel vs Singapore Dollar")
+    ]
     provider_uid = f"Spotware ({Platform.cTrader.name})"
-    for uid, cat, base_asset, base_name, quote_asset, quote_name, desc in forex_data + index_data + crypto_data + metal_data + energy_data + stock_data + etf_data + stock_au_data + etf_au_data + stock_gb_data + stock_de_data + stock_hk_data + stock_ch_data + stock_dk_data + stock_no_data + stock_se_data + stock_fi_data + stock_ie_data + stock_be_data:
+    for uid, cat, base_asset, base_name, quote_asset, quote_name, desc in forex_data + index_data + crypto_data + metal_data + energy_data + stock_data + etf_data + stock_au_data + etf_au_data + stock_gb_data + stock_de_data + stock_hk_data + stock_ch_data + stock_dk_data + stock_no_data + stock_se_data + stock_fi_data + stock_ie_data + stock_be_data + stock_fr_data + stock_pt_data + stock_es_data + stock_at_data + stock_jp_data + stock_nl_data + stock_it_data + stock_ca_data + stock_in_data + stock_sg_data:
         ticker = TickerAPI(UID=uid, Category=cat, BaseAsset=base_asset, BaseName=base_name, QuoteAsset=quote_asset, QuoteName=quote_name, Description=desc, db=db)
         ticker.push(by=by)
         inst = TickerAPI.detect(uid)
-        contract = ContractAPI(TickerUID=uid, ProviderUID=provider_uid, Instrument=inst, db=db)
+        contract = ContractAPI(TickerUID=uid, ProviderUID=provider_uid, UID=inst, db=db)
         contract.push(by=by)
-        sec = SecurityAPI(ProviderUID=provider_uid, CategoryUID=cat, TickerUID=uid, Instrument=inst, db=db)
+        sec = SecurityAPI(ProviderUID=provider_uid, CategoryUID=cat, TickerUID=uid, ContractUID=inst, db=db)
         sec.push(by=by)
     timeframes = [
         "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M15", "M20", "M30", "M45",

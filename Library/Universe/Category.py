@@ -14,6 +14,7 @@ class CategoryAPI(DatapointAPI):
     Table: ClassVar[str] = "Category"
 
     UID: str | None = None
+
     Primary: str | None = None
     Secondary: str | None = None
     Alternative: str | None = None

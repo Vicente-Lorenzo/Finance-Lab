@@ -31,6 +31,7 @@ class ProviderAPI(DatapointAPI):
     Table: ClassVar[str] = "Provider"
 
     UID: str | None = None
+
     Platform: Platform | str | None = None
     Name: str | None = None
     Abbreviation: str | None = None
