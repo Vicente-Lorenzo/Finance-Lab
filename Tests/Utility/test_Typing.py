@@ -1,6 +1,17 @@
 from dataclasses import dataclass
 
-from Library.Utility.Typing import *
+from Library.Utility.Typing import (
+    cast,
+    equals,
+    contains,
+    hasmember,
+    hasmethod,
+    getmethod,
+    hasproperty,
+    getproperty,
+    hasattribute,
+    getattribute
+)
 
 def test_hasmember():
     class Base:
