@@ -133,12 +133,27 @@ class PostgresDatabaseAPI(DatabaseAPI):
             autocommit=autocommit
         )
 
+    def _driver_(self, admin: bool) -> Any:
+        database = self._ADMIN_ if admin or not self.database else self.database
+        connection = psycopg.connect(
+            host=self._host_,
+            port=self._port_,
+            user=self._user_,
+            password=self._password_,
+            dbname=database
+        )
+        connection.autocommit = self._autocommit_
+        return connection
+
     @property
     def _quote_(self) -> tuple[str, str]:
         return '"', '"'
 
     def _cast_(self, column: str) -> str:
         return f"{column}::TEXT"
+
+    def _limit_(self, sql: str, limit: int) -> str:
+        return f"{sql} LIMIT {limit}"
 
     def _upsert_(self, target: str, columns: Sequence[str], keys: Sequence[str], exclude: Sequence[str] = ()) -> str:
         ql, qr = self._quote_
@@ -153,18 +168,3 @@ class PostgresDatabaseAPI(DatabaseAPI):
         else:
             sql += " DO NOTHING"
         return sql
-
-    def _limit_(self, sql: str, limit: int) -> str:
-        return f"{sql} LIMIT {limit}"
-
-    def _driver_(self, admin: bool) -> Any:
-        database = self._ADMIN_ if admin or not self.database else self.database
-        connection = psycopg.connect(
-            host=self._host_,
-            port=self._port_,
-            user=self._user_,
-            password=self._password_,
-            dbname=database
-        )
-        connection.autocommit = self._autocommit_
-        return connection

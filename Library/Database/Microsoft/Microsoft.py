@@ -133,12 +133,28 @@ class MicrosoftDatabaseAPI(DatabaseAPI):
             autocommit=autocommit
         )
 
+    def _driver_(self, admin: bool) -> Any:
+        database = self._ADMIN_ if admin or not self.database else self.database
+        connection = pymssql.connect(
+            server=self._host_,
+            port=str(self._port_),
+            user=self._user_,
+            password=self._password_,
+            database=database
+        )
+        connection.autocommit(self._autocommit_)
+        return connection
+
     @property
     def _quote_(self) -> tuple[str, str]:
         return "[", "]"
 
     def _cast_(self, column: str) -> str:
         return f"CAST({column} AS NVARCHAR(MAX))"
+
+    def _limit_(self, sql: str, limit: int) -> str:
+        import re
+        return re.sub(r"(?i)^SELECT\s+", f"SELECT TOP {limit} ", sql.strip())
 
     def _upsert_(self, target: str, columns: Sequence[str], keys: Sequence[str], exclude: Sequence[str] = ()) -> str:
         ql, qr = self._quote_
@@ -153,19 +169,3 @@ class MicrosoftDatabaseAPI(DatabaseAPI):
         insert_vals = ", ".join(f"source.{ql}{c}{qr}" for c in columns)
         sql += f" WHEN NOT MATCHED THEN INSERT ({source_cols}) VALUES ({insert_vals});"
         return sql
-
-    def _limit_(self, sql: str, limit: int) -> str:
-        import re
-        return re.sub(r"(?i)^SELECT\s+", f"SELECT TOP {limit} ", sql.strip())
-
-    def _driver_(self, admin: bool) -> Any:
-        database = self._ADMIN_ if admin or not self.database else self.database
-        connection = pymssql.connect(
-            server=self._host_,
-            port=str(self._port_),
-            user=self._user_,
-            password=self._password_,
-            database=database
-        )
-        connection.autocommit(self._autocommit_)
-        return connection

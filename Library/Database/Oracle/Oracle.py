@@ -133,40 +133,6 @@ class OracleDatabaseAPI(DatabaseAPI):
             autocommit=autocommit
         )
 
-    @property
-    def _quote_(self) -> tuple[str, str]:
-        return '"', '"'
-
-    def _cast_(self, column: str) -> str:
-        return f"TO_CHAR({column})"
-
-    def _upsert_(self, target: str, columns: Sequence[str], keys: Sequence[str], exclude: Sequence[str] = ()) -> str:
-        ql, qr = self._quote_
-        n = QueryAPI.Named
-        source_cols = ", ".join(f"{n}{c}{n} AS {ql}{c}{qr}" for c in columns)
-        on_cond = " AND ".join(f"target.{ql}{k}{qr} = source.{ql}{k}{qr}" for k in keys)
-        updates = ", ".join(f"target.{ql}{c}{qr} = source.{ql}{c}{qr}" for c in columns if c not in keys and c not in exclude)
-        insert_cols = self._quoted_(*columns)
-        insert_vals = ", ".join(f"source.{ql}{c}{qr}" for c in columns)
-        sql = f"MERGE INTO {target} target USING (SELECT {source_cols} FROM dual) source ON ({on_cond})"
-        if updates:
-            sql += f" WHEN MATCHED THEN UPDATE SET {updates}"
-        sql += f" WHEN NOT MATCHED THEN INSERT ({insert_cols}) VALUES ({insert_vals})"
-        return sql
-
-    def _limit_(self, sql: str, limit: int) -> str:
-        return f"{sql} FETCH FIRST {limit} ROWS ONLY"
-
-    def _check_(self, structure: dict | None = None) -> str:
-        structure = structure if structure is not None else self._STRUCTURE_
-        values = []
-        for name, dtype in structure.items():
-            datatype = self._CHECK_DATATYPE_MAPPING_[self._normalize_(dtype)]
-            is_pk = int(isinstance(dtype, PrimaryKey) or (isinstance(dtype, (IdentityKey, ForeignKey)) and dtype.primary))
-            is_fk = int(isinstance(dtype, ForeignKey))
-            values.append(f"SELECT '{name}' AS column_name, '{datatype}' AS data_type, {is_pk} AS is_pk, {is_fk} AS is_fk FROM dual")
-        return "\nUNION ALL\n".join(values)
-
     def _driver_(self, admin: bool) -> Any:
         database = self._ADMIN_ if admin or not self.database else self.database
         dsn = oracledb.makedsn(
@@ -181,3 +147,37 @@ class OracleDatabaseAPI(DatabaseAPI):
         )
         connection.autocommit = self._autocommit_
         return connection
+
+    @property
+    def _quote_(self) -> tuple[str, str]:
+        return '"', '"'
+
+    def _cast_(self, column: str) -> str:
+        return f"TO_CHAR({column})"
+
+    def _limit_(self, sql: str, limit: int) -> str:
+        return f"{sql} FETCH FIRST {limit} ROWS ONLY"
+
+    def _check_(self, structure: dict | None = None) -> str:
+        structure = structure if structure is not None else self._STRUCTURE_
+        values = []
+        for name, dtype in structure.items():
+            datatype = self._CHECK_DATATYPE_MAPPING_[self._normalize_(dtype)]
+            is_pk = int(isinstance(dtype, PrimaryKey) or (isinstance(dtype, (IdentityKey, ForeignKey)) and dtype.primary))
+            is_fk = int(isinstance(dtype, ForeignKey))
+            values.append(f"SELECT '{name}' AS column_name, '{datatype}' AS data_type, {is_pk} AS is_pk, {is_fk} AS is_fk FROM dual")
+        return "\nUNION ALL\n".join(values)
+
+    def _upsert_(self, target: str, columns: Sequence[str], keys: Sequence[str], exclude: Sequence[str] = ()) -> str:
+        ql, qr = self._quote_
+        n = QueryAPI.Named
+        source_cols = ", ".join(f"{n}{c}{n} AS {ql}{c}{qr}" for c in columns)
+        on_cond = " AND ".join(f"target.{ql}{k}{qr} = source.{ql}{k}{qr}" for k in keys)
+        updates = ", ".join(f"target.{ql}{c}{qr} = source.{ql}{c}{qr}" for c in columns if c not in keys and c not in exclude)
+        insert_cols = self._quoted_(*columns)
+        insert_vals = ", ".join(f"source.{ql}{c}{qr}" for c in columns)
+        sql = f"MERGE INTO {target} target USING (SELECT {source_cols} FROM dual) source ON ({on_cond})"
+        if updates:
+            sql += f" WHEN MATCHED THEN UPDATE SET {updates}"
+        sql += f" WHEN NOT MATCHED THEN INSERT ({insert_cols}) VALUES ({insert_vals})"
+        return sql
