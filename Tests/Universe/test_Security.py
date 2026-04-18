@@ -11,7 +11,7 @@ def test_security_initialization(db):
     try:
         sec = SecurityAPI(TickerUID="oanda:eurusd.m", ProviderUID="Pepperstone-Europe", ContractUID=Contract.Spot, db=db)
         assert sec.TickerUID == "EURUSD"
-        assert sec.ProviderUID == "Pepperstone-Europe"
+        assert sec.ProviderUID == "Pepperstone Europe"
         assert sec.ContractUID == Contract.Spot
     except ValueError:
         pass

@@ -40,6 +40,7 @@ from Library.Utility.DateTime import (
     iso_to_datetime,
     seconds_to_string
 )
+from Library.Utility.Memory import memory_to_string
 from Library.Utility.Runtime import (
     find_user,
     is_windows,
@@ -136,6 +137,7 @@ __all__ = [
     "getvariable", "findvariable",
     "cast", "equals", "contains", "format",
     "datetime_to_string", "string_to_datetime", "datetime_to_timestamp", "timestamp_to_datetime", "datetime_to_iso", "iso_to_datetime", "seconds_to_string",
+    "memory_to_string",
     "find_user", "is_windows", "is_linux", "is_mac", "is_local", "is_remote", "is_service",
     "find_ipython", "find_shell", "is_python", "is_console", "is_terminal", "is_notebook", "find_notebook",
     "find_env_var", "match_env_vars", "find_host_port",

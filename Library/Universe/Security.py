@@ -6,7 +6,7 @@ from functools import cached_property
 
 from Library.Database.Dataframe import pl
 from Library.Database.Enumeration import as_enum
-from Library.Database.Database import PrimaryKey, ForeignKey
+from Library.Database.Database import IdentityKey, PrimaryKey, ForeignKey
 from Library.Universe.Ticker import TickerAPI, Contract
 from Library.Universe.Provider import ProviderAPI
 from Library.Universe.Category import CategoryAPI
@@ -19,6 +19,8 @@ class SecurityAPI(DatapointAPI):
 
     Table: ClassVar[str] = "Security"
 
+    UID: int | None = None
+
     ProviderUID: str
     CategoryUID: str | None = None
     TickerUID: str
@@ -27,6 +29,7 @@ class SecurityAPI(DatapointAPI):
     @classmethod
     def Structure(cls) -> dict:
         return {
+            cls.ID.UID: IdentityKey(pl.Int64),
             cls.ID.ProviderUID: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{ProviderAPI.Table}"("{ProviderAPI.ID.UID}")', primary=True),
             cls.ID.CategoryUID: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{CategoryAPI.Table}"("{CategoryAPI.ID.UID}")', primary=True),
             cls.ID.TickerUID: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{TickerAPI.Table}"("{TickerAPI.ID.UID}")', primary=True),
@@ -47,6 +50,7 @@ class SecurityAPI(DatapointAPI):
         self.pull()
 
     def _apply_(self, row: dict) -> None:
+        if self.UID is None: self.UID = row.get("UID")
         if not self.CategoryUID: self.CategoryUID = row.get("CategoryUID")
         if not self.ContractUID: self.ContractUID = as_enum(Contract, row.get("ContractUID"))
 
@@ -55,9 +59,9 @@ class SecurityAPI(DatapointAPI):
             row = super().pull(condition=condition, parameters=parameters)
             if row: self._apply_(row)
             return
-        inst = self.ContractUID.name if isinstance(self.ContractUID, Contract) else self.ContractUID
-        params = {"provider": self.ProviderUID, "ticker": self.TickerUID, "uid": inst}
-        clauses = ['"ProviderUID" = :provider:', '"TickerUID" = :ticker:', '"ContractUID" = :uid:']
+        contract = self.ContractUID.name if isinstance(self.ContractUID, Contract) else self.ContractUID
+        params = {"provider": self.ProviderUID, "ticker": self.TickerUID, "contract": contract}
+        clauses = ['"ProviderUID" = :provider:', '"TickerUID" = :ticker:', '"ContractUID" = :contract:']
         if self.CategoryUID:
             clauses.insert(1, '"CategoryUID" = :category:')
             params["category"] = self.CategoryUID
@@ -73,6 +77,7 @@ class SecurityAPI(DatapointAPI):
         if self.CategoryUID: self.Category.push(by=by)
         self.Contract.push(by=by)
         super().push(by=by, key=key or [self.ID.ProviderUID, self.ID.CategoryUID, self.ID.TickerUID, self.ID.ContractUID])
+        if self.UID is None: self.pull()
 
     @cached_property
     def Ticker(self) -> TickerAPI:
@@ -94,4 +99,4 @@ class SecurityAPI(DatapointAPI):
         return f"{self.TickerUID}@{self.ProviderUID}"
 
     def __repr__(self) -> str:
-        return f"SecurityAPI(ProviderUID={self.ProviderUID!r}, CategoryUID={self.CategoryUID!r}, TickerUID={self.TickerUID!r})"
+        return f"SecurityAPI(UID={self.UID!r}, ProviderUID={self.ProviderUID!r}, CategoryUID={self.CategoryUID!r}, TickerUID={self.TickerUID!r}, ContractUID={self.ContractUID!r})"
