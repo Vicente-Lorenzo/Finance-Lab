@@ -43,7 +43,6 @@ dependencies:
     - blpapi
     - xlwings
     - yfinance
-    - ctrader-open-api
 
     - dash
     - dash-extensions
@@ -56,3 +55,6 @@ dependencies:
     - torchvision
     - pytorch-cuda
     - gymnasium
+
+    - pip:
+        - ctrader-open-api
