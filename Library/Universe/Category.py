@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import ClassVar, Sequence, TYPE_CHECKING
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from Library.Database.Dataframe import pl
 from Library.Database import PrimaryKey
@@ -17,8 +17,6 @@ class CategoryAPI(DatapointAPI):
     Primary: str | None = None
     Secondary: str | None = None
     Alternative: str | None = None
-
-    _db_: DatabaseAPI | None = field(default=None, init=False, repr=False)
 
     @classmethod
     def Structure(cls) -> dict:
@@ -36,32 +34,33 @@ class CategoryAPI(DatapointAPI):
         self._db_.migrate(schema=DatapointAPI.Schema, table=self.Table, structure=self.Structure())
         self.pull()
 
-    def pull(self, condition: str | None = None) -> None:
-        if condition:
-            row = super().pull(condition=condition)
-            if row:
-                if not self.UID: self.UID = row.get("UID")
-                if self.Primary is None: self.Primary = row.get("Primary")
-                if self.Secondary is None: self.Secondary = row.get("Secondary")
-                if self.Alternative is None: self.Alternative = row.get("Alternative")
-            return
-        if not self.UID and not self.Primary: return
-        row = None
-        if self.UID:
-            escaped = self.UID.replace("'", "''")
-            row = super().pull(condition=f"\"UID\" = '{escaped}'")
-            if not row: row = super().pull(condition=f"\"Primary\" = '{escaped}' OR \"Secondary\" = '{escaped}' OR \"Alternative\" = '{escaped}'")
-        if not row and self.Primary and self.Secondary:
-            prim = self.Primary.replace("'", "''")
-            sec = self.Secondary.replace("'", "''")
-            row = super().pull(condition=f"\"Primary\" = '{prim}' AND \"Secondary\" = '{sec}'")
-        if not row:
-            if self.Primary is None or self.Secondary is None: raise ValueError(f"Category '{self.UID or self.Primary}' not found in database and lacks required fields for creation.")
-            return
+    def _apply_(self, row: dict) -> None:
         if not self.UID: self.UID = row.get("UID")
         if self.Primary is None: self.Primary = row.get("Primary")
         if self.Secondary is None: self.Secondary = row.get("Secondary")
         if self.Alternative is None: self.Alternative = row.get("Alternative")
+
+    def pull(self, condition: str | None = None, parameters: dict | None = None) -> None:
+        if condition:
+            row = super().pull(condition=condition, parameters=parameters)
+            if row: self._apply_(row)
+            return
+        if not self.UID and not self.Primary: return
+        row = None
+        if self.UID:
+            row = super().pull(
+                condition='"UID" = :value: OR "Primary" = :value: OR "Secondary" = :value: OR "Alternative" = :value:',
+                parameters={"value": self.UID}
+            )
+        if not row and self.Primary and self.Secondary:
+            row = super().pull(
+                condition='"Primary" = :primary: AND "Secondary" = :secondary:',
+                parameters={"primary": self.Primary, "secondary": self.Secondary}
+            )
+        if not row:
+            if self.Primary is None or self.Secondary is None: raise ValueError(f"Category '{self.UID or self.Primary}' not found in database and lacks required fields for creation.")
+            return
+        self._apply_(row)
 
     def push(self, by: str, key: str | Sequence[str] | None = None) -> None:
         super().push(by=by, key=key or self.ID.UID)

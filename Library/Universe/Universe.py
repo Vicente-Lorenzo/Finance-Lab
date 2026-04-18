@@ -4,6 +4,6 @@ from dataclasses import dataclass
 
 from Library.Database.Datapoint import DatapointAPI
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(kw_only=True)
 class UniverseAPI(DatapointAPI):
     pass

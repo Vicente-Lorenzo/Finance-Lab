@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import re
 from typing import ClassVar, Sequence, TYPE_CHECKING
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from Library.Database.Dataframe import pl
 from Library.Database.Enumeration import Enumeration
@@ -9,6 +10,20 @@ from Library.Database import PrimaryKey, ForeignKey
 from Library.Universe.Category import CategoryAPI
 from Library.Database.Datapoint import DatapointAPI
 if TYPE_CHECKING: from Library.Database import DatabaseAPI
+
+_FUTURES_PATTERNS_ = (
+    re.compile(r"-F$"),
+    re.compile(r"-[A-Z]{3}\d{2}$"),
+    re.compile(r"[FGHJKMNQUVXZ]\d{1,2}$"),
+    re.compile(r"\d!$"),
+)
+_PREFIX_PATTERN_ = re.compile(r"^[^:]+:")
+_TRIM_PATTERN_ = re.compile(r"[#.+\-_]+$")
+_SUFFIX_LIST_ = sorted(
+    [".m", ".micro", ".pro", ".p", ".raw", ".ecn", ".s", ".std", ".i", ".ins",
+     ".z", ".v", ".x", ".plus", "+", "-", "_sb", ".c", ".cfd"],
+    key=len, reverse=True
+)
 
 class Instrument(Enumeration):
     Spot = 0
@@ -29,8 +44,6 @@ class TickerAPI(DatapointAPI):
     QuoteName: str | None = None
     Description: str | None = None
 
-    _db_: DatabaseAPI | None = field(default=None, init=False, repr=False)
-
     @classmethod
     def Structure(cls) -> dict:
         return {
@@ -46,33 +59,21 @@ class TickerAPI(DatapointAPI):
 
     @staticmethod
     def normalize(uid: str) -> str:
-        import re
-        uid = re.sub(r"^[^:]+:", "", uid)
-        uid = re.sub(r"[#.+\-_]+$", "", uid)
-        uid = re.sub(r"-F$", "", uid)
-        uid = re.sub(r"-[A-Z]{3}\d{2}$", "", uid)
-        uid = re.sub(r"[FGHJKMNQUVXZ]\d{1,2}$", "", uid)
-        uid = re.sub(r"\d!$", "", uid)
-        suffix_list = [
-            ".m", ".micro", ".pro", ".p", ".raw", ".ecn", ".s", ".std", ".i", ".ins",
-            ".z", ".v", ".x", ".plus", "+", "-", "_sb", ".c", ".cfd"
-        ]
-        suffix_list.sort(key=len, reverse=True)
+        uid = _PREFIX_PATTERN_.sub("", uid)
+        uid = _TRIM_PATTERN_.sub("", uid)
+        for pattern in _FUTURES_PATTERNS_: uid = pattern.sub("", uid)
         lower_uid = uid.lower()
-        for suffix in suffix_list:
+        for suffix in _SUFFIX_LIST_:
             if lower_uid.endswith(suffix):
                 uid = uid[:-len(suffix)]
                 break
-        uid = re.sub(r"[#.+\-_]+$", "", uid)
+        uid = _TRIM_PATTERN_.sub("", uid)
         return uid.upper()
 
     @staticmethod
     def detect(uid: str) -> Instrument:
-        import re
-        if re.search(r"-F$", uid): return Instrument.Future
-        if re.search(r"-[A-Z]{3}\d{2}$", uid): return Instrument.Future
-        if re.search(r"[FGHJKMNQUVXZ]\d{1,2}$", uid): return Instrument.Future
-        if re.search(r"\d!$", uid): return Instrument.Future
+        for pattern in _FUTURES_PATTERNS_:
+            if pattern.search(uid): return Instrument.Future
         return Instrument.Spot
 
     def __post_init__(self, db: DatabaseAPI | None) -> None:
@@ -81,25 +82,7 @@ class TickerAPI(DatapointAPI):
         self._db_.migrate(schema=DatapointAPI.Schema, table=self.Table, structure=self.Structure())
         self.pull()
 
-    def pull(self, condition: str | None = None) -> None:
-        if condition:
-            row = super().pull(condition=condition)
-            if row:
-                if not self.UID: self.UID = row.get("UID")
-                if self.Category is None: self.Category = row.get("Category")
-                if self.BaseAsset is None: self.BaseAsset = row.get("BaseAsset")
-                if self.BaseName is None: self.BaseName = row.get("BaseName")
-                if self.QuoteAsset is None: self.QuoteAsset = row.get("QuoteAsset")
-                if self.QuoteName is None: self.QuoteName = row.get("QuoteName")
-                if self.Description is None: self.Description = row.get("Description")
-            return
-        if not self.UID: return
-        escaped = self.UID.replace("'", "''")
-        row = super().pull(condition=f"\"UID\" = '{escaped}'")
-        if not row: row = super().pull(condition=f"\"Description\" = '{escaped}'")
-        if not row:
-            if self.BaseAsset is None and self.QuoteAsset is None: raise ValueError(f"Ticker '{self.UID}' not found in database and lacks required fields for creation.")
-            return
+    def _apply_(self, row: dict) -> None:
         if not self.UID: self.UID = row.get("UID")
         if self.Category is None: self.Category = row.get("Category")
         if self.BaseAsset is None: self.BaseAsset = row.get("BaseAsset")
@@ -107,6 +90,21 @@ class TickerAPI(DatapointAPI):
         if self.QuoteAsset is None: self.QuoteAsset = row.get("QuoteAsset")
         if self.QuoteName is None: self.QuoteName = row.get("QuoteName")
         if self.Description is None: self.Description = row.get("Description")
+
+    def pull(self, condition: str | None = None, parameters: dict | None = None) -> None:
+        if condition:
+            row = super().pull(condition=condition, parameters=parameters)
+            if row: self._apply_(row)
+            return
+        if not self.UID: return
+        row = super().pull(
+            condition='"UID" = :value: OR "Description" = :value:',
+            parameters={"value": self.UID}
+        )
+        if not row:
+            if self.BaseAsset is None and self.QuoteAsset is None: raise ValueError(f"Ticker '{self.UID}' not found in database and lacks required fields for creation.")
+            return
+        self._apply_(row)
 
     def push(self, by: str, key: str | Sequence[str] | None = None) -> None:
         super().push(by=by, key=key or self.ID.UID)

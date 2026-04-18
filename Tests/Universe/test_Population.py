@@ -31,7 +31,13 @@ def test_populate_universe(db):
         ("ETF (GB)", "ETF", "Great Britain", "Equity"),
         ("Stock (DE)", "Stock", "Germany", "Equity"),
         ("Stock (HK)", "Stock", "Hong Kong", "Equity"),
-        ("Stock (CH)", "Stock", "Switzerland", "Equity")
+        ("Stock (CH)", "Stock", "Switzerland", "Equity"),
+        ("Stock (DK)", "Stock", "Denmark", "Equity"),
+        ("Stock (NO)", "Stock", "Norway", "Equity"),
+        ("Stock (SE)", "Stock", "Sweden", "Equity"),
+        ("Stock (FI)", "Stock", "Finland", "Equity"),
+        ("Stock (IE)", "Stock", "Ireland", "Equity"),
+        ("Stock (BE)", "Stock", "Belgium", "Equity")
     ]
     for uid, primary, secondary, alt in categories:
         cat = CategoryAPI(UID=uid, Primary=primary, Secondary=secondary, Alternative=alt, db=db)
@@ -1312,8 +1318,69 @@ def test_populate_universe(db):
         ("SOON.CH", "Stock (CH)", "SOON", "Sonova Holding AG", "CHF", "Swiss Franc", "Sonova Holding AG vs Swiss Franc"),
         ("LOGN.CH", "Stock (CH)", "LOGN", "Logitech International SA", "CHF", "Swiss Franc", "Logitech International vs Swiss Franc")
     ]
+    stock_dk_data = [
+        ("NOVOB.DK", "Stock (DK)", "NOVOB", "Novo Nordisk A/S", "DKK", "Danish Krone", "Novo Nordisk A/S vs Danish Krone"),
+        ("DSV.DK", "Stock (DK)", "DSV", "DSV A/S", "DKK", "Danish Krone", "DSV A/S vs Danish Krone"),
+        ("MAERSKB.DK", "Stock (DK)", "MAERSKB", "A.P. Moller - Maersk A/S", "DKK", "Danish Krone", "A.P. Moller - Maersk vs Danish Krone"),
+        ("COLOB.DK", "Stock (DK)", "COLOB", "Coloplast A/S", "DKK", "Danish Krone", "Coloplast A/S vs Danish Krone"),
+        ("ORSTED.DK", "Stock (DK)", "ORSTED", "Orsted A/S", "DKK", "Danish Krone", "Orsted A/S vs Danish Krone"),
+        ("GMAB.DK", "Stock (DK)", "GMAB", "Genmab A/S", "DKK", "Danish Krone", "Genmab A/S vs Danish Krone"),
+        ("VWS.DK", "Stock (DK)", "VWS", "Vestas Wind Systems A/S", "DKK", "Danish Krone", "Vestas Wind Systems vs Danish Krone"),
+        ("CARLB.DK", "Stock (DK)", "CARLB", "Carlsberg A/S", "DKK", "Danish Krone", "Carlsberg A/S vs Danish Krone"),
+        ("DANSKE.DK", "Stock (DK)", "DANSKE", "Danske Bank A/S", "DKK", "Danish Krone", "Danske Bank vs Danish Krone")
+    ]
+    stock_no_data = [
+        ("EQNR.NO", "Stock (NO)", "EQNR", "Equinor ASA", "NOK", "Norwegian Krone", "Equinor ASA vs Norwegian Krone"),
+        ("DNB.NO", "Stock (NO)", "DNB", "DNB Bank ASA", "NOK", "Norwegian Krone", "DNB Bank ASA vs Norwegian Krone"),
+        ("AKRBP.NO", "Stock (NO)", "AKRBP", "Aker BP ASA", "NOK", "Norwegian Krone", "Aker BP ASA vs Norwegian Krone"),
+        ("TEL.NO", "Stock (NO)", "TEL", "Telenor ASA", "NOK", "Norwegian Krone", "Telenor ASA vs Norwegian Krone"),
+        ("NHY.NO", "Stock (NO)", "NHY", "Norsk Hydro ASA", "NOK", "Norwegian Krone", "Norsk Hydro ASA vs Norwegian Krone"),
+        ("YAR.NO", "Stock (NO)", "YAR", "Yara International ASA", "NOK", "Norwegian Krone", "Yara International ASA vs Norwegian Krone"),
+        ("MOWI.NO", "Stock (NO)", "MOWI", "Mowi ASA", "NOK", "Norwegian Krone", "Mowi ASA vs Norwegian Krone")
+    ]
+    stock_se_data = [
+        ("ATCOA.SE", "Stock (SE)", "ATCOA", "Atlas Copco AB", "SEK", "Swedish Krona", "Atlas Copco AB vs Swedish Krona"),
+        ("INVEB.SE", "Stock (SE)", "INVEB", "Investor AB", "SEK", "Swedish Krona", "Investor AB vs Swedish Krona"),
+        ("VOLVB.SE", "Stock (SE)", "VOLVB", "AB Volvo", "SEK", "Swedish Krona", "AB Volvo vs Swedish Krona"),
+        ("ASSAB.SE", "Stock (SE)", "ASSAB", "Assa Abloy AB", "SEK", "Swedish Krona", "Assa Abloy AB vs Swedish Krona"),
+        ("SEBA.SE", "Stock (SE)", "SEBA", "Skandinaviska Enskilda Banken AB", "SEK", "Swedish Krona", "SEB vs Swedish Krona"),
+        ("HMB.SE", "Stock (SE)", "HMB", "H & M Hennes & Mauritz AB", "SEK", "Swedish Krona", "H&M vs Swedish Krona"),
+        ("HEXAB.SE", "Stock (SE)", "HEXAB", "Hexagon AB", "SEK", "Swedish Krona", "Hexagon AB vs Swedish Krona"),
+        ("SAND.SE", "Stock (SE)", "SAND", "Sandvik AB", "SEK", "Swedish Krona", "Sandvik AB vs Swedish Krona"),
+        ("EVO.SE", "Stock (SE)", "EVO", "Evolution AB", "SEK", "Swedish Krona", "Evolution AB vs Swedish Krona"),
+        ("SWEDA.SE", "Stock (SE)", "SWEDA", "Swedbank AB", "SEK", "Swedish Krona", "Swedbank AB vs Swedish Krona"),
+        ("ERICB.SE", "Stock (SE)", "ERICB", "Telefonaktiebolaget LM Ericsson", "SEK", "Swedish Krona", "Ericsson vs Swedish Krona"),
+        ("SHBA.SE", "Stock (SE)", "SHBA", "Svenska Handelsbanken AB", "SEK", "Swedish Krona", "Svenska Handelsbanken vs Swedish Krona")
+    ]
+    stock_fi_data = [
+        ("NDA.FI", "Stock (FI)", "NDA", "Nordea Bank Abp", "EUR", "Euro", "Nordea Bank Abp vs Euro"),
+        ("NESTE.FI", "Stock (FI)", "NESTE", "Neste Oyj", "EUR", "Euro", "Neste Oyj vs Euro"),
+        ("KNEBV.FI", "Stock (FI)", "KNEBV", "Kone Oyj", "EUR", "Euro", "Kone Oyj vs Euro"),
+        ("NOKIA.FI", "Stock (FI)", "NOKIA", "Nokia Oyj", "EUR", "Euro", "Nokia Oyj vs Euro"),
+        ("SAMPO.FI", "Stock (FI)", "SAMPO", "Sampo Oyj", "EUR", "Euro", "Sampo Oyj vs Euro"),
+        ("UPM.FI", "Stock (FI)", "UPM", "UPM-Kymmene Oyj", "EUR", "Euro", "UPM-Kymmene Oyj vs Euro"),
+        ("FORTUM.FI", "Stock (FI)", "FORTUM", "Fortum Oyj", "EUR", "Euro", "Fortum Oyj vs Euro")
+    ]
+    stock_ie_data = [
+        ("RYA.IE", "Stock (IE)", "RYA", "Ryanair Holdings plc", "EUR", "Euro", "Ryanair Holdings plc vs Euro"),
+        ("KSP.IE", "Stock (IE)", "KSP", "Kingspan Group plc", "EUR", "Euro", "Kingspan Group plc vs Euro"),
+        ("BIRG.IE", "Stock (IE)", "BIRG", "Bank of Ireland Group plc", "EUR", "Euro", "Bank of Ireland Group plc vs Euro")
+    ]
+    stock_be_data = [
+        ("ABI.BE", "Stock (BE)", "ABI", "Anheuser-Busch InBev SA/NV", "EUR", "Euro", "Anheuser-Busch InBev vs Euro"),
+        ("ARGX.BE", "Stock (BE)", "ARGX", "argenx SE", "EUR", "Euro", "argenx SE vs Euro"),
+        ("KBC.BE", "Stock (BE)", "KBC", "KBC Group NV", "EUR", "Euro", "KBC Group NV vs Euro"),
+        ("UCB.BE", "Stock (BE)", "UCB", "UCB SA", "EUR", "Euro", "UCB SA vs Euro"),
+        ("SOLB.BE", "Stock (BE)", "SOLB", "Solvay SA", "EUR", "Euro", "Solvay SA vs Euro"),
+        ("GBLB.BE", "Stock (BE)", "GBLB", "Groupe Bruxelles Lambert SA", "EUR", "Euro", "Groupe Bruxelles Lambert vs Euro"),
+        ("DIE.BE", "Stock (BE)", "DIE", "Dieteren Group", "EUR", "Euro", "Dieteren Group vs Euro"),
+        ("ELI.BE", "Stock (BE)", "ELI", "Elia Group SA/NV", "EUR", "Euro", "Elia Group SA/NV vs Euro"),
+        ("SOF.BE", "Stock (BE)", "SOF", "Sofina SA", "EUR", "Euro", "Sofina SA vs Euro"),
+        ("AGS.BE", "Stock (BE)", "AGS", "Ageas SA/NV", "EUR", "Euro", "Ageas SA/NV vs Euro"),
+        ("UMI.BE", "Stock (BE)", "UMI", "Umicore SA", "EUR", "Euro", "Umicore SA vs Euro")
+    ]
     provider_uid = f"Spotware ({Platform.cTrader.name})"
-    for uid, cat, base_asset, base_name, quote_asset, quote_name, desc in forex_data + index_data + crypto_data + metal_data + energy_data + stock_data + etf_data + stock_au_data + etf_au_data + stock_gb_data + stock_de_data + stock_hk_data + stock_ch_data:
+    for uid, cat, base_asset, base_name, quote_asset, quote_name, desc in forex_data + index_data + crypto_data + metal_data + energy_data + stock_data + etf_data + stock_au_data + etf_au_data + stock_gb_data + stock_de_data + stock_hk_data + stock_ch_data + stock_dk_data + stock_no_data + stock_se_data + stock_fi_data + stock_ie_data + stock_be_data:
         ticker = TickerAPI(UID=uid, Category=cat, BaseAsset=base_asset, BaseName=base_name, QuoteAsset=quote_asset, QuoteName=quote_name, Description=desc, db=db)
         ticker.push(by=by)
         inst = TickerAPI.detect(uid)

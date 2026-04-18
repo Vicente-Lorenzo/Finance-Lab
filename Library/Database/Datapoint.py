@@ -62,9 +62,9 @@ class DatapointAPI(DataclassAPI):
         clean_data = {k: v for k, v in data.items() if k in valid_keys}
         self._db_.upsert(schema=self.Schema, table=self.Table, data=clean_data, key=key, exclude=["CreatedAt", "CreatedBy"])
 
-    def pull(self, condition: str | None = None) -> dict | None:
+    def pull(self, condition: str | None = None, parameters: dict | None = None) -> dict | None:
         if condition is None: return None
-        df = self._db_.select(schema=self.Schema, table=self.Table, condition=condition, limit=1, legacy=False)
+        df = self._db_.select(schema=self.Schema, table=self.Table, condition=condition, parameters=parameters, limit=1, legacy=False)
         if df.is_empty(): return None
         row = df.row(0, named=True)
         self._pull_audit_(row)

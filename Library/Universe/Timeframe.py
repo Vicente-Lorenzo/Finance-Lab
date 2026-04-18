@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from typing import ClassVar, Sequence, TYPE_CHECKING
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from Library.Database.Dataframe import pl
 from Library.Database import PrimaryKey
@@ -11,6 +11,9 @@ if TYPE_CHECKING: from Library.Database import DatabaseAPI
 
 _UNIT_MAP_ = {"S": "Second", "M": "Minute", "H": "Hour", "D": "Day", "W": "Week", "MN": "Month", "Y": "Year"}
 _MINUTES_MAP_ = {"S": 1 / 60, "M": 1, "H": 60, "D": 1440, "W": 10080, "MN": 43200, "Y": 525600}
+_NAME_TO_UNIT_ = {v: k for k, v in _UNIT_MAP_.items()}
+_UID_PATTERN_ = re.compile(r"^([A-Z]+)(\d*)$")
+_ALIAS_UID_PATTERN_ = re.compile(r"^(\d*)([A-Z]+)(\d*)$")
 
 @dataclass(kw_only=True)
 class TimeframeAPI(DatapointAPI):
@@ -21,8 +24,6 @@ class TimeframeAPI(DatapointAPI):
     Name: str | None = None
     Unit: str | None = None
     Value: int | None = None
-
-    _db_: DatabaseAPI | None = field(default=None, init=False, repr=False)
 
     @classmethod
     def Structure(cls) -> dict:
@@ -35,7 +36,7 @@ class TimeframeAPI(DatapointAPI):
         }
 
     @staticmethod
-    def normalize(uid: str) -> str:
+    def normalize(uid: str | None) -> str:
         if not uid: return ""
         uid = str(uid).strip().upper()
         if uid in ["DAILY", "D", "DAY", "1D"]: return "D1"
@@ -45,7 +46,7 @@ class TimeframeAPI(DatapointAPI):
         if uid in ["MINUTELY", "M", "MINUTE", "1M"]: return "M1"
         if uid in ["SECONDLY", "S", "SECOND", "1S"]: return "S1"
         if uid in ["YEARLY", "Y", "YEAR", "1Y"]: return "Y1"
-        match = re.match(r"^(\d*)([A-Z]+)(\d*)$", uid)
+        match = _ALIAS_UID_PATTERN_.match(uid)
         if match:
             prefix, unit, suffix = match.groups()
             v = int(prefix or suffix or 1)
@@ -68,7 +69,7 @@ class TimeframeAPI(DatapointAPI):
 
     def _infer_(self) -> None:
         if not self.UID: return
-        match = re.match(r"^([A-Z]+)(\d*)$", self.UID)
+        match = _UID_PATTERN_.match(self.UID)
         if not match: return
         unit, suffix = match.groups()
         v = int(suffix or 1)
@@ -77,26 +78,26 @@ class TimeframeAPI(DatapointAPI):
         name = _UNIT_MAP_.get(unit, "Minute")
         self.Name = name if v == 1 else f"{name}{v}"
 
-    def pull(self, condition: str | None = None) -> None:
-        if condition:
-            row = super().pull(condition=condition)
-            if row:
-                if not self.UID: self.UID = row.get("UID")
-                if self.Name is None: self.Name = row.get("Name")
-                if self.Unit is None: self.Unit = row.get("Unit")
-                if self.Value is None: self.Value = row.get("Value")
-            return
-        if not self.UID: return
-        escaped = self.UID.replace("'", "''")
-        row = super().pull(condition=f"\"UID\" = '{escaped}'")
-        if not row: row = super().pull(condition=f"\"Name\" = '{escaped}'")
-        if not row:
-            if self.Unit is None and not re.match(r"^([A-Z]+)(\d*)$", self.UID): raise ValueError(f"Timeframe '{self.UID}' not found in database and lacks correct format for creation.")
-            return
+    def _apply_(self, row: dict) -> None:
         if not self.UID: self.UID = row.get("UID")
         if self.Name is None: self.Name = row.get("Name")
         if self.Unit is None: self.Unit = row.get("Unit")
         if self.Value is None: self.Value = row.get("Value")
+
+    def pull(self, condition: str | None = None, parameters: dict | None = None) -> None:
+        if condition:
+            row = super().pull(condition=condition, parameters=parameters)
+            if row: self._apply_(row)
+            return
+        if not self.UID: return
+        row = super().pull(
+            condition='"UID" = :value: OR "Name" = :value:',
+            parameters={"value": self.UID}
+        )
+        if not row:
+            if self.Unit is None and not _UID_PATTERN_.match(self.UID): raise ValueError(f"Timeframe '{self.UID}' not found in database and lacks correct format for creation.")
+            return
+        self._apply_(row)
 
     def push(self, by: str, key: str | Sequence[str] | None = None) -> None:
         super().push(by=by, key=key or self.ID.UID)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import ClassVar, Sequence, TYPE_CHECKING
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 
 from Library.Database.Dataframe import pl
@@ -11,8 +11,7 @@ from Library.Universe.Ticker import TickerAPI, Instrument
 from Library.Universe.Provider import ProviderAPI
 from Library.Utility.DateTime import Day
 from Library.Database.Datapoint import DatapointAPI
-if TYPE_CHECKING:
-    from Library.Database import DatabaseAPI
+if TYPE_CHECKING: from Library.Database import DatabaseAPI
 
 class SpreadType(Enumeration):
     Points = 0
@@ -70,8 +69,6 @@ class ContractAPI(DatapointAPI):
     SwapPeriod: int = 24
     Expiry: datetime | None = None
 
-    _db_: DatabaseAPI | None = field(default=None, init=False, repr=False)
-
     @classmethod
     def Structure(cls) -> dict:
         return {
@@ -102,6 +99,7 @@ class ContractAPI(DatapointAPI):
         self.TickerUID = TickerAPI.normalize(self.TickerUID)
         self.ProviderUID = ProviderAPI.normalize(self.ProviderUID)
         self.Instrument = as_enum(Instrument, self.Instrument)
+        if self.Instrument is None: raise ValueError(f"Contract '{self.TickerUID}@{self.ProviderUID}' requires a valid Instrument")
         self.CommissionMode = as_enum(CommissionMode, self.CommissionMode)
         self.SwapMode = as_enum(SwapMode, self.SwapMode)
         self.SwapExtraDay = as_enum(Day, self.SwapExtraDay)
@@ -109,33 +107,7 @@ class ContractAPI(DatapointAPI):
         self._db_.migrate(schema=DatapointAPI.Schema, table=self.Table, structure=self.Structure())
         self.pull()
 
-    def pull(self, condition: str | None = None) -> None:
-        if condition:
-            row = super().pull(condition=condition)
-            if row:
-                if self.Digits is None: self.Digits = row.get("Digits")
-                if self.PointSize is None: self.PointSize = row.get("PointSize")
-                if self.PipSize is None: self.PipSize = row.get("PipSize")
-                if self.LotSize is None: self.LotSize = row.get("LotSize")
-                if self.VolumeMin is None: self.VolumeMin = row.get("VolumeMin")
-                if self.VolumeMax is None: self.VolumeMax = row.get("VolumeMax")
-                if self.VolumeStep is None: self.VolumeStep = row.get("VolumeStep")
-                if self.Commission is None: self.Commission = row.get("Commission")
-                if self.CommissionMode is None: self.CommissionMode = as_enum(CommissionMode, row.get("CommissionMode"))
-                if self.SwapLong is None: self.SwapLong = row.get("SwapLong")
-                if self.SwapShort is None: self.SwapShort = row.get("SwapShort")
-                if self.SwapMode is None: self.SwapMode = as_enum(SwapMode, row.get("SwapMode"))
-                if self.SwapExtraDay is None: self.SwapExtraDay = as_enum(Day, row.get("SwapExtraDay"))
-                if self.SwapSummerTime is None: self.SwapSummerTime = row.get("SwapSummerTime")
-                if self.SwapWinterTime is None: self.SwapWinterTime = row.get("SwapWinterTime")
-                if self.SwapPeriod is None: self.SwapPeriod = row.get("SwapPeriod")
-                if self.Expiry is None: self.Expiry = row.get("Expiry")
-            return
-        t = self.TickerUID.replace("'", "''")
-        p = self.ProviderUID.replace("'", "''")
-        inst = self.Instrument.name if isinstance(self.Instrument, Instrument) else self.Instrument
-        row = super().pull(condition=f"\"TickerUID\" = '{t}' AND \"ProviderUID\" = '{p}' AND \"Instrument\" = '{inst}'")
-        if not row: return
+    def _apply_(self, row: dict) -> None:
         if self.Digits is None: self.Digits = row.get("Digits")
         if self.PointSize is None: self.PointSize = row.get("PointSize")
         if self.PipSize is None: self.PipSize = row.get("PipSize")
@@ -154,8 +126,20 @@ class ContractAPI(DatapointAPI):
         if self.SwapPeriod is None: self.SwapPeriod = row.get("SwapPeriod")
         if self.Expiry is None: self.Expiry = row.get("Expiry")
 
+    def pull(self, condition: str | None = None, parameters: dict | None = None) -> None:
+        if condition:
+            row = super().pull(condition=condition, parameters=parameters)
+            if row: self._apply_(row)
+            return
+        row = super().pull(
+            condition='"TickerUID" = :ticker: AND "ProviderUID" = :provider: AND "Instrument" = :instrument:',
+            parameters={"ticker": self.TickerUID, "provider": self.ProviderUID, "instrument": self.Instrument.name}
+        )
+        if not row: return
+        self._apply_(row)
+
     def push(self, by: str, key: str | Sequence[str] | None = None) -> None:
         super().push(by=by, key=key or [self.ID.TickerUID, self.ID.ProviderUID, self.ID.Instrument])
 
     def __str__(self) -> str:
-        return f"{self.TickerUID}@{self.ProviderUID}"
+        return f"{self.TickerUID}@{self.ProviderUID} ({self.Instrument.name if isinstance(self.Instrument, Instrument) else self.Instrument})"
