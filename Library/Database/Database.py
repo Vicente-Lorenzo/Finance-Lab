@@ -131,6 +131,7 @@ class DatabaseAPI(ServiceAPI, ABC):
         cls._SEARCH_CATALOG_QUERY_ = QueryAPI(PathAPI(path="System/Search.sql", module=module))
         cls._LIST_SESSIONS_QUERY_ = QueryAPI(PathAPI(path="System/Sessions.sql", module=module))
         cls._KILL_SESSION_QUERY_ = QueryAPI(PathAPI(path="System/Kill.sql", module=module))
+        cls._SIZE_CATALOG_QUERY_ = QueryAPI(PathAPI(path="System/Size.sql", module=module))
 
     def __init__(self, *,
                  host: str,
@@ -1225,6 +1226,45 @@ class DatabaseAPI(ServiceAPI, ABC):
             self._log_.error(lambda: f"Kill Operation: Failed to terminate session {id}")
             self._log_.exception(lambda: str(e))
         return self
+
+    def size(self, *,
+               database: str | Sequence | None | Missing = MISSING,
+               schema: str | Sequence | None | Missing = MISSING,
+               table: str | Sequence | None | Missing = MISSING,
+               legacy: bool | Missing = MISSING) -> pd.DataFrame | pl.DataFrame:
+        """
+        Retrieves the storage consumption of databases, schemas, and tables.
+        :param database: Target database(s).
+        :param schema: Target schema(s).
+        :param table: Target table(s).
+        :param legacy: If True, returns Pandas DataFrames instead of Polars.
+        :return: A DataFrame containing storage usage details.
+        """
+        database = database if database is not MISSING else self._database_
+        schema = schema if schema is not MISSING else self._schema_
+        table = table if table is not MISSING else self._table_
+        if isinstance(database, (list, tuple)):
+            return self.frame(self._concat_([self.size(database=d, schema=schema, table=table, legacy=False) for d in database]), legacy=legacy)
+        if isinstance(schema, (list, tuple)):
+            return self.frame(self._concat_([self.size(database=database, schema=s, table=table, legacy=False) for s in schema]), legacy=legacy)
+        if isinstance(table, (list, tuple)):
+            return self.frame(self._concat_([self.size(database=database, schema=schema, table=t, legacy=False) for t in table]), legacy=legacy)
+        database = database or "%"
+        schema = schema or "%"
+        table = table or "%"
+        self._log_.debug(lambda: "Size Operation: Fetching storage usage catalog")
+        df = self.executeone(self._SIZE_CATALOG_QUERY_, database=database, schema=schema, table=table, admin=True).fetchall(legacy=False)
+        if df.is_empty() or "Database" not in df.columns:
+            return self.frame(df, legacy=legacy)
+        databases = df["Database"].unique().to_list()
+        expansion = database == "%" or any(d != self.database for d in databases)
+        if not expansion:
+            return self.frame(df, legacy=legacy)
+        frames = []
+        for db_name in databases:
+            db_df = self.executeone(self._SIZE_CATALOG_QUERY_, database=db_name, schema=schema, table=table, admin=False).fetchall(legacy=False)
+            frames.append(db_df if not db_df.is_empty() else df.filter(pl.col("Database") == db_name))
+        return self.frame(self._concat_(frames) if frames else df, legacy=legacy)
 
     def migration(self) -> Self:
         """
