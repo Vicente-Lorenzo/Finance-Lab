@@ -1,9 +1,8 @@
-import pytest
-from Library.Universe.Security import SecurityAPI
 from Library.Universe.Ticker import TickerAPI
+from Library.Universe.Contract import Instrument
+from Library.Universe.Security import SecurityAPI
 from Library.Universe.Provider import ProviderAPI
 from Library.Universe.Category import CategoryAPI
-from Library.Universe.Contract import Instrument
 from Library.Database.Datapoint import DatapointAPI
 
 def test_security_initialization(db):

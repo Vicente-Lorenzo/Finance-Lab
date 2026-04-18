@@ -1,7 +1,8 @@
 import pytest
-from Library.Database.Postgres.Postgres import PostgresDatabaseAPI
+
 from Library.Database.Query import QueryAPI
 from Library.Database.Datapoint import DatapointAPI
+from Library.Database.Postgres.Postgres import PostgresDatabaseAPI
 
 @pytest.fixture(scope="session")
 def db():
@@ -12,7 +13,7 @@ def db():
             admin.create(database=DatapointAPI.Database)
     finally:
         admin.disconnect()
-    
+
     conn = PostgresDatabaseAPI(database=DatapointAPI.Database)
     try:
         conn.connect()

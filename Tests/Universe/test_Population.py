@@ -1,8 +1,9 @@
-import pytest
-from Library.Database.Postgres.Postgres import PostgresDatabaseAPI
-from Library.Database.Query import QueryAPI
-from Library.Universe import CategoryAPI, ProviderAPI, TickerAPI, Provider, Platform, SecurityAPI, ContractAPI, TimeframeAPI
-from Library.Database.Datapoint import DatapointAPI
+from Library.Universe.Ticker import TickerAPI
+from Library.Universe.Contract import ContractAPI
+from Library.Universe.Security import SecurityAPI
+from Library.Universe.Category import CategoryAPI
+from Library.Universe.Timeframe import TimeframeAPI
+from Library.Universe.Provider import Provider, Platform, ProviderAPI
 
 def test_populate_universe(db):
     by = "Population"
