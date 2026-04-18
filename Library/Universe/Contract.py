@@ -2,17 +2,17 @@ from __future__ import annotations
 
 from typing import ClassVar, Sequence, TYPE_CHECKING
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from Library.Database.Dataframe import pl
 from Library.Database.Enumeration import Enumeration, as_enum
-from Library.Database import ForeignKey
-from Library.Universe.Ticker import TickerAPI
+from Library.Database import PrimaryKey, ForeignKey
+from Library.Universe.Ticker import TickerAPI, Instrument
 from Library.Universe.Provider import ProviderAPI
 from Library.Utility.DateTime import Day
 from Library.Database.Datapoint import DatapointAPI
 if TYPE_CHECKING:
     from Library.Database import DatabaseAPI
-    from Library.Market.Tick import TickAPI
 
 class SpreadType(Enumeration):
     Points = 0
@@ -50,6 +50,7 @@ class ContractAPI(DatapointAPI):
 
     TickerUID: str
     ProviderUID: str
+    Instrument: Instrument | str | None = None
 
     Digits: int | None = None
     PointSize: float | None = None
@@ -67,15 +68,16 @@ class ContractAPI(DatapointAPI):
     SwapSummerTime: int = 22
     SwapWinterTime: int = 21
     SwapPeriod: int = 24
+    Expiry: datetime | None = None
 
     _db_: DatabaseAPI | None = field(default=None, init=False, repr=False)
-    _spot_tick_: TickAPI = field(default=None, init=False, repr=False)
 
     @classmethod
     def Structure(cls) -> dict:
         return {
             cls.ID.TickerUID: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{TickerAPI.Table}"("{TickerAPI.ID.UID}")', primary=True),
             cls.ID.ProviderUID: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{ProviderAPI.Table}"("{ProviderAPI.ID.UID}")', primary=True),
+            cls.ID.Instrument: PrimaryKey(pl.Enum([i.name for i in Instrument])),
             cls.ID.Digits: pl.Int32(),
             cls.ID.PointSize: pl.Float64(),
             cls.ID.PipSize: pl.Float64(),
@@ -92,12 +94,14 @@ class ContractAPI(DatapointAPI):
             cls.ID.SwapSummerTime: pl.Int32(),
             cls.ID.SwapWinterTime: pl.Int32(),
             cls.ID.SwapPeriod: pl.Int32(),
+            cls.ID.Expiry: pl.Datetime(),
             **DatapointAPI.Structure()
         }
 
     def __post_init__(self, db: DatabaseAPI | None) -> None:
         self.TickerUID = TickerAPI.normalize(self.TickerUID)
         self.ProviderUID = ProviderAPI.normalize(self.ProviderUID)
+        self.Instrument = as_enum(Instrument, self.Instrument)
         self.CommissionMode = as_enum(CommissionMode, self.CommissionMode)
         self.SwapMode = as_enum(SwapMode, self.SwapMode)
         self.SwapExtraDay = as_enum(Day, self.SwapExtraDay)
@@ -125,10 +129,12 @@ class ContractAPI(DatapointAPI):
                 if self.SwapSummerTime is None: self.SwapSummerTime = row.get("SwapSummerTime")
                 if self.SwapWinterTime is None: self.SwapWinterTime = row.get("SwapWinterTime")
                 if self.SwapPeriod is None: self.SwapPeriod = row.get("SwapPeriod")
+                if self.Expiry is None: self.Expiry = row.get("Expiry")
             return
         t = self.TickerUID.replace("'", "''")
         p = self.ProviderUID.replace("'", "''")
-        row = super().pull(condition=f"\"TickerUID\" = '{t}' AND \"ProviderUID\" = '{p}'")
+        inst = self.Instrument.name if isinstance(self.Instrument, Instrument) else self.Instrument
+        row = super().pull(condition=f"\"TickerUID\" = '{t}' AND \"ProviderUID\" = '{p}' AND \"Instrument\" = '{inst}'")
         if not row: return
         if self.Digits is None: self.Digits = row.get("Digits")
         if self.PointSize is None: self.PointSize = row.get("PointSize")
@@ -146,9 +152,10 @@ class ContractAPI(DatapointAPI):
         if self.SwapSummerTime is None: self.SwapSummerTime = row.get("SwapSummerTime")
         if self.SwapWinterTime is None: self.SwapWinterTime = row.get("SwapWinterTime")
         if self.SwapPeriod is None: self.SwapPeriod = row.get("SwapPeriod")
+        if self.Expiry is None: self.Expiry = row.get("Expiry")
 
     def push(self, by: str, key: str | Sequence[str] | None = None) -> None:
-        super().push(by=by, key=key or [self.ID.TickerUID, self.ID.ProviderUID])
+        super().push(by=by, key=key or [self.ID.TickerUID, self.ID.ProviderUID, self.ID.Instrument])
 
     def __str__(self) -> str:
         return f"{self.TickerUID}@{self.ProviderUID}"

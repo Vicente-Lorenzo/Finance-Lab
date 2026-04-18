@@ -4,10 +4,17 @@ from typing import ClassVar, Sequence, TYPE_CHECKING
 from dataclasses import dataclass, field
 
 from Library.Database.Dataframe import pl
+from Library.Database.Enumeration import Enumeration
 from Library.Database import PrimaryKey, ForeignKey
 from Library.Universe.Category import CategoryAPI
 from Library.Database.Datapoint import DatapointAPI
 if TYPE_CHECKING: from Library.Database import DatabaseAPI
+
+class Instrument(Enumeration):
+    Spot = 0
+    Future = 1
+    Swap = 2
+    Option = 3
 
 @dataclass(kw_only=True)
 class TickerAPI(DatapointAPI):
@@ -41,7 +48,11 @@ class TickerAPI(DatapointAPI):
     def normalize(uid: str) -> str:
         import re
         uid = re.sub(r"^[^:]+:", "", uid)
-        uid = re.sub(r"[#+\-_]+$", "", uid)
+        uid = re.sub(r"[#.+\-_]+$", "", uid)
+        uid = re.sub(r"-F$", "", uid)
+        uid = re.sub(r"-[A-Z]{3}\d{2}$", "", uid)
+        uid = re.sub(r"[FGHJKMNQUVXZ]\d{1,2}$", "", uid)
+        uid = re.sub(r"\d!$", "", uid)
         suffix_list = [
             ".m", ".micro", ".pro", ".p", ".raw", ".ecn", ".s", ".std", ".i", ".ins",
             ".z", ".v", ".x", ".plus", "+", "-", "_sb", ".c", ".cfd"
@@ -54,6 +65,15 @@ class TickerAPI(DatapointAPI):
                 break
         uid = re.sub(r"[#.+\-_]+$", "", uid)
         return uid.upper()
+
+    @staticmethod
+    def detect(uid: str) -> Instrument:
+        import re
+        if re.search(r"-F$", uid): return Instrument.Future
+        if re.search(r"-[A-Z]{3}\d{2}$", uid): return Instrument.Future
+        if re.search(r"[FGHJKMNQUVXZ]\d{1,2}$", uid): return Instrument.Future
+        if re.search(r"\d!$", uid): return Instrument.Future
+        return Instrument.Spot
 
     def __post_init__(self, db: DatabaseAPI | None) -> None:
         if self.UID: self.UID = self.normalize(self.UID)

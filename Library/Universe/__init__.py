@@ -1,7 +1,7 @@
 from Library.Universe.Timeframe import TimeframeAPI
 from Library.Universe.Category import CategoryAPI
 from Library.Universe.Provider import ProviderAPI, Provider, Platform
-from Library.Universe.Ticker import TickerAPI
+from Library.Universe.Ticker import TickerAPI, Instrument
 from Library.Universe.Contract import (
     ContractAPI,
     SpreadType,
@@ -21,6 +21,7 @@ __all__ = [
     "Platform",
     "TickerAPI",
     "ContractAPI",
+    "Instrument",
     "SpreadType",
     "CommissionType",
     "CommissionMode",

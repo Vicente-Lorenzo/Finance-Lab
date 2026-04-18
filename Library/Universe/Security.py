@@ -4,8 +4,9 @@ from typing import ClassVar, Sequence, TYPE_CHECKING
 from dataclasses import dataclass, field
 
 from Library.Database.Dataframe import pl
-from Library.Database import ForeignKey
-from Library.Universe.Ticker import TickerAPI
+from Library.Database.Enumeration import as_enum
+from Library.Database.Database import PrimaryKey, ForeignKey
+from Library.Universe.Ticker import TickerAPI, Instrument
 from Library.Universe.Provider import ProviderAPI
 from Library.Universe.Category import CategoryAPI
 from Library.Universe.Contract import ContractAPI
@@ -20,6 +21,7 @@ class SecurityAPI(DatapointAPI):
     ProviderUID: str
     CategoryUID: str | None = None
     TickerUID: str
+    Instrument: Instrument | str | None = None
 
     _db_: DatabaseAPI | None = field(default=None, init=False, repr=False)
 
@@ -29,10 +31,13 @@ class SecurityAPI(DatapointAPI):
             cls.ID.ProviderUID: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{ProviderAPI.Table}"("{ProviderAPI.ID.UID}")', primary=True),
             cls.ID.CategoryUID: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{CategoryAPI.Table}"("{CategoryAPI.ID.UID}")', primary=True),
             cls.ID.TickerUID: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{TickerAPI.Table}"("{TickerAPI.ID.UID}")', primary=True),
+            cls.ID.Instrument: PrimaryKey(pl.Enum([i.name for i in Instrument])),
             **DatapointAPI.Structure()
         }
 
     def __post_init__(self, db: DatabaseAPI | None) -> None:
+        if not self.Instrument: self.Instrument = TickerAPI.detect(self.TickerUID)
+        self.Instrument = as_enum(Instrument, self.Instrument)
         self.TickerUID = TickerAPI.normalize(self.TickerUID)
         self.ProviderUID = ProviderAPI.normalize(self.ProviderUID)
         self._db_ = self._connect_(db)
@@ -47,23 +52,26 @@ class SecurityAPI(DatapointAPI):
             row = super().pull(condition=condition)
             if row:
                 if not self.CategoryUID: self.CategoryUID = row.get("CategoryUID")
+                if not self.Instrument: self.Instrument = as_enum(Instrument, row.get("Instrument"))
             return
         p = self.ProviderUID.replace("'", "''")
         c = (self.CategoryUID or "").replace("'", "''")
         t = self.TickerUID.replace("'", "''")
-        row = super().pull(condition=f"\"ProviderUID\" = '{p}' AND \"CategoryUID\" = '{c}' AND \"TickerUID\" = '{t}'")
-        if not row: row = super().pull(condition=f"\"ProviderUID\" = '{p}' AND \"TickerUID\" = '{t}'")
+        inst = self.Instrument.name if isinstance(self.Instrument, Instrument) else self.Instrument
+        row = super().pull(condition=f"\"ProviderUID\" = '{p}' AND \"CategoryUID\" = '{c}' AND \"TickerUID\" = '{t}' AND \"Instrument\" = '{inst}'")
+        if not row: row = super().pull(condition=f"\"ProviderUID\" = '{p}' AND \"TickerUID\" = '{t}' AND \"Instrument\" = '{inst}'")
         if not row:
             if not self.CategoryUID: raise ValueError(f"Security '{self.TickerUID}@{self.ProviderUID}' not found in database.")
             return
         if not self.CategoryUID: self.CategoryUID = row.get("CategoryUID")
+        if not self.Instrument: self.Instrument = as_enum(Instrument, row.get("Instrument"))
 
     def push(self, by: str, key: str | Sequence[str] | None = None) -> None:
         self.Ticker.push(by=by)
         self.Provider.push(by=by)
         if self.CategoryUID: self.Category.push(by=by)
         self.Contract.push(by=by)
-        super().push(by=by, key=key or [self.ID.ProviderUID, self.ID.CategoryUID, self.ID.TickerUID])
+        super().push(by=by, key=key or [self.ID.ProviderUID, self.ID.CategoryUID, self.ID.TickerUID, self.ID.Instrument])
 
     @property
     def Ticker(self) -> TickerAPI:
@@ -75,7 +83,7 @@ class SecurityAPI(DatapointAPI):
 
     @property
     def Contract(self) -> ContractAPI:
-        return ContractAPI(TickerUID=self.TickerUID, ProviderUID=self.ProviderUID, db=self._db_)
+        return ContractAPI(TickerUID=self.TickerUID, ProviderUID=self.ProviderUID, Instrument=self.Instrument, db=self._db_)
 
     @property
     def Category(self) -> CategoryAPI:
