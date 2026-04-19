@@ -5,12 +5,15 @@ from dataclasses import dataclass
 
 from Library.Database.Dataframe import pl
 from Library.Database import PrimaryKey
+from Library.Universe.Universe import UniverseAPI
 from Library.Database.Datapoint import DatapointAPI
 if TYPE_CHECKING: from Library.Database import DatabaseAPI
 
 @dataclass(kw_only=True)
 class CategoryAPI(DatapointAPI):
 
+    Database: ClassVar[str] = DatapointAPI.Database
+    Schema: ClassVar[str] = UniverseAPI.Schema
     Table: ClassVar[str] = "Category"
 
     UID: str | None = None
@@ -32,7 +35,7 @@ class CategoryAPI(DatapointAPI):
     def __post_init__(self, db: DatabaseAPI | None) -> None:
         if not self.UID and self.Primary and self.Secondary: self.UID = f"{self.Primary} ({self.Secondary})"
         self._db_ = self._connect_(db)
-        self._db_.migrate(schema=DatapointAPI.Schema, table=self.Table, structure=self.Structure())
+        self._db_.migrate(schema=self.Schema, table=self.Table, structure=self.Structure())
         self.pull()
 
     def _apply_(self, row: dict) -> None:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from Library.Universe.Universe import UniverseAPI
 import re
 from typing import ClassVar, Sequence, TYPE_CHECKING
 from dataclasses import dataclass
@@ -8,7 +9,6 @@ from Library.Database.Dataframe import pl
 from Library.Database.Enumeration import Enumeration
 from Library.Database import PrimaryKey, ForeignKey
 from Library.Universe.Category import CategoryAPI
-from Library.Database.Datapoint import DatapointAPI
 if TYPE_CHECKING: from Library.Database import DatabaseAPI
 
 _FUTURES_PATTERNS_ = (
@@ -32,7 +32,7 @@ class Contract(Enumeration):
     Option = 3
 
 @dataclass(kw_only=True)
-class TickerAPI(DatapointAPI):
+class TickerAPI(UniverseAPI):
 
     Table: ClassVar[str] = "Ticker"
 
@@ -49,13 +49,13 @@ class TickerAPI(DatapointAPI):
     def Structure(cls) -> dict:
         return {
             cls.ID.UID: PrimaryKey(pl.String),
-            cls.ID.Category: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{CategoryAPI.Table}"("{CategoryAPI.ID.UID}")'),
+            cls.ID.Category: ForeignKey(pl.String, reference=f'"{UniverseAPI.Schema}"."{CategoryAPI.Table}"("{CategoryAPI.ID.UID}")'),
             cls.ID.BaseAsset: pl.String(),
             cls.ID.BaseName: pl.String(),
             cls.ID.QuoteAsset: pl.String(),
             cls.ID.QuoteName: pl.String(),
             cls.ID.Description: pl.String(),
-            **DatapointAPI.Structure()
+            **UniverseAPI.Structure()
         }
 
     @staticmethod
@@ -80,7 +80,7 @@ class TickerAPI(DatapointAPI):
     def __post_init__(self, db: DatabaseAPI | None) -> None:
         if self.UID: self.UID = self.normalize(self.UID)
         self._db_ = self._connect_(db)
-        self._db_.migrate(schema=DatapointAPI.Schema, table=self.Table, structure=self.Structure())
+        self._db_.migrate(schema=UniverseAPI.Schema, table=self.Table, structure=self.Structure())
         self.pull()
 
     def _apply_(self, row: dict) -> None:

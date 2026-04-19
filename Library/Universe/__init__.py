@@ -1,6 +1,10 @@
 from Library.Universe.Timeframe import TimeframeAPI
 from Library.Universe.Category import CategoryAPI
-from Library.Universe.Provider import ProviderAPI, Provider, Platform
+from Library.Universe.Provider import (
+    ProviderAPI,
+    Provider,
+    Platform
+)
 from Library.Universe.Ticker import (
     TickerAPI,
     Contract

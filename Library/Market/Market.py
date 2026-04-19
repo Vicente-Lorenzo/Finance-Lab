@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from Library.Database.Datapoint import DatapointAPI
 
 @dataclass(kw_only=True)
-class UniverseAPI(DatapointAPI):
+class MarketAPI(DatapointAPI):
     Database: ClassVar[str] = DatapointAPI.Database
-    Schema: ClassVar[str] = "Universe"
-    Table: ClassVar[str] = "Universe"
+    Schema: ClassVar[str] = "Market"
+    Table: ClassVar[str] = "Market"

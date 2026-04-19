@@ -54,17 +54,17 @@ def test_populate_universe(db):
         cat = CategoryAPI(UID=uid, Primary=primary, Secondary=secondary, Alternative=alt, db=db)
         cat.push(by=by)
     provider_map = {
-        Provider.Spotware: "Spotware Systems",
-        Provider.Pepperstone: "Pepperstone Europe",
-        Provider.ICMarkets: "IC Markets EU Ltd",
-        Provider.Bloomberg: "Bloomberg",
-        Provider.Yahoo: "Yahoo Finance"
+        Provider.Spotware: ("Spotware Systems", Platform.cTrader),
+        Provider.Pepperstone: ("Pepperstone Europe", Platform.cTrader),
+        Provider.ICMarkets: ("IC Markets EU Ltd", Platform.cTrader),
+        Provider.Bloomberg: ("Bloomberg", Platform.API),
+        Provider.Yahoo: ("Yahoo Finance", Platform.API)
     }
     for p in Provider:
-        name = provider_map[p]
+        name, plat = provider_map[p]
         abbrev = p.name
-        uid = f"{abbrev} ({Platform.cTrader.name})"
-        provider = ProviderAPI(UID=uid, Platform=Platform.cTrader, Name=name, Abbreviation=abbrev, db=db)
+        uid = f"{abbrev} ({plat.name})"
+        provider = ProviderAPI(UID=uid, Platform=plat, Name=name, Abbreviation=abbrev, db=db)
         provider.push(by=by)
     forex_data = [
         ("EURUSD", "Forex (Major)", "EUR", "Euro", "USD", "US Dollar", "Euro vs US Dollar"),
@@ -1521,7 +1521,9 @@ def test_populate_universe(db):
     providers = [
         f"Spotware ({Platform.cTrader.name})",
         f"Pepperstone ({Platform.cTrader.name})",
-        f"ICMarkets ({Platform.cTrader.name})"
+        f"ICMarkets ({Platform.cTrader.name})",
+        f"Bloomberg ({Platform.API.name})",
+        f"Yahoo ({Platform.API.name})"
     ]
     for uid, cat, base_asset, base_name, quote_asset, quote_name, desc in forex_data + index_data + crypto_data + metal_data + energy_data + stock_data + etf_data + stock_au_data + etf_au_data + stock_gb_data + stock_de_data + stock_hk_data + stock_ch_data + stock_dk_data + stock_no_data + stock_se_data + stock_fi_data + stock_ie_data + stock_be_data + stock_fr_data + stock_pt_data + stock_es_data + stock_at_data + stock_jp_data + stock_nl_data + stock_it_data + stock_ca_data + stock_in_data + stock_sg_data:
         ticker = TickerAPI(UID=uid, Category=cat, BaseAsset=base_asset, BaseName=base_name, QuoteAsset=quote_asset, QuoteName=quote_name, Description=desc, db=db)

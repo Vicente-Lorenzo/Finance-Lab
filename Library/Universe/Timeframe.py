@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+from Library.Universe.Universe import UniverseAPI
 import re
 from typing import ClassVar, Sequence, TYPE_CHECKING
 from dataclasses import dataclass
 
 from Library.Database.Dataframe import pl
 from Library.Database import PrimaryKey
-from Library.Database.Datapoint import DatapointAPI
 if TYPE_CHECKING: from Library.Database import DatabaseAPI
 
 _UNIT_MAP_ = {"S": "Second", "M": "Minute", "H": "Hour", "D": "Day", "W": "Week", "MN": "Month", "Y": "Year"}
@@ -16,7 +16,7 @@ _UID_PATTERN_ = re.compile(r"^([A-Z]+)(\d*)$")
 _ALIAS_UID_PATTERN_ = re.compile(r"^(\d*)([A-Z]+)(\d*)$")
 
 @dataclass(kw_only=True)
-class TimeframeAPI(DatapointAPI):
+class TimeframeAPI(UniverseAPI):
 
     Table: ClassVar[str] = "Timeframe"
 
@@ -32,7 +32,7 @@ class TimeframeAPI(DatapointAPI):
             cls.ID.Name: pl.String(),
             cls.ID.Unit: pl.String(),
             cls.ID.Value: pl.Int32(),
-            **DatapointAPI.Structure()
+            **UniverseAPI.Structure()
         }
 
     @staticmethod
@@ -63,7 +63,7 @@ class TimeframeAPI(DatapointAPI):
     def __post_init__(self, db: DatabaseAPI | None) -> None:
         if self.UID: self.UID = self.normalize(self.UID)
         self._db_ = self._connect_(db)
-        self._db_.migrate(schema=DatapointAPI.Schema, table=self.Table, structure=self.Structure())
+        self._db_.migrate(schema=UniverseAPI.Schema, table=self.Table, structure=self.Structure())
         self.pull()
         if not self.Unit: self._infer_()
 

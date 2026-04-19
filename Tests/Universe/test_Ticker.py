@@ -1,3 +1,4 @@
+from Library.Universe.Universe import UniverseAPI
 from Library.Universe.Ticker import TickerAPI
 from Library.Universe.Category import CategoryAPI
 from Library.Database.Datapoint import DatapointAPI
@@ -34,7 +35,7 @@ def test_ticker_normalize_combined():
     assert TickerAPI.normalize("FX:EURUSD.m#") == "EURUSD"
 
 def test_ticker_initialization(db):
-    db.migrate(schema=DatapointAPI.Schema, table=CategoryAPI.Table, structure=CategoryAPI.Structure())
+    db.migrate(schema=UniverseAPI.Schema, table=CategoryAPI.Table, structure=CategoryAPI.Structure())
     try:
         ticker = TickerAPI(UID="oanda:eurusd.m", db=db)
         assert ticker.UID == "EURUSD"

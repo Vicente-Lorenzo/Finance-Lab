@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from Library.Database.Dataframe import pl
 from Library.Database.Enumeration import Enumeration, as_enum
 from Library.Database import PrimaryKey
+from Library.Universe.Universe import UniverseAPI
 from Library.Database.Datapoint import DatapointAPI
 if TYPE_CHECKING: from Library.Database import DatabaseAPI
 
@@ -22,12 +23,13 @@ class Platform(Enumeration):
     MetaTrader5 = 2
     NinjaTrader = 3
     QuantConnect = 4
-    Web = 5
-    API = 6
+    API = 5
 
 @dataclass(kw_only=True)
 class ProviderAPI(DatapointAPI):
 
+    Database: ClassVar[str] = DatapointAPI.Database
+    Schema: ClassVar[str] = UniverseAPI.Schema
     Table: ClassVar[str] = "Provider"
 
     UID: str | None = None
@@ -56,7 +58,7 @@ class ProviderAPI(DatapointAPI):
         elif self.Abbreviation and self.Platform:
             self.UID = f"{self.Abbreviation} ({self.Platform.name})"
         self._db_ = self._connect_(db)
-        self._db_.migrate(schema=DatapointAPI.Schema, table=self.Table, structure=self.Structure())
+        self._db_.migrate(schema=self.Schema, table=self.Table, structure=self.Structure())
         self.pull()
 
     def _apply_(self, row: dict) -> None:

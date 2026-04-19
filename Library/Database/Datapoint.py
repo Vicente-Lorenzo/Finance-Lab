@@ -13,8 +13,8 @@ if TYPE_CHECKING: from Library.Database.Database import DatabaseAPI
 class DatapointAPI(DataclassAPI):
 
     Database: ClassVar[str] = "Quant"
-    Schema: ClassVar[str] = "Universe"
-    Table: ClassVar[str] = "Datapoint"
+    Schema: ClassVar[str]
+    Table: ClassVar[str]
 
     CreatedAt: datetime | None = None
     CreatedBy: str | None = None

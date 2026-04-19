@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from Library.Universe.Universe import UniverseAPI
 from typing import ClassVar, Sequence, TYPE_CHECKING
 from dataclasses import dataclass
 from functools import cached_property
@@ -11,11 +12,10 @@ from Library.Universe.Ticker import TickerAPI, Contract
 from Library.Universe.Provider import ProviderAPI
 from Library.Universe.Category import CategoryAPI
 from Library.Universe.Contract import ContractAPI
-from Library.Database.Datapoint import DatapointAPI
 if TYPE_CHECKING: from Library.Database import DatabaseAPI
 
 @dataclass(kw_only=True)
-class SecurityAPI(DatapointAPI):
+class SecurityAPI(UniverseAPI):
 
     Table: ClassVar[str] = "Security"
 
@@ -30,11 +30,11 @@ class SecurityAPI(DatapointAPI):
     def Structure(cls) -> dict:
         return {
             cls.ID.UID: IdentityKey(pl.Int64),
-            cls.ID.ProviderUID: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{ProviderAPI.Table}"("{ProviderAPI.ID.UID}")', primary=True),
-            cls.ID.CategoryUID: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{CategoryAPI.Table}"("{CategoryAPI.ID.UID}")', primary=True),
-            cls.ID.TickerUID: ForeignKey(pl.String, reference=f'"{DatapointAPI.Schema}"."{TickerAPI.Table}"("{TickerAPI.ID.UID}")', primary=True),
+            cls.ID.ProviderUID: ForeignKey(pl.String, reference=f'"{UniverseAPI.Schema}"."{ProviderAPI.Table}"("{ProviderAPI.ID.UID}")', primary=True),
+            cls.ID.CategoryUID: ForeignKey(pl.String, reference=f'"{UniverseAPI.Schema}"."{CategoryAPI.Table}"("{CategoryAPI.ID.UID}")', primary=True),
+            cls.ID.TickerUID: ForeignKey(pl.String, reference=f'"{UniverseAPI.Schema}"."{TickerAPI.Table}"("{TickerAPI.ID.UID}")', primary=True),
             cls.ID.ContractUID: PrimaryKey(pl.Enum([i.name for i in Contract])),
-            **DatapointAPI.Structure()
+            **UniverseAPI.Structure()
         }
 
     def __post_init__(self, db: DatabaseAPI | None) -> None:
@@ -46,7 +46,7 @@ class SecurityAPI(DatapointAPI):
         if not self.CategoryUID:
             t = TickerAPI(UID=self.TickerUID, db=self._db_)
             self.CategoryUID = t.Category or ""
-        self._db_.migrate(schema=DatapointAPI.Schema, table=self.Table, structure=self.Structure())
+        self._db_.migrate(schema=UniverseAPI.Schema, table=self.Table, structure=self.Structure())
         self.pull()
 
     def _apply_(self, row: dict) -> None:
