@@ -1,70 +1,77 @@
 from __future__ import annotations
 
+from typing import ClassVar, Sequence, TYPE_CHECKING
 from datetime import datetime
-from dataclasses import dataclass, field, InitVar
+from dataclasses import dataclass, field
 
-from typing import TYPE_CHECKING
-
+from Library.Database.Dataframe import pl
+from Library.Database.Database import PrimaryKey
+from Library.Database.Datapoint import DatapointAPI
 from Library.Database.Dataclass import overridefield
+from Library.Portfolio.Portfolio import PortfolioAPI
 from Library.Portfolio.Position import PositionAPI
 from Library.Market.Timestamp import TimestampAPI
-if TYPE_CHECKING: from Library.Universe.Contract import ContractAPI
+if TYPE_CHECKING: 
+    from Library.Database import DatabaseAPI
+    from Library.Universe.Contract import ContractAPI
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(kw_only=True)
 class TradeAPI(PositionAPI):
-    TradeID: int = field(init=True, repr=True)
-    ExitTimestamp: InitVar[datetime] = field(init=True, repr=False)
 
-    ExitBalance: float = field(default=None, init=True, repr=True)
+    Database: ClassVar[str] = DatapointAPI.Database
+    Schema: ClassVar[str] = PortfolioAPI.Schema
+    Table: ClassVar[str] = "Trade"
 
-    _exit_timestamp_: TimestampAPI = field(default=None, init=False, repr=False)
+    TradeID: int | None = None
+    ExitTimestamp: datetime | None = None
+    ExitBalance: float | None = None
 
-    def __post_init__(self,
-                      entry_timestamp: datetime,
-                      entry_price: float,
-                      stop_loss_price: float,
-                      take_profit_price: float,
-                      max_runup_price: float,
-                      max_drawdown_price: float,
-                      exit_price: float,
-                      stop_loss_pnl: float,
-                      take_profit_pnl: float,
-                      max_runup_pnl: float,
-                      max_drawdown_pnl: float,
-                      gross_pnl: float,
-                      commission_pnl: float,
-                      swap_pnl: float,
-                      net_pnl: float,
-                      entry_balance: float,
-                      contract: ContractAPI,
-                      exit_timestamp: datetime):
+    _exit_timestamp_: TimestampAPI | None = field(default=None, init=False, repr=False)
 
-        PositionAPI.__post_init__(self,
-            entry_timestamp=entry_timestamp,
-            entry_price=entry_price,
-            stop_loss_price=stop_loss_price,
-            take_profit_price=take_profit_price,
-            max_runup_price=max_runup_price,
-            max_drawdown_price=max_drawdown_price,
-            exit_price=exit_price,
-            stop_loss_pnl=stop_loss_pnl,
-            take_profit_pnl=take_profit_pnl,
-            max_runup_pnl=max_runup_pnl,
-            max_drawdown_pnl=max_drawdown_pnl,
-            gross_pnl=gross_pnl,
-            commission_pnl=commission_pnl,
-            swap_pnl=swap_pnl,
-            net_pnl=net_pnl,
-            entry_balance=entry_balance,
-            contract=contract
+    @classmethod
+    def Structure(cls) -> dict:
+        base = PositionAPI.Structure()
+        if cls.ID.PositionID in base:
+            base[cls.ID.PositionID] = pl.Int64()
+        return {
+            cls.ID.TradeID: PrimaryKey(pl.Int64),
+            cls.ID.ExitTimestamp: pl.Datetime(),
+            cls.ID.ExitBalance: pl.Float64(),
+            **base
+        }
+
+    def __post_init__(self, db: DatabaseAPI | None, contract: ContractAPI | None) -> None:
+        super().__post_init__(db, contract)
+        if self.ExitTimestamp:
+            self._exit_timestamp_ = TimestampAPI(DateTime=self.ExitTimestamp)
+
+    def _apply_(self, row: dict) -> None:
+        super()._apply_(row)
+        if self.ExitTimestamp:
+            self._exit_timestamp_ = TimestampAPI(DateTime=self.ExitTimestamp)
+
+    def pull(self, condition: str | None = None, parameters: dict | None = None) -> None:
+        if condition:
+            row = DatapointAPI.pull(self, condition=condition, parameters=parameters)
+            if row: self._apply_(row)
+            return
+        if not self.TradeID: return
+        row = DatapointAPI.pull(self,
+            condition='"TradeID" = :trade:',
+            parameters={"trade": self.TradeID}
         )
+        if not row: return
+        self._apply_(row)
 
-        self._exit_timestamp_ = TimestampAPI(DateTime=exit_timestamp)
+    def push(self, by: str, key: str | Sequence[str] | None = None) -> None:
+        DatapointAPI.push(self, by=by, key=key or self.ID.TradeID)
 
     @property
     @overridefield
-    def ExitTimestamp(self) -> TimestampAPI:
+    def ExitTime(self) -> TimestampAPI | None:
         return self._exit_timestamp_
-    @ExitTimestamp.setter
-    def ExitTimestamp(self, exit_timestamp: datetime) -> None:
-        self._exit_timestamp_.DateTime = exit_timestamp
+    @ExitTime.setter
+    def ExitTime(self, exit_timestamp: datetime) -> None:
+        self.ExitTimestamp = exit_timestamp
+        if self._exit_timestamp_: self._exit_timestamp_.DateTime = exit_timestamp
+        else: self._exit_timestamp_ = TimestampAPI(DateTime=exit_timestamp)
